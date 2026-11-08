@@ -15,7 +15,9 @@ done
 echo "Redis доступен"
 
 echo "Выполнение миграций..."
-python manage.py makemigrations
+# makemigrations в прод-старте НЕТ: миграции — часть репозитория.
+# Расхождение моделей и миграций ловит CI (makemigrations --check).
+# Для разработки: docker exec -it ivanna_web python manage.py makemigrations
 python manage.py migrate
 
 echo "Сбор статики..."
