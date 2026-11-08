@@ -13,7 +13,7 @@ Working plan for future releases. Order is approximate — items move up if some
 
 ## v5.0 — inference & scale
 
-- [x] **vLLM wiring** — `services/vllm_client.py` (OpenAI-compatible), per-checkpoint `serving_backend` switch (transformers ↔ vLLM), optional `vllm` compose service with GPU profile, client unit tests (v5.0)
+- [x] **vLLM wiring** — `services/vllm_client.py` (OpenAI-compatible), per-checkpoint `serving_backend` switch, optional `vllm` compose service, client unit tests (v5.0). Field-verified on GTX 1650 4GB with Qwen3-1.7B Q8_0 GGUF: working flags `--enforce-eager --gpu-memory-utilization 0.85 --max-model-len 1024` + `PYTORCH_ALLOC_CONF=expandable_segments:True` (CUDA graphs / 0.92+ OOM on 4GB)
 - [ ] **Multi-GPU** — device selection per worker, big-model sharding notes
 - [x] **Inference presets** — `GenerationPreset` model + CRUD API + 🌐-применение к сессии из настроек чата (v5.0); сравнения — следующая итерация
 - [ ] **Fine-tune queue improvements** — pause/resume, per-job GPU memory profiles
