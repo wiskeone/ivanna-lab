@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with:
+          args: check app/ --exit-zero   # пока только фиксируем
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build CPU image
+        run: docker build -f Dockerfile.cpu -t ivanna-cpu .
+      - name: Run tests inside the image
+        run: |
+          docker run --rm \
+            -e DEBUG=True \
+            -e SECRET_KEY=ci-secret-key \
+            ivanna-cpu bash -lc "python manage.py test ivanna_model_manager.tests -v 2 --settings=config.test_settings"
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docker-compose config
+        run: docker compose config -q
