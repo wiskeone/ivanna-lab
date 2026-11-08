@@ -20,6 +20,13 @@ ALLOWED_HOSTS = [
     'web',
     'web:8000',
 ]
+# v61.5: i18n — русский исходник интерфейса, английский каркас (locale/)
+from django.utils.translation import gettext_lazy as _
+LANGUAGE_CODE = 'ru'
+USE_I18N = True
+LANGUAGES = [('ru', _('Русский')), ('en', _('English'))]
+LOCALE_PATHS = [BASE_DIR / 'locale']
+
 env_hosts = os.getenv('ALLOWED_HOSTS', '')
 if env_hosts:
     ALLOWED_HOSTS.extend([host.strip() for host in env_hosts.split(',') if host.strip()])
@@ -51,6 +58,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
