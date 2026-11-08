@@ -10,6 +10,7 @@ from huggingface_hub import HfApi
 
 from django.db.models import Q, Count, Sum
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.translation import gettext as _
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
@@ -101,7 +102,7 @@ def profile_view(request):
         form = UserProfileForm(request.POST, instance=profile)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Профиль успешно обновлён.')
+            messages.success(request, _('Профиль успешно обновлён.'))
             return redirect('profile')
     else:
         form = UserProfileForm(instance=profile)
@@ -471,10 +472,10 @@ def download_model_view(request, pk):
     """Запуск загрузки модели (синхронный запуск задачи)."""
     model = get_object_or_404(ModelCheckpoint, pk=pk, is_active=True)
     if model.status == 'LOADED':
-        messages.warning(request, 'Модель уже загружена')
+        messages.warning(request, _('Модель уже загружена'))
         return redirect('model_detail', pk=model.id)
     if not model.huggingface_id:
-        messages.error(request, 'У модели не указан Hugging Face ID')
+        messages.error(request, _('У модели не указан Hugging Face ID'))
         return redirect('model_detail', pk=model.id)
 
     download_model_task.delay(model.id, user_id=request.user.id)
@@ -574,7 +575,7 @@ class InferenceTestView(LoginRequiredMixin, DetailView):
         # Проверяем, загружена ли модель
         info = redis_model_manager.get_model_info(model_id)
         if not info or not info.get('loaded'):
-            messages.error(request, 'Модель не загружена в память')
+            messages.error(request, _('Модель не загружена в память'))
             return redirect('model_detail', pk=self.object.id)
 
         session = InferenceSession.objects.create(
@@ -719,7 +720,7 @@ def experiment_activate_view(request, pk):
 def create_checkpoint_from_experiment(request, pk):
     experiment = get_object_or_404(Experiment, pk=pk, is_active=True)
     if not experiment.base_checkpoint:
-        messages.error(request, 'У эксперимента нет базового чекпоинта')
+        messages.error(request, _('У эксперимента нет базового чекпоинта'))
         return redirect('experiment_detail', pk=experiment.id)
     base = experiment.base_checkpoint
     new = ModelCheckpoint.objects.create(
@@ -807,11 +808,11 @@ def start_merge_view(request, pk):
     base = get_object_or_404(ModelCheckpoint, pk=pk, is_active=True)
     merge_id = request.POST.get('merge_model_id')
     if not merge_id:
-        messages.error(request, 'Не выбрана модель для слияния')
+        messages.error(request, _('Не выбрана модель для слияния'))
         return redirect('model_detail', pk=base.id)
     merge = get_object_or_404(ModelCheckpoint, pk=merge_id, is_active=True)
     if base.model_type != merge.model_type or base.parameter_count != merge.parameter_count:
-        messages.error(request, 'Модели несовместимы')
+        messages.error(request, _('Модели несовместимы'))
         return redirect('model_detail', pk=base.id)
 
     job = ModelMergeJob.objects.create(
@@ -1022,7 +1023,7 @@ def create_chat_session(request):
     """Создание новой чат-сессии."""
     model_id = request.POST.get('model_id')
     if not model_id:
-        messages.error(request, 'Не выбрана модель')
+        messages.error(request, _('Не выбрана модель'))
         return redirect('chat_view')
     try:
         result = chat_service.create_session(str(request.user.id), model_id)
@@ -1078,7 +1079,7 @@ def chat_sessions_management(request):
 def rename_chat_session(request, session_id):
     new_name = request.POST.get('name', '').strip()
     if not new_name:
-        return JsonResponse({'success': False, 'error': 'Имя не может быть пустым'})
+        return JsonResponse({'success': False, 'error': _('Имя не может быть пустым')})
     try:
         session = ChatSession.objects.get(session_id=session_id, user_id=str(request.user.id))
         session.notes = new_name
@@ -1337,7 +1338,7 @@ def edit_dataset_questions_view(request, pk):
             messages.warning(request, f'Ошибка чтения файла: {e}')
     elif not file_exists:
         logger.warning(f"Dataset file not found: {file_path}")
-        messages.warning(request, 'Файл датасета не найден. Возможно, импорт не завершился.')
+        messages.warning(request, _('Файл датасета не найден. Возможно, импорт не завершился.'))
 
     # Для GET-запроса
     if request.method == 'GET':
@@ -1355,7 +1356,7 @@ def edit_dataset_questions_view(request, pk):
 
     # Обработка POST (только для некрупных датасетов)
     if has_large_dataset:
-        messages.error(request, 'Редактирование большого датасета через веб-интерфейс невозможно. Используйте экспорт/импорт.')
+        messages.error(request, _('Редактирование большого датасета через веб-интерфейс невозможно. Используйте экспорт/импорт.'))
         return redirect('evaluation_dataset_detail', pk=dataset.id)
 
     questions_json = request.POST.get('questions_json', '[]')
@@ -1396,7 +1397,7 @@ def edit_dataset_questions_view(request, pk):
 def export_evaluation_dataset(request, pk):
     dataset = get_object_or_404(EvaluationDataset, pk=pk)
     if not dataset.file_path or not os.path.exists(dataset.file_path):
-        messages.error(request, 'Файл датасета не найден')
+        messages.error(request, _('Файл датасета не найден'))
         return redirect('evaluation_dataset_detail', pk=pk)
     response = HttpResponse(content_type='application/jsonl')
     response['Content-Disposition'] = f'attachment; filename="{dataset.name}.jsonl"'
@@ -1629,7 +1630,7 @@ def compare_models_view(request, task_id):
     task = get_object_or_404(ModelEvaluationTask, pk=task_id)
 
     if task.status != 'COMPLETED':
-        messages.warning(request, 'Задача ещё не завершена')
+        messages.warning(request, _('Задача ещё не завершена'))
         return redirect('evaluation_task_detail', pk=task_id)
 
     questions = task.dataset.questions if task.dataset else []
@@ -1934,7 +1935,7 @@ def rag_collection_delete(request, pk):
     )
     collection.is_active = False
     collection.save()
-    return JsonResponse({'success': True, 'message': 'Коллекция удалена'})
+    return JsonResponse({'success': True, 'message': _('Коллекция удалена')})
 
 
 @login_required
@@ -2021,7 +2022,7 @@ def document_detail(request, pk):
         form = DocumentEditForm(request.POST, instance=doc, user=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Документ обновлён')
+            messages.success(request, _('Документ обновлён'))
             return redirect('document_detail', pk=doc.id)
     else:
         form = DocumentEditForm(instance=doc, user=request.user)
@@ -2141,11 +2142,11 @@ def document_delete(request, pk):
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': True,
-                'message': 'Документ удалён',
+                'message': _('Документ удалён'),
                 'redirect_url': reverse('document_list')
             })
 
-        messages.success(request, 'Документ удалён')
+        messages.success(request, _('Документ удалён'))
         return redirect('document_list')
 
     except Exception as e:
@@ -2229,12 +2230,12 @@ def document_reload(request, pk):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
             'success': True,
-            'message': 'Файл заменён, запущена обработка',
+            'message': _('Файл заменён, запущена обработка'),
             'task_id': task.id,
             'redirect_url': reverse('document_detail', args=[document.id])
         })
 
-    messages.success(request, 'Файл заменён, запущена обработка')
+    messages.success(request, _('Файл заменён, запущена обработка'))
     return redirect('document_detail', pk=document.id)
 
 @login_required
@@ -2288,7 +2289,7 @@ def rag_search_page(request, collection_id=None):
                 'is_owner': selected_collection.owner_id == str(request.user.id),
             }
         except DocumentCollection.DoesNotExist:
-            messages.warning(request, 'Коллекция не найдена или нет доступа')
+            messages.warning(request, _('Коллекция не найдена или нет доступа'))
 
     # История поиска
     search_history = SearchQuery.objects.filter(
@@ -2380,9 +2381,9 @@ def ajax_rag_advanced_search(request):
         search_name = data.get('search_name', '')
 
         if not query:
-            return JsonResponse({'success': False, 'error': 'Запрос не может быть пустым'}, status=400)
+            return JsonResponse({'success': False, 'error': _('Запрос не может быть пустым')}, status=400)
         if not collection_id:
-            return JsonResponse({'success': False, 'error': 'Не выбрана коллекция'}, status=400)
+            return JsonResponse({'success': False, 'error': _('Не выбрана коллекция')}, status=400)
 
         try:
             collection = DocumentCollection.objects.get(
@@ -2391,7 +2392,7 @@ def ajax_rag_advanced_search(request):
                 Q(is_active=True)
             )
         except DocumentCollection.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Коллекция не найдена'}, status=404)
+            return JsonResponse({'success': False, 'error': _('Коллекция не найдена')}, status=404)
 
         # Выполняем поиск
         search_service = EnhancedSearchService()
@@ -2536,7 +2537,7 @@ def document_download(request, pk):
     response = doc.get_file_response()
     if response:
         return response
-    messages.error(request, 'Файл не найден')
+    messages.error(request, _('Файл не найден'))
     return redirect('document_detail', pk=doc.id)
 
 
@@ -2671,7 +2672,7 @@ def document_chunk_edit(request, pk):
         form = DocumentChunkEditForm(request.POST, instance=chunk)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Чанк обновлён')
+            messages.success(request, _('Чанк обновлён'))
             return redirect('document_detail', pk=chunk.document.id)
     else:
         form = DocumentChunkEditForm(instance=chunk)
@@ -2697,7 +2698,7 @@ def document_bulk_action(request):
                 is_active=True
             )
             if not docs.exists():
-                messages.error(request, 'Документы не найдены или нет прав')
+                messages.error(request, _('Документы не найдены или нет прав'))
                 return redirect('document_list')
 
             if action == 'delete':
@@ -3609,7 +3610,7 @@ def rebuild_collection_embeddings(request, pk):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'task_id': task.id})
     else:
-        messages.info(request, 'Задача перестройки эмбеддингов запущена')
+        messages.info(request, _('Задача перестройки эмбеддингов запущена'))
         return redirect('rag_collection_detail', pk=collection.id)
 
 @login_required
@@ -3773,7 +3774,7 @@ def distillation_start_question_generation(request, pk):
     teacher_model_id = request.POST.get('teacher_model_id')
     quantization = request.POST.get('quantization', 'int4')
     if not teacher_model_id:
-        messages.error(request, 'Не выбрана модель-учитель')
+        messages.error(request, _('Не выбрана модель-учитель'))
         return redirect('distillation_question_set_detail', pk=question_set.id)
 
     # Обновляем конфигурацию, если передана
@@ -3827,7 +3828,7 @@ def distillation_question_edit(request, pk):
         if 'status' in request.POST:
             question.status = request.POST['status']
         question.save()
-        messages.success(request, 'Вопрос сохранён')
+        messages.success(request, _('Вопрос сохранён'))
         return redirect('distillation_question_list')
 
     return render(request, 'ivanna_model_manager/distillation/question_edit.html', {'question': question})
@@ -3965,7 +3966,7 @@ def distillation_start_answer_generation(request, pk):
     teacher_model_id = request.POST.get('teacher_model_id')
     quantization = request.POST.get('quantization', 'int4')
     if not teacher_model_id:
-        messages.error(request, 'Не выбрана модель-учитель')
+        messages.error(request, _('Не выбрана модель-учитель'))
         return redirect('distillation_answer_job_detail', pk=job.id)
 
     # Обновляем конфигурацию
@@ -3989,13 +3990,13 @@ def distillation_start_answer_generation(request, pk):
 def distillation_resume_question_generation(request, pk):
     question_set = get_object_or_404(DistillationQuestionSet, pk=pk, created_by=request.user.username)
     if not question_set.checkpoint_data:
-        messages.error(request, 'Нет чекпоинта для возобновления')
+        messages.error(request, _('Нет чекпоинта для возобновления'))
         return redirect('distillation_question_set_detail', pk=question_set.id)
 
     teacher_model_id = question_set.checkpoint_data.get('teacher_model_id')
     quantization = question_set.checkpoint_data.get('quantization', 'int4')
     if not teacher_model_id:
-        messages.error(request, 'В чекпоинте не указана модель-учитель')
+        messages.error(request, _('В чекпоинте не указана модель-учитель'))
         return redirect('distillation_question_set_detail', pk=question_set.id)
 
     task = generate_questions_for_set_task.delay(question_set.id, teacher_model_id, quantization)
@@ -4012,18 +4013,18 @@ def distillation_resume_answer_generation(request, pk):
     job = get_object_or_404(DistillationAnswerJob, pk=pk, created_by=request.user.username)
 
     if not job.checkpoint_data:
-        messages.error(request, 'Нет чекпоинта для возобновления')
+        messages.error(request, _('Нет чекпоинта для возобновления'))
         return redirect('distillation_answer_job_detail', pk=job.id)
 
     if job.status == 'RUNNING':
-        messages.error(request, 'Задача уже выполняется')
+        messages.error(request, _('Задача уже выполняется'))
         return redirect('distillation_answer_job_detail', pk=job.id)
 
     # Берём параметры из чекпоинта (модель-учитель, квантизация)
     teacher_model_id = job.checkpoint_data.get('teacher_model_id')
     quantization = job.checkpoint_data.get('quantization', 'int4')
     if not teacher_model_id:
-        messages.error(request, 'В чекпоинте не указана модель-учитель')
+        messages.error(request, _('В чекпоинте не указана модель-учитель'))
         return redirect('distillation_answer_job_detail', pk=job.id)
 
     # Запускаем задачу (она сама продолжит с сохранённого чекпоинта)
@@ -4235,7 +4236,7 @@ class HuggingFaceDatasetDetailView(LoginRequiredMixin, DetailView):
 def hf_dataset_start_import(request, pk):
     dataset = get_object_or_404(HuggingFaceDataset, pk=pk, created_by=request.user.username)
     if dataset.status not in ['PENDING', 'FAILED']:
-        messages.warning(request, 'Датасет уже обрабатывается')
+        messages.warning(request, _('Датасет уже обрабатывается'))
         return redirect('hf_dataset_detail', pk=pk)
 
     from .tasks import import_huggingface_dataset_task
@@ -4251,4 +4252,4 @@ def hf_dataset_start_import(request, pk):
 def hf_dataset_delete(request, pk):
     dataset = get_object_or_404(HuggingFaceDataset, pk=pk, created_by=request.user.username)
     dataset.delete()
-    return JsonResponse({'success': True, 'message': 'Датасет удалён'})
+    return JsonResponse({'success': True, 'message': _('Датасет удалён')})

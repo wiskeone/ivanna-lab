@@ -8,6 +8,7 @@ import time
 from django.db.models import Q, Count, Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from django.http import JsonResponse, HttpResponse
 import json
 import csv
@@ -177,7 +178,7 @@ class ExperimentViewSet(viewsets.ModelViewSet):
     def create_checkpoint(self, request, pk=None):
         experiment = self.get_object()
         if not experiment.base_checkpoint:
-            return Response({'error': 'Нет базового чекпоинта'}, status=400)
+            return Response({'error': _('Нет базового чекпоинта')}, status=400)
         base = experiment.base_checkpoint
         new = ModelCheckpoint.objects.create(
             name=f"{experiment.name}_checkpoint_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -934,14 +935,14 @@ def force_local_load_model(request, model_id):
         if redis_model_manager.get_model_info(model_id_str):
             return Response({
                 'success': False,
-                'error': 'Модель уже загружена в память',
+                'error': _('Модель уже загружена в память'),
                 'model_id': model_id,
             }, status=400)
 
         if not model.local_path or not os.path.exists(model.local_path):
             return Response({
                 'success': False,
-                'error': 'Модель не скачана локально'
+                'error': _('Модель не скачана локально')
             }, status=400)
 
         quantization = request.data.get('quantization')
@@ -1571,7 +1572,7 @@ def compare_tasks_api(request, dataset_id):
 def evaluation_dataset_questions(request, dataset_id):
     dataset = get_object_or_404(EvaluationDataset, id=dataset_id)
     if not dataset.file_path or not os.path.exists(dataset.file_path):
-        return Response({'success': False, 'error': 'Файл датасета не найден'}, status=404)
+        return Response({'success': False, 'error': _('Файл датасета не найден')}, status=404)
 
     page = int(request.GET.get('page', 1))
     per_page = int(request.GET.get('per_page', 1000))
@@ -1617,9 +1618,9 @@ def evaluation_dataset_import(request, pk):
     dataset = get_object_or_404(EvaluationDataset, pk=pk)
     uploaded_file = request.FILES.get('file')
     if not uploaded_file:
-        return Response({'success': False, 'error': 'Файл не загружен'}, status=400)
+        return Response({'success': False, 'error': _('Файл не загружен')}, status=400)
     if not uploaded_file.name.endswith('.jsonl'):
-        return Response({'success': False, 'error': 'Поддерживаются только файлы .jsonl'}, status=400)
+        return Response({'success': False, 'error': _('Поддерживаются только файлы .jsonl')}, status=400)
 
     # Сохраняем файл
     file_path = dataset.file_path
@@ -1672,7 +1673,7 @@ class HuggingFaceAPI(APIView):
         elif action == 'validate_dataset':
             return self.validate_dataset(request)
         else:
-            return Response({'error': 'Неизвестное действие'}, status=400)
+            return Response({'error': _('Неизвестное действие')}, status=400)
 
     # =========================================================================
     # Методы для обычных (LLM) моделей
@@ -1789,7 +1790,7 @@ class HuggingFaceAPI(APIView):
     def validate_model(self, request):
         model_id = request.GET.get('model_id', '')
         if not model_id:
-            return Response({'error': 'Не указан ID модели'}, status=400)
+            return Response({'error': _('Не указан ID модели')}, status=400)
 
         try:
             from huggingface_hub import HfApi
@@ -2664,13 +2665,13 @@ class DistillationAnswerJobViewSet(viewsets.ModelViewSet):
         generation_config = request.data.get('generation_config', {})
 
         if not all([question_id, answer_job_id, teacher_model_id]):
-            return Response({'error': 'Необходимы question_id, answer_job_id, teacher_model_id'}, status=400)
+            return Response({'error': _('Необходимы question_id, answer_job_id, teacher_model_id')}, status=400)
 
         try:
             job = DistillationAnswerJob.objects.get(id=answer_job_id, created_by=request.user.username)
             question = DistillationQuestion.objects.get(id=question_id)
         except (DistillationAnswerJob.DoesNotExist, DistillationQuestion.DoesNotExist):
-            return Response({'error': 'Объект не найден'}, status=404)
+            return Response({'error': _('Объект не найден')}, status=404)
 
         from .tasks import regenerate_answer_task
         task = regenerate_answer_task.delay(question_id, answer_job_id, teacher_model_id, quantization, generation_config)
@@ -2731,16 +2732,16 @@ def resume(self, request, pk=None):
     """Возобновление задачи из чекпоинта."""
     qset = self.get_object()
     if not qset.checkpoint_data:
-        return Response({'error': 'Нет чекпоинта для возобновления'}, status=400)
+        return Response({'error': _('Нет чекпоинта для возобновления')}, status=400)
     if qset.status == 'RUNNING':
-        return Response({'error': 'Задача уже выполняется'}, status=400)
+        return Response({'error': _('Задача уже выполняется')}, status=400)
     
     # Получаем последние сохранённые параметры из checkpoint_data
     checkpoint = qset.checkpoint_data
     teacher_model_id = checkpoint.get('teacher_model_id')
     quantization = checkpoint.get('quantization', 'int4')
     if not teacher_model_id:
-        return Response({'error': 'Не указана модель-учитель в чекпоинте'}, status=400)
+        return Response({'error': _('Не указана модель-учитель в чекпоинте')}, status=400)
     
     # Запускаем задачу с параметрами из чекпоинта
     task = generate_questions_for_set_task.delay(qset.id, teacher_model_id, quantization)
@@ -2766,7 +2767,7 @@ def distillation_dataset_builder_data(request):
             created_by=request.user.username
         )
     except DistillationQuestionSet.DoesNotExist:
-        return Response({'error': 'Набор вопросов не найден'}, status=404)
+        return Response({'error': _('Набор вопросов не найден')}, status=404)
     
     # Вопросы через group__question_set
     questions = DistillationQuestion.objects.filter(
@@ -2865,7 +2866,7 @@ class DistillationDatasetViewSet(viewsets.ModelViewSet):
         items = request.data.get('items', [])
         
         if not name or not items:
-            return Response({'error': 'name и items обязательны'}, status=400)
+            return Response({'error': _('name и items обязательны')}, status=400)
         
         dataset = DistillationDataset.objects.create(
             name=name,
@@ -2923,7 +2924,7 @@ class ManualInstructionSetViewSet(viewsets.ModelViewSet):
         repo_id = request.data.get('repo_id')
         token = request.data.get('token')
         if not repo_id or not token:
-            return Response({'error': 'Не указаны repo_id и token'}, status=400)
+            return Response({'error': _('Не указаны repo_id и token')}, status=400)
 
         # Создаём временную папку и сохраняем JSONL
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2956,12 +2957,12 @@ class ManualInstructionSetViewSet(viewsets.ModelViewSet):
         
         # Проверка прав
         if instruction_set.created_by != request.user.username and not request.user.is_staff:
-            return Response({'error': 'Нет прав'}, status=403)
+            return Response({'error': _('Нет прав')}, status=403)
         
         instructions_data = request.data.get('instructions', [])
         
         if not isinstance(instructions_data, list):
-            return Response({'error': 'instructions должен быть списком'}, status=400)
+            return Response({'error': _('instructions должен быть списком')}, status=400)
         
         try:
             with transaction.atomic():  # ✅ Атомарная транзакция
@@ -3026,7 +3027,7 @@ class HuggingFaceDatasetViewSet(viewsets.ModelViewSet):
         """Запуск импорта датасета из HF."""
         dataset = self.get_object()
         if dataset.status not in ['PENDING', 'FAILED']:
-            return Response({'error': 'Датасет уже обрабатывается или завершён'}, status=400)
+            return Response({'error': _('Датасет уже обрабатывается или завершён')}, status=400)
 
         from ..tasks import import_huggingface_dataset_task
         task = import_huggingface_dataset_task.delay(dataset.id)

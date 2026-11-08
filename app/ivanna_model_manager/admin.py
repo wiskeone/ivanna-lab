@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 from django.contrib import messages
 from django.contrib.admin import ModelAdmin
 from django.utils.html import format_html
@@ -91,14 +92,14 @@ class ExperimentAdmin(admin.ModelAdmin):
     actions = ['activate_experiments', 'deactivate_experiments']
     
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('name', 'description', 'base_checkpoint', 'is_active')
         }),
-        ('Теги и классификация', {
+        (_('Теги и классификация'), {
             'fields': ('tags',),
             'classes': ('collapse',)
         }),
-        ('Системная информация', {
+        (_('Системная информация'), {
             'fields': ('created_at', 'updated_at', 'model_count'),
             'classes': ('collapse',)
         }),
@@ -173,7 +174,7 @@ class ModelCheckpointAdmin(admin.ModelAdmin):
     save_on_top = True
     
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': (
                 'name', 'display_name', 'model_type', 'experiment', 
                 'parent', 'is_active', 'is_public'
@@ -183,33 +184,33 @@ class ModelCheckpointAdmin(admin.ModelAdmin):
             'fields': ('huggingface_id', 'huggingface_revision', 'huggingface_url'),
             'classes': ('collapse',)
         }),
-        ('Конфигурация и пути', {
+        (_('Конфигурация и пути'), {
             'fields': ('loader_config', 'local_path', 'relative_path'),
             'classes': ('wide',)
         }),
-        ('Характеристики модели', {
+        (_('Характеристики модели'), {
             'fields': (
                 'parameter_count', 'size_gb_display', 'download_size_mb_display',
                 'quantization', 'context_length', 'vocab_size'
             )
         }),
-        ('Безопасность и лицензия', {
+        (_('Безопасность и лицензия'), {
             'fields': ('license_type', 'is_safe', 'safety_score'),
             'classes': ('collapse',)
         }),
-        ('Производительность и метрики', {
+        (_('Производительность и метрики'), {
             'fields': ('inference_speed', 'accuracy_score', 'evaluation_metrics'),
             'classes': ('collapse',)
         }),
-        ('Статус и отслеживание', {
+        (_('Статус и отслеживание'), {
             'fields': ('status', 'error_message', 'config_hash', 'weights_hash'),
             'classes': ('collapse',)
         }),
-        ('Теги', {
+        (_('Теги'), {
             'fields': ('tags',),
             'classes': ('collapse',)
         }),
-        ('Системная информация', {
+        (_('Системная информация'), {
             'fields': ('model_info_card', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
@@ -361,35 +362,35 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
     raw_id_fields = ('base_model', 'merge_model', 'output_model', 'parent_job')
     
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('name', 'description', 'parent_job')
         }),
-        ('Модели для слияния', {
+        (_('Модели для слияния'), {
             'fields': ('base_model', 'merge_model', 'output_model', 'is_compatible')
         }),
-        ('Настройки слияния', {
+        (_('Настройки слияния'), {
             'fields': ('merge_method', 'merge_ratio', 'merge_config')
         }),
-        ('Ресурсы и лимиты', {
+        (_('Ресурсы и лимиты'), {
             'fields': ('gpu_memory_limit_gb', 'timeout_minutes'),
             'classes': ('collapse',)
         }),
-        ('Прогресс и статус', {
+        (_('Прогресс и статус'), {
             'fields': ('status', 'progress_bar', 'current_step', 'error_message')
         }),
-        ('Результаты и метрики', {
+        (_('Результаты и метрики'), {
             'fields': ('performance_display', 'performance_metrics', 'error_details'),
             'classes': ('collapse',)
         }),
-        ('Временные метки', {
+        (_('Временные метки'), {
             'fields': ('created_at', 'started_at', 'completed_at', 'duration_seconds'),
             'classes': ('collapse',)
         }),
-        ('Логи выполнения', {
+        (_('Логи выполнения'), {
             'fields': ('logs_preview',),
             'classes': ('collapse',)
         }),
-        ('История статусов', {
+        (_('История статусов'), {
             'fields': ('status_history',),
             'classes': ('collapse',)
         }),
@@ -536,24 +537,24 @@ class InferenceSessionAdmin(admin.ModelAdmin):
     actions = ['close_sessions']
     
     fieldsets = (
-        ('Идентификация', {
+        (_('Идентификация'), {
             'fields': ('session_id', 'checkpoint', 'is_active')
         }),
-        ('Пользовательская информация', {
+        (_('Пользовательская информация'), {
             'fields': ('user_ip', 'user_agent', 'api_key'),
             'classes': ('collapse',)
         }),
-        ('Статистика использования', {
+        (_('Статистика использования'), {
             'fields': ('input_tokens', 'output_tokens', 'tokens_total', 'total_requests')
         }),
-        ('Производительность', {
+        (_('Производительность'), {
             'fields': ('performance_stats', 'total_duration', 'avg_response_time', 'tokens_per_second')
         }),
-        ('Ошибки', {
+        (_('Ошибки'), {
             'fields': ('error_count', 'last_error'),
             'classes': ('collapse',)
         }),
-        ('Временные метки', {
+        (_('Временные метки'), {
             'fields': ('started_at', 'last_activity', 'ended_at', 'duration_minutes'),
             'classes': ('collapse',)
         }),
@@ -619,22 +620,22 @@ class ModelEvaluationAdmin(admin.ModelAdmin):
     list_editable = ('is_valid',)  # Теперь is_valid есть в list_display
     
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('checkpoint', 'dataset_name', 'dataset_split', 'evaluation_type')
         }),
-        ('Результаты', {
+        (_('Результаты'), {
             'fields': ('metrics_display', 'raw_results'),
             'classes': ('wide',)
         }),
-        ('Системная информация', {
+        (_('Системная информация'), {
             'fields': ('evaluator_version', 'hardware_info'),
             'classes': ('collapse',)
         }),
-        ('Валидация', {
+        (_('Валидация'), {
             'fields': ('is_valid', 'validation_notes'),
             'classes': ('collapse',)
         }),
-        ('Метаданные', {
+        (_('Метаданные'), {
             'fields': ('evaluated_at',),
             'classes': ('collapse',)
         }),
@@ -750,22 +751,22 @@ class ChatSessionAdmin(admin.ModelAdmin):
     raw_id_fields = ('checkpoint',)
     
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('session_id', 'user_id', 'checkpoint', 'is_active')
         }),
-        ('Конфигурация', {
+        (_('Конфигурация'), {
             'fields': ('system_prompt', 'model_config', 'generation_config'),
             'classes': ('collapse',)
         }),
-        ('История диалога', {
+        (_('История диалога'), {
             'fields': ('conversation_preview',),
             'classes': ('collapse',)
         }),
-        ('Статистика', {
+        (_('Статистика'), {
             'fields': ('session_stats', 'total_messages', 'total_input_tokens', 'total_output_tokens'),
             'classes': ('collapse',)
         }),
-        ('Системная информация', {
+        (_('Системная информация'), {
             'fields': ('created_at', 'updated_at', 'last_activity'),
             'classes': ('collapse',)
         }),
@@ -924,18 +925,18 @@ class ChatMessageAdmin(admin.ModelAdmin):
     raw_id_fields = ('session', 'parent')
     
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('session', 'role', 'parent')
         }),
-        ('Содержимое', {
+        (_('Содержимое'), {
             'fields': ('content',),
             'classes': ('wide',)
         }),
-        ('Метаданные генерации', {
+        (_('Метаданные генерации'), {
             'fields': ('generation_metadata_display',),
             'classes': ('collapse',)
         }),
-        ('Системная информация', {
+        (_('Системная информация'), {
             'fields': ('created_at',),
             'classes': ('collapse',)
         }),
@@ -1038,26 +1039,26 @@ class ModelComparisonAdmin(admin.ModelAdmin):
     actions = ['mark_as_complete', 'mark_as_incomplete', 'calculate_metrics']
     
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('name', 'description', 'is_complete')
         }),
-        ('Промпты для сравнения', {
+        (_('Промпты для сравнения'), {
             'fields': ('prompts', 'prompts_count'),
             'classes': ('wide',)
         }),
-        ('Результаты', {
+        (_('Результаты'), {
             'fields': ('results_preview',),
             'classes': ('collapse',)
         }),
-        ('Метрики', {
+        (_('Метрики'), {
             'fields': ('metrics_display',),
             'classes': ('collapse',)
         }),
-        ('Статистика', {
+        (_('Статистика'), {
             'fields': ('comparison_stats',),
             'classes': ('collapse',)
         }),
-        ('Системная информация', {
+        (_('Системная информация'), {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
@@ -1184,33 +1185,33 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     raw_id_fields = ('base_model', 'output_model')
     
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('name', 'description', 'base_model')
         }),
-        ('Данные для обучения', {
+        (_('Данные для обучения'), {
             'fields': ('data_info', 'training_data_path', 'validation_data_path', 'data_config'),
             'classes': ('collapse',)
         }),
-        ('Гиперпараметры', {
+        (_('Гиперпараметры'), {
             'fields': ('hyperparameters_display',),
             'classes': ('collapse',)
         }),
-        ('Прогресс и статус', {
+        (_('Прогресс и статус'), {
             'fields': ('status', 'progress_bar', 'current_step', 'error_message')
         }),
-        ('Результаты', {
+        (_('Результаты'), {
             'fields': ('output_model', 'training_metrics_display'),
             'classes': ('collapse',)
         }),
-        ('Логи выполнения', {
+        (_('Логи выполнения'), {
             'fields': ('logs_preview',),
             'classes': ('collapse',)
         }),
-        ('Временные метки', {
+        (_('Временные метки'), {
             'fields': ('created_at', 'started_at', 'completed_at'),
             'classes': ('collapse',)
         }),
-        ('Системная информация', {
+        (_('Системная информация'), {
             'fields': ('status_history', 'job_stats'),
             'classes': ('collapse',)
         }),
@@ -1414,22 +1415,22 @@ class DocumentCollectionAdmin(ModelAdmin):
                       'total_chunks', 'total_size_mb', 'total_documents_display',
                       'total_chunks_display', 'total_size_display')  # Добавил методы в readonly_fields
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('name', 'description', 'owner_id', 'is_public', 'is_active')
         }),
-        ('Настройки обработки', {
+        (_('Настройки обработки'), {
             'fields': ('chunking_strategy', 'chunk_size', 'chunk_overlap', 
                       'auto_process')
         }),
-        ('Фильтры и метаданные', {
+        (_('Фильтры и метаданные'), {
             'fields': ('metadata_filters',)
         }),
-        ('Статистика', {
+        (_('Статистика'), {
             'fields': ('total_documents_display', 'total_chunks_display', 
                       'total_size_display'),
             'classes': ('collapse',)
         }),
-        ('Системная информация', {
+        (_('Системная информация'), {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
@@ -1474,27 +1475,27 @@ class DocumentAdmin(admin.ModelAdmin):
         'chunk_count_display', 'extension_display'
     ]
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('title', 'original_filename', 'collection', 'description', 'category')
         }),
-        ('Тип и содержимое', {
+        (_('Тип и содержимое'), {
             'fields': ('document_type', 'content_hash', 'raw_content_preview', 'processed_content')
         }),
-        ('Файл', {
+        (_('Файл'), {
             'fields': ('file_path', 'file_size_display', 'file_encoding')
         }),
-        ('Статус и обработка', {
+        (_('Статус и обработка'), {
             'fields': ('status', 'processing_progress', 'error_message', 'quality_score')
         }),
-        ('Метаданные', {
+        (_('Метаданные'), {
             'fields': ('metadata', 'tags'),
             'classes': ('collapse',)
         }),
-        ('Даты', {
+        (_('Даты'), {
             'fields': ('uploaded_at', 'processed_at', 'indexed_at'),
             'classes': ('collapse',)
         }),
-        ('Системные поля', {
+        (_('Системные поля'), {
             'fields': ('is_active', 'requires_reindexing', 'chunk_count_display'),
             'classes': ('collapse',)
         })
@@ -1571,29 +1572,29 @@ class DocumentChunkAdmin(ModelAdmin):
     readonly_fields = ('created_at', 'updated_at', 'preview_display', 
                       'document_title')
     fieldsets = (
-        ('Связи', {
+        (_('Связи'), {
             'fields': ('document', 'chunk_index')
         }),
-        ('Содержимое', {
+        (_('Содержимое'), {
             'fields': ('content', 'token_count', 'preview_display')
         }),
-        ('Позиция в документе', {
+        (_('Позиция в документе'), {
             'fields': ('start_char', 'end_char', 'start_line', 'end_line')
         }),
-        ('Эмбеддинги', {
+        (_('Эмбеддинги'), {
             'fields': ('has_embedding', 'embedding_model', 'embedding_version', 
                       'embedding_dim')
         }),
-        ('Качество', {
+        (_('Качество'), {
             'fields': ('relevance_score', 'is_key_chunk')
         }),
-        ('Использование', {
+        (_('Использование'), {
             'fields': ('usage_count', 'last_used')
         }),
-        ('Метаданные', {
+        (_('Метаданные'), {
             'fields': ('metadata', 'chunk_strategy')
         }),
-        ('Системная информация', {
+        (_('Системная информация'), {
             'fields': ('is_active', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
@@ -1638,32 +1639,32 @@ class RAGSessionAdmin(ModelAdmin):
     readonly_fields = ('created_at', 'started_at', 'completed_at', 
                       'feedback_at', 'total_tokens_display')
     fieldsets = (
-        ('Основная информация', {
+        (_('Основная информация'), {
             'fields': ('session_id', 'conversation_id', 'user_id', 'status')
         }),
-        ('Запрос и контекст', {
+        (_('Запрос и контекст'), {
             'fields': ('original_query', 'system_prompt', 'augmented_prompt')
         }),
-        ('Модели', {
+        (_('Модели'), {
             'fields': ('embedding_model', 'llm_model', 'search_query')
         }),
-        ('Ответ', {
+        (_('Ответ'), {
             'fields': ('generated_answer', 'generation_metadata', 
                       'confidence_score')
         }),
-        ('Производительность', {
+        (_('Производительность'), {
             'fields': ('total_time_display', 'search_time_ms', 
                       'generation_time_ms')
         }),
-        ('Ресурсы и стоимость', {
+        (_('Ресурсы и стоимость'), {
             'fields': ('input_tokens', 'output_tokens', 'total_tokens_display', 
                       'estimated_cost')
         }),
-        ('Обратная связь', {
+        (_('Обратная связь'), {
             'fields': ('has_feedback', 'feedback_score', 'feedback_comment', 
                       'feedback_at')
         }),
-        ('Временные метки', {
+        (_('Временные метки'), {
             'fields': ('created_at', 'started_at', 'completed_at'),
             'classes': ('collapse',)
         }),

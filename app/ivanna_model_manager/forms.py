@@ -47,7 +47,7 @@ class ModelUploadForm(forms.ModelForm):
     source_type = forms.ChoiceField(
         choices=SOURCE_CHOICES,
         initial='hf',
-        label='Источник модели',
+        label=_('Источник модели'),
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
     )
     
@@ -65,14 +65,14 @@ class ModelUploadForm(forms.ModelForm):
     huggingface_revision = forms.CharField(
         required=False,
         initial='main',
-        label='Ревизия/ветка',
+        label=_('Ревизия/ветка'),
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
     # Поля для локального пути
     local_path = forms.CharField(
         required=False,
-        label='Локальный путь',
+        label=_('Локальный путь'),
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': '/app/models/your_model'
@@ -81,7 +81,7 @@ class ModelUploadForm(forms.ModelForm):
     
     relative_path = forms.CharField(
         required=False,
-        label='Относительный путь',
+        label=_('Относительный путь'),
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'models/your_model'
@@ -101,7 +101,7 @@ class ModelUploadForm(forms.ModelForm):
         choices=QUANTIZATION_CHOICES,
         required=False,
         initial='none',
-        label='Тип квантизации',
+        label=_('Тип квантизации'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
@@ -116,21 +116,21 @@ class ModelUploadForm(forms.ModelForm):
     use_flash_attention_2 = forms.BooleanField(
         required=False,
         initial=True,
-        label='Использовать Flash Attention 2',
+        label=_('Использовать Flash Attention 2'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
     start_download = forms.BooleanField(
         required=False,
         initial=True,
-        label='Начать загрузку сразу',
+        label=_('Начать загрузку сразу'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
     mark_safe = forms.BooleanField(
         required=False,
         initial=False,
-        label='Пометить как безопасную',
+        label=_('Пометить как безопасную'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
@@ -138,7 +138,7 @@ class ModelUploadForm(forms.ModelForm):
     auto_fill_from_hf = forms.BooleanField(
         required=False,
         initial=True,
-        label='Автоматически заполнить параметры из Hugging Face',
+        label=_('Автоматически заполнить параметры из Hugging Face'),
         widget=forms.HiddenInput()
     )
     
@@ -295,7 +295,7 @@ class LocalModelForm(forms.ModelForm):
     """Форма для локального добавления модели (без Hugging Face)."""
     local_path = forms.CharField(
         required=True,
-        label='Локальный путь',
+        label=_('Локальный путь'),
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': '/app/models/your_model'
@@ -303,7 +303,7 @@ class LocalModelForm(forms.ModelForm):
     )
     relative_path = forms.CharField(
         required=False,
-        label='Относительный путь (опционально)',
+        label=_('Относительный путь (опционально)'),
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'models/your_model'
@@ -312,7 +312,7 @@ class LocalModelForm(forms.ModelForm):
     quantization = forms.ChoiceField(
         choices=[('none', 'Без квантизации')] + list(ModelCheckpoint.QUANTIZATION_CHOICES),
         required=False,
-        label='Тип квантизации',
+        label=_('Тип квантизации'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     trust_remote_code = forms.BooleanField(
@@ -324,13 +324,13 @@ class LocalModelForm(forms.ModelForm):
     use_flash_attention_2 = forms.BooleanField(
         required=False,
         initial=True,
-        label='Использовать Flash Attention 2',
+        label=_('Использовать Flash Attention 2'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     mark_safe = forms.BooleanField(
         required=False,
         initial=False,
-        label='Пометить как безопасную',
+        label=_('Пометить как безопасную'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
 
@@ -413,7 +413,7 @@ class ModelCheckpointForm(forms.ModelForm):
     auto_generate_name = forms.BooleanField(
         required=False,
         initial=True,
-        label='Автоматически генерировать имя из HF ID'
+        label=_('Автоматически генерировать имя из HF ID')
     )
     
     class Meta:
@@ -472,7 +472,7 @@ class ModelConfigForm(forms.Form):
             'rows': 20,
             'style': 'font-family: monospace; font-size: 12px;'
         }),
-        label='Конфигурация (JSON)'
+        label=_('Конфигурация (JSON)')
     )
     
     def clean_config_json(self):
@@ -512,13 +512,13 @@ class ModelMergeForm(forms.ModelForm):
         
         if base_model and merge_model:
             if base_model == merge_model:
-                raise ValidationError('Нельзя выбрать одну и ту же модель')
+                raise ValidationError(_('Нельзя выбрать одну и ту же модель'))
             
             if base_model.model_type != merge_model.model_type:
-                raise ValidationError('Модели должны быть одного типа')
+                raise ValidationError(_('Модели должны быть одного типа'))
             
             if base_model.parameter_count != merge_model.parameter_count:
-                raise ValidationError('Модели должны иметь одинаковое количество параметров')
+                raise ValidationError(_('Модели должны иметь одинаковое количество параметров'))
         
         return cleaned_data
 
@@ -531,7 +531,7 @@ class InferenceTestForm(forms.Form):
             'placeholder': 'Введите текст для тестирования модели...',
             'class': 'form-control'
         }),
-        label='Промпт',
+        label=_('Промпт'),
         required=True,
         max_length=10000
     )
@@ -542,7 +542,7 @@ class InferenceTestForm(forms.Form):
             'placeholder': 'Опционально: задайте системный промпт или роль...',
             'class': 'form-control'
         }),
-        label='Системный промпт',
+        label=_('Системный промпт'),
         required=False,
         max_length=5000
     )
@@ -553,7 +553,7 @@ class InferenceTestForm(forms.Form):
             'min': 1,
             'max': 32768
         }),
-        label='Максимальное количество токенов',
+        label=_('Максимальное количество токенов'),
         initial=512,
         required=True
     )
@@ -565,7 +565,7 @@ class InferenceTestForm(forms.Form):
             'min': 0.0,
             'max': 2.0
         }),
-        label='Температура',
+        label=_('Температура'),
         initial=0.7,
         required=True
     )
@@ -596,21 +596,21 @@ class InferenceTestForm(forms.Form):
     def clean_max_tokens(self):
         max_tokens = self.cleaned_data['max_tokens']
         if max_tokens < 1:
-            raise forms.ValidationError('Количество токенов должно быть положительным')
+            raise forms.ValidationError(_('Количество токенов должно быть положительным'))
         if max_tokens > 32768:
-            raise forms.ValidationError('Слишком большое количество токенов (макс. 32768)')
+            raise forms.ValidationError(_('Слишком большое количество токенов (макс. 32768)'))
         return max_tokens
     
     def clean_temperature(self):
         temperature = self.cleaned_data['temperature']
         if temperature < 0.0 or temperature > 2.0:
-            raise forms.ValidationError('Температура должна быть в диапазоне 0.0-2.0')
+            raise forms.ValidationError(_('Температура должна быть в диапазоне 0.0-2.0'))
         return temperature
     
     def clean_top_p(self):
         top_p = self.cleaned_data['top_p']
         if top_p < 0.0 or top_p > 1.0:
-            raise forms.ValidationError('Top P должен быть в диапазоне 0.0-1.0')
+            raise forms.ValidationError(_('Top P должен быть в диапазоне 0.0-1.0'))
         return top_p
 
 
@@ -639,14 +639,14 @@ class EvaluationForm(forms.ModelForm):
         try:
             return json.loads(metrics) if isinstance(metrics, str) else metrics
         except json.JSONDecodeError:
-            raise ValidationError('Неверный JSON формат в метриках')
+            raise ValidationError(_('Неверный JSON формат в метриках'))
     
     def clean_hardware_info(self):
         hardware_info = self.cleaned_data.get('hardware_info', '{}')
         try:
             return json.loads(hardware_info) if isinstance(hardware_info, str) else hardware_info
         except json.JSONDecodeError:
-            raise ValidationError('Неверный JSON формат в информации об оборудовании')
+            raise ValidationError(_('Неверный JSON формат в информации об оборудовании'))
 
 # ============================================================================
 # Формы для системы оценки
@@ -692,19 +692,19 @@ class QuestionUploadForm(forms.Form):
     name = forms.CharField(
         max_length=255,
         widget=forms.TextInput(attrs={'class': 'form-control'}),
-        label='Название датасета'
+        label=_('Название датасета')
     )
     
     description = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-        label='Описание (необязательно)'
+        label=_('Описание (необязательно)')
     )
     
     file = forms.FileField(
         widget=forms.FileInput(attrs={'class': 'form-control'}),
-        label='Файл с вопросами',
-        help_text='Поддерживаемые форматы: TXT, CSV, JSON'
+        label=_('Файл с вопросами'),
+        help_text=_('Поддерживаемые форматы: TXT, CSV, JSON')
     )
     
     file_format = forms.ChoiceField(
@@ -716,7 +716,7 @@ class QuestionUploadForm(forms.Form):
         ],
         initial='auto',
         widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Формат файла'
+        label=_('Формат файла')
     )
     
     tags = forms.CharField(
@@ -725,8 +725,8 @@ class QuestionUploadForm(forms.Form):
             'class': 'form-control',
             'placeholder': 'russian, general, code'
         }),
-        label='Теги (через запятую)',
-        help_text='Теги для классификации датасета'
+        label=_('Теги (через запятую)'),
+        help_text=_('Теги для классификации датасета')
     )
     
     def clean_tags(self):
@@ -740,12 +740,12 @@ class QuestionUploadForm(forms.Form):
         if file:
             # Проверяем размер файла (макс 10MB)
             if file.size > 10 * 1024 * 1024:
-                raise ValidationError('Размер файла не должен превышать 10MB')
+                raise ValidationError(_('Размер файла не должен превышать 10MB'))
             
             # Проверяем расширение
             valid_extensions = ['.txt', '.csv', '.json']
             if not any(file.name.lower().endswith(ext) for ext in valid_extensions):
-                raise ValidationError('Поддерживаются только файлы .txt, .csv, .json')
+                raise ValidationError(_('Поддерживаются только файлы .txt, .csv, .json'))
         
         return file
 
@@ -755,26 +755,26 @@ class CreateEvaluationTaskForm(forms.Form):
     name = forms.CharField(
         max_length=255,
         widget=forms.TextInput(attrs={'class': 'form-control'}),
-        label='Название задачи'
+        label=_('Название задачи')
     )
     
     description = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-        label='Описание задачи'
+        label=_('Описание задачи')
     )
     
     models = forms.ModelMultipleChoiceField(
         queryset=ModelCheckpoint.objects.none(),
         widget=forms.SelectMultiple(attrs={'class': 'form-control', 'size': 6}),
-        label='Модели для оценки',
-        help_text='Выберите загруженные модели'
+        label=_('Модели для оценки'),
+        help_text=_('Выберите загруженные модели')
     )
     
     dataset = forms.ModelChoiceField(
         queryset=EvaluationDataset.objects.all(),
         widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Датасет для оценки'
+        label=_('Датасет для оценки')
     )
     
     # Поле выбора квантизации
@@ -788,8 +788,8 @@ class CreateEvaluationTaskForm(forms.Form):
     quantization = forms.ChoiceField(
         choices=QUANTIZATION_CHOICES,
         required=False,
-        label='Квантизация для всех моделей',
-        help_text='Если выбрано, переопределит квантизацию моделей при загрузке в память',
+        label=_('Квантизация для всех моделей'),
+        help_text=_('Если выбрано, переопределит квантизацию моделей при загрузке в память'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
@@ -799,7 +799,7 @@ class CreateEvaluationTaskForm(forms.Form):
         min_value=1,
         max_value=8192,
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
-        label='Максимальное количество токенов'
+        label=_('Максимальное количество токенов')
     )
     
     temperature = forms.FloatField(
@@ -807,7 +807,7 @@ class CreateEvaluationTaskForm(forms.Form):
         min_value=0.0,
         max_value=2.0,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
-        label='Температура'
+        label=_('Температура')
     )
     
     top_p = forms.FloatField(
@@ -845,10 +845,10 @@ class CreateEvaluationTaskForm(forms.Form):
         cleaned_data = super().clean()
         models = cleaned_data.get('models')
         if not models:
-            raise ValidationError('Выберите хотя бы одну модель для оценки')
+            raise ValidationError(_('Выберите хотя бы одну модель для оценки'))
         dataset = cleaned_data.get('dataset')
         if dataset and not dataset.questions:
-            raise ValidationError('Выбранный датасет не содержит вопросов')
+            raise ValidationError(_('Выбранный датасет не содержит вопросов'))
         return cleaned_data
 
 
@@ -857,13 +857,13 @@ class RatingForm(forms.Form):
     rating = forms.ChoiceField(
         choices=[(i, str(i)) for i in range(1, 6)],
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
-        label='Оценка (1-5)'
+        label=_('Оценка (1-5)')
     )
     
     comment = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-        label='Комментарий'
+        label=_('Комментарий')
     )
 
 #############################################################################
@@ -930,10 +930,10 @@ class EmbeddingModelForm(forms.ModelForm):
         # Если это редактирование (есть instance и pk), исключаем текущий объект
         if self.instance and self.instance.pk:
             if EmbeddingModel.objects.filter(name=name).exclude(pk=self.instance.pk).exists():
-                raise ValidationError("Модель с таким именем уже существует.")
+                raise ValidationError(_('Модель с таким именем уже существует.'))
         else:
             if EmbeddingModel.objects.filter(name=name).exists():
-                raise ValidationError("Модель с таким именем уже существует.")
+                raise ValidationError(_('Модель с таким именем уже существует.'))
         return name
         
 # ----------------------------------------------------------------------
@@ -944,14 +944,14 @@ class MultipleDocumentUploadForm(forms.Form):
     
     collection = forms.ModelChoiceField(
         queryset=DocumentCollection.objects.none(),
-        label="Коллекция",
-        help_text="Выберите коллекцию для документов",
+        label=_('Коллекция'),
+        help_text=_('Выберите коллекцию для документов'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
     files = MultipleFileField(
-        label="Файлы документов",
-        help_text="Выберите один или несколько файлов",
+        label=_('Файлы документов'),
+        help_text=_('Выберите один или несколько файлов'),
         widget=MultipleFileInput(attrs={
             'class': 'form-control',
             'accept': '.pdf,.docx,.doc,.txt,.html,.htm,.md,.csv,.xlsx,.xls'
@@ -960,29 +960,29 @@ class MultipleDocumentUploadForm(forms.Form):
     
     title_prefix = forms.CharField(
         required=False,
-        label="Префикс названия",
-        help_text="Будет добавлен к названию каждого документа",
+        label=_('Префикс названия'),
+        help_text=_('Будет добавлен к названию каждого документа'),
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
     category = forms.CharField(
         required=False,
-        label="Категория",
+        label=_('Категория'),
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
     tags = forms.CharField(
         required=False,
-        label="Теги",
-        help_text="Через запятую: legal, finance, report",
+        label=_('Теги'),
+        help_text=_('Через запятую: legal, finance, report'),
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
     auto_process = forms.BooleanField(
         initial=True,
         required=False,
-        label="Автоматическая обработка",
-        help_text="Немедленно начать обработку после загрузки",
+        label=_('Автоматическая обработка'),
+        help_text=_('Немедленно начать обработку после загрузки'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
@@ -990,8 +990,8 @@ class MultipleDocumentUploadForm(forms.Form):
         min_value=100,
         max_value=10000,
         initial=1000,
-        label="Размер чанка (символов)",
-        help_text="Рекомендуется 500-2000 символов",
+        label=_('Размер чанка (символов)'),
+        help_text=_('Рекомендуется 500-2000 символов'),
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
     
@@ -999,8 +999,8 @@ class MultipleDocumentUploadForm(forms.Form):
         min_value=0,
         max_value=2000,                         # увеличено для больших чанков
         initial=200,
-        label="Перекрытие чанков",
-        help_text="Рекомендуется 10-20% от размера чанка",
+        label=_('Перекрытие чанков'),
+        help_text=_('Рекомендуется 10-20% от размера чанка'),
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
     
@@ -1018,7 +1018,7 @@ class MultipleDocumentUploadForm(forms.Form):
         files = self.cleaned_data.get('files', [])
         
         if not files:
-            raise ValidationError("Выберите хотя бы один файл")
+            raise ValidationError(_('Выберите хотя бы один файл'))
         
         if not isinstance(files, (list, tuple)):
             files = [files]
@@ -1070,14 +1070,14 @@ class DocumentUploadForm(forms.ModelForm):
     
     collection = forms.ModelChoiceField(
         queryset=DocumentCollection.objects.none(),
-        label="Коллекция",
-        help_text="Выберите коллекцию для документа",
+        label=_('Коллекция'),
+        help_text=_('Выберите коллекцию для документа'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
     file = forms.FileField(
-        label="Файл документа",
-        help_text="Выберите файл для загрузки",
+        label=_('Файл документа'),
+        help_text=_('Выберите файл для загрузки'),
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': '.pdf,.docx,.doc,.txt,.html,.htm,.md'
@@ -1086,14 +1086,14 @@ class DocumentUploadForm(forms.ModelForm):
     
     title = forms.CharField(
         required=False,
-        label="Название документа",
-        help_text="Если не указано, будет использовано имя файла",
+        label=_('Название документа'),
+        help_text=_('Если не указано, будет использовано имя файла'),
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
     description = forms.CharField(
         required=False,
-        label="Описание",
+        label=_('Описание'),
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 3,
@@ -1103,14 +1103,14 @@ class DocumentUploadForm(forms.ModelForm):
     
     category = forms.CharField(
         required=False,
-        label="Категория",
+        label=_('Категория'),
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
     tags = forms.CharField(
         required=False,
-        label="Теги",
-        help_text="Через запятую: legal, finance, report",
+        label=_('Теги'),
+        help_text=_('Через запятую: legal, finance, report'),
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
@@ -1118,8 +1118,8 @@ class DocumentUploadForm(forms.ModelForm):
         min_value=100,
         max_value=10000,
         initial=1000,
-        label="Размер чанка (символов)",
-        help_text="Рекомендуется 500-2000 символов",
+        label=_('Размер чанка (символов)'),
+        help_text=_('Рекомендуется 500-2000 символов'),
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
     
@@ -1127,16 +1127,16 @@ class DocumentUploadForm(forms.ModelForm):
         min_value=0,
         max_value=2000,
         initial=200,
-        label="Перекрытие чанков",
-        help_text="Рекомендуется 10-20% от размера чанка",
+        label=_('Перекрытие чанков'),
+        help_text=_('Рекомендуется 10-20% от размера чанка'),
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
     
     auto_process = forms.BooleanField(
         initial=True,
         required=False,
-        label="Автоматическая обработка",
-        help_text="Немедленно начать обработку после загрузки",
+        label=_('Автоматическая обработка'),
+        help_text=_('Немедленно начать обработку после загрузки'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
@@ -1162,7 +1162,7 @@ class DocumentUploadForm(forms.ModelForm):
         file = self.cleaned_data.get('file')
         
         if not file:
-            raise ValidationError("Выберите файл для загрузки")
+            raise ValidationError(_('Выберите файл для загрузки'))
         
         max_size = getattr(settings, 'MAX_UPLOAD_SIZE', 100 * 1024 * 1024)  # 100MB
         allowed_extensions = ['.pdf', '.txt', '.docx', '.doc', '.html', '.htm', '.md']
@@ -1213,8 +1213,8 @@ class DocumentEditForm(forms.ModelForm):
         min_value=100,
         max_value=10000,
         initial=1000,
-        label="Размер чанка (символов)",
-        help_text="Рекомендуется 500-2000 символов",
+        label=_('Размер чанка (символов)'),
+        help_text=_('Рекомендуется 500-2000 символов'),
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
         required=False
     )
@@ -1223,8 +1223,8 @@ class DocumentEditForm(forms.ModelForm):
         min_value=0,
         max_value=2000,
         initial=200,
-        label="Перекрытие чанков",
-        help_text="Рекомендуется 10-20% от размера чанка",
+        label=_('Перекрытие чанков'),
+        help_text=_('Рекомендуется 10-20% от размера чанка'),
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
         required=False
     )
@@ -1232,8 +1232,8 @@ class DocumentEditForm(forms.ModelForm):
     regenerate_chunks = forms.BooleanField(
         initial=False,
         required=False,
-        label="Пересоздать чанки",
-        help_text="Удалить существующие чанки и создать новые с новыми параметрами",
+        label=_('Пересоздать чанки'),
+        help_text=_('Удалить существующие чанки и создать новые с новыми параметрами'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
@@ -1282,12 +1282,12 @@ class DocumentEditForm(forms.ModelForm):
         
         if chunk_size and chunk_overlap:
             if chunk_overlap >= chunk_size:
-                raise ValidationError('Перекрытие чанков должно быть меньше их размера')
+                raise ValidationError(_('Перекрытие чанков должно быть меньше их размера'))
             if chunk_overlap > chunk_size * 0.5:
-                raise ValidationError('Перекрытие чанков не должно превышать 50% от их размера')
+                raise ValidationError(_('Перекрытие чанков не должно превышать 50% от их размера'))
         
         if regenerate_chunks and (not chunk_size or not chunk_overlap):
-            raise ValidationError('Для пересоздания чанков укажите размер чанка и перекрытие')
+            raise ValidationError(_('Для пересоздания чанков укажите размер чанка и перекрытие'))
         
         return cleaned_data
     
@@ -1325,7 +1325,7 @@ class DocumentChunkEditForm(forms.ModelForm):
     def clean_content(self):
         content = self.cleaned_data.get('content', '').strip()
         if len(content) < 10:
-            raise ValidationError("Содержимое чанка слишком короткое")
+            raise ValidationError(_('Содержимое чанка слишком короткое'))
         return content
     
     def clean_metadata(self):
@@ -1334,7 +1334,7 @@ class DocumentChunkEditForm(forms.ModelForm):
             try:
                 json.loads(metadata)
             except json.JSONDecodeError:
-                raise ValidationError("Неверный формат JSON")
+                raise ValidationError(_('Неверный формат JSON'))
         return metadata
 
 
@@ -1349,7 +1349,7 @@ class DocumentBulkActionForm(forms.Form):
     
     action = forms.ChoiceField(
         choices=ACTION_CHOICES,
-        label="Действие",
+        label=_('Действие'),
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
     )
     document_ids = forms.CharField(
@@ -1358,8 +1358,8 @@ class DocumentBulkActionForm(forms.Form):
     )
     confirm = forms.BooleanField(
         required=False,
-        label="Подтверждаю действие",
-        help_text="Это действие нельзя отменить",
+        label=_('Подтверждаю действие'),
+        help_text=_('Это действие нельзя отменить'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
@@ -1370,7 +1370,7 @@ class DocumentBulkActionForm(forms.Form):
                 ids = [int(i) for i in ids_str.split(',') if i.strip()]
                 return ids
             except ValueError:
-                raise ValidationError("Некорректный формат ID документов")
+                raise ValidationError(_('Некорректный формат ID документов'))
         return []
     
     def clean(self):
@@ -1379,7 +1379,7 @@ class DocumentBulkActionForm(forms.Form):
         confirm = cleaned_data.get('confirm')
         
         if action in ['delete', 'archive'] and not confirm:
-            raise ValidationError("Подтвердите действие для удаления или архивации")
+            raise ValidationError(_('Подтвердите действие для удаления или архивации'))
         
         return cleaned_data
 
@@ -1426,9 +1426,9 @@ class DocumentCollectionForm(forms.ModelForm):
         
         if chunk_size and chunk_overlap:
             if chunk_overlap >= chunk_size:
-                raise ValidationError('Перекрытие чанков должно быть меньше их размера')
+                raise ValidationError(_('Перекрытие чанков должно быть меньше их размера'))
             if chunk_overlap > chunk_size * 0.5:
-                raise ValidationError('Перекрытие чанков не должно превышать 50% от их размера')
+                raise ValidationError(_('Перекрытие чанков не должно превышать 50% от их размера'))
         
         return cleaned_data
 
@@ -1439,19 +1439,19 @@ class DocumentCollectionForm(forms.ModelForm):
 class RAGQueryForm(forms.Form):
     """Форма для RAG запросов"""
     query = forms.CharField(
-        label="Вопрос",
+        label=_('Вопрос'),
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Введите ваш вопрос...'})
     )
     
     collection = forms.ModelChoiceField(
         queryset=DocumentCollection.objects.none(),
-        label="Коллекция",
+        label=_('Коллекция'),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
     system_prompt = forms.CharField(
-        label="Системный промпт",
+        label=_('Системный промпт'),
         required=False,
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Необязательно: кастомизация поведения ассистента'})
     )
@@ -1460,7 +1460,7 @@ class RAGQueryForm(forms.Form):
         min_value=1,
         max_value=20,
         initial=5,
-        label="Количество источников",
+        label=_('Количество источников'),
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
     
@@ -1468,8 +1468,8 @@ class RAGQueryForm(forms.Form):
         min_value=0.1,
         max_value=2.0,
         initial=0.7,
-        label="Температура генерации",
-        help_text="Случайность ответа (ниже = более детерминированный)",
+        label=_('Температура генерации'),
+        help_text=_('Случайность ответа (ниже = более детерминированный)'),
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': 0.1})
     )
     
@@ -1488,13 +1488,13 @@ class DocumentSearchForm(forms.Form):
     """Форма поиска документов"""
     query = forms.CharField(
         required=False,
-        label="Поиск",
+        label=_('Поиск'),
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Поиск по названию или содержимому...'})
     )
     
     collection = forms.ModelChoiceField(
         queryset=DocumentCollection.objects.none(),
-        label="Коллекция",
+        label=_('Коллекция'),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -1508,19 +1508,19 @@ class DocumentSearchForm(forms.Form):
             ('ERROR', 'Ошибка')
         ],
         required=False,
-        label="Статус",
+        label=_('Статус'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
     date_from = forms.DateField(
         required=False,
-        label="Дата от",
+        label=_('Дата от'),
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
     
     date_to = forms.DateField(
         required=False,
-        label="Дата до",
+        label=_('Дата до'),
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
     
@@ -1591,7 +1591,7 @@ class FineTuningTemplateSelectForm(forms.Form):
     
     template = forms.ModelChoiceField(
         queryset=FineTuningTemplate.objects.filter(is_public=True),
-        empty_label="-- Выберите шаблон --",
+        empty_label=_('-- Выберите шаблон --'),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -1604,8 +1604,8 @@ class ModelConversionForm(forms.ModelForm):
     quantization = forms.ChoiceField(
         choices=ModelConversionJob.QUANTIZATION_CHOICES,
         initial='q4_0',
-        label="Квантизация",
-        help_text="Тип квантизации для GGUF"
+        label=_('Квантизация'),
+        help_text=_('Тип квантизации для GGUF')
     )
 
     class Meta:
@@ -1637,9 +1637,9 @@ class ModelConversionForm(forms.ModelForm):
                 try:
                     config = json.loads(config)
                 except json.JSONDecodeError:
-                    raise forms.ValidationError("Неверный JSON формат")
+                    raise forms.ValidationError(_('Неверный JSON формат'))
             if not isinstance(config, dict):
-                raise forms.ValidationError("Конфигурация должна быть словарём")
+                raise forms.ValidationError(_('Конфигурация должна быть словарём'))
         return config or {}
 
 
@@ -1651,7 +1651,7 @@ class DistillationAnswerJobForm(forms.ModelForm):
     question_ids_str = forms.CharField(
         required=False,
         widget=forms.HiddenInput(),
-        label="ID вопросов (через запятую)"
+        label=_('ID вопросов (через запятую)')
     )
 
     class Meta:

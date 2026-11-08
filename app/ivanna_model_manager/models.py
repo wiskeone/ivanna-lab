@@ -2,6 +2,7 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from django.db.models import Count, Avg, Max, Min, Q, Sum
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
@@ -30,7 +31,7 @@ class UserProfile(models.Model):
     huggingface_token = models.CharField(
         max_length=255,
         blank=True,
-        help_text="Токен Hugging Face для доступа к gated моделям"
+        help_text=_("Токен Hugging Face для доступа к gated моделям")
     )
     # Можно добавить другие поля: аватар, настройки и т.д.
 
@@ -45,7 +46,7 @@ class Experiment(models.Model):
     name = models.CharField(
         max_length=255,
         unique=True,
-        help_text="Уникальное имя эксперимента"
+        help_text=_("Уникальное имя эксперимента")
     )
     description = models.TextField(blank=True)
     base_checkpoint = models.ForeignKey(
@@ -54,12 +55,12 @@ class Experiment(models.Model):
         null=True,
         blank=True,
         related_name='base_checkpoint_experiments',
-        help_text="Базовая модель эксперимента"
+        help_text=_("Базовая модель эксперимента")
     )
     is_active = models.BooleanField(default=True)
     tags = models.JSONField(
         default=list,
-        help_text="Теги для фильтрации (например, ['ru', 'code', 'medical'])"
+        help_text=_("Теги для фильтрации (например, ['ru', 'code', 'medical'])")
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -120,12 +121,12 @@ class ModelCheckpoint(models.Model):
     name = models.CharField(
         max_length=255,
         unique=True,
-        help_text="Уникальное имя модели в системе"
+        help_text=_("Уникальное имя модели в системе")
     )
     display_name = models.CharField(
         max_length=255,
         blank=True,
-        help_text="Человекочитаемое имя для интерфейса"
+        help_text=_("Человекочитаемое имя для интерфейса")
     )
     model_type = models.CharField(
         max_length=20, 
@@ -137,32 +138,32 @@ class ModelCheckpoint(models.Model):
     huggingface_id = models.CharField(
         max_length=300,
         blank=True,
-        help_text="ID на Hugging Face Hub (например, 'Qwen/Qwen2.5-7B-Instruct')"
+        help_text=_("ID на Hugging Face Hub (например, 'Qwen/Qwen2.5-7B-Instruct')")
     )
     huggingface_revision = models.CharField(
         max_length=100,
         blank=True,
         default='main',
-        help_text="Ревизия/ветка на Hugging Face"
+        help_text=_("Ревизия/ветка на Hugging Face")
     )
     
     # Конфигурация загрузки с валидацией
     loader_config = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Конфигурация для загрузки модели в формате JSON"
+        help_text=_("Конфигурация для загрузки модели в формате JSON")
     )
     
     # Пути и статус
     local_path = models.CharField(
         max_length=500,
         blank=True,
-        help_text="Локальный путь к модели в контейнере"
+        help_text=_("Локальный путь к модели в контейнере")
     )
     relative_path = models.CharField(
         max_length=500,
         blank=True,
-        help_text="Относительный путь для переносимости"
+        help_text=_("Относительный путь для переносимости")
     )
     status = models.CharField(
         max_length=20,
@@ -174,7 +175,7 @@ class ModelCheckpoint(models.Model):
     # Метаданные модели
     parameter_count = models.BigIntegerField(
         default=0,
-        help_text="Количество параметров (например, 7000000000 для 7B)"
+        help_text=_("Количество параметров (например, 7000000000 для 7B)")
     )
     quantization = models.CharField(
         max_length=50,
@@ -188,35 +189,35 @@ class ModelCheckpoint(models.Model):
     license_type = models.CharField(
         max_length=100,
         blank=True,
-        help_text="Тип лицензии (Apache 2.0, MIT, Commercial и т.д.)"
+        help_text=_("Тип лицензии (Apache 2.0, MIT, Commercial и т.д.)")
     )
     is_safe = models.BooleanField(
         default=False,
-        help_text="Прошла ли модель проверку безопасности"
+        help_text=_("Прошла ли модель проверку безопасности")
     )
     safety_score = models.FloatField(
         null=True,
         blank=True,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Оценка безопасности (чем выше, тем безопаснее)"
+        help_text=_("Оценка безопасности (чем выше, тем безопаснее)")
     )
     
     # Производительность и метрики
     inference_speed = models.FloatField(
         null=True,
         blank=True,
-        help_text="Скорость инференса (токенов/сек) на тестовом оборудовании"
+        help_text=_("Скорость инференса (токенов/сек) на тестовом оборудовании")
     )
     accuracy_score = models.FloatField(
         null=True,
         blank=True,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Оценка точности на валидации"
+        help_text=_("Оценка точности на валидации")
     )
     evaluation_metrics = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Расширенные метрики оценки {'mmlu': 0.75, 'hellaswag': 0.82}"
+        help_text=_("Расширенные метрики оценки {'mmlu': 0.75, 'hellaswag': 0.82}")
     )
     
     # Хеши для проверки целостности
@@ -230,7 +231,7 @@ class ModelCheckpoint(models.Model):
         null=True,
         blank=True,
         related_name='checkpoints',
-        help_text="Эксперимент, к которому относится модель"
+        help_text=_("Эксперимент, к которому относится модель")
     )
     parent = models.ForeignKey(
         'self',
@@ -238,7 +239,7 @@ class ModelCheckpoint(models.Model):
         null=True,
         blank=True,
         related_name='children',
-        help_text="Родительская модель (для отслеживания происхождения)"
+        help_text=_("Родительская модель (для отслеживания происхождения)")
     )
     
     # Системные поля
@@ -247,14 +248,14 @@ class ModelCheckpoint(models.Model):
     is_active = models.BooleanField(default=True)
     is_public = models.BooleanField(
         default=False,
-        help_text="Доступна ли модель другим пользователям"
+        help_text=_("Доступна ли модель другим пользователям")
     )
     
     # Теги для фильтрации
     tags = models.JSONField(
         default=list,
         blank=True,
-        help_text="Теги модели ['ru', 'code', 'instruct', '7b']"
+        help_text=_("Теги модели ['ru', 'code', 'instruct', '7b']")
     )
     
     class Meta:
@@ -821,7 +822,7 @@ class ModelVersion(models.Model):
     )
     version = models.CharField(
         max_length=50,
-        help_text="Идентификатор версии (v1.0, experimental-merge)"
+        help_text=_("Идентификатор версии (v1.0, experimental-merge)")
     )
     parent_version = models.ForeignKey(
         'self',
@@ -833,18 +834,18 @@ class ModelVersion(models.Model):
     
     # Снимок состояния
     config_snapshot = models.JSONField(
-        help_text="Полная конфигурация на момент создания версии"
+        help_text=_("Полная конфигурация на момент создания версии")
     )
     file_hash = models.CharField(
         max_length=64,
-        help_text="Хеш файлов модели для проверки целостности"
+        help_text=_("Хеш файлов модели для проверки целостности")
     )
     
     # Метаданные
     notes = models.TextField(blank=True)
     changes = models.JSONField(
         default=dict,
-        help_text="Изменения относительно предыдущей версии"
+        help_text=_("Изменения относительно предыдущей версии")
     )
     is_stable = models.BooleanField(default=False)
     
@@ -852,7 +853,7 @@ class ModelVersion(models.Model):
     created_by = models.CharField(
         max_length=100,
         blank=True,
-        help_text="Кто создал версию (пользователь или система)"
+        help_text=_("Кто создал версию (пользователь или система)")
     )
     
     class Meta:
@@ -937,23 +938,23 @@ class ModelMergeJob(models.Model):
     merge_ratio = models.FloatField(
         default=0.5,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Доля merge_model в результате (0 = только base, 1 = только merge)"
+        help_text=_("Доля merge_model в результате (0 = только base, 1 = только merge)")
     )
     
     # Расширенная конфигурация
     merge_config = models.JSONField(
         default=dict,
-        help_text="Дополнительные параметры слияния"
+        help_text=_("Дополнительные параметры слияния")
     )
     
     # Ресурсы и лимиты
     gpu_memory_limit_gb = models.FloatField(
         default=8.0,
-        help_text="Лимит памяти GPU для слияния (GB)"
+        help_text=_("Лимит памяти GPU для слияния (GB)")
     )
     timeout_minutes = models.IntegerField(
         default=120,
-        help_text="Таймаут выполнения в минутах"
+        help_text=_("Таймаут выполнения в минутах")
     )
     
     # Прогресс и статус
@@ -966,10 +967,10 @@ class ModelMergeJob(models.Model):
     
     # Логи и результаты
     logs = models.TextField(blank=True)
-    error_details = models.JSONField(default=dict, help_text="Детали ошибки")
+    error_details = models.JSONField(default=dict, help_text=_("Детали ошибки"))
     performance_metrics = models.JSONField(
         default=dict,
-        help_text="Метрики производительности слияния"
+        help_text=_("Метрики производительности слияния")
     )
     
     # Временные метки
@@ -1092,7 +1093,7 @@ class InferenceSession(models.Model):
     session_id = models.CharField(
         max_length=100,
         unique=True,
-        help_text="Уникальный ID сессии"
+        help_text=_("Уникальный ID сессии")
     )
     
     # Пользовательская информация
@@ -1106,8 +1107,8 @@ class InferenceSession(models.Model):
     total_requests = models.IntegerField(default=0)
     
     # Производительность
-    total_duration = models.FloatField(default=0.0, help_text="Общая длительность в секундах")
-    avg_response_time = models.FloatField(default=0.0, help_text="Среднее время ответа в секундах")
+    total_duration = models.FloatField(default=0.0, help_text=_("Общая длительность в секундах"))
+    avg_response_time = models.FloatField(default=0.0, help_text=_("Среднее время ответа в секундах"))
     
     # Ошибки
     error_count = models.IntegerField(default=0)
@@ -1191,11 +1192,11 @@ class ModelEvaluation(models.Model):
     # Результаты
     metrics = models.JSONField(
         default=dict,
-        help_text="Метрики оценки {'accuracy': 0.85, 'f1': 0.82}"
+        help_text=_("Метрики оценки {'accuracy': 0.85, 'f1': 0.82}")
     )
     raw_results = models.JSONField(
         default=dict,
-        help_text="Сырые результаты для анализа"
+        help_text=_("Сырые результаты для анализа")
     )
     
     # Системная информация
@@ -1203,7 +1204,7 @@ class ModelEvaluation(models.Model):
     evaluator_version = models.CharField(max_length=50, blank=True)
     hardware_info = models.JSONField(
         default=dict,
-        help_text="Информация о железе {'gpu': 'RTX 4090', 'memory_gb': 24}"
+        help_text=_("Информация о железе {'gpu': 'RTX 4090', 'memory_gb': 24}")
     )
     
     # Валидация
@@ -1249,23 +1250,23 @@ class ChatSession(models.Model):
     )
     
     # Поле для переименования сессии
-    notes = models.CharField(max_length=200, blank=True, help_text="Пользовательское название сессии")
+    notes = models.CharField(max_length=200, blank=True, help_text=_("Пользовательское название сессии"))
     
     # Контекст чата
-    system_prompt = models.TextField(blank=True, help_text="Системный промпт для сессии")
+    system_prompt = models.TextField(blank=True, help_text=_("Системный промпт для сессии"))
     conversation_history = models.JSONField(
         default=list,
-        help_text="История диалога в формате [{'role': 'user', 'content': '...'}, ...]"
+        help_text=_("История диалога в формате [{'role': 'user', 'content': '...'}, ...]")
     )
     
     # Техническая информация
     model_config = models.JSONField(
         default=dict,
-        help_text="Конфигурация модели при создании сессии"
+        help_text=_("Конфигурация модели при создании сессии")
     )
     generation_config = models.JSONField(
         default=dict,
-        help_text="Параметры генерации"
+        help_text=_("Параметры генерации")
     )
     
     # Статистика
@@ -1352,7 +1353,7 @@ class ChatMessage(models.Model):
     # Техническая информация о генерации
     generation_metadata = models.JSONField(
         default=dict,
-        help_text="Метаданные генерации: токены, время, температура и т.д."
+        help_text=_("Метаданные генерации: токены, время, температура и т.д.")
     )
     
     # Родительское сообщение (для древовидных структур)
@@ -1385,19 +1386,19 @@ class ModelComparison(models.Model):
     # Набор промптов для сравнения
     prompts = models.JSONField(
         default=list,
-        help_text="Список промптов для сравнения [{'id': 1, 'text': '...'}]"
+        help_text=_("Список промптов для сравнения [{'id': 1, 'text': '...'}]")
     )
     
     # Результаты сравнения
     results = models.JSONField(
         default=dict,
-        help_text="Результаты по моделям {model_id: {prompt_id: {...}}}"
+        help_text=_("Результаты по моделям {model_id: {prompt_id: {...}}}")
     )
     
     # Метрики сравнения
     metrics = models.JSONField(
         default=dict,
-        help_text="Вычисленные метрики сравнения"
+        help_text=_("Вычисленные метрики сравнения")
     )
     
     # Статус
@@ -1453,7 +1454,7 @@ class ModelDownloadJob(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     local_path = models.TextField(blank=True, null=True)
     error_message = models.TextField(blank=True, null=True)
-    task_id = models.CharField(max_length=100, blank=True, null=True, help_text="ID задачи Celery")
+    task_id = models.CharField(max_length=100, blank=True, null=True, help_text=_("ID задачи Celery"))
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1500,16 +1501,16 @@ class DeletedModelLog(models.Model):
 
 class EvaluationDataset(models.Model):
     """Датасет вопросов для оценки моделей"""
-    name = models.CharField(max_length=255, unique=True, help_text="Уникальное имя датасета")
-    description = models.TextField(blank=True, help_text="Описание датасета")
-    file_path = models.CharField(max_length=500, blank=True, help_text="Путь к файлу с вопросами")
+    name = models.CharField(max_length=255, unique=True, help_text=_("Уникальное имя датасета"))
+    description = models.TextField(blank=True, help_text=_("Описание датасета"))
+    file_path = models.CharField(max_length=500, blank=True, help_text=_("Путь к файлу с вопросами"))
     questions = models.JSONField(
         default=list,
-        help_text="Список вопросов в формате [{'id': 1, 'text': '...'}]"
+        help_text=_("Список вопросов в формате [{'id': 1, 'text': '...'}]")
     )
     tags = models.JSONField(
         default=list,
-        help_text="Теги датасета ['russian', 'general', 'code', 'science']"
+        help_text=_("Теги датасета ['russian', 'general', 'code', 'science']")
     )
     source_type = models.CharField(
         max_length=20,
@@ -1520,10 +1521,10 @@ class EvaluationDataset(models.Model):
         ],
         default='MANUAL'
     )
-    total_questions = models.IntegerField(default=0, help_text="Общее количество вопросов")
+    total_questions = models.IntegerField(default=0, help_text=_("Общее количество вопросов"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.CharField(max_length=100, blank=True, help_text="Кто создал датасет")
+    created_by = models.CharField(max_length=100, blank=True, help_text=_("Кто создал датасет"))
     
     class Meta:
         ordering = ['-created_at']
@@ -1605,14 +1606,14 @@ class ModelEvaluationTask(models.Model):
         ('CANCELLED', 'Отменено'),
     ]
     
-    name = models.CharField(max_length=255, help_text="Название задачи оценки")
-    description = models.TextField(blank=True, help_text="Описание задачи")
+    name = models.CharField(max_length=255, help_text=_("Название задачи оценки"))
+    description = models.TextField(blank=True, help_text=_("Описание задачи"))
     
     # Модели для оценки
     evaluation_models = models.ManyToManyField(  # Изменили имя с models на evaluation_models
         ModelCheckpoint,
         related_name='evaluation_tasks',
-        help_text="Модели для оценки"
+        help_text=_("Модели для оценки")
     )
     
     # Датасет для оценки
@@ -1625,30 +1626,30 @@ class ModelEvaluationTask(models.Model):
     # Конфигурация генерации
     generation_config = models.JSONField(
         default=dict,
-        help_text="Параметры генерации для всех моделей"
+        help_text=_("Параметры генерации для всех моделей")
     )
     
     # Статус и прогресс
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
-    progress = models.FloatField(default=0.0, help_text="Прогресс выполнения (0-100)")
-    current_step = models.CharField(max_length=100, blank=True, help_text="Текущий шаг")
+    progress = models.FloatField(default=0.0, help_text=_("Прогресс выполнения (0-100)"))
+    current_step = models.CharField(max_length=100, blank=True, help_text=_("Текущий шаг"))
     
     # Результаты
     results = models.JSONField(
         default=dict,
-        help_text="Результаты оценки {'model_id': {'question_id': {'response': '...', 'metrics': {...}}}}"
+        help_text=_("Результаты оценки {'model_id': {'question_id': {'response': '...', 'metrics': {...}}}}")
     )
     
     # Оценки
     ratings = models.JSONField(
         default=dict,
-        help_text="Ручные оценки {'model_id': {'question_id': rating}}"
+        help_text=_("Ручные оценки {'model_id': {'question_id': rating}}")
     )
     
     # Сводные метрики
     summary_metrics = models.JSONField(
         default=dict,
-        help_text="Сводные метрики по моделям {'model_id': {'total_score': X, 'avg_score': Y}}"
+        help_text=_("Сводные метрики по моделям {'model_id': {'total_score': X, 'avg_score': Y}}")
     )
 
     # задачи Celery для отслеживания
@@ -1656,13 +1657,13 @@ class ModelEvaluationTask(models.Model):
         max_length=255,
         blank=True,
         null=True,
-        help_text="ID задачи Celery для отслеживания"
+        help_text=_("ID задачи Celery для отслеживания")
     )
     # чекпоинты
     metadata = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Метаданные задачи, включая чекпоинты"
+        help_text=_("Метаданные задачи, включая чекпоинты")
     )
     
     # Логи и ошибки
@@ -1795,40 +1796,40 @@ class EvaluationResult(models.Model):
     task = models.ForeignKey(ModelEvaluationTask, on_delete=models.CASCADE, related_name='detailed_results')
     model = models.ForeignKey(ModelCheckpoint, on_delete=models.CASCADE, related_name='evaluation_results')
     
-    question_id = models.IntegerField(help_text="ID вопроса из датасета")
-    question_text = models.TextField(help_text="Текст вопроса")
+    question_id = models.IntegerField(help_text=_("ID вопроса из датасета"))
+    question_text = models.TextField(help_text=_("Текст вопроса"))
     
     # Ответы и метрики
-    model_response = models.TextField(help_text="Ответ модели")
-    response_time = models.FloatField(default=0.0, help_text="Время генерации в секундах")
-    tokens_used = models.IntegerField(default=0, help_text="Количество использованных токенов")
+    model_response = models.TextField(help_text=_("Ответ модели"))
+    response_time = models.FloatField(default=0.0, help_text=_("Время генерации в секундах"))
+    tokens_used = models.IntegerField(default=0, help_text=_("Количество использованных токенов"))
     
     # Автоматические метрики
     automatic_metrics = models.JSONField(
         default=dict,
-        help_text="Автоматически вычисленные метрики"
+        help_text=_("Автоматически вычисленные метрики")
     )
     
     # Ручные оценки
     manual_rating = models.IntegerField(
         null=True, blank=True,
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        help_text="Ручная оценка (1-5)"
+        help_text=_("Ручная оценка (1-5)")
     )
-    rating_comment = models.TextField(blank=True, help_text="Комментарий к оценке")
-    rated_by = models.CharField(max_length=100, blank=True, help_text="Кто оценил")
+    rating_comment = models.TextField(blank=True, help_text=_("Комментарий к оценке"))
+    rated_by = models.CharField(max_length=100, blank=True, help_text=_("Кто оценил"))
     rated_at = models.DateTimeField(null=True, blank=True)
     
     # ДОБАВЛЯЕМ ПОЛЕ METADATA
     metadata = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Дополнительные метаданные (RAG флаги, источники и т.д.)"
+        help_text=_("Дополнительные метаданные (RAG флаги, источники и т.д.)")
     )
     
     # Статистика
-    retry_count = models.IntegerField(default=0, help_text="Количество попыток генерации")
-    error_log = models.TextField(blank=True, help_text="Лог ошибок при генерации")
+    retry_count = models.IntegerField(default=0, help_text=_("Количество попыток генерации"))
+    error_log = models.TextField(blank=True, help_text=_("Лог ошибок при генерации"))
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1932,12 +1933,12 @@ class DocumentCollection(models.Model):
     Коллекция документов для RAG.
     Группирует связанные документы (например, по проекту, пользователю, теме).
     """
-    name = models.CharField(max_length=255, help_text="Название коллекции")
-    description = models.TextField(blank=True, help_text="Описание коллекции")
+    name = models.CharField(max_length=255, help_text=_("Название коллекции"))
+    description = models.TextField(blank=True, help_text=_("Описание коллекции"))
     
     # Владелец и доступ
-    owner_id = models.CharField(max_length=100, blank=True, help_text="ID владельца (пользователя/организации)")
-    is_public = models.BooleanField(default=False, help_text="Доступна ли коллекция другим пользователям")
+    owner_id = models.CharField(max_length=100, blank=True, help_text=_("ID владельца (пользователя/организации)"))
+    is_public = models.BooleanField(default=False, help_text=_("Доступна ли коллекция другим пользователям"))
     
     # Модель эмбеддингов
     embedding_model = models.ForeignKey(
@@ -1946,46 +1947,46 @@ class DocumentCollection(models.Model):
         null=True,
         blank=True,
         related_name='collections',
-        help_text="Модель эмбеддингов для этой коллекции"
+        help_text=_("Модель эмбеддингов для этой коллекции")
     )
     
     # Статистика векторного индекса
-    vector_index_created = models.BooleanField(default=False, help_text="Создан ли векторный индекс")
-    total_vectors = models.IntegerField(default=0, help_text="Количество векторов в индексе")
-    vector_dimension = models.IntegerField(null=True, blank=True, help_text="Размерность векторов")
-    index_metadata = models.JSONField(default=dict, blank=True, help_text="Метаданные векторного индекса")
+    vector_index_created = models.BooleanField(default=False, help_text=_("Создан ли векторный индекс"))
+    total_vectors = models.IntegerField(default=0, help_text=_("Количество векторов в индексе"))
+    vector_dimension = models.IntegerField(null=True, blank=True, help_text=_("Размерность векторов"))
+    index_metadata = models.JSONField(default=dict, blank=True, help_text=_("Метаданные векторного индекса"))
     
     # Настройки обработки
     chunking_strategy = models.CharField(
         max_length=50,
         default='recursive',
         choices=[
-            ('recursive', 'Рекурсивное разделение'),
-            ('semantic', 'Семантическое разделение'),
-            ('fixed', 'Фиксированный размер'),
-            ('paragraph', 'По параграфам'),
+            ('recursive', _('Рекурсивное разделение')),
+            ('semantic', _('Семантическое разделение')),
+            ('fixed', _('Фиксированный размер')),
+            ('paragraph', _('По параграфам')),
         ],
-        help_text="Стратегия разделения на чанки"
+        help_text=_("Стратегия разделения на чанки")
     )
     
-    chunk_size = models.IntegerField(default=1000, help_text="Размер чанка в токенах/символах")
-    chunk_overlap = models.IntegerField(default=200, help_text="Перекрытие между чанками")
+    chunk_size = models.IntegerField(default=1000, help_text=_("Размер чанка в токенах/символах"))
+    chunk_overlap = models.IntegerField(default=200, help_text=_("Перекрытие между чанками"))
     
     # Метаданные фильтрации
     metadata_filters = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Фильтры по метаданным для этой коллекции {'doc_type': 'legal', 'year': 2023}"
+        help_text=_("Фильтры по метаданным для этой коллекции {'doc_type': 'legal', 'year': 2023}")
     )
     
     # Статистика
-    total_documents = models.IntegerField(default=0, help_text="Общее количество документов")
-    total_chunks = models.IntegerField(default=0, help_text="Общее количество чанков")
-    total_size_mb = models.FloatField(default=0.0, help_text="Общий размер документов в МБ")
+    total_documents = models.IntegerField(default=0, help_text=_("Общее количество документов"))
+    total_chunks = models.IntegerField(default=0, help_text=_("Общее количество чанков"))
+    total_size_mb = models.FloatField(default=0.0, help_text=_("Общий размер документов в МБ"))
     
     # Системные поля
     is_active = models.BooleanField(default=True)
-    auto_process = models.BooleanField(default=True, help_text="Автоматически обрабатывать новые документы")
+    auto_process = models.BooleanField(default=True, help_text=_("Автоматически обрабатывать новые документы"))
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -2180,43 +2181,43 @@ class Document(models.Model):
     ]
     
     # Основная информация
-    original_filename = models.CharField(max_length=500, help_text="Оригинальное имя файла")
-    title = models.CharField(max_length=500, blank=True, help_text="Название документа")
-    description = models.TextField(blank=True, help_text="Описание документа")
+    original_filename = models.CharField(max_length=500, help_text=_("Оригинальное имя файла"))
+    title = models.CharField(max_length=500, blank=True, help_text=_("Название документа"))
+    description = models.TextField(blank=True, help_text=_("Описание документа"))
     
     # Тип и содержимое
     document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES, default='UNKNOWN')
-    content_hash = models.CharField(max_length=64, help_text="SHA256 хеш содержимого для дедупликации")
-    raw_content = models.TextField(blank=True, help_text="Исходное текстовое содержимое")
-    processed_content = models.TextField(blank=True, help_text="Очищенное содержимое после обработки")
+    content_hash = models.CharField(max_length=64, help_text=_("SHA256 хеш содержимого для дедупликации"))
+    raw_content = models.TextField(blank=True, help_text=_("Исходное текстовое содержимое"))
+    processed_content = models.TextField(blank=True, help_text=_("Очищенное содержимое после обработки"))
     
     # Пути и размеры
-    file_path = models.CharField(max_length=1000, blank=True, help_text="Путь к исходному файлу")
-    file_size_mb = models.FloatField(default=0.0, help_text="Размер файла в МБ")
-    file_encoding = models.CharField(max_length=50, default='utf-8', help_text="Кодировка файла")
+    file_path = models.CharField(max_length=1000, blank=True, help_text=_("Путь к исходному файлу"))
+    file_size_mb = models.FloatField(default=0.0, help_text=_("Размер файла в МБ"))
+    file_encoding = models.CharField(max_length=50, default='utf-8', help_text=_("Кодировка файла"))
     
     # Метаданные
     metadata = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Произвольные метаданные документа"
+        help_text=_("Произвольные метаданные документа")
     )
     
     # Теги и категории
-    tags = models.JSONField(default=list, blank=True, help_text="Теги документа")
-    category = models.CharField(max_length=100, blank=True, help_text="Категория документа")
+    tags = models.JSONField(default=list, blank=True, help_text=_("Теги документа"))
+    category = models.CharField(max_length=100, blank=True, help_text=_("Категория документа"))
     
     # Статус и обработка
     status = models.CharField(max_length=20, choices=DOCUMENT_STATUS_CHOICES, default='UPLOADED')
-    processing_progress = models.FloatField(default=0.0, help_text="Прогресс обработки (0-100)")
-    error_message = models.TextField(blank=True, help_text="Сообщение об ошибке обработки")
+    processing_progress = models.FloatField(default=0.0, help_text=_("Прогресс обработки (0-100)"))
+    error_message = models.TextField(blank=True, help_text=_("Сообщение об ошибке обработки"))
     
     # Качество и релевантность
     quality_score = models.FloatField(
         null=True,
         blank=True,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Оценка качества документа (0-1)"
+        help_text=_("Оценка качества документа (0-1)")
     )
     
     # Связи
@@ -2235,7 +2236,7 @@ class Document(models.Model):
     
     # Системные поля
     is_active = models.BooleanField(default=True)
-    requires_reindexing = models.BooleanField(default=False, help_text="Требуется переиндексация")
+    requires_reindexing = models.BooleanField(default=False, help_text=_("Требуется переиндексация"))
     objects = DocumentManager()
 
     class Meta:
@@ -2468,12 +2469,12 @@ class DocumentChunk(models.Model):
     Фрагмент (чанк) документа для векторного поиска.
     """
     CHUNK_STRATEGY_CHOICES = [
-        ('recursive', 'Рекурсивный'),
-        ('semantic', 'Семантический'),
-        ('fixed', 'Фиксированный'),
-        ('paragraph', 'Абзацный'),
-        ('table', 'Табличный'),
-        ('code', 'Код'),
+        ('recursive', _('Рекурсивный')),
+        ('semantic', _('Семантический')),
+        ('fixed', _('Фиксированный')),
+        ('paragraph', _('Абзацный')),
+        ('table', _('Табличный')),
+        ('code', _('Код')),
     ]
     
     # Связь с документом
@@ -2484,18 +2485,18 @@ class DocumentChunk(models.Model):
     )
     
     # Содержимое и позиция
-    chunk_index = models.IntegerField(help_text="Порядковый номер чанка в документе")
-    content = models.TextField(help_text="Текстовое содержимое чанка")
-    token_count = models.IntegerField(default=0, help_text="Количество токенов в чанке")
+    chunk_index = models.IntegerField(help_text=_("Порядковый номер чанка в документе"))
+    content = models.TextField(help_text=_("Текстовое содержимое чанка"))
+    token_count = models.IntegerField(default=0, help_text=_("Количество токенов в чанке"))
     
     # Позиция в исходном документе
-    start_char = models.IntegerField(help_text="Начальная позиция в исходном тексте")
-    end_char = models.IntegerField(help_text="Конечная позиция в исходном тексте")
-    start_line = models.IntegerField(null=True, blank=True, help_text="Начальная строка (если применимо)")
-    end_line = models.IntegerField(null=True, blank=True, help_text="Конечная строка (если применимо)")
+    start_char = models.IntegerField(help_text=_("Начальная позиция в исходном тексте"))
+    end_char = models.IntegerField(help_text=_("Конечная позиция в исходном тексте"))
+    start_line = models.IntegerField(null=True, blank=True, help_text=_("Начальная строка (если применимо)"))
+    end_line = models.IntegerField(null=True, blank=True, help_text=_("Конечная строка (если применимо)"))
     
     # Метаданные чанка
-    metadata = models.JSONField(default=dict, blank=True, help_text="Метаданные чанка")
+    metadata = models.JSONField(default=dict, blank=True, help_text=_("Метаданные чанка"))
     chunk_strategy = models.CharField(
         max_length=20,
         choices=CHUNK_STRATEGY_CHOICES,
@@ -2503,7 +2504,7 @@ class DocumentChunk(models.Model):
     )
     
     # Эмбеддинги
-    has_embedding = models.BooleanField(default=False, help_text="Создан ли эмбеддинг для чанка")
+    has_embedding = models.BooleanField(default=False, help_text=_("Создан ли эмбеддинг для чанка"))
     embedding_model = models.ForeignKey(
         'EmbeddingModel',
         on_delete=models.SET_NULL,
@@ -2511,27 +2512,27 @@ class DocumentChunk(models.Model):
         blank=True,
         related_name='chunks'
     )
-    embedding_version = models.CharField(max_length=50, blank=True, help_text="Версия модели эмбеддингов")
+    embedding_version = models.CharField(max_length=50, blank=True, help_text=_("Версия модели эмбеддингов"))
     
     # Векторное представление (в реальной системе это может храниться в векторной БД)
     embedding_vector = models.JSONField(
         null=True,
         blank=True,
-        help_text="Вектор эмбеддинга (JSON список чисел)"
+        help_text=_("Вектор эмбеддинга (JSON список чисел)")
     )
-    embedding_dim = models.IntegerField(null=True, blank=True, help_text="Размерность эмбеддинга")
+    embedding_dim = models.IntegerField(null=True, blank=True, help_text=_("Размерность эмбеддинга"))
     
     # Качество и релевантность
     relevance_score = models.FloatField(
         null=True,
         blank=True,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Оценка релевантности чанка"
+        help_text=_("Оценка релевантности чанка")
     )
-    is_key_chunk = models.BooleanField(default=False, help_text="Ключевой чанк документа")
+    is_key_chunk = models.BooleanField(default=False, help_text=_("Ключевой чанк документа"))
     
     # Статистика использования
-    usage_count = models.IntegerField(default=0, help_text="Сколько раз чанк был использован в поиске")
+    usage_count = models.IntegerField(default=0, help_text=_("Сколько раз чанк был использован в поиске"))
     last_used = models.DateTimeField(null=True, blank=True)
     
     # Системные поля
@@ -2596,57 +2597,57 @@ class EmbeddingModel(models.Model):
         ('SENTENCE_TRANSFORMERS', 'Sentence Transformers'),
     ]
     
-    name = models.CharField(max_length=255, help_text="Название модели")
-    display_name = models.CharField(max_length=255, blank=True, help_text="Человекочитаемое имя для интерфейса")
+    name = models.CharField(max_length=255, help_text=_("Название модели"))
+    display_name = models.CharField(max_length=255, blank=True, help_text=_("Человекочитаемое имя для интерфейса"))
     model_type = models.CharField(max_length=30, choices=MODEL_TYPE_CHOICES, default='HUGGINGFACE')
     
     # Идентификаторы моделей
-    model_id = models.CharField(max_length=500, help_text="Идентификатор модели (на HF, в API и т.д.)")
-    model_version = models.CharField(max_length=100, default='latest', help_text="Версия модели")
+    model_id = models.CharField(max_length=500, help_text=_("Идентификатор модели (на HF, в API и т.д.)"))
+    model_version = models.CharField(max_length=100, default='latest', help_text=_("Версия модели"))
     
     # Технические характеристики
-    embedding_dim = models.IntegerField(help_text="Размерность эмбеддингов")
-    max_tokens = models.IntegerField(default=512, help_text="Максимальное количество токенов на вход")
-    is_multilingual = models.BooleanField(default=False, help_text="Поддерживает ли несколько языков")
+    embedding_dim = models.IntegerField(help_text=_("Размерность эмбеддингов"))
+    max_tokens = models.IntegerField(default=512, help_text=_("Максимальное количество токенов на вход"))
+    is_multilingual = models.BooleanField(default=False, help_text=_("Поддерживает ли несколько языков"))
     
     # Производительность
-    speed_ms_per_token = models.FloatField(null=True, blank=True, help_text="Скорость обработки (мс/токен)")
+    speed_ms_per_token = models.FloatField(null=True, blank=True, help_text=_("Скорость обработки (мс/токен)"))
     accuracy_score = models.FloatField(
         null=True,
         blank=True,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Оценка точности на тестовых данных"
+        help_text=_("Оценка точности на тестовых данных")
     )
     
     # Конфигурация
-    config = models.JSONField(default=dict, blank=True, help_text="Конфигурация модели")
+    config = models.JSONField(default=dict, blank=True, help_text=_("Конфигурация модели"))
     
     # Лицензия и стоимость
-    license_type = models.CharField(max_length=100, blank=True, help_text="Тип лицензии")
-    cost_per_1k_tokens = models.FloatField(null=True, blank=True, help_text="Стоимость за 1000 токенов (если API)")
+    license_type = models.CharField(max_length=100, blank=True, help_text=_("Тип лицензии"))
+    cost_per_1k_tokens = models.FloatField(null=True, blank=True, help_text=_("Стоимость за 1000 токенов (если API)"))
     
     # Статистика использования
-    total_tokens_processed = models.BigIntegerField(default=0, help_text="Всего обработано токенов")
-    total_requests = models.IntegerField(default=0, help_text="Всего запросов к модели")
+    total_tokens_processed = models.BigIntegerField(default=0, help_text=_("Всего обработано токенов"))
+    total_requests = models.IntegerField(default=0, help_text=_("Всего запросов к модели"))
     
     # Статус
-    is_active = models.BooleanField(default=True, help_text="Доступна для использования")
-    is_default = models.BooleanField(default=False, help_text="Модель по умолчанию для новых коллекций")
-    is_downloaded = models.BooleanField(default=False, help_text="Скачана ли модель локально")
+    is_active = models.BooleanField(default=True, help_text=_("Доступна для использования"))
+    is_default = models.BooleanField(default=False, help_text=_("Модель по умолчанию для новых коллекций"))
+    is_downloaded = models.BooleanField(default=False, help_text=_("Скачана ли модель локально"))
     
     # Информация о загрузке
-    download_progress = models.IntegerField(default=0, help_text="Прогресс загрузки (0-100)")
+    download_progress = models.IntegerField(default=0, help_text=_("Прогресс загрузки (0-100)"))
     download_status = models.CharField(
         max_length=20,
         default='not_started',
         choices=[
-            ('not_started', 'Не начата'),
-            ('downloading', 'Загружается'),
-            ('completed', 'Завершена'),
-            ('failed', 'Ошибка'),
+            ('not_started', _('Не начата')),
+            ('downloading', _('Загружается')),
+            ('completed', _('Завершена')),
+            ('failed', _('Ошибка')),
         ]
     )
-    download_error = models.TextField(blank=True, help_text="Ошибка загрузки, если была")
+    download_error = models.TextField(blank=True, help_text=_("Ошибка загрузки, если была"))
     
     # Временные метки
     created_at = models.DateTimeField(auto_now_add=True)
@@ -2700,17 +2701,17 @@ class SearchQuery(models.Model):
     ]
     
     # Основная информация
-    query_text = models.TextField(help_text="Текст поискового запроса")
-    normalized_query = models.TextField(blank=True, help_text="Нормализованный текст запроса")
+    query_text = models.TextField(help_text=_("Текст поискового запроса"))
+    normalized_query = models.TextField(blank=True, help_text=_("Нормализованный текст запроса"))
     
     # Тип поиска и конфигурация
     search_type = models.CharField(max_length=20, choices=SEARCH_TYPE_CHOICES, default='HYBRID')
-    search_config = models.JSONField(default=dict, blank=True, help_text="Конфигурация поиска")
+    search_config = models.JSONField(default=dict, blank=True, help_text=_("Конфигурация поиска"))
     
     # Контекст запроса
-    session_id = models.CharField(max_length=100, blank=True, help_text="ID сессии пользователя")
-    user_id = models.CharField(max_length=100, blank=True, help_text="ID пользователя")
-    context = models.JSONField(default=dict, blank=True, help_text="Дополнительный контекст запроса")
+    session_id = models.CharField(max_length=100, blank=True, help_text=_("ID сессии пользователя"))
+    user_id = models.CharField(max_length=100, blank=True, help_text=_("ID пользователя"))
+    context = models.JSONField(default=dict, blank=True, help_text=_("Дополнительный контекст запроса"))
     
     # Фильтры
     collection_filter = models.ForeignKey(
@@ -2718,13 +2719,13 @@ class SearchQuery(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="Фильтр по коллекции"
+        help_text=_("Фильтр по коллекции")
     )
-    metadata_filters = models.JSONField(default=dict, blank=True, help_text="Фильтры по метаданным")
+    metadata_filters = models.JSONField(default=dict, blank=True, help_text=_("Фильтры по метаданным"))
     
     # Временные метки
     created_at = models.DateTimeField(auto_now_add=True)
-    processing_time_ms = models.FloatField(null=True, blank=True, help_text="Время обработки запроса в мс")
+    processing_time_ms = models.FloatField(null=True, blank=True, help_text=_("Время обработки запроса в мс"))
     
     class Meta:
         ordering = ['-created_at']
@@ -2760,34 +2761,34 @@ class SearchResult(models.Model):
     # Релевантность и ранжирование
     relevance_score = models.FloatField(
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Оценка релевантности (0-1)"
+        help_text=_("Оценка релевантности (0-1)")
     )
-    rank_position = models.IntegerField(help_text="Позиция в результатах поиска")
+    rank_position = models.IntegerField(help_text=_("Позиция в результатах поиска"))
     
     # Метод вычисления релевантности
     scoring_method = models.CharField(
         max_length=50,
         default='cosine_similarity',
         choices=[
-            ('cosine_similarity', 'Косинусное сходство'),
-            ('dot_product', 'Скалярное произведение'),
+            ('cosine_similarity', _('Косинусное сходство')),
+            ('dot_product', _('Скалярное произведение')),
             ('bm25', 'BM25'),
-            ('hybrid', 'Гибридный'),
-            ('neural', 'Нейросетевой'),
+            ('hybrid', _('Гибридный')),
+            ('neural', _('Нейросетевой')),
         ],
-        help_text="Метод вычисления релевантности"
+        help_text=_("Метод вычисления релевантности")
     )
     
     # Дополнительные метрики
-    semantic_score = models.FloatField(null=True, blank=True, help_text="Семантическая оценка")
-    keyword_score = models.FloatField(null=True, blank=True, help_text="Оценка по ключевым словам")
+    semantic_score = models.FloatField(null=True, blank=True, help_text=_("Семантическая оценка"))
+    keyword_score = models.FloatField(null=True, blank=True, help_text=_("Оценка по ключевым словам"))
     
     # Контекст результата
-    context_before = models.TextField(blank=True, help_text="Контекст перед чанком")
-    context_after = models.TextField(blank=True, help_text="Контекст после чанка")
+    context_before = models.TextField(blank=True, help_text=_("Контекст перед чанком"))
+    context_after = models.TextField(blank=True, help_text=_("Контекст после чанка"))
     
     # Метаданные
-    metadata = models.JSONField(default=dict, blank=True, help_text="Метаданные результата")
+    metadata = models.JSONField(default=dict, blank=True, help_text=_("Метаданные результата"))
     
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -2829,8 +2830,8 @@ class RAGSession(models.Model):
     ]
     
     # Идентификаторы
-    session_id = models.CharField(max_length=100, unique=True, help_text="Уникальный ID сессии")
-    conversation_id = models.CharField(max_length=100, blank=True, help_text="ID беседы (если часть диалога)")
+    session_id = models.CharField(max_length=100, unique=True, help_text=_("Уникальный ID сессии"))
+    conversation_id = models.CharField(max_length=100, blank=True, help_text=_("ID беседы (если часть диалога)"))
     
     # Пользовательская информация
     user_id = models.CharField(max_length=100, blank=True)
@@ -2838,9 +2839,9 @@ class RAGSession(models.Model):
     user_agent = models.TextField(blank=True)
     
     # Контекст и промпт
-    original_query = models.TextField(help_text="Исходный запрос пользователя")
-    system_prompt = models.TextField(blank=True, help_text="Системный промпт для LLM")
-    augmented_prompt = models.TextField(blank=True, help_text="Промпт с контекстом из поиска")
+    original_query = models.TextField(help_text=_("Исходный запрос пользователя"))
+    system_prompt = models.TextField(blank=True, help_text=_("Системный промпт для LLM"))
+    augmented_prompt = models.TextField(blank=True, help_text=_("Промпт с контекстом из поиска"))
     
     # Модели
     embedding_model = models.ForeignKey(
@@ -2873,37 +2874,37 @@ class RAGSession(models.Model):
     )
     
     # Генерация ответа
-    generated_answer = models.TextField(blank=True, help_text="Сгенерированный ответ")
-    generation_metadata = models.JSONField(default=dict, blank=True, help_text="Метаданные генерации")
+    generated_answer = models.TextField(blank=True, help_text=_("Сгенерированный ответ"))
+    generation_metadata = models.JSONField(default=dict, blank=True, help_text=_("Метаданные генерации"))
     
     # Статус и производительность
     status = models.CharField(max_length=20, choices=SESSION_STATUS_CHOICES, default='SEARCHING')
-    total_time_ms = models.FloatField(default=0.0, help_text="Общее время выполнения (мс)")
-    search_time_ms = models.FloatField(null=True, blank=True, help_text="Время поиска (мс)")
-    generation_time_ms = models.FloatField(null=True, blank=True, help_text="Время генерации (мс)")
+    total_time_ms = models.FloatField(default=0.0, help_text=_("Общее время выполнения (мс)"))
+    search_time_ms = models.FloatField(null=True, blank=True, help_text=_("Время поиска (мс)"))
+    generation_time_ms = models.FloatField(null=True, blank=True, help_text=_("Время генерации (мс)"))
     
     # Токены и стоимость
-    input_tokens = models.IntegerField(default=0, help_text="Входные токены")
-    output_tokens = models.IntegerField(default=0, help_text="Выходные токены")
-    estimated_cost = models.FloatField(null=True, blank=True, help_text="Примерная стоимость")
+    input_tokens = models.IntegerField(default=0, help_text=_("Входные токены"))
+    output_tokens = models.IntegerField(default=0, help_text=_("Выходные токены"))
+    estimated_cost = models.FloatField(null=True, blank=True, help_text=_("Примерная стоимость"))
     
     # Качество ответа
     confidence_score = models.FloatField(
         null=True,
         blank=True,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Уверенность модели в ответе"
+        help_text=_("Уверенность модели в ответе")
     )
     
     # Обратная связь
-    has_feedback = models.BooleanField(default=False, help_text="Есть ли обратная связь")
+    has_feedback = models.BooleanField(default=False, help_text=_("Есть ли обратная связь"))
     feedback_score = models.IntegerField(
         null=True,
         blank=True,
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        help_text="Оценка пользователя (1-5)"
+        help_text=_("Оценка пользователя (1-5)")
     )
-    feedback_comment = models.TextField(blank=True, help_text="Комментарий пользователя")
+    feedback_comment = models.TextField(blank=True, help_text=_("Комментарий пользователя"))
     
     # Временные метки
     created_at = models.DateTimeField(auto_now_add=True)
@@ -2972,22 +2973,22 @@ class RetrievedChunk(models.Model):
     chunk = models.ForeignKey(DocumentChunk, on_delete=models.CASCADE)
     
     # Позиция в результатах
-    retrieval_rank = models.IntegerField(help_text="Позиция при извлечении")
+    retrieval_rank = models.IntegerField(help_text=_("Позиция при извлечении"))
     relevance_score = models.FloatField(
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Релевантность для этого запроса"
+        help_text=_("Релевантность для этого запроса")
     )
     
     # Как чанк был использован
-    used_in_context = models.BooleanField(default=False, help_text="Был ли использован в контексте для LLM")
-    context_position = models.IntegerField(null=True, blank=True, help_text="Позиция в контексте")
+    used_in_context = models.BooleanField(default=False, help_text=_("Был ли использован в контексте для LLM"))
+    context_position = models.IntegerField(null=True, blank=True, help_text=_("Позиция в контексте"))
     
     # Качество использования
     attribution_score = models.FloatField(
         null=True,
         blank=True,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Насколько ответ основан на этом чанке"
+        help_text=_("Насколько ответ основан на этом чанке")
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -3039,17 +3040,17 @@ class SearchQualityFeedback(models.Model):
     feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPE_CHOICES, default='RELEVANCE')
     rating = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        help_text="Оценка качества (1-5)"
+        help_text=_("Оценка качества (1-5)")
     )
     
     # Детали обратной связи
-    comment = models.TextField(blank=True, help_text="Комментарий пользователя")
+    comment = models.TextField(blank=True, help_text=_("Комментарий пользователя"))
     expected_document = models.ForeignKey(
         Document,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="Какой документ ожидался"
+        help_text=_("Какой документ ожидался")
     )
     
     # Контекст
@@ -3065,8 +3066,8 @@ class SearchQualityFeedback(models.Model):
     )
     
     # Системная информация
-    is_resolved = models.BooleanField(default=False, help_text="Обработана ли обратная связь")
-    resolution_notes = models.TextField(blank=True, help_text="Заметки по обработке")
+    is_resolved = models.BooleanField(default=False, help_text=_("Обработана ли обратная связь"))
+    resolution_notes = models.TextField(blank=True, help_text=_("Заметки по обработке"))
     
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
@@ -3103,32 +3104,32 @@ class RAGEvaluation(models.Model):
         ('USER_STUDY', 'Исследование с пользователями'),
     ]
     
-    name = models.CharField(max_length=255, help_text="Название оценки")
-    description = models.TextField(blank=True, help_text="Описание оценки")
+    name = models.CharField(max_length=255, help_text=_("Название оценки"))
+    description = models.TextField(blank=True, help_text=_("Описание оценки"))
     
     # Конфигурация
     evaluation_type = models.CharField(max_length=20, choices=EVALUATION_TYPE_CHOICES, default='AUTOMATED')
     test_queries = models.JSONField(
         default=list,
-        help_text="Тестовые запросы [{'id': 1, 'text': '...', 'expected_docs': [doc_ids]}]"
+        help_text=_("Тестовые запросы [{'id': 1, 'text': '...', 'expected_docs': [doc_ids]}]")
     )
     
     # Метрики
     target_metrics = models.JSONField(
         default=dict,
-        help_text="Целевые метрики {'recall@5': 0.8, 'precision@3': 0.9}"
+        help_text=_("Целевые метрики {'recall@5': 0.8, 'precision@3': 0.9}")
     )
     
     # Результаты
     actual_metrics = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Фактические метрики"
+        help_text=_("Фактические метрики")
     )
     detailed_results = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Детальные результаты по каждому запросу"
+        help_text=_("Детальные результаты по каждому запросу")
     )
     
     # Сравнение
@@ -3137,9 +3138,9 @@ class RAGEvaluation(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="Базовая оценка для сравнения"
+        help_text=_("Базовая оценка для сравнения")
     )
-    improvement_percentage = models.FloatField(null=True, blank=True, help_text="Улучшение в %")
+    improvement_percentage = models.FloatField(null=True, blank=True, help_text=_("Улучшение в %"))
     
     # Статус
     status = models.CharField(
@@ -3218,30 +3219,30 @@ class ProcessingPipeline(models.Model):
     """
     Конфигурация пайплайна обработки документов.
     """
-    name = models.CharField(max_length=255, unique=True, help_text="Название пайплайна")
-    description = models.TextField(blank=True, help_text="Описание пайплайна")
+    name = models.CharField(max_length=255, unique=True, help_text=_("Название пайплайна"))
+    description = models.TextField(blank=True, help_text=_("Описание пайплайна"))
     
     # Этапы обработки
     steps = models.JSONField(
         default=list,
-        help_text="Список этапов обработки [{'name': 'extract', 'module': '...', 'config': {...}}]"
+        help_text=_("Список этапов обработки [{'name': 'extract', 'module': '...', 'config': {...}}]")
     )
     
     # Конфигурация
-    config = models.JSONField(default=dict, blank=True, help_text="Общая конфигурация пайплайна")
+    config = models.JSONField(default=dict, blank=True, help_text=_("Общая конфигурация пайплайна"))
     
     # Производительность
-    avg_processing_time_ms = models.FloatField(null=True, blank=True, help_text="Среднее время обработки документа")
+    avg_processing_time_ms = models.FloatField(null=True, blank=True, help_text=_("Среднее время обработки документа"))
     success_rate = models.FloatField(
         null=True,
         blank=True,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        help_text="Процент успешной обработки"
+        help_text=_("Процент успешной обработки")
     )
     
     # Статус
     is_active = models.BooleanField(default=True)
-    is_default = models.BooleanField(default=False, help_text="Пайплайн по умолчанию")
+    is_default = models.BooleanField(default=False, help_text=_("Пайплайн по умолчанию"))
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -3291,20 +3292,20 @@ class DocumentProcessor(models.Model):
         ],
         default='STARTED'
     )
-    progress = models.FloatField(default=0.0, help_text="Прогресс обработки (0-100)")
+    progress = models.FloatField(default=0.0, help_text=_("Прогресс обработки (0-100)"))
     
     # Ресурсы и производительность
-    worker_id = models.CharField(max_length=100, blank=True, help_text="ID воркера")
-    memory_usage_mb = models.FloatField(null=True, blank=True, help_text="Использование памяти (МБ)")
-    processing_time_ms = models.FloatField(null=True, blank=True, help_text="Время обработки (мс)")
+    worker_id = models.CharField(max_length=100, blank=True, help_text=_("ID воркера"))
+    memory_usage_mb = models.FloatField(null=True, blank=True, help_text=_("Использование памяти (МБ)"))
+    processing_time_ms = models.FloatField(null=True, blank=True, help_text=_("Время обработки (мс)"))
     
     # Результаты
-    chunks_created = models.IntegerField(default=0, help_text="Создано чанков")
-    embeddings_created = models.IntegerField(default=0, help_text="Создано эмбеддингов")
+    chunks_created = models.IntegerField(default=0, help_text=_("Создано чанков"))
+    embeddings_created = models.IntegerField(default=0, help_text=_("Создано эмбеддингов"))
     
     # Ошибки
     error_message = models.TextField(blank=True)
-    error_details = models.JSONField(default=dict, blank=True, help_text="Детали ошибки")
+    error_details = models.JSONField(default=dict, blank=True, help_text=_("Детали ошибки"))
     
     # Временные метки
     started_at = models.DateTimeField(auto_now_add=True)
@@ -3367,9 +3368,9 @@ def fix_document_file_paths():
 
 class SavedSearch(models.Model):
     """Сохраненные поисковые запросы"""
-    name = models.CharField(max_length=255, verbose_name="Название")
-    description = models.TextField(blank=True, verbose_name="Описание")
-    query_text = models.TextField(verbose_name="Текст запроса")
+    name = models.CharField(max_length=255, verbose_name=_("Название"))
+    description = models.TextField(blank=True, verbose_name=_("Описание"))
+    query_text = models.TextField(verbose_name=_("Текст запроса"))
     search_type = models.CharField(
         max_length=20,
         choices=[
@@ -3379,29 +3380,29 @@ class SavedSearch(models.Model):
             ('HYBRID_ENHANCED', 'Улучшенный гибридный'),
         ],
         default='HYBRID',
-        verbose_name="Тип поиска"
+        verbose_name=_("Тип поиска")
     )
     collection = models.ForeignKey(
         DocumentCollection,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Коллекция"
+        verbose_name=_("Коллекция")
     )
-    user_id = models.CharField(max_length=255, db_index=True, verbose_name="ID пользователя")
-    search_config = models.JSONField(default=dict, verbose_name="Конфигурация поиска")
+    user_id = models.CharField(max_length=255, db_index=True, verbose_name=_("ID пользователя"))
+    search_config = models.JSONField(default=dict, verbose_name=_("Конфигурация поиска"))
     original_query = models.ForeignKey(
         SearchQuery,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Исходный запрос"
+        verbose_name=_("Исходный запрос")
     )
-    is_favorite = models.BooleanField(default=False, verbose_name="Избранное")
-    usage_count = models.IntegerField(default=0, verbose_name="Количество использований")
-    last_used_at = models.DateTimeField(null=True, blank=True, verbose_name="Последнее использование")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создан")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлен")
+    is_favorite = models.BooleanField(default=False, verbose_name=_("Избранное"))
+    usage_count = models.IntegerField(default=0, verbose_name=_("Количество использований"))
+    last_used_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Последнее использование"))
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Создан"))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Обновлен"))
     
     class Meta:
         db_table = 'saved_searches'
@@ -3443,15 +3444,15 @@ class FineTuningJob(models.Model):
     ]
     
     # Основная информация
-    name = models.CharField(max_length=255, verbose_name="Название задачи")
-    description = models.TextField(blank=True, verbose_name="Описание")
+    name = models.CharField(max_length=255, verbose_name=_("Название задачи"))
+    description = models.TextField(blank=True, verbose_name=_("Описание"))
     
     # Метод обучения
     method = models.CharField(
         max_length=20,
         choices=FineTuningMethod.choices,
         default=FineTuningMethod.RAFT,
-        verbose_name="Метод обучения"
+        verbose_name=_("Метод обучения")
     )
     
     # Базовая модель
@@ -3459,7 +3460,7 @@ class FineTuningJob(models.Model):
         'ModelCheckpoint',
         on_delete=models.CASCADE,
         related_name='fine_tuning_jobs',
-        verbose_name="Базовая модель"
+        verbose_name=_("Базовая модель")
     )
     
     # Выходная модель (после обучения)
@@ -3469,7 +3470,7 @@ class FineTuningJob(models.Model):
         null=True,
         blank=True,
         related_name='tuned_from',
-        verbose_name="Результирующая модель"
+        verbose_name=_("Результирующая модель")
     )
     
     # Источники данных для обучения
@@ -3478,7 +3479,7 @@ class FineTuningJob(models.Model):
         through='FineTuningJobCollection',
         blank=True,
         related_name='fine_tuning_jobs',
-        verbose_name="Коллекции документов"
+        verbose_name=_("Коллекции документов")
     )
 
     instruction_datasets = models.ManyToManyField(
@@ -3486,21 +3487,21 @@ class FineTuningJob(models.Model):
         through='FineTuningJobDataset',
         blank=True,
         related_name='fine_tuning_jobs',
-        verbose_name="Датасеты инструкций"
+        verbose_name=_("Датасеты инструкций")
     )
     
     # Параметры обучения
     lora_r = models.IntegerField(
         default=16,
-        help_text="Ранг LoRA (рекомендуется 8-32)"
+        help_text=_("Ранг LoRA (рекомендуется 8-32)")
     )
     lora_alpha = models.IntegerField(
         default=32,
-        help_text="Alpha параметр LoRA"
+        help_text=_("Alpha параметр LoRA")
     )
     lora_dropout = models.FloatField(
         default=0.05,
-        help_text="Dropout в LoRA слоях"
+        help_text=_("Dropout в LoRA слоях")
     )
     
     # Гиперпараметры
@@ -3513,33 +3514,33 @@ class FineTuningJob(models.Model):
     # Параметры для RAFT
     distractors_per_example = models.IntegerField(
         default=3,
-        help_text="Количество дистракторов на пример (для RAFT)"
+        help_text=_("Количество дистракторов на пример (для RAFT)")
     )
     oracle_ratio = models.FloatField(
         default=0.3,
-        help_text="Доля примеров только с релевантным контекстом"
+        help_text=_("Доля примеров только с релевантным контекстом")
     )
     distractor_ratio = models.FloatField(
         default=0.5,
-        help_text="Доля примеров с дистракторами"
+        help_text=_("Доля примеров с дистракторами")
     )
     no_context_ratio = models.FloatField(
         default=0.2,
-        help_text="Доля примеров без контекста"
+        help_text=_("Доля примеров без контекста")
     )
     
     # Параметры для борьбы с забыванием
     use_kl_regularization = models.BooleanField(
         default=True,
-        help_text="Использовать KL-дивергенцию против забывания"
+        help_text=_("Использовать KL-дивергенцию против забывания")
     )
     kl_lambda = models.FloatField(
         default=0.1,
-        help_text="Вес KL-дивергенции"
+        help_text=_("Вес KL-дивергенции")
     )
     general_instructions_ratio = models.FloatField(
         default=0.2,
-        help_text="Доля общих инструкций в обучающей выборке"
+        help_text=_("Доля общих инструкций в обучающей выборке")
     )
 
     quantization = models.CharField(
@@ -3547,15 +3548,15 @@ class FineTuningJob(models.Model):
         choices=ModelCheckpoint.QUANTIZATION_CHOICES,
         blank=True,
         default='int4',
-        verbose_name="Квантизация",
-        help_text="Тип квантизации для обучения (будет применена к модели)"
+        verbose_name=_("Квантизация"),
+        help_text=_("Тип квантизации для обучения (будет применена к модели)")
     )
     
     # Конфигурация (JSON)
     training_config = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Дополнительные параметры обучения"
+        help_text=_("Дополнительные параметры обучения")
     )
     
     # Статус и прогресс
@@ -3576,20 +3577,20 @@ class FineTuningJob(models.Model):
     training_metrics = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Метрики в процессе обучения (loss, grad_norm)"
+        help_text=_("Метрики в процессе обучения (loss, grad_norm)")
     )
     
     # Результаты оценки
     evaluation_results = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Результаты оценки на валидации"
+        help_text=_("Результаты оценки на валидации")
     )
 
     # Запись ошибок
     training_errors = models.JSONField(
         default=list, blank=True,
-        help_text="Список ошибок, возникших во время обучения (каждая ошибка – словарь с timestamp, message, traceback)"
+        help_text=_("Список ошибок, возникших во время обучения (каждая ошибка – словарь с timestamp, message, traceback)")
     )
     
     # Ссылка на задачу Celery
@@ -3689,8 +3690,8 @@ class FineTuningCheckpoint(models.Model):
         related_name='checkpoints'
     )
     
-    step = models.IntegerField(help_text="Номер шага/эпохи")
-    path = models.CharField(max_length=500, help_text="Путь к файлу чекпоинта")
+    step = models.IntegerField(help_text=_("Номер шага/эпохи"))
+    path = models.CharField(max_length=500, help_text=_("Путь к файлу чекпоинта"))
     
     # Метрики на момент сохранения
     loss = models.FloatField(null=True, blank=True)
@@ -3729,13 +3730,13 @@ class FineTuningEvaluation(models.Model):
     # Метрики
     metrics = models.JSONField(
         default=dict,
-        help_text="Метрики оценки (rouge, bleu, bertscore)"
+        help_text=_("Метрики оценки (rouge, bleu, bertscore)")
     )
     
     # Детальные результаты
     detailed_results = models.JSONField(
         default=list,
-        help_text="Результаты по каждому примеру"
+        help_text=_("Результаты по каждому примеру")
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -3754,21 +3755,21 @@ class FineTuningEvaluation(models.Model):
 class FineTuningTemplate(models.Model):
     """Шаблон конфигурации fine-tuning"""
     
-    name = models.CharField(max_length=255, verbose_name="Название шаблона")
-    description = models.TextField(blank=True, verbose_name="Описание")
+    name = models.CharField(max_length=255, verbose_name=_("Название шаблона"))
+    description = models.TextField(blank=True, verbose_name=_("Описание"))
     
     # Параметры метода
     method = models.CharField(
         max_length=20,
         choices=FineTuningMethod.choices,
         default=FineTuningMethod.RAFT,
-        verbose_name="Метод обучения"
+        verbose_name=_("Метод обучения")
     )
     
     # Рекомендуемые модели (JSON список HF IDs)
     recommended_models = models.JSONField(
         default=list,
-        help_text="Список рекомендуемых моделей (HF IDs)"
+        help_text=_("Список рекомендуемых моделей (HF IDs)")
     )
     
     # Параметры LoRA
@@ -3796,10 +3797,10 @@ class FineTuningTemplate(models.Model):
     category = models.CharField(
         max_length=50,
         choices=[
-            ('quick', 'Быстрый старт'),
-            ('quality', 'Максимальное качество'),
-            ('rag', 'RAG-оптимизированный'),
-            ('experimental', 'Экспериментальный'),
+            ('quick', _('Быстрый старт')),
+            ('quality', _('Максимальное качество')),
+            ('rag', _('RAG-оптимизированный')),
+            ('experimental', _('Экспериментальный')),
         ],
         default='quick'
     )
@@ -3835,21 +3836,21 @@ class TrainingMetric(models.Model):
     Пошаговые метрики обучения для детального мониторинга.
     """
     job = models.ForeignKey('FineTuningJob', on_delete=models.CASCADE, related_name='metrics')
-    step = models.IntegerField(help_text="Номер шага (итерации)")
-    epoch = models.FloatField(null=True, blank=True, help_text="Текущая эпоха")
-    train_loss = models.FloatField(null=True, blank=True, help_text="Loss на тренировочном батче")
-    eval_loss = models.FloatField(null=True, blank=True, help_text="Loss на валидации")
-    grad_norm = models.FloatField(null=True, blank=True, help_text="Норма градиента (L2)")
-    learning_rate = models.FloatField(null=True, blank=True, help_text="Текущая скорость обучения")
+    step = models.IntegerField(help_text=_("Номер шага (итерации)"))
+    epoch = models.FloatField(null=True, blank=True, help_text=_("Текущая эпоха"))
+    train_loss = models.FloatField(null=True, blank=True, help_text=_("Loss на тренировочном батче"))
+    eval_loss = models.FloatField(null=True, blank=True, help_text=_("Loss на валидации"))
+    grad_norm = models.FloatField(null=True, blank=True, help_text=_("Норма градиента (L2)"))
+    learning_rate = models.FloatField(null=True, blank=True, help_text=_("Текущая скорость обучения"))
     weights_histograms = models.JSONField(
         default=dict, blank=True,
-        help_text="Гистограммы весов ключевых слоёв (словарь: имя_параметра -> список частот)"
+        help_text=_("Гистограммы весов ключевых слоёв (словарь: имя_параметра -> список частот)")
     )
     grad_histograms = models.JSONField(
         default=dict, blank=True,
-        help_text="Гистограммы градиентов (аналогично)"
+        help_text=_("Гистограммы градиентов (аналогично)")
     )
-    time_elapsed = models.FloatField(null=True, blank=True, help_text="Секунд от начала обучения")
+    time_elapsed = models.FloatField(null=True, blank=True, help_text=_("Секунд от начала обучения"))
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -3887,15 +3888,15 @@ class ModelConversionJob(models.Model):
         ('f32', 'FP32'),
     ]
 
-    name = models.CharField(max_length=255, verbose_name="Название задачи")
-    description = models.TextField(blank=True, verbose_name="Описание")
+    name = models.CharField(max_length=255, verbose_name=_("Название задачи"))
+    description = models.TextField(blank=True, verbose_name=_("Описание"))
 
     # Исходная модель (ModelCheckpoint)
     source_model = models.ForeignKey(
         'ModelCheckpoint',
         on_delete=models.CASCADE,
         related_name='conversion_jobs',
-        verbose_name="Исходная модель"
+        verbose_name=_("Исходная модель")
     )
 
     # Выходная модель (после конвертации) – тоже будет ModelCheckpoint
@@ -3905,7 +3906,7 @@ class ModelConversionJob(models.Model):
         null=True,
         blank=True,
         related_name='converted_from',
-        verbose_name="Результирующая модель"
+        verbose_name=_("Результирующая модель")
     )
 
     # Параметры конвертации
@@ -3913,14 +3914,14 @@ class ModelConversionJob(models.Model):
         max_length=10,
         choices=QUANTIZATION_CHOICES,
         default='q4_0',
-        verbose_name="Тип квантизации"
+        verbose_name=_("Тип квантизации")
     )
 
     # Дополнительные параметры (можно расширить)
     config = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Дополнительные параметры конвертации"
+        help_text=_("Дополнительные параметры конвертации")
     )
 
     # Статус и прогресс
@@ -3999,8 +4000,8 @@ class DistillationQuestionSet(models.Model):
         ('CANCELLED', 'Отменено'),
     ]
 
-    name = models.CharField(max_length=255, verbose_name="Название")
-    description = models.TextField(blank=True, verbose_name="Описание")
+    name = models.CharField(max_length=255, verbose_name=_("Название"))
+    description = models.TextField(blank=True, verbose_name=_("Описание"))
 
     collection = models.ForeignKey(
         'DocumentCollection',
@@ -4022,7 +4023,7 @@ class DistillationQuestionSet(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     celery_task_id = models.CharField(max_length=255, blank=True, null=True)
-    checkpoint_data = models.JSONField(default=dict, blank=True, help_text="Данные чекпоинта для возобновления")
+    checkpoint_data = models.JSONField(default=dict, blank=True, help_text=_("Данные чекпоинта для возобновления"))
     last_processed = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -4042,12 +4043,12 @@ class DistillationChunkGroup(models.Model):
         related_name='groups'
     )
 
-    name = models.CharField(max_length=255, blank=True, help_text="Название группы (опционально)")
-    chunk_ids = models.JSONField(default=list, help_text="Список ID чанков для этой группы")
-    num_questions = models.PositiveIntegerField(default=3, help_text="Сколько вопросов сгенерировать")
+    name = models.CharField(max_length=255, blank=True, help_text=_("Название группы (опционально)"))
+    chunk_ids = models.JSONField(default=list, help_text=_("Список ID чанков для этой группы"))
+    num_questions = models.PositiveIntegerField(default=3, help_text=_("Сколько вопросов сгенерировать"))
     generation_config = models.JSONField(default=dict, blank=True)
 
-    order = models.PositiveIntegerField(default=0, help_text="Порядок обработки")
+    order = models.PositiveIntegerField(default=0, help_text=_("Порядок обработки"))
     logs = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -4064,9 +4065,9 @@ class DistillationChunkGroup(models.Model):
 class DistillationQuestion(models.Model):
     """Сгенерированный вопрос по группе чанков."""
     STATUS_CHOICES = [
-        ('pending', 'Ожидает ответа'),
-        ('answered', 'Ответ получен'),
-        ('reviewed', 'Проверено'),
+        ('pending', _('Ожидает ответа')),
+        ('answered', _('Ответ получен')),
+        ('reviewed', _('Проверено')),
     ]
 
     group = models.ForeignKey(
@@ -4127,8 +4128,8 @@ class DistillationAnswerJob(models.Model):
         ('CANCELLED', 'Отменено'),
     ]
 
-    name = models.CharField(max_length=255, verbose_name="Название")
-    description = models.TextField(blank=True, verbose_name="Описание")
+    name = models.CharField(max_length=255, verbose_name=_("Название"))
+    description = models.TextField(blank=True, verbose_name=_("Описание"))
 
     question_set = models.ForeignKey(
         DistillationQuestionSet,
@@ -4137,7 +4138,7 @@ class DistillationAnswerJob(models.Model):
         blank=True,
         related_name='answer_jobs'
     )
-    question_ids = models.JSONField(default=list, blank=True, help_text="Список ID вопросов для обработки")
+    question_ids = models.JSONField(default=list, blank=True, help_text=_("Список ID вопросов для обработки"))
 
     generation_config = models.JSONField(default=dict, blank=True)
 
@@ -4146,7 +4147,7 @@ class DistillationAnswerJob(models.Model):
     current_step = models.CharField(max_length=255, blank=True)
 
     processed_count = models.IntegerField(default=0)
-    planned_count = models.PositiveIntegerField(default=0, help_text="Запланированное количество вопросов")
+    planned_count = models.PositiveIntegerField(default=0, help_text=_("Запланированное количество вопросов"))
 
     logs = models.TextField(blank=True)
 
@@ -4155,7 +4156,7 @@ class DistillationAnswerJob(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     celery_task_id = models.CharField(max_length=255, blank=True, null=True)
-    checkpoint_data = models.JSONField(default=dict, blank=True, help_text="Данные чекпоинта для возобновления")
+    checkpoint_data = models.JSONField(default=dict, blank=True, help_text=_("Данные чекпоинта для возобновления"))
     last_processed = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -4168,8 +4169,8 @@ class DistillationAnswerJob(models.Model):
 
 class DistillationDataset(models.Model):
     """Итоговый датасет для дообучения, собранный из вопросов и ответов."""
-    name = models.CharField(max_length=255, verbose_name="Название")
-    description = models.TextField(blank=True, verbose_name="Описание")
+    name = models.CharField(max_length=255, verbose_name=_("Название"))
+    description = models.TextField(blank=True, verbose_name=_("Описание"))
 
     # Исходные данные (для трассировки)
     source_question_set = models.ForeignKey(
@@ -4188,7 +4189,7 @@ class DistillationDataset(models.Model):
     # Данные датасета: список объектов
     items = models.JSONField(
         default=list,
-        help_text="Список элементов: [{'question_id': 1, 'question_text': '...', 'answer_text': '...', 'context_chunks': [1,2,3], 'selected_model_id': 5}]"
+        help_text=_("Список элементов: [{'question_id': 1, 'question_text': '...', 'answer_text': '...', 'context_chunks': [1,2,3], 'selected_model_id': 5}]")
     )
 
     created_by = models.CharField(max_length=100, blank=True)
@@ -4205,8 +4206,8 @@ class DistillationDataset(models.Model):
 
 class ManualInstructionSet(models.Model):
     """Набор ручных инструкций (вопрос-ответ) для дообучения."""
-    name = models.CharField(max_length=255, verbose_name="Название")
-    description = models.TextField(blank=True, verbose_name="Описание")
+    name = models.CharField(max_length=255, verbose_name=_("Название"))
+    description = models.TextField(blank=True, verbose_name=_("Описание"))
     created_by = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -4227,14 +4228,14 @@ class ManualInstruction(models.Model):
         on_delete=models.CASCADE,
         related_name='instructions'
     )
-    question = models.TextField(verbose_name="Вопрос")
-    answer = models.TextField(verbose_name="Ответ")
+    question = models.TextField(verbose_name=_("Вопрос"))
+    answer = models.TextField(verbose_name=_("Ответ"))
     context_chunks = models.JSONField(
         default=list,
         blank=True,
-        help_text="Список ID чанков, используемых в качестве контекста"
+        help_text=_("Список ID чанков, используемых в качестве контекста")
     )
-    order = models.PositiveIntegerField(default=0, help_text="Порядок отображения")
+    order = models.PositiveIntegerField(default=0, help_text=_("Порядок отображения"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -4256,12 +4257,12 @@ class HuggingFaceDataset(models.Model):
         ('FAILED', 'Ошибка'),
     ]
 
-    repo_id = models.CharField(max_length=255, verbose_name="ID репозитория на HF", help_text="Например: 'tatsu-lab/alpaca'")
-    config = models.CharField(max_length=100, blank=True, help_text="Конфигурация датасета (если есть)")
-    split = models.CharField(max_length=50, default='train', help_text="Разделы (train, validation, test)")
-    name = models.CharField(max_length=255, blank=True, help_text="Название датасета в системе (если не указано, берётся из repo_id)")
+    repo_id = models.CharField(max_length=255, verbose_name=_("ID репозитория на HF"), help_text=_("Например: 'tatsu-lab/alpaca'"))
+    config = models.CharField(max_length=100, blank=True, help_text=_("Конфигурация датасета (если есть)"))
+    split = models.CharField(max_length=50, default='train', help_text=_("Разделы (train, validation, test)"))
+    name = models.CharField(max_length=255, blank=True, help_text=_("Название датасета в системе (если не указано, берётся из repo_id)"))
     description = models.TextField(blank=True)
-    file_path = models.CharField(max_length=500, blank=True, help_text="Путь к сохранённому JSONL файлу")
+    file_path = models.CharField(max_length=500, blank=True, help_text=_("Путь к сохранённому JSONL файлу"))
     total_entries = models.IntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     error_message = models.TextField(blank=True)

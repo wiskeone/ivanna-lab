@@ -16,6 +16,7 @@ from datasets import load_dataset, Dataset
 
 import torch
 from celery import shared_task
+from django.utils.translation import gettext as _
 from django.conf import settings
 from django.utils import timezone
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
