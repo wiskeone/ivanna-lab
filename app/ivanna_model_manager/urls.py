@@ -58,6 +58,11 @@ urlpatterns = [
     path('api/evaluation/tasks/<int:task_id>/compare/', api_views.compare_models_api, name='api_compare_models'),
     path('api/evaluation/rate/', api_views.rate_response_api, name='api_rate_response'),
     path('api/huggingface/', api_views.HuggingFaceAPI.as_view(), name='huggingface_api'),
+    # v5.0: пресеты параметров генерации
+    path('api/generation-presets/', api_views.api_generation_presets_list, name='api_generation_presets'),
+    path('api/generation-presets/create/', api_views.api_generation_preset_create, name='api_generation_preset_create'),
+    path('api/generation-presets/<int:preset_id>/delete/', api_views.api_generation_preset_delete, name='api_generation_preset_delete'),
+    path('api/chat/sessions/<str:session_id>/apply_preset/', api_views.api_chat_apply_preset, name='api_chat_apply_preset'),
     path('api/evaluation-stats/', api_views.api_evaluation_stats, name='api_evaluation_stats'),
     path('api/statistics/', api_views.api_statistics_view, name='api_statistics'),
     path('api/rag-statistics/', api_views.api_rag_statistics, name='api_rag_statistics'),

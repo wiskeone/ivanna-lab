@@ -937,6 +937,17 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <!-- v5.0: пресеты генерации -->
+                <div class="mb-3 d-flex gap-2 align-items-end">
+                    <div class="flex-grow-1">
+                        <label class="form-label mb-1">{% trans "Пресет генерации" %}</label>
+                        <select id="genPresetSelect" class="form-select form-select-sm">
+                            <option value="">{% trans "— не использовать —" %}</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyGenPreset()">{% trans "Применить" %}</button>
+                </div>
+                <hr class="mt-0">
                 <div class="mb-3">
                     <input type="text" class="form-control" id="modelSearchInput" placeholder="{% trans 'Поиск моделей...' %}" onkeyup="filterModels()">
                 </div>
@@ -1647,7 +1658,39 @@
     // =============================================
     // НАСТРОЙКИ
     // =============================================
-    function showSettingsModal(){ loadSettings(); new bootstrap.Modal(document.getElementById('settingsModal')).show(); }
+    function showSettingsModal(){ loadSettings(); loadGenPresets(); new bootstrap.Modal(document.getElementById('settingsModal')).show(); }
+
+    // v5.0: пресеты генерации — список и применение к сессии
+    let genPresetsCache = [];
+    async function loadGenPresets(){
+        try{
+            const r = await fetch('/api/generation-presets/');
+            const d = await r.json();
+            genPresetsCache = d.presets || [];
+            const sel = document.getElementById('genPresetSelect');
+            if(!sel) return;
+            sel.innerHTML = '<option value="">{% trans "— не использовать —" %}</option>' +
+                genPresetsCache.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+        }catch(e){ console.warn('presets load failed', e); }
+    }
+    async function applyGenPreset(){
+        const sid = SESSION_ID; if(!sid){ showToast('{% trans "Сначала создайте сессию" %}','error'); return; }
+        const pid = parseInt(document.getElementById('genPresetSelect')?.value||'0');
+        if(!pid) return;
+        try{
+            const r = await fetch(`/api/chat/sessions/${sid}/apply_preset/`,{
+                method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRFToken()},
+                body: JSON.stringify({preset_id: pid})
+            });
+            const d = await r.json();
+            if(!d.success){ showToast(d.error||'{% trans "Ошибка" %}','error'); return; }
+            const g = d.generation_config || {};
+            if(g.temperature!==undefined){ document.getElementById('temperature').value=g.temperature; const tv=document.getElementById('tempValueDisplay'); if(tv) tv.textContent=g.temperature; }
+            if(g.max_tokens!==undefined){ document.getElementById('maxTokens').value=g.max_tokens; const tv=document.getElementById('tokensValueDisplay'); if(tv) tv.textContent=g.max_tokens; }
+            if(g.top_p!==undefined){ document.getElementById('topP').value=g.top_p; const tv=document.getElementById('topPValueDisplay'); if(tv) tv.textContent=g.top_p; }
+            showToast('{% trans "Пресет применён" %}','success');
+        }catch(e){ showToast(e.message,'error'); }
+    }
     function loadSettings(){
         const saved = localStorage.getItem('chat_settings');
         if(saved){

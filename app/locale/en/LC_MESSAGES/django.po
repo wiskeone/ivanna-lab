@@ -5301,3 +5301,31 @@ msgid ""
 msgstr ""
 "How to run inference: in this process (transformers) or on an external vLLM "
 "server (OpenAI API)"
+
+msgid "Пресет генерации"
+msgstr "Generation preset"
+
+msgid "— не использовать —"
+msgstr "— none —"
+
+msgid "Сначала создайте сессию"
+msgstr "Create a session first"
+
+msgid "Пресет применён"
+msgstr "Preset applied"
+
+msgid "Уникальное имя пресета"
+msgstr "Unique preset name"
+
+msgid "Описание пресета"
+msgstr "Preset description"
+
+msgid ""
+"Параметры генерации: temperature, max_tokens, top_p, top_k, "
+"repetition_penalty"
+msgstr ""
+"Generation parameters: temperature, max_tokens, top_p, top_k, "
+"repetition_penalty"
+
+msgid "Кто создал пресет"
+msgstr "Who created the preset"

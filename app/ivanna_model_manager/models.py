@@ -4292,3 +4292,34 @@ class HuggingFaceDataset(models.Model):
 
     def __str__(self):
         return self.repo_id
+
+class GenerationPreset(models.Model):
+    """
+    v5.0: именованный профиль параметров генерации.
+
+    Переиспользуется в чат-сессиях и сравнениях: применение пресета
+    мержит его конфиг в generation_config сессии (не заменяет целиком).
+    """
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text=_("Уникальное имя пресета")
+    )
+    description = models.TextField(blank=True, help_text=_("Описание пресета"))
+    config = models.JSONField(
+        default=dict,
+        help_text=_("Параметры генерации: temperature, max_tokens, top_p, top_k, repetition_penalty")
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='generation_presets',
+        help_text=_("Кто создал пресет")
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

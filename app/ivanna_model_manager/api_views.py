@@ -15,6 +15,7 @@ import csv
 import re
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.views.decorators.http import require_http_methods
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from rest_framework import viewsets, status
@@ -3035,3 +3036,91 @@ class HuggingFaceDatasetViewSet(viewsets.ModelViewSet):
         dataset.status = 'PENDING'
         dataset.save()
         return Response({'success': True, 'task_id': task.id})
+
+# ============================================================================
+# v5.0: Пресеты параметров генерации
+# ============================================================================
+
+@login_required
+@require_http_methods(["GET"])
+def api_generation_presets_list(request):
+    """Список пресетов генерации (для дропдауна в чате/сравнениях)."""
+    from .models import GenerationPreset
+    presets = GenerationPreset.objects.all().values(
+        'id', 'name', 'description', 'config', 'created_at'
+    )
+    return JsonResponse({'success': True, 'presets': list(presets)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_generation_preset_create(request):
+    """Создание пресета: {name, description?, config} — конфиг валидируется
+    и нормализуется (whitelist ключей, clamp диапазонов)."""
+    import json as _json
+    from .models import GenerationPreset
+    from .services.generation_presets import normalize_preset_config
+
+    try:
+        data = _json.loads(request.body or '{}')
+    except _json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    name = (data.get('name') or '').strip()
+    if not name:
+        return JsonResponse({'success': False, 'error': 'Name is required'}, status=400)
+
+    config, warnings = normalize_preset_config(data.get('config', {}))
+    preset = GenerationPreset.objects.create(
+        name=name,
+        description=(data.get('description') or '')[:500],
+        config=config,
+        created_by=request.user if request.user.is_authenticated else None,
+    )
+    return JsonResponse({'success': True, 'id': preset.id, 'config': config,
+                         'warnings': warnings})
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_generation_preset_delete(request, preset_id):
+    from .models import GenerationPreset
+    preset = GenerationPreset.objects.filter(id=preset_id).first()
+    if not preset:
+        return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
+    # удалять может автор или staff
+    if not (request.user.is_staff or preset.created_by_id == request.user.id):
+        return JsonResponse({'success': False, 'error': 'No permissions'}, status=403)
+    preset.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_chat_apply_preset(request, session_id):
+    """Применение пресета к сессии: мерж в generation_config сессии (Redis)
+    + возврат конфига клиенту для синхронизации input'ов."""
+    import json as _json
+    from .models import GenerationPreset
+    from .services.chat_service import chat_service
+    from .services.generation_presets import apply_preset_to_config
+
+    try:
+        data = _json.loads(request.body or '{}')
+    except _json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    preset = GenerationPreset.objects.filter(id=data.get('preset_id')).first()
+    if not preset:
+        return JsonResponse({'success': False, 'error': 'Preset not found'}, status=404)
+
+    session = chat_service.get_session(session_id)
+    if not session:
+        return JsonResponse({'success': False, 'error': 'Session not found'}, status=404)
+
+    session = apply_preset_to_config(session, {'generation_config': preset.config})
+    # персист в Redis тем же механизмом, что update_rag_config
+    redis_key = f"chat:session:{session_id}"
+    chat_service.redis_manager.redis.setex(redis_key, 86400,
+                                           _json.dumps(session, default=str))
+    return JsonResponse({'success': True, 'generation_config': session['generation_config'],
+                         'preset': preset.name})
