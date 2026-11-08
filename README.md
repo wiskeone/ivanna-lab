@@ -88,6 +88,10 @@ prometheus/ grafana/ nginx/ scripts/
 - Large artifacts (HF cache, model weights, datasets, logs) are intentionally git-ignored; they live in mounted volumes (`media/`, `docker_volumes/`, `app/.cache/`, `app/models/`).
 - Log files use `RotatingFileHandler` (10 MB × 5).
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md). Audit: [docs/AUDIT.md](docs/AUDIT.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
