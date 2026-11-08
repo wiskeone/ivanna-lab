@@ -17,7 +17,7 @@ Working plan for future releases. Order is approximate — items move up if some
 - [ ] **Multi-GPU** — device selection per worker, big-model sharding notes
 - [x] **Inference presets** — `GenerationPreset` model + CRUD API + 🌐-применение к сессии из настроек чата (v5.0); сравнения — следующая итерация
 - [ ] **Fine-tune queue improvements** — pause/resume, per-job GPU memory profiles
-- [ ] **Dataset editor** — inline row editing with validation for mid-size datasets
+- [x] **Dataset editor** — paginated card view + per-question edit modal + JSON editor for small datasets + inline PUT endpoint (was missing → 404 on save)
 
 ## v5.x — ecosystem
 
@@ -35,6 +35,6 @@ Working plan for future releases. Order is approximate — items move up if some
 
 **v4.x — качество и доверие:** ✅ тесты (mergekit-конфиг), ✅ CI, ✅ HTTPS-профиль, ✅ GHCR-образы. Осталось: трейнеры/RAG-тесты, структурные логи.
 
-**v5.0 — инференс и масштаб:** ✅ vLLM подключён, ✅ пресеты генерации (модель/API/UI/тесты 9). Осталось: выбор GPU на воркера, пауза/резюме файнтюна, редактор датасетов.
+**v5.0 — инференс и масштаб:** ✅ vLLM, ✅ пресеты, ✅ пауза/резюме файнтюна, ✅ редактор датасетов. Осталось: выбор GPU на воркера.
 
 **v5.x — экосистема:** хаб оценок с экспортом отчётов, авто-карточки моделей для Hugging Face, пуш GGUF обратно в Hub, однострочные доменные пайплайны (legal/code/medical) на базе дистилляции, API-ключи.

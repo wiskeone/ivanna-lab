@@ -136,6 +136,7 @@ urlpatterns = [
     path('api/evaluation/datasets/<int:dataset_id>/compare-tasks/', api_views.compare_tasks_api, name='api_compare_tasks'),
     path('evaluation/tasks/<int:task_id>/force-reset/', views.force_reset_stuck_task, name='evaluation_task_force_reset'),
     path('api/evaluation/datasets/<int:dataset_id>/questions/', api_views.evaluation_dataset_questions, name='api_evaluation_dataset_questions'),
+    path('api/evaluation/datasets/<int:dataset_id>/questions/<int:question_id>/', api_views.evaluation_dataset_question_update, name='api_evaluation_dataset_question_update'),
     path('evaluation/datasets/<int:pk>/export/', views.export_evaluation_dataset, name='evaluation_dataset_export'),
     path('api/evaluation/datasets/<int:pk>/import/', api_views.evaluation_dataset_import, name='api_evaluation_dataset_import'),
 

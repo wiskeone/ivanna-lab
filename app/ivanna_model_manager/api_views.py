@@ -1599,6 +1599,51 @@ def evaluation_dataset_questions(request, dataset_id):
             except json.JSONDecodeError:
                 continue
 
+@login_required
+@require_http_methods(["PUT"])
+def evaluation_dataset_question_update(request, dataset_id, question_id):
+    """v5.0: обновление одного вопроса в JSONL-датасете (inline-редактирование)."""
+    dataset = get_object_or_404(EvaluationDataset, id=dataset_id)
+    if not dataset.file_path or not os.path.exists(dataset.file_path):
+        return Response({'success': False, 'error': _('Файл датасета не найден')}, status=404)
+
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return Response({'success': False, 'error': _('Неверный JSON')}, status=400)
+
+    text = body.get('text', '').strip()
+    if not text:
+        return Response({'success': False, 'error': _('Текст вопроса обязателен')}, status=400)
+
+    lines = []
+    with open(dataset.file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            try:
+                item = json.loads(line)
+                lines.append(item)
+            except json.JSONDecodeError:
+                continue
+
+    qid = int(question_id)
+    if qid < 1 or qid > len(lines):
+        return Response({'success': False, 'error': _('Вопрос не найден')}, status=404)
+
+    item = lines[qid - 1]
+    item['instruction'] = text
+    item['output'] = body.get('answer', item.get('output', item.get('answer', '')))
+    item['category'] = body.get('category', item.get('category', ''))
+    item['difficulty'] = body.get('difficulty', item.get('difficulty', 'medium'))
+    lines[qid - 1] = item
+
+    with open(dataset.file_path, 'w', encoding='utf-8') as f:
+        for item in lines:
+            f.write(json.dumps(item, ensure_ascii=False) + '\n')
+
+    return Response({'success': True, 'id': qid, 'message': _('Вопрос обновлён')})
+
+
+
     total = dataset.total_questions
     total_pages = (total + per_page - 1) // per_page
     remaining = total - end
