@@ -1,0 +1,48 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Редактирование вопроса{% endblock %}
+{% block page_title %}Редактирование вопроса{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">Редактирование вопроса</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Вопрос</label>
+                            <textarea name="question_text" class="form-control" rows="4" required>{{ question.question_text }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ответ</label>
+                            <textarea name="answer_text" class="form-control" rows="8">{{ question.answer_text }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Статус</label>
+                            <select name="status" class="form-select">
+                                <option value="pending" {% if question.status == 'pending' %}selected{% endif %}>Ожидает ответа</option>
+                                <option value="answered" {% if question.status == 'answered' %}selected{% endif %}>Ответ получен</option>
+                                <option value="reviewed" {% if question.status == 'reviewed' %}selected{% endif %}>Проверено</option>
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'distillation_question_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

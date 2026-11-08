@@ -1,0 +1,175 @@
+{% extends 'ivanna_model_manager/base.html' %}
+
+{% block title %}Тестирование {{ model.name }} - Ivanna Lab{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'model_list' %}">Модели</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'model_detail' model.id %}">{{ model.name }}</a></li>
+                    <li class="breadcrumb-item active">Быстрое тестирование</li>
+                </ol>
+            </nav>
+            
+            <h1 class="h3 mb-0">
+                <i class="bi bi-lightning-charge"></i> Быстрое тестирование
+                <small class="text-muted">{{ model.name }}</small>
+            </h1>
+            <p class="text-muted">Проверьте работу модели с примерными запросами</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Запрос к модели</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Промпт</label>
+                            {{ form.prompt }}
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Макс. длина</label>
+                                {{ form.max_length }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Температура</label>
+                                {{ form.temperature }}
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="form-check">
+                                    {{ form.use_cache }}
+                                    <label class="form-check-label">Кэш</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-play-circle"></i> Запустить тест
+                            </button>
+                            
+                            <div class="btn-group ms-2">
+                                <button type="button" class="btn btn-outline-secondary dropdown-toggle" 
+                                        data-bs-toggle="dropdown">
+                                    <i class="bi bi-collection"></i> Примеры
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('Напиши список шагов для обучения нейросети')">
+                                        Обучение нейросети
+                                    </button></li>
+                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('Объясни концепцию внимания в трансформерах простыми словами')">
+                                        Объяснение концепции
+                                    </button></li>
+                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('Сгенерируй Python код для загрузки модели с Hugging Face')">
+                                        Генерация кода
+                                    </button></li>
+                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('Какие преимущества у квантизации моделей?')">
+                                        Вопрос о моделях
+                                    </button></li>
+                                </ul>
+                            </div>
+                            
+                            <a href="{% url 'model_detail' model.id %}" class="btn btn-outline-secondary ms-2">
+                                <i class="bi bi-arrow-left"></i> Назад
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            {% if response %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-chat-left-text"></i> Результат
+                        <button class="btn btn-sm btn-outline-secondary float-end" 
+                                onclick="copyToClipboard('{{ response|escapejs }}')">
+                            <i class="bi bi-clipboard"></i> Копировать
+                        </button>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Запрос:</small>
+                        <p class="mb-0">{{ form.prompt.value }}</p>
+                    </div>
+                    <div>
+                        <small class="text-muted">Ответ модели:</small>
+                        <pre style="white-space: pre-wrap;" class="mb-0">{{ response }}</pre>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    <i class="bi bi-clock"></i> Тест выполнен в {{ model.name }}
+                    {% if generation_config %}
+                    | Параметры: {{ generation_config }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Информация о тесте</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Модель:</h6>
+                        <div class="d-flex align-items-center">
+                            <span class="badge model-type-{{ model.model_type|lower }} me-2">
+                                {{ model.get_model_type_display }}
+                            </span>
+                            <span class="badge status-{{ model.status|lower }}">
+                                {{ model.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="mb-0 small mt-2">{{ model.name }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Параметры:</h6>
+                        <ul class="small mb-0">
+                            <li>Параметры: {{ model.parameter_count|default:"Неизвестно"|floatformat:"0" }}</li>
+                            <li>Размер: {{ model.size_gb|default:"?" }} GB</li>
+                            <li>Контекст: {{ model.context_length }} токенов</li>
+                            {% if model.accuracy_score %}
+                            <li>Точность: {{ model.accuracy_score|floatformat:3 }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle"></i>
+                        Это быстрое тестирование. Для расширенных возможностей используйте
+                        <a href="{% url 'model_detail' model.id %}">детальную страницу модели</a>.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setPrompt(text) {
+    document.getElementById('{{ form.prompt.auto_id }}').value = text;
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('success', 'Скопировано', 'Текст скопирован в буфер обмена');
+    });
+}
+</script>
+{% endblock %}

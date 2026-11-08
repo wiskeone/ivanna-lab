@@ -1,0 +1,273 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Модели - Ivanna Lab{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-grid-3x3-gap text-primary"></i> Управление моделями
+                </h1>
+                <div>
+                    <a href="{% url 'upload_model' %}" class="btn btn-primary">
+                        <i class="bi bi-cloud-upload"></i> Загрузить модель
+                    </a>
+                    <button class="btn btn-outline-secondary ms-2" onclick="refreshModelList()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <p class="text-muted mb-0">Загружено моделей: {{ models|length }}</p>
+        </div>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" action="{% url 'model_list' %}" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Тип модели</label>
+                            <select name="model_type" class="form-select">
+                                <option value="">Все типы</option>
+                                {% for value, label in model_types %}
+                                <option value="{{ value }}" {% if request.GET.model_type == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Статус</label>
+                            <select name="status" class="form-select">
+                                <option value="">Все статусы</option>
+                                <option value="LOADED" {% if request.GET.status == 'LOADED' %}selected{% endif %}>Загружено</option>
+                                <option value="DOWNLOADING" {% if request.GET.status == 'DOWNLOADING' %}selected{% endif %}>Загрузка</option>
+                                <option value="ERROR" {% if request.GET.status == 'ERROR' %}selected{% endif %}>Ошибка</option>
+                                <option value="MERGED" {% if request.GET.status == 'MERGED' %}selected{% endif %}>Слитая</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Поиск</label>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Название или HF ID..." 
+                                   value="{{ request.GET.search|default:'' }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-funnel"></i> Фильтр
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Всего моделей</h6>
+                            <h2 class="mb-0">{{ total_count }}</h2>
+                        </div>
+                        <i class="bi bi-collection display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Загружено</h6>
+                            <h2 class="mb-0">{{ loaded_count }}</h2>
+                        </div>
+                        <i class="bi bi-check-circle display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">В процессе</h6>
+                            <h2 class="mb-0">{{ downloading_count }}</h2>
+                        </div>
+                        <i class="bi bi-hourglass-split display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Слитые</h6>
+                            <h2 class="mb-0">{{ merged_count }}</h2>
+                        </div>
+                        <i class="bi bi-arrow-left-right display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список моделей -->
+    <div class="row" id="modelsContainer">
+        {% if models %}
+            {% for model in models %}
+                {% include 'ivanna_model_manager/partials/_model_card.html' with model=model %}
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-emoji-frown display-1 text-muted"></i>
+                        <h4 class="mt-3">Моделей не найдено</h4>
+                        <p class="text-muted">
+                            {% if request.GET.search or request.GET.model_type or request.GET.status %}
+                                Попробуйте изменить параметры фильтрации
+                            {% else %}
+                                <a href="{% url 'upload_model' %}">Загрузите первую модель</a>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if is_paginated %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно для слияния моделей -->
+<div class="modal fade" id="mergeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-arrow-left-right"></i> Слияние моделей
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% include 'ivanna_model_manager/partials/_merge_form.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Обновление списка моделей
+    async function refreshModelList() {
+        showLoading('modelsContainer', 'Обновление списка...');
+        
+        try {
+            const response = await fetch('/api/models/');
+            if (response.ok) {
+                const data = await response.json();
+                // Здесь можно обновить список моделей через AJAX
+                location.reload(); // Просто перезагружаем страницу
+            }
+        } catch (error) {
+            console.error('Ошибка обновления:', error);
+            showToast('error', 'Ошибка', 'Не удалось обновить список моделей');
+        } finally {
+            hideLoading('modelsContainer');
+        }
+    }
+    
+    // Автоматическое обновление статусов загружающихся моделей
+    {% for model in models %}
+        {% if model.status == 'DOWNLOADING' %}
+        (function(modelId) {
+            setTimeout(function() {
+                checkModelStatus(modelId);
+            }, 5000);
+        })({{ model.id }});
+        {% endif %}
+    {% endfor %}
+    
+    // Проверка статуса модели
+    async function checkModelStatus(modelId) {
+        try {
+            const response = await fetch(`/api/models/${modelId}/`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'DOWNLOADING') {
+                    // Продолжаем проверять
+                    setTimeout(() => checkModelStatus(modelId), 5000);
+                } else if (data.status === 'LOADED') {
+                    // Обновляем страницу
+                    location.reload();
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка проверки статуса:', error);
+        }
+    }
+</script>
+{% endblock %}
+{% endblock %}

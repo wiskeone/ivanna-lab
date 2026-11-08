@@ -1,0 +1,12 @@
+FROM vllm/vllm-openai:v0.19.0
+
+USER root
+
+# Обновляем transformers (опционально)
+RUN pip install --upgrade transformers
+
+# Создаём симлинк python → python3, если его нет
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
+# Оставляем точку входа как в официальном образе (использует python)
+ENTRYPOINT ["python", "-m", "vllm.entrypoints.openai.api_server"]

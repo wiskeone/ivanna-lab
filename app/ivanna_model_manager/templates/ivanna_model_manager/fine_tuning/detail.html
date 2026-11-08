@@ -1,0 +1,997 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Fine-Tuning: {{ job.name }}{% endblock %}
+
+{% block page_title %}{{ job.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .job-header {
+        background: rgba(30, 30, 30, 0.8);
+        border: 1px solid #444;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .job-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    
+    .meta-item {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid #555;
+        border-radius: 8px;
+        padding: 12px;
+    }
+    
+    .meta-label {
+        color: #aaa;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+    }
+    
+    .meta-value {
+        color: white;
+        font-weight: 600;
+    }
+    
+    .status-badge-large {
+        display: inline-block;
+        padding: 6px 15px;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .progress-container {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid #444;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .progress {
+        height: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        transition: width 0.3s ease;
+    }
+    
+    .logs-container {
+        background: #1e1e1e;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+        font-size: 0.85rem;
+        color: #e0e0e0;
+        max-height: 400px;
+        overflow-y: auto;
+        margin: 10px 0 0 0;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+    
+    .log-line {
+        padding: 2px 0;
+        border-bottom: 1px solid #2a2a2a;
+        white-space: pre-wrap;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .log-line .log-level {
+        font-weight: bold;
+        min-width: 60px;
+        display: inline-block;
+    }
+    
+    .log-line.info .log-level { color: #5bc0de; }
+    .log-line.warning .log-level { color: #f0ad4e; }
+    .log-line.error .log-level { color: #d9534f; }
+    .log-line.success .log-level { color: #5cb85c; }
+    
+    .log-line .log-timestamp {
+        color: #888;
+        font-size: 0.75rem;
+        min-width: 70px;
+    }
+    
+    .log-line .log-message {
+        flex: 1;
+        word-break: break-word;
+    }
+    
+    .checkpoints-list {
+        background: rgba(30, 30, 30, 0.8);
+        border: 1px solid #444;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 20px 0;
+    }
+    
+    .checkpoint-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #444;
+        transition: background 0.2s ease;
+    }
+    
+    .checkpoint-item:hover {
+        background: rgba(50, 50, 50, 0.8);
+    }
+    
+    .checkpoint-item:last-child {
+        border-bottom: none;
+    }
+    
+    .checkpoint-info {
+        flex: 1;
+    }
+    
+    .checkpoint-step {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+    
+    .checkpoint-time {
+        color: #aaa;
+        font-size: 0.85rem;
+        margin-left: 10px;
+    }
+    
+    .checkpoint-metrics {
+        display: flex;
+        gap: 15px;
+        color: #ddd;
+        font-size: 0.9rem;
+    }
+    
+    .evaluation-card {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .evaluation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        cursor: pointer;
+    }
+    
+    .evaluation-dataset {
+        font-weight: 600;
+        color: white;
+    }
+    
+    .evaluation-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .metric-item {
+        background: rgba(30, 30, 30, 0.9);
+        border: 1px solid #555;
+        border-radius: 6px;
+        padding: 10px;
+        text-align: center;
+    }
+    
+    .metric-name {
+        color: #aaa;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+    }
+    
+    .metric-value {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #555;
+        color: #ddd;
+    }
+    
+    .btn-action:hover {
+        background: rgba(107, 70, 193, 0.15);
+        border-color: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-action.primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        border: none;
+        color: white;
+    }
+    
+    .btn-action.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 70, 193, 0.4);
+    }
+    
+    .btn-action.danger {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+    }
+    
+    .btn-action.danger:hover {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: #ef4444;
+    }
+
+    /* Стили для графиков */
+    .metric-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-left: 8px;
+    }
+    .metric-good { background-color: #10b981; }
+    .metric-bad { background-color: #ef4444; }
+    .axis-selector {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .axis-btn {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid #555;
+        color: #ddd;
+    }
+    .axis-btn.active {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+    
+    /* Аккордеон для логов */
+    .log-accordion {
+        margin: 20px 0;
+    }
+    .log-accordion .card {
+        border: 1px solid #444;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .log-accordion .card-header {
+        background: rgba(40,40,40,0.9);
+        border-bottom: 1px solid #555;
+        cursor: pointer;
+        padding: 12px 15px;
+    }
+    .log-accordion .card-header:hover {
+        background: rgba(50,50,50,0.9);
+    }
+    .log-status {
+        font-size: 0.9rem;
+        color: #aaa;
+    }
+    .log-status.running { color: #f0ad4e; }
+    .log-status.completed { color: #5cb85c; }
+    .log-status.failed { color: #d9534f; }
+    
+    @media (max-width: 768px) {
+        .action-buttons {
+            flex-direction: column;
+        }
+        .btn-action {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок и действия -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-light">{{ job.name }}</h3>
+        <a href="{% url 'fine_tuning_dashboard' %}" class="btn-action">
+            <i class="bi bi-arrow-left"></i> Назад
+        </a>
+    </div>
+    
+    <!-- Информация о задаче -->
+    <div class="job-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="status-badge-large status-{{ job.status|lower }}" id="jobStatusBadge">
+                    <i class="bi 
+                        {% if job.status == 'RUNNING' %}bi-arrow-repeat spin
+                        {% elif job.status == 'PENDING' %}bi-hourglass
+                        {% elif job.status == 'PREPARING' %}bi-gear
+                        {% elif job.status == 'COMPLETED' %}bi-check-circle
+                        {% elif job.status == 'FAILED' %}bi-exclamation-circle
+                        {% elif job.status == 'CANCELLED' %}bi-x-circle
+                        {% endif %} me-2"></i>
+                    <span id="jobStatusText">{{ job.get_status_display }}</span>
+                </span>
+                <span class="badge bg-primary ms-3">
+                    {% if job.method == 'document' %}📄 Документы
+                    {% elif job.method == 'instruction' %}📋 Инструкции
+                    {% elif job.method == 'raft' %}🎯 RAFT
+                    {% endif %}
+                </span>
+            </div>
+            <div class="text-muted small">
+                Создана: {{ job.created_at|date:"d.m.Y H:i" }} | 
+                Автор: {{ job.created_by }}
+            </div>
+        </div>
+        
+        {% if job.description %}
+        <div class="mt-3 text-muted">
+            {{ job.description }}
+        </div>
+        {% endif %}
+        
+        <div class="job-meta">
+            <div class="meta-item">
+                <div class="meta-label">Базовая модель</div>
+                <div class="meta-value">{{ job.base_model.display_name }}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">LoRA параметры</div>
+                <div class="meta-value">r={{ job.lora_r }}, α={{ job.lora_alpha }}, dropout={{ job.lora_dropout }}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Гиперпараметры</div>
+                <div class="meta-value">lr={{ job.learning_rate }}, batch={{ job.batch_size }}, epochs={{ job.num_epochs }}</div>
+            </div>
+            {% if job.output_model %}
+            <div class="meta-item">
+                <div class="meta-label">Результирующая модель</div>
+                <div class="meta-value">
+                    <a href="{% url 'model_detail' job.output_model.id %}" class="text-info">
+                        {{ job.output_model.display_name }}
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Кнопки действий -->
+    <div class="action-buttons">
+        {% if job.status == 'PENDING' %}
+        <button class="btn-action primary" onclick="startJob()">
+            <i class="bi bi-play-fill"></i> Запустить
+        </button>
+        {% endif %}
+        
+        {% if job.status == 'PENDING' or job.status == 'PREPARING' or job.status == 'TRAINING' %}
+        <button class="btn-action danger" onclick="cancelJob()">
+            <i class="bi bi-x-circle"></i> Отменить
+        </button>
+        {% endif %}
+        
+        {% if job.status == 'COMPLETED' and job.output_model %}
+        <a href="{% url 'model_detail' job.output_model.id %}" class="btn-action primary">
+            <i class="bi bi-cpu"></i> Перейти к модели
+        </a>
+        {% endif %}
+        
+        {% if job.status == 'COMPLETED' %}
+        <button class="btn-action" onclick="exportCheckpoints()">
+            <i class="bi bi-download"></i> Экспорт чекпоинтов
+        </button>
+        {% endif %}
+        
+        {% if job.status == 'FAILED' or job.status == 'CANCELLED' %}
+        <button class="btn-action primary" onclick="restartJob()">
+            <i class="bi bi-arrow-repeat"></i> Перезапустить
+        </button>
+        {% endif %}
+        
+        <button class="btn-action danger" onclick="deleteJob()">
+            <i class="bi bi-trash"></i> Удалить
+        </button>
+    </div>
+    
+    <!-- Прогресс -->
+    <div class="progress-container">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-light">Прогресс обучения</span>
+            <span class="text-muted" id="progressPercent">{{ job.progress|floatformat:1 }}%</span>
+        </div>
+        <div class="progress">
+            <div class="progress-bar" id="progressBar" style="width: {{ job.progress }}%"></div>
+        </div>
+        <div class="mt-2 text-muted small" id="currentStep">
+            {% if job.current_step %}
+            <i class="bi bi-info-circle me-1"></i> {{ job.current_step }}
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Блок графиков -->
+    <div class="card mb-4">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-graph-up me-2"></i>Метрики обучения
+            </h5>
+            <div class="axis-selector">
+                <span class="axis-btn active" data-axis="step" onclick="setXAxis('step')">По шагам</span>
+                <span class="axis-btn" data-axis="epoch" onclick="setXAxis('epoch')">По эпохам</span>
+                <span class="axis-btn" data-axis="time" onclick="setXAxis('time')">По времени</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="text-light">Loss</span>
+                        <span id="lossIndicator" class="metric-indicator"></span>
+                        <span id="currentLoss" class="ms-2 text-muted small">—</span>
+                    </div>
+                    <div class="chart-container" id="lossChart" style="height: 300px;"></div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="text-light">Gradient Norm</span>
+                    </div>
+                    <div class="chart-container" id="gradChart" style="height: 300px;"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="text-light">Learning Rate</span>
+                    </div>
+                    <div class="chart-container" id="lrChart" style="height: 200px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Аккордеон для логов -->
+    <div class="log-accordion">
+        <div class="card bg-dark border">
+            <div class="card-header" data-bs-toggle="collapse" data-bs-target="#logCollapse" aria-expanded="true">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-journal-text me-2"></i>Логи выполнения
+                        <span class="log-status ms-2" id="logStatus">
+                            {% if job.status == 'TRAINING' %} (обучение...)
+                            {% elif job.status == 'COMPLETED' %} (завершено)
+                            {% elif job.status == 'FAILED' %} (ошибка)
+                            {% elif job.status == 'CANCELLED' %} (отменено)
+                            {% endif %}
+                        </span>
+                    </div>
+                    <i class="bi bi-chevron-up" id="logCollapseIcon"></i>
+                </div>
+            </div>
+            <div class="collapse show" id="logCollapse">
+                <div class="card-body p-0">
+                    <div class="logs-container" id="logs">
+                        {% for line in job.logs.splitlines %}
+                            {% with log_entry=line|parse_log %}
+                            <div class="log-line {{ log_entry.level_class }}">
+                                <span class="log-timestamp">{{ log_entry.timestamp }}</span>
+                                <span class="log-level">{{ log_entry.level }}</span>
+                                <span class="log-message">{{ log_entry.message }}</span>
+                            </div>
+                            {% endwith %}
+                        {% empty %}
+                        <div class="log-line">
+                            <span class="log-message">Логи пока пусты...</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Список чекпоинтов -->
+    {% if checkpoints %}
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+        <h5 class="text-light">
+            <i class="bi bi-save me-2"></i>Чекпоинты
+        </h5>
+    </div>
+    <div class="checkpoints-list">
+        {% for cp in checkpoints %}
+        <div class="checkpoint-item">
+            <div class="checkpoint-info">
+                <span class="checkpoint-step">Шаг {{ cp.step }}</span>
+                <span class="checkpoint-time">{{ cp.created_at|date:"d.m.Y H:i" }}</span>
+            </div>
+            <div class="checkpoint-metrics">
+                {% if cp.loss %}
+                <span><i class="bi bi-graph-down"></i> loss: {{ cp.loss|floatformat:4 }}</span>
+                {% endif %}
+                {% if cp.grad_norm %}
+                <span><i class="bi bi-rulers"></i> grad: {{ cp.grad_norm|floatformat:4 }}</span>
+                {% endif %}
+                <span class="badge bg-secondary">{{ cp.metrics|length }} метрик</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Результаты оценки -->
+    {% if evaluations %}
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+        <h5 class="text-light">
+            <i class="bi bi-clipboard-check me-2"></i>Результаты оценки
+        </h5>
+    </div>
+    
+    {% for eval in evaluations %}
+    <div class="evaluation-card">
+        <div class="evaluation-header" onclick="toggleEvaluation(this)">
+            <div>
+                <span class="evaluation-dataset">{{ eval.dataset.name }}</span>
+                <small class="text-muted ms-2">{{ eval.created_at|date:"d.m.Y H:i" }}</small>
+            </div>
+            <i class="bi bi-chevron-down"></i>
+        </div>
+        <div class="evaluation-details" style="display: none;">
+            <div class="evaluation-metrics">
+                {% for key, value in eval.metrics.items %}
+                <div class="metric-item">
+                    <div class="metric-name">{{ key }}</div>
+                    <div class="metric-value">{{ value|floatformat:3 }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if eval.detailed_results %}
+            <div class="mt-3">
+                <strong class="text-light">Примеры ответов:</strong>
+                <div class="mt-2">
+                    {% for example in eval.detailed_results|slice:":3" %}
+                    <div class="bg-dark p-2 rounded mb-2">
+                        <div class="text-muted small">Prediction:</div>
+                        <div class="text-light">{{ example.prediction|truncatechars:200 }}</div>
+                        <div class="text-muted small mt-1">Reference:</div>
+                        <div class="text-light">{{ example.reference|truncatechars:200 }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+<script>
+    const jobId = {{ job.id }};
+    let logInterval = null;
+    let progressInterval = null;
+    let metricsInterval = null;
+    let xAxisMode = 'step'; // step, epoch, time
+    let metricsData = {
+        steps: [],
+        epochs: [],
+        times: [],
+        train_loss: [],
+        eval_loss: [],
+        grad_norm: [],
+        lr: []
+    };
+
+    // ========== Функция получения CSRF-токена ==========
+    function getCSRFToken() {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return cookieValue;
+    }
+
+    // ========== Функции для работы с графиками ==========
+    function fetchMetrics() {
+        fetch(`/fine-tuning/${jobId}/metrics/`)
+            .then(response => response.json())
+            .then(data => {
+                metricsData = {
+                    steps: [],
+                    epochs: [],
+                    times: [],
+                    train_loss: [],
+                    eval_loss: [],
+                    grad_norm: [],
+                    lr: []
+                };
+                data.metrics.forEach(m => {
+                    metricsData.steps.push(m.step);
+                    metricsData.epochs.push(m.epoch || 0);
+                    metricsData.times.push(m.time || 0);
+                    metricsData.train_loss.push(m.train_loss);
+                    metricsData.eval_loss.push(m.eval_loss);
+                    metricsData.grad_norm.push(m.grad_norm);
+                    metricsData.lr.push(m.learning_rate);
+                });
+                updateCharts();
+            });
+    }
+
+    function updateCharts() {
+        if (metricsData.steps.length === 0) return;
+
+        let xData, xTitle;
+        if (xAxisMode === 'step') {
+            xData = metricsData.steps;
+            xTitle = 'Шаг';
+        } else if (xAxisMode === 'epoch') {
+            xData = metricsData.epochs;
+            xTitle = 'Эпоха';
+        } else {
+            xData = metricsData.times;
+            xTitle = 'Время (сек)';
+        }
+
+        // Loss (train + eval)
+        const lossTraces = [];
+        if (metricsData.train_loss.some(v => v !== null)) {
+            lossTraces.push({
+                x: xData,
+                y: metricsData.train_loss,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Train Loss',
+                line: {color: '#ef4444', width: 2},
+                marker: {size: 4}
+            });
+        }
+        if (metricsData.eval_loss.some(v => v !== null)) {
+            lossTraces.push({
+                x: xData,
+                y: metricsData.eval_loss,
+                type: 'scatter',
+                mode: 'markers+lines',
+                name: 'Eval Loss',
+                line: {color: '#ffa500', width: 2, dash: 'dash'},
+                marker: {size: 6}
+            });
+        }
+        Plotly.react('lossChart', lossTraces, {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: {color: '#ddd'},
+            xaxis: {gridcolor: '#333', title: xTitle},
+            yaxis: {gridcolor: '#333', title: 'Loss'}
+        });
+
+        // Gradient Norm
+        Plotly.react('gradChart', [{
+            x: xData,
+            y: metricsData.grad_norm,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Gradient Norm',
+            line: {color: '#10b981', width: 2},
+            marker: {size: 4}
+        }], {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: {color: '#ddd'},
+            xaxis: {gridcolor: '#333', title: xTitle},
+            yaxis: {gridcolor: '#333', title: 'Gradient Norm'}
+        });
+
+        // Learning Rate
+        Plotly.react('lrChart', [{
+            x: xData,
+            y: metricsData.lr,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Learning Rate',
+            line: {color: '#3b82f6', width: 2},
+            marker: {size: 4}
+        }], {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: {color: '#ddd'},
+            xaxis: {gridcolor: '#333', title: xTitle},
+            yaxis: {gridcolor: '#333', title: 'Learning Rate'}
+        });
+
+        // Обновляем индикатор текущего loss
+        const lastTrainLoss = metricsData.train_loss.filter(v => v !== null).slice(-1)[0];
+        if (lastTrainLoss !== undefined) {
+            document.getElementById('currentLoss').textContent = lastTrainLoss.toFixed(4);
+            const indicator = document.getElementById('lossIndicator');
+            if (lastTrainLoss > 1.0) {
+                indicator.className = 'metric-indicator metric-bad';
+            } else {
+                indicator.className = 'metric-indicator metric-good';
+            }
+        }
+    }
+
+    function setXAxis(mode) {
+        xAxisMode = mode;
+        document.querySelectorAll('.axis-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.axis-btn[data-axis="${mode}"]`).classList.add('active');
+        updateCharts();
+    }
+
+    // ========== Функции для обновления прогресса и логов ==========
+    function startPolling() {
+        if (logInterval) clearInterval(logInterval);
+        if (progressInterval) clearInterval(progressInterval);
+        if (metricsInterval) clearInterval(metricsInterval);
+        logInterval = setInterval(refreshLogs, 5000);
+        progressInterval = setInterval(updateProgress, 3000);
+        metricsInterval = setInterval(fetchMetrics, 10000); // обновляем графики каждые 10 сек
+    }
+
+    function refreshLogs() {
+        fetch(`/fine-tuning/{{ job.id }}/logs/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.logs) {
+                    renderLogs(data.logs);
+                }
+            });
+    }
+
+    function renderLogs(logText) {
+        const logsContainer = document.getElementById('logs');
+        const lines = logText.split('\n').filter(l => l.trim());
+        let html = '';
+        lines.forEach(line => {
+            const match = line.match(/^\[(.*?)\]\s+(\w+)\s+(.*)$/);
+            if (match) {
+                const timestamp = match[1];
+                const level = match[2];
+                const message = match[3];
+                let levelClass = 'info';
+                if (level === 'WARNING' || level === 'WARN') levelClass = 'warning';
+                if (level === 'ERROR') levelClass = 'error';
+                if (level === 'SUCCESS') levelClass = 'success';
+                html += `<div class="log-line ${levelClass}">
+                    <span class="log-timestamp">${escapeHtml(timestamp)}</span>
+                    <span class="log-level">${escapeHtml(level)}</span>
+                    <span class="log-message">${escapeHtml(message)}</span>
+                </div>`;
+            } else {
+                html += `<div class="log-line"><span class="log-message">${escapeHtml(line)}</span></div>`;
+            }
+        });
+        logsContainer.innerHTML = html || '<div class="log-line"><span class="log-message">Логи пусты...</span></div>';
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+
+    function updateProgress() {
+        fetch(`/fine-tuning/{{ job.id }}/progress/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('progressPercent').textContent = data.progress.toFixed(1) + '%';
+                document.getElementById('progressBar').style.width = data.progress + '%';
+                const stepEl = document.getElementById('currentStep');
+                if (data.current_step) {
+                    stepEl.innerHTML = `<i class="bi bi-info-circle me-1"></i> ${escapeHtml(data.current_step)}`;
+                }
+                const statusBadge = document.getElementById('jobStatusText');
+                if (statusBadge) statusBadge.textContent = data.status_display || data.status;
+
+                // Обновляем статус в заголовке логов
+                const logStatus = document.getElementById('logStatus');
+                if (data.status === 'TRAINING') {
+                    logStatus.innerHTML = ' (обучение...)';
+                    logStatus.className = 'log-status running';
+                } else if (data.status === 'COMPLETED') {
+                    logStatus.innerHTML = ' (завершено)';
+                    logStatus.className = 'log-status completed';
+                } else if (data.status === 'FAILED') {
+                    logStatus.innerHTML = ' (ошибка)';
+                    logStatus.className = 'log-status failed';
+                } else if (data.status === 'CANCELLED') {
+                    logStatus.innerHTML = ' (отменено)';
+                    logStatus.className = 'log-status';
+                } else {
+                    logStatus.innerHTML = '';
+                }
+
+                if (data.status === 'COMPLETED' || data.status === 'FAILED' || data.status === 'CANCELLED') {
+                    if (logInterval) clearInterval(logInterval);
+                    if (progressInterval) clearInterval(progressInterval);
+                    if (metricsInterval) clearInterval(metricsInterval);
+                }
+            });
+    }
+
+    // ========== Функции действий (startJob, cancelJob, deleteJob, restartJob) ==========
+    function startJob() {
+        fetch(`/api/fine-tuning-jobs/${jobId}/start/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().catch(() => response.text()).then(err => {
+                    throw new Error(typeof err === 'string' ? err : JSON.stringify(err));
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showNotification('Задача запущена', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Start job error:', error);
+            showNotification('Ошибка сети: ' + error.message, 'error');
+        });
+    }
+
+    function cancelJob() {
+        if (!confirm('Отменить выполнение задачи?')) return;
+        
+        fetch(`/api/fine-tuning-jobs/${jobId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Задача отменена', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Ошибка: ' + data.error, 'error');
+            }
+        });
+    }
+
+    function deleteJob() {
+        if (!confirm('Удалить задачу? Это действие нельзя отменить.')) return;
+        
+        fetch(`/api/fine-tuning-jobs/${jobId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showNotification('Задача удалена', 'success');
+                setTimeout(() => {
+                    window.location.href = "{% url 'fine_tuning_dashboard' %}";
+                }, 1500);
+            } else {
+                showNotification('Ошибка при удалении', 'error');
+            }
+        });
+    }
+
+    function restartJob() {
+        if (!confirm('Перезапустить задачу?')) return;
+        
+        fetch(`/api/fine-tuning-jobs/${jobId}/start/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ restart: true })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Задача перезапущена', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Ошибка: ' + data.error, 'error');
+            }
+        });
+    }
+
+    function toggleEvaluation(header) {
+        const details = header.nextElementSibling;
+        const icon = header.querySelector('i');
+        if (details.style.display === 'none') {
+            details.style.display = 'block';
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-up');
+        } else {
+            details.style.display = 'none';
+            icon.classList.remove('bi-chevron-up');
+            icon.classList.add('bi-chevron-down');
+        }
+    }
+
+    function exportCheckpoints() {
+        window.location.href = `/api/fine-tuning-jobs/${jobId}/export/`;
+    }
+
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function showNotification(message, type) {
+        alert(message);
+    }
+
+    // ========== Инициализация при загрузке страницы ==========
+    document.addEventListener('DOMContentLoaded', function() {
+        const status = "{{ job.status }}";
+        if (status === 'PREPARING' || status === 'TRAINING') {
+            startPolling();
+        }
+        // Загружаем метрики и логи один раз
+        fetchMetrics();
+        refreshLogs();
+
+        // Обработка сворачивания/разворачивания логов (меняем иконку)
+        const logCollapse = document.getElementById('logCollapse');
+        const logIcon = document.getElementById('logCollapseIcon');
+        logCollapse.addEventListener('shown.bs.collapse', function () {
+            logIcon.classList.remove('bi-chevron-down');
+            logIcon.classList.add('bi-chevron-up');
+        });
+        logCollapse.addEventListener('hidden.bs.collapse', function () {
+            logIcon.classList.remove('bi-chevron-up');
+            logIcon.classList.add('bi-chevron-down');
+        });
+    });
+</script>
+{% endblock %}

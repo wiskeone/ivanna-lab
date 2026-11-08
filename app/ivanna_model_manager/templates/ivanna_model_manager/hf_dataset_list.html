@@ -1,0 +1,208 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Датасеты Hugging Face{% endblock %}
+{% block page_title %}Датасеты Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-cloud-download me-2"></i>Датасеты с Hugging Face</h2>
+            <p class="text-muted">Импортированные датасеты будут доступны для fine-tuning</p>
+        </div>
+        <a href="{% url 'hf_dataset_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Импортировать датасет
+        </a>
+    </div>
+
+    {% if page_obj %}
+    <div class="row">
+        {% for dataset in page_obj %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">{{ dataset.name|default:dataset.repo_id }}</h6>
+                    <span class="badge 
+                        {% if dataset.status == 'COMPLETED' %}bg-success
+                        {% elif dataset.status == 'DOWNLOADING' %}bg-info
+                        {% elif dataset.status == 'PROCESSING' %}bg-warning
+                        {% elif dataset.status == 'FAILED' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ dataset.get_status_display }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="small text-muted mb-2">
+                        <i class="bi bi-database"></i> {{ dataset.repo_id }}
+                    </div>
+                    {% if dataset.description %}
+                    <p class="card-text small">{{ dataset.description|truncatechars:120 }}</p>
+                    {% endif %}
+                    <div class="small text-muted">
+                        <div>Раздел: {{ dataset.split }}</div>
+                        {% if dataset.total_entries %}
+                        <div>Записей: {{ dataset.total_entries }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'hf_dataset_detail' dataset.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Подробнее
+                        </a>
+                        {% if dataset.status == 'COMPLETED' %}
+                        <a href="{% url 'evaluation_dataset_detail' dataset.id %}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-database"></i> Просмотреть датасет
+                        </a>
+                        {% endif %}
+                        {% if dataset.status in 'PENDING,FAILED' %}
+                        <a href="{% url 'hf_dataset_import' dataset.id %}" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-play"></i> Запустить импорт
+                        </a>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteDataset({{ dataset.id }}, '{{ dataset.name|default:dataset.repo_id|escapejs }}')">
+                            <i class="bi bi-trash"></i> Удалить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-cloud-slash display-4 text-muted"></i>
+        <h5 class="mt-3">Нет импортированных датасетов</h5>
+        <p class="text-muted">Начните с импорта датасета с Hugging Face Hub</p>
+        <a href="{% url 'hf_dataset_create' %}" class="btn btn-primary">
+            <i class="bi bi-cloud-download"></i> Импортировать датасет
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(message, type = 'info') {
+    if (typeof window.showGlobalToast === 'function') {
+        window.showGlobalToast(message, type);
+        return;
+    }
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toastEl = document.createElement('div');
+        const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info';
+        toastEl.className = `toast align-items-center text-bg-${bgClass} border-0 position-fixed top-0 end-0 m-3`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.style.zIndex = '9999';
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(toastEl);
+        const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    } else {
+        alert(message);
+    }
+}
+
+function deleteDataset(datasetId, datasetName) {
+    if (!confirm(`Удалить датасет "${datasetName}"? Это действие нельзя отменить.`)) return;
+    fetch(`/hf-datasets/${datasetId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Датасет "${datasetName}" удалён`, 'success');
+            location.reload();
+        } else {
+            showToast('Ошибка: ' + data.error, 'error');
+        }
+    })
+    .catch(err => showToast('Ошибка сети: ' + err.message, 'error'));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,333 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Мои чат-сессии{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Стили для карточек сессий */
+    .session-card {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid #444;
+        border-radius: 16px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .session-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(107, 70, 193, 0.2);
+    }
+    .session-header {
+        padding: 20px 20px 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .session-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .session-title i {
+        color: var(--primary-color);
+        font-size: 1.2rem;
+    }
+    .session-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 10px;
+    }
+    .session-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .session-body {
+        padding: 16px 20px;
+        flex: 1;
+    }
+    .session-footer {
+        padding: 12px 20px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .session-actions {
+        display: flex;
+        gap: 8px;
+    }
+    .btn-icon {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+    .btn-icon:hover {
+        background: rgba(107,70,193,0.2);
+        color: white;
+    }
+    .btn-icon.danger:hover {
+        background: rgba(220,53,69,0.2);
+        color: #dc3545;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: rgba(40,40,40,0.6);
+        border-radius: 24px;
+        border: 1px solid #444;
+    }
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        opacity: 0.7;
+    }
+    .empty-state h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+    .empty-state p {
+        color: var(--text-secondary);
+        max-width: 500px;
+        margin: 0 auto 24px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-chat-dots me-2" style="color: var(--primary-color);"></i>
+                Мои чат-сессии
+            </h2>
+            <p class="text-muted mb-0">Управление вашими диалогами с AI моделями</p>
+        </div>
+        <a href="{% url 'chat_view' %}?force_new=true" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Новая сессия
+        </a>
+    </div>
+
+    {% if sessions %}
+    <div class="row g-4">
+        {% for session in sessions %}
+        <div class="col-md-6 col-xl-4">
+            <div class="session-card" data-session-id="{{ session.session_id }}">
+                <div class="session-header">
+                    <div class="session-title">
+                        <i class="bi {% if session.checkpoint %}bi-robot{% else %}bi-chat{% endif %}"></i>
+                        {{ session.display_name|default:"Чат-сессия" }}
+                    </div>
+                    <div class="session-meta">
+                        <span><i class="bi bi-chat-text"></i> {{ session.total_messages }} сообщ.</span>
+                        <span><i class="bi bi-hash"></i> {{ session.total_tokens|default:0 }} токенов</span>
+                        <span><i class="bi bi-clock"></i> {{ session.last_activity|time_ago }}</span>
+                    </div>
+                </div>
+                <div class="session-body">
+                    <div class="small text-muted mb-2">
+                        <i class="bi bi-fingerprint"></i> ID: {{ session.session_id|truncatechars:18 }}
+                    </div>
+                    {% if session.checkpoint %}
+                    <div class="small">
+                        <i class="bi bi-cpu me-1" style="color: var(--primary-color);"></i>
+                        Модель: <span class="text-white">{{ session.checkpoint.display_name }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="session-footer">
+                    <span>
+                        <i class="bi bi-calendar"></i>
+                        {{ session.created_at|date:"d.m.Y H:i" }}
+                    </span>
+                    <div class="session-actions">
+                        <a href="{% url 'chat_view' session_id=session.session_id %}" 
+                           class="btn-icon" title="Продолжить">
+                            <i class="bi bi-play-circle-fill fs-5"></i>
+                        </a>
+                        <button class="btn-icon danger delete-session-btn" 
+                                data-session-id="{{ session.session_id }}"
+                                data-session-name="{{ session.display_name|default:'Сессию'|escapejs }}"
+                                title="Удалить">
+                            <i class="bi bi-trash fs-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="bi bi-chat-left-dots"></i>
+        </div>
+        <h3>У вас пока нет чат-сессий</h3>
+        <p>Создайте первую сессию, чтобы начать общение с моделями.<br>
+        Вы сможете выбирать модели, включать RAG и сохранять историю диалогов.</p>
+        <a href="{% url 'chat_view' %}?force_new=true" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Создать сессию
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteSessionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Удаление сессии
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить сессию <strong id="deleteSessionName"></strong>?</p>
+                <p class="text-muted small mb-0">Все сообщения будут удалены без возможности восстановления.</p>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash me-1"></i> Удалить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let sessionToDelete = null;
+
+    function getCSRFToken() {
+        const cookieValue = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+        return cookieValue ? cookieValue.pop() : '';
+    }
+
+    function showToast(message, type = 'info') {
+        // Используем глобальную функцию, если есть, иначе своя
+        if (typeof window.showGlobalToast === 'function') {
+            window.showGlobalToast(message, type);
+            return;
+        }
+        const toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            const container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1060';
+            document.body.appendChild(container);
+        }
+        const toastId = 'toast-' + Date.now();
+        const icons = {
+            success: 'bi-check-circle',
+            error: 'bi-exclamation-circle',
+            warning: 'bi-exclamation-triangle',
+            info: 'bi-info-circle'
+        };
+        const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+        const toastHtml = `
+            <div class="toast align-items-center text-bg-${bgClass} border-0" id="${toastId}" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${icons[type] || icons.info} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        document.getElementById('toastContainer').insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    function deleteSession(sessionId) {
+        fetch(`/chat/sessions/${sessionId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showToast('Сессия удалена', 'success');
+                // Удаляем карточку из DOM
+                const card = document.querySelector(`.session-card[data-session-id="${sessionId}"]`);
+                if (card) card.remove();
+                // Если не осталось сессий, показываем пустое состояние
+                if (document.querySelectorAll('.session-card').length === 0) {
+                    location.reload(); // проще перезагрузить, чтобы отобразить empty-state
+                }
+            } else {
+                return response.json().then(data => { throw new Error(data.error || 'Ошибка удаления'); });
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            showToast(error.message, 'error');
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteButtons = document.querySelectorAll('.delete-session-btn');
+        const modal = new bootstrap.Modal(document.getElementById('deleteSessionModal'));
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sessionToDelete = btn.dataset.sessionId;
+                const sessionName = btn.dataset.sessionName || 'эту сессию';
+                document.getElementById('deleteSessionName').textContent = sessionName;
+                modal.show();
+            });
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            if (sessionToDelete) {
+                deleteSession(sessionToDelete);
+                modal.hide();
+                sessionToDelete = null;
+            }
+        });
+
+        // Клик по карточке для перехода (кроме кнопок)
+        document.querySelectorAll('.session-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.session-actions') || e.target.closest('.btn-icon')) return;
+                const sessionId = card.dataset.sessionId;
+                if (sessionId) {
+                    window.location.href = `/chat/${sessionId}/`;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

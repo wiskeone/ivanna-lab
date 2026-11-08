@@ -1,0 +1,432 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Сравнение моделей: {{ task.name }}{% endblock %}
+{% block page_title %}Сравнение моделей{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок и навигация -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="bi bi-bar-chart me-2"></i>Сравнение моделей
+                    </h2>
+                    <p class="text-muted mb-0">{{ task.name }} – {{ task.dataset.name }}</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'evaluation_task_detail' task.id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Назад
+                    </a>
+                    <button class="btn btn-primary" onclick="exportComparison()" {% if no_data %}disabled{% endif %}>
+                        <i class="bi bi-download me-1"></i>Экспорт
+                    </button>
+                </div>
+            </div>
+
+            {% if no_data %}
+            <div class="text-center py-5">
+                <i class="bi bi-question-circle display-4 text-muted mb-3"></i>
+                <h5 class="text-muted mb-3">Нет данных для сравнения</h5>
+                <p class="text-muted">Задача не содержит результатов или не завершена</p>
+                <a href="{% url 'evaluation_task_detail' task.id %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-left me-1"></i>Вернуться к задаче
+                </a>
+            </div>
+            {% else %}
+
+            <!-- Легенда моделей -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h6 class="mb-3">Модели в сравнении:</h6>
+                    <div class="row">
+                        {% for model in models %}
+                        <div class="col-md-3 col-sm-6 mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="color-indicator me-2" 
+                                     style="width: 12px; height: 12px; background-color: {% cycle '#6f42c1' '#20c997' '#dc3545' '#fd7e14' '#0d6efd' as model_color %}; border-radius: 2px;"></div>
+                                <div>
+                                    <div class="small fw-bold">{{ model.display_name }}</div>
+                                    <div class="small text-muted">
+                                        {% if model.model_type == 'QWEN' %}
+                                        <span class="badge model-qwen">QWEN</span>
+                                        {% elif model.model_type == 'LLAMA' %}
+                                        <span class="badge model-llama">LLAMA</span>
+                                        {% elif model.model_type == 'MISTRAL' %}
+                                        <span class="badge model-mistral">MISTRAL</span>
+                                        {% else %}
+                                        <span class="badge model-custom">CUSTOM</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Сводная статистика -->
+            {% if summary_stats.avg_time %}
+            <div class="card mb-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Сводная статистика
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Метрика</th>
+                                    {% for model in models %}
+                                    <th class="text-center">{{ model.display_name|truncatechars:15 }}</th>
+                                    {% endfor %}
+                                    <th>Лучший</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold">Среднее время ответа (с)</td>
+                                    {% for time in summary_stats.avg_time %}
+                                    <td class="text-center">{{ time|floatformat:2 }}</td>
+                                    {% endfor %}
+                                    <td>
+                                        {% with best_idx=summary_stats.avg_time|index_of_min %}
+                                            <span class="badge bg-success">{{ models|get_index:best_idx }}</span>
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Среднее число токенов</td>
+                                    {% for tokens in summary_stats.avg_tokens %}
+                                    <td class="text-center">{{ tokens|floatformat:0 }}</td>
+                                    {% endfor %}
+                                    <td>
+                                        {% with best_idx=summary_stats.avg_tokens|index_of_min %}
+                                            <span class="badge bg-success">{{ models|get_index:best_idx }}</span>
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Сравнение по вопросам -->
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-list-check me-2"></i>Сравнение ответов по вопросам
+                        </h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" onclick="showAllQuestions()">
+                                Все вопросы
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="filterByRating(4)">
+                                Только лучшие
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="filterUnrated()">
+                                Без оценок
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% for question in questions_with_answers %}
+                    <div class="card mb-4 question-card" data-question-id="{{ question.id }}">
+                        <div class="card-header bg-dark">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <span class="badge bg-secondary me-2">#{{ question.id }}</span>
+                                    Вопрос
+                                </h6>
+                                <div class="rating-summary">
+                                    {% with q_ratings=question_ratings|dict_get:question.id %}
+                                    {% if q_ratings and q_ratings.avg %}
+                                    <small class="text-muted">
+                                        Средняя оценка: <span class="fw-bold">{{ q_ratings.avg|floatformat:1 }} ⭐</span>
+                                    </small>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Текст вопроса -->
+                            <div class="mb-4">
+                                <h6>Текст вопроса:</h6>
+                                <div class="p-3 bg-dark rounded">
+                                    {{ question.text|linebreaks }}
+                                </div>
+                            </div>
+
+                            <!-- Ответы моделей -->
+                            <h6 class="mb-3">Ответы моделей:</h6>
+                            <div class="row">
+                                {% for response in question.model_responses %}
+                                    {% cycle model_color silent %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100 border">
+                                        <div class="card-header py-2 d-flex justify-content-between align-items-center"
+                                             style="background-color: {{ model_color }}20;">
+                                            <div class="d-flex align-items-center">
+                                                <div class="color-indicator me-2" 
+                                                     style="width: 10px; height: 10px; background-color: {{ model_color }}; border-radius: 2px;"></div>
+                                                <span class="fw-bold">{{ response.model.display_name }}</span>
+                                            </div>
+                                            <div>
+                                                {% with model_ratings=task.ratings|dict_get:response.model.id %}
+                                                    {% if model_ratings %}
+                                                        {% with rating_info=model_ratings|dict_get:question.id %}
+                                                            {% if rating_info and rating_info.rating %}
+                                                                <span class="badge bg-{% if rating_info.rating >= 4 %}success{% elif rating_info.rating >= 3 %}warning{% else %}danger{% endif %}">
+                                                                    {{ rating_info.rating }} ⭐
+                                                                </span>
+                                                            {% else %}
+                                                                <button class="btn btn-sm btn-outline-secondary" 
+                                                                        onclick="rateResponse({{ task.id }}, {{ response.model.id }}, {{ question.id }}, this)">
+                                                                    <i class="bi bi-star"></i> Оценить
+                                                                </button>
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    {% else %}
+                                                        <button class="btn btn-sm btn-outline-secondary" 
+                                                                onclick="rateResponse({{ task.id }}, {{ response.model.id }}, {{ question.id }}, this)">
+                                                            <i class="bi bi-star"></i> Оценить
+                                                        </button>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="response-content" style="max-height: 200px; overflow-y: auto;">
+                                                {% if response.response %}
+                                                {{ response.response|linebreaks }}
+                                                {% else %}
+                                                <div class="text-danger">
+                                                    <i class="bi bi-exclamation-triangle"></i> Ответ не сгенерирован
+                                                </div>
+                                                {% endif %}
+                                            </div>
+
+                                            {% if response.response_time or response.tokens_used %}
+                                            <div class="mt-3 small text-muted">
+                                                {% if response.response_time %}
+                                                <span class="me-3">
+                                                    <i class="bi bi-clock"></i> {{ response.response_time|floatformat:2 }} с
+                                                </span>
+                                                {% endif %}
+                                                {% if response.tokens_used %}
+                                                <span>
+                                                    <i class="bi bi-hash"></i> {{ response.tokens_used }} токенов
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inboxes display-4 text-muted mb-3"></i>
+                        <p class="text-muted">Нет вопросов для отображения</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для оценки -->
+<div class="modal fade" id="ratingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title">Оценка ответа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div class="rating-stars mb-3">
+                        {% for i in "12345"|make_list %}
+                        <button type="button" class="btn btn-outline-warning rating-star" 
+                                data-rating="{{ i }}" onclick="selectRating({{ i }})">
+                            <i class="bi bi-star"></i>
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <div class="selected-rating mb-3">
+                        <h3><span id="selectedRatingValue">0</span> ⭐</h3>
+                    </div>
+                    <div class="mb-3">
+                        <textarea class="form-control" id="ratingComment" 
+                                  placeholder="Комментарий (необязательно)" rows="3"></textarea>
+                    </div>
+                </div>
+                <input type="hidden" id="ratingTaskId">
+                <input type="hidden" id="ratingModelId">
+                <input type="hidden" id="ratingQuestionId">
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="submitRating()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentRating = 0;
+let currentTaskId, currentModelId, currentQuestionId;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initRatingStars();
+});
+
+function initRatingStars() {
+    const stars = document.querySelectorAll('.rating-star');
+    stars.forEach(star => {
+        star.addEventListener('mouseenter', function() {
+            const rating = parseInt(this.dataset.rating);
+            highlightStars(rating);
+        });
+        star.addEventListener('mouseleave', function() {
+            highlightStars(currentRating);
+        });
+    });
+}
+
+function highlightStars(rating) {
+    const stars = document.querySelectorAll('.rating-star');
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.remove('btn-outline-warning');
+            star.classList.add('btn-warning');
+            star.innerHTML = '<i class="bi bi-star-fill"></i>';
+        } else {
+            star.classList.remove('btn-warning');
+            star.classList.add('btn-outline-warning');
+            star.innerHTML = '<i class="bi bi-star"></i>';
+        }
+    });
+}
+
+function selectRating(rating) {
+    currentRating = rating;
+    document.getElementById('selectedRatingValue').textContent = rating;
+    highlightStars(rating);
+}
+
+function rateResponse(taskId, modelId, questionId, button) {
+    currentTaskId = taskId;
+    currentModelId = modelId;
+    currentQuestionId = questionId;
+
+    document.getElementById('ratingTaskId').value = taskId;
+    document.getElementById('ratingModelId').value = modelId;
+    document.getElementById('ratingQuestionId').value = questionId;
+
+    currentRating = 0;
+    document.getElementById('selectedRatingValue').textContent = '0';
+    highlightStars(0);
+    document.getElementById('ratingComment').value = '';
+
+    const modal = new bootstrap.Modal(document.getElementById('ratingModal'));
+    modal.show();
+}
+
+function submitRating() {
+    if (currentRating === 0) {
+        alert('Выберите оценку');
+        return;
+    }
+
+    fetch('/api/evaluation/rate/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            task_id: currentTaskId,
+            model_id: currentModelId,
+            question_id: currentQuestionId,
+            rating: currentRating,
+            comment: document.getElementById('ratingComment').value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('ratingModal')).hide();
+            location.reload(); // просто перезагрузим для обновления
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Rating error:', error);
+        alert('Ошибка при отправке оценки');
+    });
+}
+
+function showAllQuestions() {
+    document.querySelectorAll('.question-card').forEach(card => card.style.display = 'block');
+}
+
+function filterByRating(minRating) {
+    // упрощённо – пока все
+    showAllQuestions();
+}
+
+function filterUnrated() {
+    document.querySelectorAll('.question-card').forEach(card => {
+        const hasRating = card.querySelector('.badge.bg-success, .badge.bg-warning, .badge.bg-danger') !== null;
+        card.style.display = hasRating ? 'none' : 'block';
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function exportComparison() {
+    alert('Функция экспорта в разработке');
+}
+</script>
+
+<style>
+.color-indicator { flex-shrink: 0; }
+.rating-stars .btn { font-size: 1.5rem; padding: 0.25rem 0.5rem; margin: 0 0.1rem; }
+.response-content { line-height: 1.5; }
+.question-card { transition: all 0.3s ease; }
+.question-card:hover { box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15); }
+</style>
+{% endblock %}

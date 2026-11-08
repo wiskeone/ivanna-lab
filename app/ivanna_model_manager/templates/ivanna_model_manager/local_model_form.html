@@ -1,0 +1,195 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Добавить модель (локально){% endblock %}
+{% block page_title %}Добавить модель (локально){% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-hdd-stack me-2" style="color: var(--primary-color);"></i>
+                        Добавление локальной модели
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="localModelForm">
+                        {% csrf_token %}
+
+                        <!-- Выбор типа модели (карточки) -->
+                        <div class="mb-4">
+                            <label class="form-label small text-muted">Тип модели <span class="text-danger">*</span></label>
+                            <div class="row g-3" id="modelTypeCards">
+                                {% for choice in model_choices %}
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="model-type-card" data-model-type="{{ choice.value }}">
+                                        <i class="bi {{ choice.icon }}"></i>
+                                        <div class="model-name">{{ choice.label }}</div>
+                                        <div class="model-tags">
+                                            {% for tag in choice.tags %}
+                                            <span class="badge bg-secondary">{{ tag }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="model_type" id="id_model_type" value="">
+                        </div>
+
+                        <!-- Основные поля -->
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Название модели <span class="text-danger">*</span></label>
+                                    <input type="text" name="name" class="form-control" required
+                                           placeholder="qwen-7b-instruct" value="{{ form.name.value|default:'' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Отображаемое имя</label>
+                                    <input type="text" name="display_name" class="form-control"
+                                           placeholder="Qwen 7B Instruct" value="{{ form.display_name.value|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Эксперимент</label>
+                                    <select name="experiment" class="form-select">
+                                        <option value="">--- Без эксперимента ---</option>
+                                        {% for exp in experiments %}
+                                        <option value="{{ exp.id }}" {% if form.experiment.value == exp.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ exp.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Теги</label>
+                                    <input type="text" name="tags" class="form-control" value="{{ form.tags.value|default:'' }}"
+                                           placeholder="ru, instruct, 7b">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Локальный путь -->
+                        <div class="mb-4">
+                            <label class="form-label small text-muted">Локальный путь <span class="text-danger">*</span></label>
+                            <input type="text" name="local_path" class="form-control" required
+                                   placeholder="/app/models/your_model" value="{{ form.local_path.value|default:'' }}">
+                            <div class="form-text small">Абсолютный путь к директории модели в контейнере (например, /app/models/qwen-7b)</div>
+                        </div>
+
+                        <!-- Дополнительные настройки -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0">Параметры модели</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label small text-muted">Количество параметров</label>
+                                        <input type="number" name="parameter_count" class="form-control" 
+                                               placeholder="7000000000" value="{{ form.parameter_count.value|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small text-muted">Длина контекста</label>
+                                        <input type="number" name="context_length" class="form-control" 
+                                               placeholder="4096" value="{{ form.context_length.value|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small text-muted">Размер словаря</label>
+                                        <input type="number" name="vocab_size" class="form-control" 
+                                               placeholder="32000" value="{{ form.vocab_size.value|default:'' }}">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted">Квантизация</label>
+                                        <select name="quantization" class="form-select">
+                                            {% for val, label in form.quantization.field.choices %}
+                                            <option value="{{ val }}" {% if form.quantization.value == val %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted">Лицензия</label>
+                                        <input type="text" name="license_type" class="form-control"
+                                               value="{{ form.license_type.value|default:'Apache 2.0' }}">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-6">
+                                        <div class="form-check mt-4">
+                                            <input type="checkbox" name="trust_remote_code" class="form-check-input" id="trustRemote"
+                                                   {% if form.trust_remote_code.value %}checked{% endif %}>
+                                            <label class="form-check-label" for="trustRemote">Trust Remote Code</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mt-4">
+                                            <input type="checkbox" name="use_flash_attention_2" class="form-check-input" id="flashAttention"
+                                                   {% if form.use_flash_attention_2.value %}checked{% endif %}>
+                                            <label class="form-check-label" for="flashAttention">Использовать Flash Attention 2</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-check mt-3">
+                                    <input type="checkbox" name="mark_safe" class="form-check-input" id="markSafe"
+                                           {% if form.mark_safe.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="markSafe">Пометить как безопасную</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'model_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i> Сохранить модель
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Выбор типа модели (карточки)
+    const modelTypeCards = document.querySelectorAll('.model-type-card');
+    const modelTypeInput = document.getElementById('id_model_type');
+    let selectedModelType = null;
+
+    modelTypeCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const type = card.dataset.modelType;
+            if (selectedModelType === type) {
+                card.classList.remove('selected');
+                selectedModelType = null;
+                modelTypeInput.value = '';
+            } else {
+                modelTypeCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedModelType = type;
+                modelTypeInput.value = type;
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,385 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Дашборд{% endblock %}
+{% block page_title %}Дашборд{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Быстрые действия -->
+    <div class="quick-actions-bar">
+        <a href="{% url 'model_create' %}" class="action-link">
+            <i class="bi bi-cloud-upload"></i>Загрузить модель
+        </a>
+        <a href="{% url 'merge_create' %}" class="action-link">
+            <i class="bi bi-arrow-left-right"></i>Слияние
+        </a>
+        <a href="{% url 'experiment_list' %}" class="action-link">
+            <i class="bi bi-flask"></i>Эксперименты
+        </a>
+        <a href="{% url 'chat_sessions_management' %}" class="action-link">
+            <i class="bi bi-chat-dots"></i>Чат-сессии
+        </a>
+        <a href="{% url 'fine_tuning_dashboard' %}" class="action-link">
+            <i class="bi bi-gear-wide-connected"></i>Fine-tuning
+        </a>
+        <a href="{% url 'evaluation_dashboard' %}" class="action-link">
+            <i class="bi bi-clipboard-check"></i>Оценка
+        </a>
+    </div>
+
+    <!-- Статистика (8 карточек) -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-cpu"></i></div>
+                <div class="stat-title">Всего моделей</div>
+            </div>
+            <div class="stat-value">{{ total_models|default:"0" }}</div>
+            <div class="stat-subtitle">
+                {% if loaded_models %}
+                    <span>{{ loaded_models }} загружено</span>
+                {% endif %}
+                {% if downloading_models %}
+                    {% if loaded_models %}<span class="separator">•</span>{% endif %}
+                    <span>{{ downloading_models }} скачивается</span>
+                {% endif %}
+                {% if error_models %}
+                    {% if loaded_models or downloading_models %}<span class="separator">•</span>{% endif %}
+                    <span>{{ error_models }} ошибок</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                <div class="stat-title">Мои задачи</div>
+            </div>
+            <div class="stat-value">{{ my_evaluation_tasks_active|add:my_ft_jobs_active|default:"0" }}</div>
+            <div class="stat-subtitle">
+                <span>{{ my_evaluation_tasks_active }} оценка{{ my_evaluation_tasks_active|pluralize:",и" }}</span>
+                <span class="separator">•</span>
+                <span>{{ my_ft_jobs_active }} fine-tuning</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-flask"></i></div>
+                <div class="stat-title">Эксперименты</div>
+            </div>
+            <div class="stat-value">{{ active_experiments|default:"0" }}</div>
+            <div class="stat-subtitle">активных экспериментов</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                <div class="stat-title">Завершено</div>
+            </div>
+            <div class="stat-value">{{ my_evaluation_tasks_completed|add:my_ft_jobs_completed|default:"0" }}</div>
+            <div class="stat-subtitle">
+                <span>{{ my_evaluation_tasks_completed }} оценок</span>
+                <span class="separator">•</span>
+                <span>{{ my_ft_jobs_completed }} fine-tuning</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-collection"></i></div>
+                <div class="stat-title">Мои RAG</div>
+            </div>
+            <div class="stat-value">{{ my_collections_count|default:"0" }}</div>
+            <div class="stat-subtitle">
+                <span>{{ my_documents_count }} документов</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>
+                <div class="stat-title">Мои чаты</div>
+            </div>
+            <div class="stat-value">{{ my_chat_sessions|default:"0" }}</div>
+            <div class="stat-subtitle">
+                <span>{{ user_total_tokens|default:"0" }} токенов</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-vector-pen"></i></div>
+                <div class="stat-title">Эмбеддинги</div>
+            </div>
+            <div class="stat-value">{{ embedding_total|default:"0" }}</div>
+            <div class="stat-subtitle">
+                <span>{{ embedding_downloaded }} скачано</span>
+                <span class="separator">•</span>
+                <span>{{ embedding_downloading }} загружается</span>
+                <span class="separator">•</span>
+                <span>{{ embedding_failed }} ошибок</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-distribute-vertical"></i></div>
+                <div class="stat-title">Дистилляция</div>
+            </div>
+            <div class="stat-value">{{ my_question_sets_active|add:my_answer_jobs_active|default:"0" }}</div>
+            <div class="stat-subtitle">
+                <span>{{ my_question_sets_active }} наборов</span>
+                <span class="separator">•</span>
+                <span>{{ my_answer_jobs_active }} ответов</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мои последние задачи -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="content-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-list-task"></i>
+                        Мои последние задачи
+                    </h3>
+                    <div class="section-actions">
+                        <a href="{% url 'evaluation_task_list' %}" class="action-link">
+                            Все оценки
+                        </a>
+                        <a href="{% url 'fine_tuning_jobs' %}" class="action-link">
+                            Все fine-tuning
+                        </a>
+                        <a href="{% url 'distillation_question_set_list' %}" class="action-link">
+                            Все наборы
+                        </a>
+                    </div>
+                </div>
+                <div class="items-list">
+                    {% if recent_tasks %}
+                        {% for task in recent_tasks %}
+                        <a href="{{ task.url }}" class="item-row">
+                            <div class="item-header">
+                                <h4 class="item-name">{{ task.name|truncatechars:50 }}</h4>
+                                <span class="badge bg-{{ task.status|lower }}">{{ task.status }}</span>
+                            </div>
+                            <div class="item-details">
+                                <span>
+                                    <i class="bi bi-tag"></i> 
+                                    {% if task.type == 'evaluation' %}Оценка
+                                    {% elif task.type == 'fine_tuning' %}Fine-tuning
+                                    {% elif task.type == 'conversion' %}Конвертация
+                                    {% elif task.type == 'distillation_questions' %}Дистилляция (вопросы)
+                                    {% elif task.type == 'distillation_answers' %}Дистилляция (ответы)
+                                    {% else %}Задача{% endif %}
+                                </span>
+                                <span>
+                                    <i class="bi bi-hourglass-split"></i> Прогресс: {{ task.progress|floatformat:0 }}%
+                                </span>
+                            </div>
+                            {% if task.progress > 0 and task.progress < 100 %}
+                            <div class="progress">
+                                <div class="progress-bar" style="width: {{ task.progress }}%"></div>
+                            </div>
+                            {% endif %}
+                            <div class="item-footer">
+                                <span>{{ task.created_at|time_ago }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="item-row text-center py-4">
+                            <i class="bi bi-inboxes display-4 text-muted"></i>
+                            <p class="mt-3 text-muted">У вас нет активных задач</p>
+                            <a href="{% url 'evaluation_task_create' %}" class="empty-action-link">
+                                <i class="bi bi-plus-circle"></i> Создать задачу оценки
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Недавние загрузки эмбеддингов -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="content-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-cloud-download"></i>
+                        Недавние загрузки эмбеддингов
+                    </h3>
+                    <div class="section-actions">
+                        <a href="{% url 'embedding_model_list' %}" class="action-link">
+                            <i class="bi bi-list"></i> Все модели
+                        </a>
+                    </div>
+                </div>
+                <div class="items-list">
+                    {% if recent_embeddings %}
+                        {% for emb in recent_embeddings %}
+                        <a href="{% url 'embedding_model_detail' emb.id %}" class="item-row">
+                            <div class="item-header">
+                                <h4 class="item-name">{{ emb.display_name|default:emb.name|truncatechars:50 }}</h4>
+                                <span class="badge 
+                                    {% if emb.is_downloaded %}bg-success
+                                    {% elif emb.download_status == 'downloading' %}bg-info
+                                    {% elif emb.download_status == 'failed' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {% if emb.is_downloaded %}Скачана
+                                    {% elif emb.download_status == 'downloading' %}Загружается
+                                    {% elif emb.download_status == 'failed' %}Ошибка
+                                    {% else %}Не начата{% endif %}
+                                </span>
+                            </div>
+                            <div class="item-details">
+                                <span><i class="bi bi-vector-pen"></i> {{ emb.embedding_dim }}d</span>
+                                <span><i class="bi bi-tag"></i> {{ emb.model_id|truncatechars:30 }}</span>
+                            </div>
+                            {% if emb.download_status == 'downloading' and emb.download_progress > 0 %}
+                            <div class="progress mt-2">
+                                <div class="progress-bar" style="width: {{ emb.download_progress }}%"></div>
+                            </div>
+                            <div class="item-footer mt-2">
+                                <span>Прогресс: {{ emb.download_progress }}%</span>
+                            </div>
+                            {% else %}
+                            <div class="item-footer">
+                                <span>Обновлено: {{ emb.updated_at|time_ago }}</span>
+                            </div>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="item-row text-center py-4">
+                            <i class="bi bi-inboxes display-4 text-muted"></i>
+                            <p class="mt-3 text-muted">Нет активных загрузок эмбеддингов</p>
+                            <a href="{% url 'embedding_model_create' %}" class="empty-action-link">
+                                <i class="bi bi-plus-circle"></i> Добавить модель
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние модели и активные задачи слияния -->
+    <div class="row g-4 mt-2">
+        <!-- Последние модели -->
+        <div class="col-lg-{% if recent_jobs %}6{% else %}12{% endif %}">
+            <div class="content-section h-100">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-clock-history"></i>
+                        Последние модели
+                    </h3>
+                    <div class="section-actions">
+                        <a href="{% url 'model_list' %}" class="action-link">
+                            <i class="bi bi-list"></i> Все
+                        </a>
+                        <a href="{% url 'model_create' %}" class="action-link">
+                            <i class="bi bi-plus-circle"></i> Добавить
+                        </a>
+                    </div>
+                </div>
+                <div class="items-list">
+                    {% if recent_models %}
+                        {% for model in recent_models %}
+                        <a href="{% url 'model_detail' model.pk %}" class="item-row">
+                            <div class="item-header">
+                                <h4 class="item-name">{{ model.display_name|truncatechars:50 }}</h4>
+                                <span class="model-badge">{{ model.get_model_type_display }}</span>
+                            </div>
+                            <div class="item-details">
+                                <span><i class="bi bi-hash"></i> {{ model.parameter_count|humanize_number }}</span>
+                                <span><i class="bi bi-hdd"></i> {{ model.size_gb|humanize_size_gb }}</span>
+                                {% if model.quantization %}
+                                <span><i class="bi bi-symmetry-vertical"></i> {{ model.get_quantization_display }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="item-footer">
+                                <span class="model-status status-{{ model.status|lower }}">
+                                    {{ model.get_status_display }}
+                                </span>
+                                <span>{{ model.created_at|time_ago }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="item-row text-center py-4">
+                            <i class="bi bi-inboxes display-4 text-muted"></i>
+                            <p class="mt-3 text-muted">Нет загруженных моделей</p>
+                            <a href="{% url 'model_create' %}" class="empty-action-link">
+                                <i class="bi bi-plus-circle"></i> Загрузить модель
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Активные задачи слияния -->
+        {% if recent_jobs %}
+        <div class="col-lg-6">
+            <div class="content-section h-100">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-hourglass-split"></i>
+                        Активные задачи слияния
+                    </h3>
+                </div>
+                <div class="items-list">
+                    {% for job in recent_jobs %}
+                    <div class="item-row">
+                        <div class="item-header">
+                            <h4 class="item-name">{{ job.name|truncatechars:40 }}</h4>
+                            <span class="badge bg-{{ job.status|lower }}">
+                                {{ job.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="item-details">
+                            {% if job.base_model and job.merge_model %}
+                                {{ job.base_model.display_name|truncatechars:25 }} + {{ job.merge_model.display_name|truncatechars:25 }}
+                            {% elif job.base_model %}
+                                {{ job.base_model.display_name }}
+                            {% endif %}
+                        </div>
+                        <div class="progress mt-2">
+                            <div class="progress-bar" style="width: {{ job.progress }}%"></div>
+                        </div>
+                        <div class="item-footer mt-2">
+                            <span>Прогресс: {{ job.progress }}%</span>
+                            <span>{{ job.created_at|short_date }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Плавное появление (опционально)
+    const cards = document.querySelectorAll('.stat-card, .content-section');
+    cards.forEach((el, i) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+            el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, i * 50);
+    });
+});
+</script>
+{% endblock %}

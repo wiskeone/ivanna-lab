@@ -1,0 +1,325 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Загрузка датасета{% endblock %}
+{% block page_title %}Загрузка датасета{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cloud-upload me-2"></i>Загрузка датасета из файла
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="uploadForm">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Ошибка!</strong> Пожалуйста, исправьте ошибки ниже.
+                            <ul class="mb-0 mt-2">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                    <li>{{ field }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <!-- Левая колонка -->
+                            <div class="col-md-6">
+                                <!-- Название -->
+                                <div class="mb-3">
+                                    <label for="id_name" class="form-label">
+                                        <i class="bi bi-card-heading me-1"></i>Название датасета
+                                    </label>
+                                    {{ form.name }}
+                                    <div class="form-text">Уникальное имя для идентификации датасета</div>
+                                </div>
+                                
+                                <!-- Описание -->
+                                <div class="mb-3">
+                                    <label for="id_description" class="form-label">
+                                        <i class="bi bi-text-paragraph me-1"></i>Описание
+                                    </label>
+                                    {{ form.description }}
+                                    <div class="form-text">Опциональное описание датасета</div>
+                                </div>
+                                
+                                <!-- Теги -->
+                                <div class="mb-3">
+                                    <label for="id_tags" class="form-label">
+                                        <i class="bi bi-tags me-1"></i>Теги
+                                    </label>
+                                    {{ form.tags }}
+                                    <div class="form-text">Теги через запятую для классификации</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Правая колонка -->
+                            <div class="col-md-6">
+                                <!-- Файл -->
+                                <div class="mb-3">
+                                    <label for="id_file" class="form-label">
+                                        <i class="bi bi-file-earmark-arrow-up me-1"></i>Файл с вопросами
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.file }}
+                                        <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('id_file').click()">
+                                            <i class="bi bi-folder2-open"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Поддерживаемые форматы: .txt, .csv, .json</div>
+                                </div>
+                                
+                                <!-- Формат файла -->
+                                <div class="mb-4">
+                                    <label for="id_file_format" class="form-label">
+                                        <i class="bi bi-gear me-1"></i>Формат файла
+                                    </label>
+                                    {{ form.file_format }}
+                                    <div class="form-text">Выберите формат или оставьте "Автоопределение"</div>
+                                </div>
+                                
+                                <!-- Информация о форматах -->
+                                <div class="card bg-dark border">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="bi bi-info-circle me-1"></i>Информация о форматах
+                                        </h6>
+                                        <ul class="list-unstyled small mb-0">
+                                            <li class="mb-1">
+                                                <span class="badge bg-primary me-1">TXT</span>
+                                                Один вопрос на строку
+                                            </li>
+                                            <li class="mb-1">
+                                                <span class="badge bg-success me-1">CSV</span>
+                                                Столбцы: text, category, difficulty
+                                            </li>
+                                            <li>
+                                                <span class="badge bg-warning me-1">JSON</span>
+                                                Массив объектов вопросов
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Предпросмотр -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-eye me-1"></i>Предпросмотр файла
+                                </h6>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="previewFile()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Обновить
+                                </button>
+                            </div>
+                            <div id="filePreview" class="card bg-dark border">
+                                <div class="card-body">
+                                    <pre class="mb-0 small text-muted" id="previewContent" style="max-height: 200px; overflow: auto;">
+Выберите файл для предпросмотра...
+                                    </pre>
+                                </div>
+                                <div class="card-footer bg-transparent border-top d-flex justify-content-between">
+                                    <small class="text-muted" id="fileInfo">Файл не выбран</small>
+                                    <small class="text-muted" id="questionsCount">0 вопросов</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'evaluation_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Назад
+                            </a>
+                            <div>
+                                <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-outline-primary me-2">
+                                    <i class="bi bi-pencil me-1"></i>Создать вручную
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="bi bi-cloud-upload me-1"></i>Загрузить датасет
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Примеры форматов -->
+            <div class="card mt-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-code me-2"></i>Примеры форматов
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <h6>TXT формат</h6>
+                            <pre class="bg-dark p-2 rounded small" style="height: 150px; overflow: auto;">Что такое искусственный интеллект?
+Как работает нейронная сеть?
+Назовите основные типы машинного обучения.</pre>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h6>CSV формат</h6>
+                            <pre class="bg-dark p-2 rounded small" style="height: 150px; overflow: auto;">text,category,difficulty
+"Что такое искусственный интеллект?","AI","easy"
+"Как работает нейронная сеть?","NN","medium"
+"Назовите основные типы машинного обучения","ML","easy"</pre>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h6>JSON формат</h6>
+                            <pre class="bg-dark p-2 rounded small" style="height: 150px; overflow: auto;">[
+  {
+    "id": 1,
+    "text": "Что такое ИИ?",
+    "category": "AI",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2,
+    "text": "Как работают трансформеры?",
+    "category": "NLP",
+    "difficulty": "hard"
+  }
+]</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Настройка полей формы
+    const nameField = document.getElementById('id_name');
+    const fileField = document.getElementById('id_file');
+    const descriptionField = document.getElementById('id_description');
+    const tagsField = document.getElementById('id_tags');
+    const fileFormatField = document.getElementById('id_file_format');
+    
+    // Добавляем классы Bootstrap к полям
+    [nameField, descriptionField, tagsField, fileFormatField].forEach(field => {
+        if (field) field.className = 'form-control';
+    });
+    
+    if (fileField) fileField.className = 'form-control';
+    
+    // Обработка выбора файла
+    if (fileField) {
+        fileField.addEventListener('change', function() {
+            previewFile();
+        });
+    }
+});
+
+function previewFile() {
+    const fileInput = document.getElementById('id_file');
+    const previewContent = document.getElementById('previewContent');
+    const fileInfo = document.getElementById('fileInfo');
+    const questionsCount = document.getElementById('questionsCount');
+    
+    if (fileInput.files.length === 0) {
+        previewContent.textContent = 'Выберите файл для предпросмотра...';
+        fileInfo.textContent = 'Файл не выбран';
+        questionsCount.textContent = '0 вопросов';
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    fileInfo.textContent = `${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        
+        // Попробуем определить формат и подсчитать вопросы
+        let questionCount = 0;
+        let previewText = content;
+        
+        // Для TXT файлов - считаем строки
+        if (file.name.toLowerCase().endsWith('.txt')) {
+            const lines = content.split('\n').filter(line => line.trim());
+            questionCount = lines.length;
+            previewText = lines.slice(0, 10).join('\n');
+            if (lines.length > 10) {
+                previewText += '\n... и ещё ' + (lines.length - 10) + ' вопросов';
+            }
+        }
+        // Для CSV файлов
+        else if (file.name.toLowerCase().endsWith('.csv')) {
+            const lines = content.split('\n').filter(line => line.trim());
+            questionCount = Math.max(0, lines.length - 1); // Минус заголовок
+            previewText = lines.slice(0, 11).join('\n'); // Заголовок + 10 строк
+            if (lines.length > 11) {
+                previewText += '\n... и ещё ' + (lines.length - 11) + ' строк';
+            }
+        }
+        // Для JSON файлов
+        else if (file.name.toLowerCase().endsWith('.json')) {
+            try {
+                const data = JSON.parse(content);
+                if (Array.isArray(data)) {
+                    questionCount = data.length;
+                    previewText = JSON.stringify(data.slice(0, 3), null, 2);
+                    if (data.length > 3) {
+                        previewText += '\n... и ещё ' + (data.length - 3) + ' вопросов';
+                    }
+                } else if (data.questions && Array.isArray(data.questions)) {
+                    questionCount = data.questions.length;
+                    previewText = JSON.stringify(data.questions.slice(0, 3), null, 2);
+                    if (data.questions.length > 3) {
+                        previewText += '\n... и ещё ' + (data.questions.length - 3) + ' вопросов';
+                    }
+                }
+            } catch (e) {
+                previewText = 'Ошибка чтения JSON: ' + e.message;
+            }
+        }
+        
+        previewContent.textContent = previewText;
+        questionsCount.textContent = questionCount + ' вопросов';
+    };
+    
+    reader.onerror = function() {
+        previewContent.textContent = 'Ошибка чтения файла';
+        fileInfo.textContent = 'Ошибка';
+        questionsCount.textContent = '0 вопросов';
+    };
+    
+    reader.readAsText(file);
+}
+
+// Обработка отправки формы
+const uploadForm = document.getElementById('uploadForm');
+if (uploadForm) {
+    uploadForm.addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitBtn');
+        const fileInput = document.getElementById('id_file');
+        
+        if (fileInput.files.length === 0) {
+            e.preventDefault();
+            showToast('error', 'Ошибка', 'Выберите файл для загрузки');
+            return;
+        }
+        
+        // Показываем индикатор загрузки
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Загрузка...';
+        showLoading('Загрузка файла...');
+    });
+}
+</script>
+{% endblock %}

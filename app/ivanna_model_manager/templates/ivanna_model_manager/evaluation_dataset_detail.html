@@ -1,0 +1,169 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Датасет: {{ dataset.name }}{% endblock %}
+{% block page_title %}{{ dataset.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.dataset-info {
+    background: rgba(40,40,40,0.8);
+    border: 1px solid #444;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+.question-card {
+    background: rgba(40,40,40,0.8);
+    border: 1px solid #444;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+.question-card:hover {
+    border-color: var(--primary-color);
+}
+.question-text {
+    background: rgba(107,70,193,0.1);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 3px solid #6b46c1;
+}
+.answer-text {
+    white-space: pre-wrap;
+    background: rgba(0,0,0,0.2);
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+.load-more-btn {
+    text-align: center;
+    padding: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'evaluation_dataset_list' %}" class="btn btn-outline-secondary mb-2">
+                <i class="bi bi-arrow-left"></i> К списку датасетов
+            </a>
+            <h3>{{ dataset.name }}</h3>
+            <p class="text-muted">{{ dataset.description|default:"Нет описания" }}</p>
+        </div>
+        <div>
+            <a href="{% url 'evaluation_dataset_edit' dataset.id %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Редактировать
+            </a>
+        </div>
+    </div>
+
+    <div class="dataset-info">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="small text-muted">Всего вопросов</div>
+                <div class="h4">{{ dataset.total_questions }}</div>
+            </div>
+            <div class="col-md-4">
+                <div class="small text-muted">Тип источника</div>
+                <div class="h4">{{ dataset.get_source_type_display }}</div>
+            </div>
+            <div class="col-md-4">
+                <div class="small text-muted">Создан</div>
+                <div class="h4">{{ dataset.created_at|date:"d.m.Y H:i" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="questionsContainer"></div>
+    <div id="loadMoreContainer" class="load-more-btn"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let totalPages = 1;
+let isLoading = false;
+const datasetId = {{ dataset.id }};
+
+function loadQuestions(page = 1) {
+    if (isLoading) return;
+    isLoading = true;
+    const container = document.getElementById('loadMoreContainer');
+    container.innerHTML = '<div class="spinner-border text-primary"></div>';
+    
+    fetch(`/api/evaluation/datasets/${datasetId}/questions/?page=${page}&per_page=1000`)
+        .then(res => {
+            if (!res.ok) return res.json().then(err => { throw new Error(err.error || 'Ошибка загрузки') });
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                renderQuestions(data.questions);
+                totalPages = data.total_pages;
+                currentPage = page;
+                if (page < totalPages) {
+                    container.innerHTML = `
+                        <button class="btn btn-outline-primary" onclick="loadQuestions(${page+1})">
+                            <i class="bi bi-chevron-down"></i> Загрузить ещё (${data.remaining} осталось)
+                        </button>
+                    `;
+                } else {
+                    container.innerHTML = '<div class="text-muted">Все вопросы загружены</div>';
+                }
+            } else {
+                throw new Error(data.error);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = `<div class="text-danger">Ошибка: ${err.message}</div>`;
+        })
+        .finally(() => {
+            isLoading = false;
+        });
+}
+
+function renderQuestions(questions) {
+    const container = document.getElementById('questionsContainer');
+    if (currentPage === 1) container.innerHTML = '';
+    questions.forEach(q => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="badge bg-secondary">ID: ${q.id}</span>
+                <span class="badge bg-info">${q.difficulty || 'medium'}</span>
+            </div>
+            <div class="question-text">
+                <label class="form-label small text-muted">Вопрос</label>
+                <div>${escapeHtml(q.text)}</div>
+            </div>
+            ${q.answer ? `
+            <div>
+                <label class="form-label small text-muted">Ответ</label>
+                <div class="answer-text">${escapeHtml(q.answer)}</div>
+            </div>
+            ` : ''}
+        `;
+        container.appendChild(card);
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadQuestions(1);
+});
+</script>
+{% endblock %}

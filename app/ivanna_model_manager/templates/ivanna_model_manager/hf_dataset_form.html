@@ -1,0 +1,851 @@
+{% extends 'ivanna_model_manager/base.html' %}
+
+{% block title %}Импорт датасета с Hugging Face{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ========== Общие стили из шаблона загрузки LLM ========== */
+    :root {
+        --primary-color: #6c757d;
+        --primary-hover: #5a6268;
+        --secondary-color: #495057;
+        --accent-color: #20c997;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+    }
+    .glass-effect {
+        background: rgba(30, 30, 30, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--primary-hover), var(--secondary-color));
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+    }
+    .btn-outline-primary {
+        color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color) !important;
+        color: white !important;
+    }
+    .card-header {
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .form-control, .form-select {
+        background-color: rgba(0,0,0,0.3) !important;
+        color: white !important;
+        border-color: rgba(255,255,255,0.1) !important;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+    }
+    .model-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        color: white !important;
+        background: linear-gradient(135deg, #6c757d, #495057);
+    }
+    .dataset-card-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 100%;
+        position: relative;
+    }
+    .dataset-card-item:hover {
+        background: rgba(108, 117, 125, 0.15);
+        border-color: var(--primary-color);
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+    }
+    .dataset-card-item.selected {
+        background: rgba(108, 117, 125, 0.25) !important;
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.5);
+    }
+    .dataset-name {
+        font-weight: 600;
+        color: white;
+        margin-bottom: 5px;
+        font-size: 0.95rem;
+    }
+    .dataset-author {
+        color: #a0a0a0;
+        font-size: 0.85rem;
+        margin-bottom: 10px;
+    }
+    .dataset-stats {
+        display: flex;
+        gap: 10px;
+        font-size: 0.8rem;
+        color: #a0a0a0;
+        flex-wrap: wrap;
+    }
+    .dataset-stat-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+    .search-results-container {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .search-result-item {
+        padding: 10px 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .search-result-item:hover {
+        background: rgba(108, 117, 125, 0.1);
+    }
+    .search-result-item.selected {
+        background: rgba(108, 117, 125, 0.2);
+        border-left: 3px solid var(--primary-color);
+    }
+    .tag-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        background: rgba(108, 117, 125, 0.2);
+        color: #c8c9cb;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        border: 1px solid rgba(108, 117, 125, 0.3);
+    }
+    .validation-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+        padding: 3px 8px;
+        border-radius: 4px;
+        margin-left: 10px;
+    }
+    .validation-success {
+        background: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+    .validation-error {
+        background: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+    .validation-loading {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+    .toast {
+        background-color: #1e1e1e;
+        border: 1px solid #444;
+    }
+    .toast-header {
+        background-color: #2d2d2d;
+        color: white;
+        border-bottom: 1px solid #444;
+    }
+    .toast-body {
+        background-color: #1e1e1e;
+        color: #ccc;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-10 col-lg-12">
+            <!-- Заголовок -->
+            <div class="card glass-effect mb-4">
+                <div class="card-header bg-dark border-bottom border-primary">
+                    <h4 class="mb-0 text-white"><i class="bi bi-cloud-arrow-up me-2"></i> Импорт датасета с Hugging Face</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info glass-effect border-info">
+                        <h5><i class="bi bi-info-circle me-2"></i> О загрузке датасетов:</h5>
+                        <ul class="mb-0">
+                            <li>Поддерживаются датасеты, содержащие поля <strong>instruction</strong> и <strong>output</strong> (или <strong>question</strong>/<strong>answer</strong>)</li>
+                            <li>Датасет будет преобразован в формат JSONL и сохранён в системе как <strong>EvaluationDataset</strong></li>
+                            <li>После импорта датасет можно использовать для обучения моделей (fine-tuning) методами instruction и RAFT</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Основная форма -->
+            <div class="card glass-effect">
+                <div class="card-body">
+                    <form method="post" id="uploadForm">
+                        {% csrf_token %}
+
+                        <!-- Скрытые поля (имя, описание, конфиг) будут заполняться из JS -->
+                        <input type="hidden" name="repo_id" id="id_repo_id">
+                        <input type="hidden" name="config" id="id_config">
+                        <input type="hidden" name="split" id="id_split" value="train">
+                        <input type="hidden" name="name" id="id_name">
+                        <input type="hidden" name="description" id="id_description">
+
+                        <!-- Поиск датасетов -->
+                        <div class="mb-5">
+                            <h5 class="mb-3 text-white">
+                                <i class="bi bi-search me-2 text-primary"></i> Поиск датасетов
+                            </h5>
+                            <div class="card bg-dark border-secondary">
+                                <div class="card-header border-bottom border-secondary d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 text-white">
+                                        <i class="bi bi-database me-2"></i> Hugging Face Hub
+                                    </h6>
+                                    <div>
+                                        <span class="badge bg-secondary me-2" id="searchResultsCount">0 результатов</span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clearSearchBtn">
+                                            <i class="bi bi-x-circle"></i> Очистить
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                                               id="datasetSearchInput" placeholder="Поиск датасетов (например: alpaca, dolly, oasst1)...">
+                                        <button class="btn btn-outline-primary" type="button" id="buttonSearch">
+                                            <i class="bi bi-search"></i> Поиск
+                                        </button>
+                                    </div>
+
+                                    <!-- Фильтры -->
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-md-4">
+                                            <select class="form-select bg-dark text-white border-secondary" id="filterLanguage">
+                                                <option value="">Все языки</option>
+                                                <option value="ru">Русский</option>
+                                                <option value="en">Английский</option>
+                                                <option value="multilingual">Мультиязычный</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-select bg-dark text-white border-secondary" id="filterSize">
+                                                <option value="">Все размеры</option>
+                                                <option value="small">Малые (&lt; 10K примеров)</option>
+                                                <option value="medium">Средние (10K - 100K)</option>
+                                                <option value="large">Крупные (&gt; 100K)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-select bg-dark text-white border-secondary" id="filterSort">
+                                                <option value="downloads">По загрузкам</option>
+                                                <option value="likes">По лайкам</option>
+                                                <option value="created">По дате</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Результаты поиска -->
+                                    <div class="search-results-container">
+                                        <div class="search-results" id="searchResults">
+                                            <div class="text-center text-muted py-5">
+                                                <i class="bi bi-search display-4 mb-3"></i>
+                                                <p>Начните поиск датасетов на Hugging Face Hub</p>
+                                                <small class="text-muted">Или выберите из популярных ниже</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Пагинация -->
+                                    <div class="search-pagination d-none mt-3" id="searchPagination">
+                                        <nav aria-label="Постраничная навигация">
+                                            <ul class="pagination justify-content-center mb-0">
+                                                <li class="page-item">
+                                                    <button class="page-link" id="prevPage" disabled>Назад</button>
+                                                </li>
+                                                <li class="page-item">
+                                                    <span class="page-link bg-transparent border-0" id="pageInfo">Страница 1</span>
+                                                </li>
+                                                <li class="page-item">
+                                                    <button class="page-link" id="nextPage" disabled>Вперед</button>
+                                                </li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Топ-5 датасетов -->
+                        <div class="mb-5" id="popularDatasetsSection">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="text-white mb-0">
+                                    <i class="bi bi-trophy me-2"></i> 
+                                    <span id="popularDatasetsTitle">Топ-5 самых скачиваемых датасетов</span>
+                                </h6>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="refreshTopDatasets">
+                                        <i class="bi bi-arrow-clockwise"></i> Обновить
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleAllDatasets">
+                                        <i class="bi bi-grid"></i> Показать все
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row g-2" id="popularDatasetsList">
+                                <div class="col-12">
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Загрузка...</span>
+                                        </div>
+                                        <p class="text-muted mt-2">Загружаем популярные датасеты...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Детали выбранного датасета -->
+                        <div class="mb-5" id="datasetDetailsSection" style="display: none;">
+                            <h5 class="mb-3 text-white">
+                                <i class="bi bi-info-circle me-2 text-primary"></i> Выбранный датасет
+                            </h5>
+                            <div class="card bg-dark border-secondary">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="mb-3">
+                                                <label class="form-label text-white">ID репозитория</label>
+                                                <input type="text" class="form-control bg-dark text-white border-secondary" id="selectedRepoId" readonly>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label text-white">Название датасета (в системе)</label>
+                                                <input type="text" class="form-control bg-dark text-white border-secondary" id="selectedDatasetName" placeholder="Автоматически из repo_id">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label text-white">Описание (необязательно)</label>
+                                                <textarea class="form-control bg-dark text-white border-secondary" id="selectedDescription" rows="2"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label class="form-label text-white">Конфигурация (опционально)</label>
+                                                <input type="text" class="form-control bg-dark text-white border-secondary" id="selectedConfig" placeholder="default">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label text-white">Раздел</label>
+                                                <select class="form-select bg-dark text-white border-secondary" id="selectedSplit">
+                                                    <option value="train">train</option>
+                                                    <option value="validation">validation</option>
+                                                    <option value="test">test</option>
+                                                </select>
+                                            </div>
+                                            <div class="mt-4">
+                                                <div class="validation-indicator d-none" id="validationStatus"></div>
+                                                <button type="button" class="btn btn-primary w-100 mt-3" id="validateDatasetBtn">
+                                                    <i class="bi bi-check-circle"></i> Проверить датасет
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки отправки -->
+                        <div class="d-flex justify-content-between mt-5 pt-3 border-top border-secondary">
+                            <a href="{% url 'hf_dataset_list' %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-left me-2"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg px-5" id="submitBtn" disabled>
+                                <i class="bi bi-cloud-download me-2"></i> Импортировать датасет
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast уведомления -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-dark text-white">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body bg-dark text-white" id="toastMessage">
+            Сообщение
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ============================================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================================
+let currentPage = 1;
+let totalPages = 1;
+let currentSearchQuery = '';
+let currentFilters = {};
+let selectedDataset = null;
+let showAllTop = false;
+
+// ============================================================================
+// УТИЛИТЫ
+// ============================================================================
+function showToast(title, message, type = 'info') {
+    const toastEl = document.getElementById('liveToast');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastMessage = document.getElementById('toastMessage');
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
+    const iconMap = {
+        'success': 'bi-check-circle',
+        'error': 'bi-exclamation-circle',
+        'warning': 'bi-exclamation-triangle',
+        'info': 'bi-info-circle'
+    };
+    const iconClass = iconMap[type] || 'bi-info-circle';
+    toastTitle.innerHTML = `<i class="bi ${iconClass} me-2"></i>${title}`;
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+}
+
+function formatNumber(num) {
+    if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(1) + 'B';
+    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M';
+    if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K';
+    return num.toString();
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================================================
+// API ФУНКЦИИ
+// ============================================================================
+
+// Загрузка топ-датасетов (через поиск с сортировкой по downloads, лимит 5 или 20)
+async function loadTopDatasets(showAll = false) {
+    const container = document.getElementById('popularDatasetsList');
+    const title = document.getElementById('popularDatasetsTitle');
+    if (!container) return;
+    const limit = showAll ? 20 : 5;
+    container.innerHTML = `
+        <div class="col-12">
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+                <p class="text-muted mt-2">Загружаем популярные датасеты...</p>
+            </div>
+        </div>
+    `;
+    try {
+        // Используем API поиска с пустым запросом, сортировкой по downloads
+        const params = new URLSearchParams({
+            action: 'search_datasets',
+            q: '',
+            limit: limit,
+            sort: 'downloads'
+        });
+        const response = await fetch(`/api/huggingface/?${params}`);
+        const data = await response.json();
+        if (data.results && data.results.length) {
+            renderTopDatasets(data.results);
+            title.textContent = `Топ-${data.results.length} самых скачиваемых датасетов`;
+        } else {
+            container.innerHTML = `<div class="col-12"><div class="alert alert-info">Не найдено популярных датасетов</div></div>`;
+        }
+    } catch (error) {
+        console.error(error);
+        container.innerHTML = `<div class="col-12"><div class="alert alert-danger">Ошибка загрузки популярных датасетов</div></div>`;
+    }
+}
+
+function renderTopDatasets(datasets) {
+    const container = document.getElementById('popularDatasetsList');
+    let html = '';
+    datasets.forEach(ds => {
+        const isSelected = selectedDataset && selectedDataset.id === ds.id;
+        html += `
+            <div class="col-xl-3 col-lg-4 col-md-6">
+                <div class="dataset-card-item ${isSelected ? 'selected' : ''}" data-dataset-id="${ds.id}">
+                    <div class="model-badge">DATASET</div>
+                    <div class="dataset-name">${escapeHtml(ds.name)}</div>
+                    <div class="dataset-author">${escapeHtml(ds.author)}</div>
+                    <div class="dataset-stats">
+                        <div class="dataset-stat-item" title="Загрузки">
+                            <i class="bi bi-download"></i> ${formatNumber(ds.downloads || 0)}
+                        </div>
+                        <div class="dataset-stat-item" title="Лайки">
+                            <i class="bi bi-heart"></i> ${formatNumber(ds.likes || 0)}
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-outline-primary w-100 select-dataset-btn" data-dataset-id="${ds.id}">
+                            <i class="bi bi-check-lg me-1"></i> Выбрать
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    // Обработчики выбора
+    document.querySelectorAll('.dataset-card-item').forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (!e.target.closest('.select-dataset-btn')) {
+                this.classList.toggle('selected');
+                document.querySelectorAll('.dataset-card-item').forEach(c => {
+                    if (c !== this) c.classList.remove('selected');
+                });
+            }
+        });
+        const btn = card.querySelector('.select-dataset-btn');
+        if (btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const datasetId = this.dataset.datasetId;
+                selectDataset(datasetId);
+            });
+        }
+    });
+}
+
+// Поиск датасетов
+async function searchDatasets(query, page = 1) {
+    showSearchLoading();
+    currentSearchQuery = query;
+    currentPage = page;
+    currentFilters = {
+        language: document.getElementById('filterLanguage').value,
+        size: document.getElementById('filterSize').value,
+        sort: document.getElementById('filterSort').value
+    };
+    try {
+        const params = new URLSearchParams({
+            action: 'search_datasets',
+            q: query,
+            page: page,
+            limit: 10,
+            ...currentFilters
+        });
+        const response = await fetch(`/api/huggingface/?${params}`);
+        const data = await response.json();
+        if (data.results && data.results.length) {
+            displaySearchResults(data.results, data.total, page);
+            setupPagination(data.total, page);
+            updateSearchResultsCount(data.total);
+        } else {
+            showNoSearchResults();
+        }
+    } catch (error) {
+        console.error(error);
+        showSearchError();
+    }
+}
+
+function showSearchLoading() {
+    document.getElementById('searchResults').innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="text-muted mt-2">Ищем датасеты...</p>
+        </div>
+    `;
+}
+
+function displaySearchResults(results, total, page) {
+    const container = document.getElementById('searchResults');
+    let html = '';
+    results.forEach(ds => {
+        const isSelected = selectedDataset && selectedDataset.id === ds.id;
+        html += `
+            <div class="search-result-item ${isSelected ? 'selected' : ''}" data-dataset-id="${ds.id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="model-badge me-2">DATASET</span>
+                            <strong class="text-white">${escapeHtml(ds.name)}</strong>
+                            <span class="badge bg-secondary ms-2">${escapeHtml(ds.author)}</span>
+                        </div>
+                        <div class="text-muted small mb-2">${escapeHtml(ds.id)}</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-dark"><i class="bi bi-download me-1"></i>${formatNumber(ds.downloads)}</span>
+                            <span class="badge bg-dark"><i class="bi bi-heart me-1"></i>${formatNumber(ds.likes)}</span>
+                        </div>
+                        <div class="mt-2">
+                            ${(ds.tags || []).slice(0, 5).map(tag => `<span class="tag-badge">${escapeHtml(tag)}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm ${isSelected ? 'btn-success' : 'btn-outline-primary'} select-search-result-btn" data-dataset-id="${ds.id}">
+                            ${isSelected ? '<i class="bi bi-check-lg"></i> Выбран' : '<i class="bi bi-plus-lg"></i> Выбрать'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    // Обработчики
+    document.querySelectorAll('.search-result-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            if (!e.target.closest('.select-search-result-btn')) {
+                selectSearchResult(this);
+            }
+        });
+        const btn = item.querySelector('.select-search-result-btn');
+        if (btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const datasetId = this.dataset.datasetId;
+                selectDataset(datasetId);
+            });
+        }
+    });
+}
+
+function selectSearchResult(element) {
+    document.querySelectorAll('.search-result-item').forEach(item => {
+        item.classList.remove('selected');
+        const btn = item.querySelector('.select-search-result-btn');
+        if (btn) {
+            btn.className = 'btn btn-sm btn-outline-primary select-search-result-btn';
+            btn.innerHTML = '<i class="bi bi-plus-lg"></i> Выбрать';
+        }
+    });
+    element.classList.add('selected');
+    const btn = element.querySelector('.select-search-result-btn');
+    if (btn) {
+        btn.className = 'btn btn-sm btn-success select-search-result-btn';
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Выбран';
+    }
+}
+
+function showNoSearchResults() {
+    document.getElementById('searchResults').innerHTML = `
+        <div class="text-center py-5">
+            <i class="bi bi-search display-4 text-muted mb-3"></i>
+            <p class="text-muted">Не найдено датасетов по вашему запросу</p>
+            <small class="text-muted">Попробуйте изменить запрос или фильтры</small>
+        </div>
+    `;
+    document.getElementById('searchPagination').classList.add('d-none');
+    document.getElementById('searchResultsCount').textContent = '0 результатов';
+}
+
+function showSearchError() {
+    document.getElementById('searchResults').innerHTML = `
+        <div class="text-center py-5">
+            <i class="bi bi-exclamation-triangle display-4 text-danger mb-3"></i>
+            <p class="text-danger">Ошибка при поиске датасетов</p>
+            <small class="text-muted">Попробуйте позже</small>
+        </div>
+    `;
+}
+
+function updateSearchResultsCount(total) {
+    const countElement = document.getElementById('searchResultsCount');
+    countElement.textContent = `${total} ${total === 1 ? 'результат' : total < 5 ? 'результата' : 'результатов'}`;
+}
+
+function setupPagination(total, currentPage) {
+    const pagination = document.getElementById('searchPagination');
+    const pageInfo = document.getElementById('pageInfo');
+    const prevBtn = document.getElementById('prevPage');
+    const nextBtn = document.getElementById('nextPage');
+    totalPages = Math.ceil(total / 10);
+    if (totalPages <= 1) {
+        pagination.classList.add('d-none');
+        return;
+    }
+    pagination.classList.remove('d-none');
+    pageInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
+    prevBtn.onclick = () => searchDatasets(currentSearchQuery, currentPage - 1);
+    nextBtn.onclick = () => searchDatasets(currentSearchQuery, currentPage + 1);
+}
+
+// Выбор датасета
+function selectDataset(datasetId) {
+    // Ищем датасет в результатах поиска или топе
+    let dataset = null;
+    const searchItems = document.querySelectorAll('.search-result-item');
+    for (let item of searchItems) {
+        if (item.dataset.datasetId === datasetId) {
+            const nameSpan = item.querySelector('strong');
+            const authorSpan = item.querySelector('.badge.bg-secondary');
+            const tags = [...item.querySelectorAll('.tag-badge')].map(t => t.textContent);
+            dataset = {
+                id: datasetId,
+                name: nameSpan ? nameSpan.textContent : '',
+                author: authorSpan ? authorSpan.textContent : '',
+                tags: tags
+            };
+            break;
+        }
+    }
+    if (!dataset) {
+        const topCards = document.querySelectorAll('.dataset-card-item');
+        for (let card of topCards) {
+            if (card.dataset.datasetId === datasetId) {
+                const nameEl = card.querySelector('.dataset-name');
+                const authorEl = card.querySelector('.dataset-author');
+                dataset = {
+                    id: datasetId,
+                    name: nameEl ? nameEl.textContent : '',
+                    author: authorEl ? authorEl.textContent : '',
+                    tags: []
+                };
+                break;
+            }
+        }
+    }
+    if (dataset) {
+        selectedDataset = dataset;
+        document.getElementById('selectedRepoId').value = dataset.id;
+        document.getElementById('selectedDatasetName').value = dataset.name;
+        document.getElementById('selectedDescription').value = `Датасет ${dataset.name} (${dataset.author})`;
+        document.getElementById('datasetDetailsSection').style.display = 'block';
+        document.getElementById('submitBtn').disabled = false;
+        showToast('Датасет выбран', `Выбран датасет ${dataset.id}`, 'success');
+    } else {
+        showToast('Ошибка', 'Не удалось загрузить информацию о датасете', 'error');
+    }
+}
+
+// Проверка датасета (опционально)
+async function validateDataset(repoId) {
+    const statusDiv = document.getElementById('validationStatus');
+    statusDiv.className = 'validation-indicator validation-loading';
+    statusDiv.innerHTML = '<i class="bi bi-hourglass-split spinner"></i> Проверка...';
+    statusDiv.classList.remove('d-none');
+    try {
+        const response = await fetch(`/api/huggingface/?action=validate&model_id=${encodeURIComponent(repoId)}`);
+        const data = await response.json();
+        if (data.valid && data.exists) {
+            statusDiv.className = 'validation-indicator validation-success';
+            statusDiv.innerHTML = '<i class="bi bi-check-circle-fill"></i> Датасет найден';
+            showToast('Проверка пройдена', `Датасет "${repoId}" доступен`, 'success');
+        } else {
+            statusDiv.className = 'validation-indicator validation-error';
+            statusDiv.innerHTML = '<i class="bi bi-x-circle-fill"></i> Датасет не найден';
+            showToast('Ошибка проверки', `Датасет "${repoId}" не найден`, 'error');
+        }
+    } catch (error) {
+        statusDiv.className = 'validation-indicator validation-error';
+        statusDiv.innerHTML = '<i class="bi bi-x-circle-fill"></i> Ошибка проверки';
+        showToast('Ошибка', 'Не удалось проверить датасет', 'error');
+    } finally {
+        setTimeout(() => statusDiv.classList.add('d-none'), 3000);
+    }
+}
+
+// ============================================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Поиск
+    const searchInput = document.getElementById('datasetSearchInput');
+    document.getElementById('buttonSearch').addEventListener('click', () => {
+        const query = searchInput.value.trim();
+        if (query) searchDatasets(query, 1);
+        else showToast('Внимание', 'Введите запрос для поиска', 'warning');
+    });
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('buttonSearch').click();
+        }
+    });
+    document.getElementById('clearSearchBtn').addEventListener('click', () => {
+        searchInput.value = '';
+        currentSearchQuery = '';
+        document.getElementById('searchResults').innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-search display-4 mb-3"></i>
+                <p>Начните поиск датасетов на Hugging Face Hub</p>
+                <small class="text-muted">Или выберите из популярных ниже</small>
+            </div>
+        `;
+        document.getElementById('searchPagination').classList.add('d-none');
+        document.getElementById('searchResultsCount').textContent = '0 результатов';
+    });
+
+    // Фильтры
+    document.querySelectorAll('#filterLanguage, #filterSize, #filterSort').forEach(filter => {
+        filter.addEventListener('change', () => {
+            if (currentSearchQuery) searchDatasets(currentSearchQuery, 1);
+        });
+    });
+
+    // Топ датасетов
+    document.getElementById('refreshTopDatasets').addEventListener('click', () => loadTopDatasets(showAllTop));
+    document.getElementById('toggleAllDatasets').addEventListener('click', function() {
+        showAllTop = !showAllTop;
+        this.innerHTML = showAllTop ? '<i class="bi bi-grid-3x3"></i> Показать 5' : '<i class="bi bi-grid"></i> Показать все';
+        loadTopDatasets(showAllTop);
+    });
+
+    // Проверка датасета
+    document.getElementById('validateDatasetBtn').addEventListener('click', () => {
+        const repoId = document.getElementById('selectedRepoId').value.trim();
+        if (repoId) validateDataset(repoId);
+        else showToast('Внимание', 'Сначала выберите датасет', 'warning');
+    });
+
+    // Отправка формы
+    const form = document.getElementById('uploadForm');
+    form.addEventListener('submit', function(e) {
+        if (!selectedDataset) {
+            e.preventDefault();
+            showToast('Ошибка', 'Выберите датасет из списка', 'error');
+            return;
+        }
+        document.getElementById('id_repo_id').value = selectedDataset.id;
+        document.getElementById('id_config').value = document.getElementById('selectedConfig').value;
+        document.getElementById('id_split').value = document.getElementById('selectedSplit').value;
+        let datasetName = document.getElementById('selectedDatasetName').value.trim();
+        if (!datasetName) datasetName = selectedDataset.name;
+        document.getElementById('id_name').value = datasetName;
+        document.getElementById('id_description').value = document.getElementById('selectedDescription').value;
+        // Показываем индикатор
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Импорт...';
+    });
+
+    // Начальная загрузка
+    loadTopDatasets(false);
+});
+</script>
+{% endblock %}

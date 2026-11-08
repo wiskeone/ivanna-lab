@@ -1,0 +1,401 @@
+# version: '3.10'
+
+services:
+  # PostgreSQL база данных
+  db:
+    image: postgres:15-alpine
+    container_name: ivanna_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ivanna_lab}
+      POSTGRES_USER: ${DB_USER:-ml_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
+    volumes:
+      - ivanna_postgres_data:/var/lib/postgresql/data
+      - ./docker_volumes/postgres_backups:/backups:ro
+    networks:
+      - ivanna_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ml_user} -d ${DB_NAME:-ivanna_lab}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis для кэша и Celery
+  redis:
+    image: redis:7-alpine
+    container_name: ivanna_redis
+    command: >
+      redis-server --appendonly yes
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 60
+      --tcp-backlog 511
+    volumes:
+      - ivanna_redis_data:/data
+    networks:
+      - ivanna_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  # Django-приложение Ivanna Lab (с поддержкой GPU)
+  web:
+    build: .
+    container_name: ivanna_web
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, utility]
+          memory: ${WEB_MEMORY:-8G}
+          cpus: ${WEB_CPUS:-2.0}
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - MODEL_CACHE_DIR=/app/media/model_cache
+      - HF_HOME=/root/.cache/huggingface
+    #  - VLLM_API_URL=http://vllm:8001
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app
+      - ./media:/app/media
+      - ivanna_static:/app/static
+      - pip_cache:/root/.cache/pip
+      - huggingface_cache:/root/.cache/huggingface
+      - torch_cache:/root/.cache/torch
+      - ivanna_faiss_data:/app/data/faiss_index
+      - /tmp:/tmp
+    ports:
+      - "${DJANGO_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ivanna_network
+    command: >
+      sh -c "cd /app && python manage.py migrate && python manage.py collectstatic --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 1 --timeout 3000 --worker-class sync --access-logfile - --error-logfile - --log-level info"
+    runtime: nvidia
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Celery worker для GPU задач
+  celery_worker_gpu:
+    build: .
+    container_name: ivanna_celery_worker_gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, utility]
+        #  memory: ${CELERY_GPU_MEMORY:-8G}
+          cpus: ${CELERY_GPU_CPUS:-2.0}
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - MODEL_CACHE_DIR=/app/media/model_cache
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_HOME=/root/.cache/huggingface
+      - TORCH_HOME=/root/.cache/torch
+    #  - VLLM_API_URL=http://vllm:8001
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app
+      - ./media:/app/media
+      - pip_cache:/root/.cache/pip
+      - huggingface_cache:/root/.cache/huggingface
+      - torch_cache:/root/.cache/torch
+      - ivanna_faiss_data:/app/data/faiss_index
+      - /tmp:/tmp
+    depends_on:
+      - redis
+      - db
+    networks:
+      - ivanna_network
+    command: celery -A config worker --loglevel=info --pool=solo --concurrency=1 --queues=gpu_tasks --hostname=worker_gpu@%h
+    runtime: nvidia
+    restart: unless-stopped
+
+  # Celery worker для CPU задач (уменьшена конкурентность)
+  celery_worker_cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    container_name: ivanna_celery_worker_cpu
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - MODEL_CACHE_DIR=/app/media/model_cache
+      # Конкурентность можно менять через переменную окружения (по умолчанию 2)
+      - CELERY_CPU_CONCURRENCY=${CELERY_CPU_CONCURRENCY:-2}
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app
+      - ./media:/app/media
+      - pip_cache:/root/.cache/pip
+      - ivanna_faiss_data:/app/data/faiss_index
+    depends_on:
+      - redis
+      - db
+    networks:
+      - ivanna_network
+    command:
+      - celery
+      - -A
+      - config
+      - worker
+      - --loglevel=info
+      - --pool=prefork
+      - --concurrency=${CELERY_CPU_CONCURRENCY:-2}
+      - -Q
+      - cpu_tasks
+      - --hostname=worker_cpu@%h
+    restart: unless-stopped
+
+  # Celery beat для периодических задач
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    container_name: ivanna_celery_beat
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app
+      - ./media:/app/media
+    depends_on:
+      - redis
+      - db
+    networks:
+      - ivanna_network
+    command:
+      - celery
+      - -A
+      - config
+      - beat
+      - --loglevel=${CELERY_LOG_LEVEL:-info}
+      - --pidfile=/tmp/celerybeat.pid
+    restart: unless-stopped
+
+  # vLLM сервер для высокопроизводительного инференса (Gemma 4 и другие)
+  # vLLM сервер временно отключён
+  # vllm:
+  #   image: vllm-pytorch-2.10.0:latest
+  #   container_name: ivanna_vllm
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu, utility]
+  #   environment:
+  #     - NVIDIA_VISIBLE_DEVICES=all
+  #     - VLLM_LOGGING_LEVEL=${VLLM_LOG_LEVEL:-INFO}
+  #   command: >
+  #     --model ${VLLM_MODEL:-google/gemma-4-E2B}
+  #     --port 8001
+  #     --host 0.0.0.0
+  #     --trust-remote-code
+  #     --max-model-len 2048
+  #     --gpu-memory-utilization 0.4
+  #   ports:
+  #     - "${VLLM_PORT:-8001}:8001"
+  #   volumes:
+  #     - huggingface_cache:/root/.cache/huggingface
+  #     - vllm_cache:/root/.cache/vllm
+  #   networks:
+  #     - ivanna_network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # Flower для мониторинга Celery (исправлена команда)
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    container_name: ivanna_flower
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - PYTHONPATH=/app
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    ports:
+      - "${FLOWER_PORT:-5555}:5555"
+    volumes:
+      - ./app:/app
+    depends_on:
+      - redis
+      - celery_worker_gpu
+      - celery_worker_cpu
+    networks:
+      - ivanna_network
+    command: celery -A config flower --port=5555 --inspect_timeout=30.0
+    restart: unless-stopped
+
+  # Nginx для статики и балансировки
+  nginx:
+    image: nginx:alpine
+    container_name: ivanna_nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ivanna_static:/app/static:ro
+      - ./media:/app/media
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - web
+    networks:
+      - ivanna_network
+    restart: unless-stopped
+
+  # pgAdmin для управления базой данных
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ivanna_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - ivanna_pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    networks:
+      - ivanna_network
+    restart: unless-stopped
+
+  # Prometheus для мониторинга
+  prometheus:
+    image: prom/prometheus:v3.11.0
+    container_name: ivanna_prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ivanna_prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - ivanna_network
+    restart: unless-stopped
+
+  # Grafana для визуализации метрик
+  grafana:
+    image: grafana/grafana:12.4.2
+    container_name: ivanna_grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - ivanna_grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - ivanna_network
+    restart: unless-stopped
+
+  # Node Exporter для мониторинга хоста
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: ivanna_node_exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /etc/hostname:/etc/host_hostname:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.textfile.directory=/etc/node-exporter/'
+      - '--collector.systemd'
+      - '--collector.systemd.unit-include=(docker|ssh|nginx|postgresql).service'
+    ports:
+      - "9100:9100"
+    networks:
+      - ivanna_network
+    restart: unless-stopped
+    user: "472:472"
+    privileged: true
+    pid: host
+
+  # Redis Exporter для мониторинга Redis
+  redis_exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: ivanna_redis_exporter
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_PASSWORD=
+    ports:
+      - "9121:9121"
+    networks:
+      - ivanna_network
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+networks:
+  ivanna_network:
+    driver: bridge
+
+volumes:
+  ivanna_postgres_data:
+  ivanna_redis_data:
+  ivanna_static:
+  pip_cache:
+  huggingface_cache:
+  torch_cache:
+  ivanna_pgadmin_data:
+  ivanna_prometheus_data:
+  ivanna_grafana_data:
+  ivanna_faiss_data:
+#  vllm_cache:

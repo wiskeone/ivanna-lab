@@ -1,0 +1,281 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Слияние моделей{% endblock %}
+{% block page_title %}Слияние моделей{% endblock %}
+
+{% block extra_css %}
+<style>
+    .model-select-card {
+        background: rgba(40,40,40,0.8);
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .model-select-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+    .model-select-card.selected {
+        border-color: var(--primary-color);
+        background: rgba(107,70,193,0.1);
+    }
+    .model-select-card input[type="radio"] {
+        margin-right: 10px;
+    }
+    .method-badge {
+        background: rgba(107,70,193,0.2);
+        border: 1px solid rgba(107,70,193,0.4);
+        border-radius: 30px;
+        padding: 5px 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .method-badge.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    .param-slider {
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-diagram-3 me-2"></i>Слияние моделей
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="mergeForm" action="{% url 'merge_create' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Выбор базовой модели -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Базовая модель</label>
+                            <div class="row">
+                                {% for model in base_models %}
+                                <div class="col-md-6">
+                                    <div class="model-select-card" data-model-id="{{ model.id }}" data-model-type="base">
+                                        <input type="radio" name="base_model" value="{{ model.id }}" id="base_{{ model.id }}" class="d-none">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ model.display_name }}</strong>
+                                                <div class="small text-muted">
+                                                    {{ model.model_type }} | {{ model.parameter_count|floatformat:0 }} параметров | {{ model.size_gb }} GB
+                                                </div>
+                                            </div>
+                                            <span class="badge bg-secondary">{{ model.quantization|default:"—" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12 text-muted">Нет доступных моделей для слияния</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Выбор модели для слияния -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Модель для слияния</label>
+                            <div class="row">
+                                {% for model in merge_models %}
+                                <div class="col-md-6">
+                                    <div class="model-select-card" data-model-id="{{ model.id }}" data-model-type="merge">
+                                        <input type="radio" name="merge_model" value="{{ model.id }}" id="merge_{{ model.id }}" class="d-none">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ model.display_name }}</strong>
+                                                <div class="small text-muted">
+                                                    {{ model.model_type }} | {{ model.parameter_count|floatformat:0 }} параметров | {{ model.size_gb }} GB
+                                                </div>
+                                            </div>
+                                            <span class="badge bg-secondary">{{ model.quantization|default:"—" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12 text-muted">Нет подходящих моделей для слияния</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Метод слияния -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Метод слияния</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for method_code, method_name in merge_methods %}
+                                <div class="method-badge" data-method="{{ method_code }}">
+                                    {{ method_name }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="merge_method" id="merge_method" value="ties">
+                            <div class="form-text mt-2" id="methodDescription">
+                                TIES (Task Arithmetic) — хорошо сбалансирован для большинства задач.
+                            </div>
+                        </div>
+
+                        <!-- Коэффициент слияния (для linear/slerp) -->
+                        <div class="mb-4" id="ratioBlock">
+                            <label class="form-label fw-bold">Коэффициент слияния</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <span>Базовая модель</span>
+                                <input type="range" name="merge_ratio" id="merge_ratio" min="0" max="1" step="0.05" value="0.5" class="param-slider flex-grow-1">
+                                <span>Сливаемая модель</span>
+                            </div>
+                            <div class="text-center mt-2" id="ratioValue">50% : 50%</div>
+                            <div class="form-text">Доля сливаемой модели в результате (0 = только базовая, 1 = только сливаемая).</div>
+                        </div>
+
+                        <!-- Плотность (для TIES/DARE) -->
+                        <div class="mb-4" id="densityBlock" style="display: none;">
+                            <label class="form-label fw-bold">Плотность (density)</label>
+                            <input type="range" name="density" id="density" min="0" max="1" step="0.05" value="0.7" class="param-slider w-100">
+                            <div class="text-center mt-2" id="densityValue">0.7</div>
+                            <div class="form-text">Доля параметров, которые будут изменены (0 = без изменений, 1 = все). Рекомендуется 0.5–0.8.</div>
+                        </div>
+
+                        <!-- Предварительный расчёт ресурсов -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0"><i class="bi bi-hdd-stack me-2"></i>Оценка ресурсов</h6>
+                            </div>
+                            <div class="card-body" id="resourceEstimate">
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <div class="text-muted small">Требуется памяти</div>
+                                        <div class="fw-bold" id="estMemory">—</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-muted small">Требуется диска</div>
+                                        <div class="fw-bold" id="estDisk">—</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-muted small">Примерное время</div>
+                                        <div class="fw-bold" id="estTime">—</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'model_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-diagram-3 me-1"></i>Запустить слияние
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Обработка выбора модели
+    document.querySelectorAll('.model-select-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const type = card.dataset.modelType;
+            const radio = card.querySelector('input[type="radio"]');
+            radio.checked = true;
+            // Убираем выделение со всех карточек этого типа
+            document.querySelectorAll(`.model-select-card[data-model-type="${type}"]`).forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            updateResourceEstimate();
+        });
+    });
+
+    // Методы слияния
+    const methods = {
+        'linear': { name: 'Linear Interpolation', desc: 'Простое линейное усреднение весов. Работает для совместимых архитектур.', supportsRatio: true, supportsDensity: false },
+        'slerp': { name: 'Spherical Linear Interpolation', desc: 'Сферическая интерполяция, хорошо для моделей с разной ориентацией.', supportsRatio: true, supportsDensity: false },
+        'ties': { name: 'TIES', desc: 'Task Arithmetic — удаляет конфликтующие изменения, усредняет остальные. Хорошо для разнородных моделей.', supportsRatio: false, supportsDensity: true },
+        'dare': { name: 'DARE', desc: 'Drop And REscale — выбрасывает малые изменения, масштабирует оставшиеся.', supportsRatio: false, supportsDensity: true }
+    };
+
+    let currentMethod = 'ties';
+
+    document.querySelectorAll('.method-badge').forEach(badge => {
+        badge.addEventListener('click', () => {
+            document.querySelectorAll('.method-badge').forEach(b => b.classList.remove('active'));
+            badge.classList.add('active');
+            currentMethod = badge.dataset.method;
+            document.getElementById('merge_method').value = currentMethod;
+            const info = methods[currentMethod];
+            document.getElementById('methodDescription').innerHTML = info.desc;
+            // Показываем/скрываем блоки
+            document.getElementById('ratioBlock').style.display = info.supportsRatio ? 'block' : 'none';
+            document.getElementById('densityBlock').style.display = info.supportsDensity ? 'block' : 'none';
+            updateResourceEstimate();
+        });
+    });
+
+    // Обновление значения коэффициента
+    const ratioSlider = document.getElementById('merge_ratio');
+    const ratioValue = document.getElementById('ratioValue');
+    if (ratioSlider) {
+        ratioSlider.addEventListener('input', () => {
+            const val = parseFloat(ratioSlider.value);
+            ratioValue.innerText = `${Math.round((1-val)*100)}% : ${Math.round(val*100)}%`;
+            updateResourceEstimate();
+        });
+    }
+
+    // Плотность
+    const densitySlider = document.getElementById('density');
+    const densityValue = document.getElementById('densityValue');
+    if (densitySlider) {
+        densitySlider.addEventListener('input', () => {
+            densityValue.innerText = densitySlider.value;
+        });
+    }
+
+    // Оценка ресурсов (имитация)
+    function updateResourceEstimate() {
+        const baseCard = document.querySelector('.model-select-card[data-model-type="base"].selected');
+        const mergeCard = document.querySelector('.model-select-card[data-model-type="merge"].selected');
+        if (!baseCard || !mergeCard) {
+            document.getElementById('estMemory').innerText = '—';
+            document.getElementById('estDisk').innerText = '—';
+            document.getElementById('estTime').innerText = '—';
+            return;
+        }
+        // Получаем размер из атрибутов (можно добавить в data-атрибуты)
+        // Здесь упрощённо: берём 7B модель ~7GB
+        const sizeGb = 7; // можно извлечь из текста
+        const estMemory = (sizeGb * 2.5).toFixed(1);
+        const estDisk = (sizeGb * 1.2).toFixed(1);
+        const estTime = (sizeGb * 5).toFixed(1);
+        document.getElementById('estMemory').innerText = estMemory + ' GB';
+        document.getElementById('estDisk').innerText = estDisk + ' GB';
+        document.getElementById('estTime').innerText = estTime + ' мин';
+    }
+
+    // При загрузке страницы выбираем первую модель, если есть
+    if (document.querySelectorAll('.model-select-card[data-model-type="base"]').length > 0) {
+        document.querySelectorAll('.model-select-card[data-model-type="base"]')[0].click();
+    }
+    if (document.querySelectorAll('.model-select-card[data-model-type="merge"]').length > 0) {
+        document.querySelectorAll('.model-select-card[data-model-type="merge"]')[0].click();
+    }
+    // Выбираем первый метод по умолчанию
+    if (document.querySelectorAll('.method-badge').length > 0) {
+        document.querySelectorAll('.method-badge')[0].click();
+    }
+</script>
+{% endblock %}

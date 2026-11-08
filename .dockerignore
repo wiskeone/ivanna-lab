@@ -1,0 +1,45 @@
+# Кэши и большие данные
+media/
+app/media/
+app/.cache/
+app/models
+data/
+docker_volumes/
+logs/
+__pycache__/
+*.pyc
+.git/
+.venv/
+.env
+*.log
+*.safetensors
+*.bin
+*.pt
+*.pth
+models/
+vllm_cache/
+torch_cache/
+huggingface_cache/
+pip_cache/
+ivanna_static/
+ivanna_postgres_data/
+ivanna_redis_data/
+ivanna_pgadmin_data/
+ivanna_prometheus_data/
+ivanna_grafana_data/
+ivanna_faiss_data/
+vllm_cache/
+
+# Временные файлы сборки
+*.tmp
+*.whl
+*.tar.gz
+*.zip
+
+# Исключаем всё, кроме нужного
+# Но оставляем requirements.in и исходный код
+!requirements.in
+!app/
+!ivanna_model_manager/
+!manage.py
+!config/

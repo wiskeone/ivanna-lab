@@ -1,0 +1,405 @@
+/* style.css - основные стили для IvAna Lab */
+
+:root {
+    --primary-color: #009A63;
+    --primary-hover: #008a59;
+    --accent-color: #00c77a;
+    --sidebar-width: 260px;
+    --header-height: 60px;
+    --footer-height: 60px;
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #1e1e1e;
+    --text-primary: #f0f0f0;
+    --text-secondary: #b0b0b0;
+    --border-color: #444;
+}
+
+body {
+    font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Sidebar */
+.sidebar {
+    width: var(--sidebar-width);
+    background: linear-gradient(180deg, var(--bg-tertiary) 0%, #1a1a1a 100%);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+}
+
+.sidebar.collapsed {
+    transform: translateX(-100%);
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.mobile-open {
+        transform: translateX(0);
+        box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+}
+
+.sidebar-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    display: none;
+}
+.sidebar-backdrop.show { display: block; }
+
+.sidebar-header {
+    padding: 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 10px;
+}
+
+.sidebar-brand {
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sidebar-brand i {
+    color: var(--primary-color);
+    font-size: 1.8rem;
+}
+.sidebar-brand:hover {
+    color: var(--accent-color);
+}
+
+/* Navigation */
+.nav-group {
+    margin-bottom: 20px;
+}
+.nav-group-title {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0 20px;
+    margin-bottom: 5px;
+}
+.nav-link {
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.nav-link:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.05);
+    border-left-color: var(--primary-color);
+}
+.nav-link.active {
+    color: var(--text-primary);
+    background: rgba(0,154,99,0.15);
+    border-left-color: var(--primary-color);
+}
+.nav-link i {
+    width: 20px;
+    text-align: center;
+}
+.nav-link .badge {
+    margin-left: auto;
+}
+
+/* Убираем стандартную стрелку Bootstrap у dropdown-toggle, чтобы не дублировалась с нашей иконкой */
+.nav-link.dropdown-toggle::after {
+    display: none !important;
+}
+
+/* Стили для аккордеонных групп (подменю) */
+.nav-item.dropdown {
+    position: relative;
+}
+.nav-item.dropdown > .nav-link {
+    cursor: pointer;
+}
+.nav-item.dropdown > .nav-link .bi-chevron-down {
+    transition: transform 0.3s ease;
+    font-size: 0.8rem;
+    margin-left: auto;
+}
+.nav-item.dropdown > .nav-link[aria-expanded="true"] .bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Подменю с уменьшенным отступом слева */
+.nav-submenu {
+    padding-left: 0;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    background: var(--bg-tertiary);
+}
+.nav-submenu .nav-link {
+    padding: 8px 20px 8px 44px;
+    font-size: 0.9rem;
+    border-left: 3px solid transparent;
+}
+.nav-submenu .nav-link:hover {
+    border-left-color: var(--accent-color);
+    background: rgba(255,255,255,0.03);
+}
+.nav-submenu .nav-link.active {
+    border-left-color: var(--primary-color);
+    background: rgba(0,154,99,0.1);
+}
+.nav-submenu .nav-link i {
+    font-size: 0.85rem;
+    width: 18px;
+}
+
+/* Main content */
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    padding: 0;
+    transition: margin-left 0.3s;
+    min-height: calc(100vh - var(--footer-height));
+    background: var(--bg-primary);
+}
+@media (max-width: 992px) {
+    .main-content {
+        margin-left: 0;
+        padding-top: 60px;
+    }
+}
+.main-content.full-width {
+    margin-left: 0;
+}
+
+/* Header */
+.main-header {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 15px 20px;
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    height: var(--header-height);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: left 0.3s;
+}
+@media (max-width: 992px) {
+    .main-header {
+        left: 0;
+        display: none;
+    }
+}
+
+.mobile-header {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 0 20px;
+    z-index: 1000;
+    align-items: center;
+    justify-content: space-between;
+}
+@media (max-width: 992px) {
+    .mobile-header {
+        display: flex;
+    }
+}
+
+.page-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+}
+
+/* Content wrapper */
+.content-wrapper {
+    background: var(--bg-secondary);
+    padding: 25px;
+    margin-top: var(--header-height);
+    min-height: calc(100vh - var(--header-height) - var(--footer-height));
+}
+@media (max-width: 992px) {
+    .content-wrapper {
+        margin-top: 0;
+    }
+}
+
+/* Footer */
+.main-footer {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-left: var(--sidebar-width);
+    transition: margin-left 0.3s;
+    height: var(--footer-height);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+@media (max-width: 992px) {
+    .main-footer {
+        margin-left: 0;
+    }
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* User avatar */
+.user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 600; font-size: 0.9rem;
+}
+
+/* Toast */
+.toast-container { z-index: 1055; }
+.toast {
+    background: rgba(26,32,44,0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px;
+    z-index: 2000;
+}
+.spinner-glow {
+    width: 50px; height: 50px; border: 3px solid rgba(0,154,99,0.3);
+    border-radius: 50%; border-top-color: var(--primary-color);
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==================== СТИЛИ ДЛЯ КОМПОНЕНТОВ ==================== */
+
+/* Кнопки */
+.btn-primary {
+    background: var(--primary-color);
+    border: none;
+    transition: background-color 0.2s;
+}
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+.btn-outline-primary {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+.btn-outline-primary:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Прогресс-бары */
+.progress {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-bar {
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+/* Активные элементы, обводка */
+:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,154,99,0.5);
+}
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(0,154,99,0.25);
+}
+
+/* Таблицы и карточки с обводкой */
+.card {
+    border-color: var(--border-color);
+    background: rgba(40,40,40,0.6);
+}
+.card-header {
+    border-bottom-color: var(--border-color);
+}
+
+/* Иконки */
+i.bi,
+.icon {
+    color: var(--primary-color);
+}
+
+/* Ссылки */
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+a:hover {
+    color: var(--accent-color);
+}
+
+/* Пагинация */
+.pagination .page-link {
+    background: rgba(0,0,0,0.3);
+    border-color: rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+}
+.pagination .page-link:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+.pagination .active .page-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Бейджи */
+.badge-primary {
+    background: var(--primary-color);
+}
+.badge-success {
+    background: var(--primary-color);
+}
+.badge-info {
+    background: var(--primary-color);
+    color: white;
+}

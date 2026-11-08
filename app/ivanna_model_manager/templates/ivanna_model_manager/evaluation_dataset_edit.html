@@ -1,0 +1,414 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Редактирование датасета{% endblock %}
+{% block page_title %}Редактирование датасета{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Стили для карточек вопросов, модального окна, пагинации и т.д. */
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'evaluation_dataset_detail' dataset.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Назад к датасету
+            </a>
+        </div>
+        <div>
+            <a href="{% url 'evaluation_dataset_export' dataset.id %}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-download"></i> Экспорт JSONL
+            </a>
+            <button class="btn btn-outline-primary" id="importDatasetBtn">
+                <i class="bi bi-upload"></i> Импорт JSONL
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-transparent border-bottom">
+            <h5 class="mb-0">Редактирование датасета: {{ dataset.name }}</h5>
+        </div>
+        <div class="card-body">
+            {% if total_questions > 1000 %}
+                <!-- Большой датасет – пагинация -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span class="badge bg-info">Всего вопросов: {{ total_questions }}</span>
+                        <span class="badge bg-secondary ms-2" id="currentPageInfo">Страница 1</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-success" id="addQuestionBtn">
+                            <i class="bi bi-plus-circle"></i> Добавить вопрос
+                        </button>
+                    </div>
+                </div>
+                <div id="questionsContainer" class="mb-3"></div>
+                <div id="paginationControls" class="d-flex justify-content-center gap-2"></div>
+            {% else %}
+                <!-- Небольшой датасет – JSON-редактор -->
+                <form method="post" id="editForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <textarea class="form-control font-monospace" id="questionsEditor" rows="20">{{ questions_json }}</textarea>
+                    </div>
+                    <input type="hidden" name="questions_json" id="questionsJson">
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования вопроса -->
+<div class="modal fade" id="editQuestionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактирование вопроса</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editQuestionId">
+                <div class="mb-3">
+                    <label class="form-label">Вопрос</label>
+                    <textarea id="editQuestionText" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Ответ</label>
+                    <textarea id="editAnswerText" class="form-control" rows="6"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Категория</label>
+                        <input type="text" id="editCategory" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Сложность</label>
+                        <select id="editDifficulty" class="form-select">
+                            <option value="easy">Легкая</option>
+                            <option value="medium">Средняя</option>
+                            <option value="hard">Сложная</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveQuestionBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления нового вопроса -->
+<div class="modal fade" id="addQuestionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить вопрос</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Вопрос</label>
+                    <textarea id="newQuestionText" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Ответ</label>
+                    <textarea id="newAnswerText" class="form-control" rows="6"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Категория</label>
+                        <input type="text" id="newCategory" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Сложность</label>
+                        <select id="newDifficulty" class="form-select">
+                            <option value="easy">Легкая</option>
+                            <option value="medium">Средняя</option>
+                            <option value="hard">Сложная</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmAddBtn">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для импорта -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Импорт датасета</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="file" id="importFile" class="form-control" accept=".jsonl,.json">
+                <div class="form-text">Поддерживаются файлы JSONL с парами "instruction"/"output" или "text"/"answer"</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmImportBtn">Загрузить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const datasetId = {{ dataset.id }};
+let currentPage = 1;
+const perPage = 1000;
+let totalPages = 1;
+
+function loadQuestions(page = 1) {
+    fetch(`/api/evaluation/datasets/${datasetId}/questions/?page=${page}&per_page=${perPage}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                renderQuestions(data.questions);
+                currentPage = data.page;
+                totalPages = data.total_pages;
+                document.getElementById('currentPageInfo').textContent = `Страница ${currentPage} из ${totalPages}`;
+                renderPagination();
+            } else {
+                showToast('error', 'Ошибка', data.error);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('error', 'Ошибка', err.message);
+        });
+}
+
+function renderQuestions(questions) {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    questions.forEach(q => {
+        const card = `
+            <div class="card bg-dark border-secondary mb-3" data-id="${q.id}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="card-title">Вопрос #${q.id}</h6>
+                        <div>
+                            <span class="badge bg-secondary me-2">${q.difficulty || 'medium'}</span>
+                            <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${q.id}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="card-text"><strong>Вопрос:</strong> ${escapeHtml(q.text)}</p>
+                    <p class="card-text"><strong>Ответ:</strong> ${escapeHtml(q.answer).substring(0, 200)}${q.answer.length > 200 ? '…' : ''}</p>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', card);
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const question = questions.find(q => q.id == id);
+            if (question) openEditModal(question);
+        });
+    });
+}
+
+function renderPagination() {
+    const container = document.getElementById('paginationControls');
+    container.innerHTML = '';
+    if (totalPages <= 1) return;
+    for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+        const btn = document.createElement('button');
+        btn.className = `btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-outline-primary'} me-1`;
+        btn.textContent = i;
+        btn.onclick = () => loadQuestions(i);
+        container.appendChild(btn);
+    }
+    if (totalPages > 5) {
+        const dots = document.createElement('span');
+        dots.textContent = ' ... ';
+        container.appendChild(dots);
+        const last = document.createElement('button');
+        last.className = `btn btn-sm ${totalPages === currentPage ? 'btn-primary' : 'btn-outline-primary'}`;
+        last.textContent = totalPages;
+        last.onclick = () => loadQuestions(totalPages);
+        container.appendChild(last);
+    }
+}
+
+function openEditModal(question) {
+    document.getElementById('editQuestionId').value = question.id;
+    document.getElementById('editQuestionText').value = question.text;
+    document.getElementById('editAnswerText').value = question.answer;
+    document.getElementById('editCategory').value = question.category || '';
+    document.getElementById('editDifficulty').value = question.difficulty || 'medium';
+    const modal = new bootstrap.Modal(document.getElementById('editQuestionModal'));
+    modal.show();
+}
+
+document.getElementById('saveQuestionBtn').addEventListener('click', () => {
+    const id = document.getElementById('editQuestionId').value;
+    const text = document.getElementById('editQuestionText').value;
+    const answer = document.getElementById('editAnswerText').value;
+    const category = document.getElementById('editCategory').value;
+    const difficulty = document.getElementById('editDifficulty').value;
+
+    fetch(`/api/evaluation/datasets/${datasetId}/questions/${id}/`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ text, answer, category, difficulty })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', 'Успех', 'Вопрос обновлён');
+            bootstrap.Modal.getInstance(document.getElementById('editQuestionModal')).hide();
+            loadQuestions(currentPage);
+        } else {
+            showToast('error', 'Ошибка', data.error);
+        }
+    })
+    .catch(err => showToast('error', 'Ошибка', err.message));
+});
+
+document.getElementById('addQuestionBtn').addEventListener('click', () => {
+    const modal = new bootstrap.Modal(document.getElementById('addQuestionModal'));
+    modal.show();
+});
+
+document.getElementById('confirmAddBtn').addEventListener('click', () => {
+    const text = document.getElementById('newQuestionText').value;
+    const answer = document.getElementById('newAnswerText').value;
+    const category = document.getElementById('newCategory').value;
+    const difficulty = document.getElementById('newDifficulty').value;
+
+    fetch(`/api/evaluation/datasets/${datasetId}/questions/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ text, answer, category, difficulty })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', 'Успех', 'Вопрос добавлен');
+            bootstrap.Modal.getInstance(document.getElementById('addQuestionModal')).hide();
+            loadQuestions(currentPage);
+            document.getElementById('newQuestionText').value = '';
+            document.getElementById('newAnswerText').value = '';
+            document.getElementById('newCategory').value = '';
+            document.getElementById('newDifficulty').value = 'medium';
+        } else {
+            showToast('error', 'Ошибка', data.error);
+        }
+    })
+    .catch(err => showToast('error', 'Ошибка', err.message));
+});
+
+document.getElementById('importDatasetBtn').addEventListener('click', () => {
+    const modal = new bootstrap.Modal(document.getElementById('importModal'));
+    modal.show();
+});
+
+document.getElementById('confirmImportBtn').addEventListener('click', () => {
+    const fileInput = document.getElementById('importFile');
+    const file = fileInput.files[0];
+    if (!file) {
+        showToast('error', 'Ошибка', 'Выберите файл');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    fetch(`/api/evaluation/datasets/${datasetId}/import/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', 'Успех', `Импортировано ${data.total} записей`);
+            location.reload();
+        } else {
+            showToast('error', 'Ошибка', data.error);
+        }
+    })
+    .catch(err => showToast('error', 'Ошибка', err.message));
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(type, title, message) {
+    if (typeof window.showGlobalToast === 'function') {
+        window.showGlobalToast(message, type);
+        return;
+    }
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toastEl = document.createElement('div');
+        const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info';
+        toastEl.className = `toast align-items-center text-bg-${bgClass} border-0 position-fixed top-0 end-0 m-3`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.style.zIndex = '9999';
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}:</strong> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(toastEl);
+        const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    } else {
+        alert(`${title}: ${message}`);
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if ({{ total_questions }} > 1000) {
+        loadQuestions(1);
+    }
+});
+</script>
+{% endblock %}

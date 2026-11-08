@@ -1,0 +1,1275 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}{{ collection.name }} - RAG | Ivanna Lab{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-folder2-open me-2" style="color: var(--primary-color);"></i> {{ collection.name }}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* =============================================
+       СТИЛИ ДЛЯ СТРАНИЦЫ ДЕТАЛЕЙ КОЛЛЕКЦИИ
+       ============================================= */
+    .stat-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        height: 100%;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1.2;
+    }
+
+    .stat-label {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .info-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 20px;
+        height: 100%;
+    }
+
+    .info-card h6 {
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .info-card .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .info-card .info-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .index-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 30px;
+        font-weight: 500;
+    }
+
+    .index-badge.created {
+        background: rgba(25, 135, 84, 0.15);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+
+    .index-badge.not-created {
+        background: rgba(255, 193, 7, 0.15);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .progress {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;
+        padding: 8px 16px;
+        color: white;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .action-btn:hover {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .action-btn.danger:hover {
+        background: #dc3545;
+        border-color: #dc3545;
+    }
+
+    /* Таблица документов */
+    .document-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+
+    .document-table th {
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 500;
+        font-size: 0.85rem;
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .document-table td {
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+        vertical-align: middle;
+    }
+
+    .document-row:hover td {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .file-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        font-size: 1.2rem;
+    }
+
+    .file-icon.pdf { color: #f40f02; }
+    .file-icon.docx { color: #2b5797; }
+    .file-icon.txt { color: #cccccc; }
+    .file-icon.html { color: #e44d26; }
+    .file-icon.md { color: #238636; }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .status-badge.indexed { background: rgba(40, 167, 69, 0.15); color: #28a745; }
+    .status-badge.processing { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
+    .status-badge.error { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+    .status-badge.uploaded { background: rgba(23, 162, 184, 0.15); color: #17a2b8; }
+
+    /* Левая колонка с прилипанием */
+    .sticky-sidebar {
+        position: sticky;
+        top: 20px;
+        align-self: flex-start;
+    }
+
+    /* Прогресс-бар для задач */
+    .task-progress-card {
+        display: none;
+        margin-top: 20px;
+    }
+
+    .task-progress-card .progress {
+        height: 10px;
+    }
+
+    /* Пагинация */
+    .pagination {
+        margin-top: 30px;
+    }
+
+    .page-link {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        border-radius: 8px;
+        margin: 0 3px;
+    }
+
+    .page-link:hover {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+
+    .page-item.active .page-link {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    /* Стили для результатов поиска в модальном окне */
+    .result-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        transition: all 0.2s;
+    }
+
+    .result-card:hover {
+        border-color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.05);
+    }
+
+    .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .result-title {
+        font-weight: 600;
+        color: white;
+    }
+
+    .result-score {
+        background: rgba(var(--primary-rgb), 0.15);
+        color: var(--primary-color);
+        padding: 2px 10px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+    }
+
+    .result-content {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        margin-bottom: 12px;
+        max-height: 100px;
+        overflow-y: auto;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+    }
+
+    .result-meta {
+        display: flex;
+        gap: 15px;
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .highlight {
+        background-color: rgba(255, 193, 7, 0.3);
+        color: #ffd700;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: 600;
+    }
+
+    .searching-indicator {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+
+    .searching-dots {
+        display: flex;
+        gap: 6px;
+    }
+
+    .searching-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+    }
+
+    .searching-dot:nth-child(2) { animation-delay: 0.2s; }
+    .searching-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+        30% { transform: translateY(-4px); opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Верхняя панель с хлебными крошками и кнопками -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'rag_collection_list' %}" class="text-decoration-none">Коллекции</a></li>
+                <li class="breadcrumb-item active">{{ collection.name }}</li>
+            </ol>
+        </nav>
+        <div class="action-buttons">
+            <button type="button" class="action-btn" onclick="openSearchModal()">
+                <i class="bi bi-search"></i> Поиск по документам
+            </button>
+            <a href="{% url 'rag_upload_documents' %}?collection={{ collection.id }}" class="action-btn">
+                <i class="bi bi-upload"></i> Загрузить документы
+            </a>
+            {% if collection.owner_id == request.user.id|stringformat:"s" %}
+                <button type="button" class="action-btn danger" onclick="confirmDeleteCollection({{ collection.id }}, '{{ collection.name|escapejs }}')">
+                    <i class="bi bi-trash"></i> Удалить коллекцию
+                </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Основной контент (две колонки) -->
+    <div class="row g-4">
+        <!-- Левая колонка с информацией о коллекции и управлением -->
+        <div class="col-lg-4">
+            <div class="sticky-sidebar">
+                <!-- Информация о коллекции -->
+                <div class="info-card mb-4">
+                    <h6><i class="bi bi-info-circle me-2"></i> Информация о коллекции</h6>
+                    <div class="info-item">
+                        <span>Владелец</span>
+                        <strong>
+                            {% if collection.owner %}
+                                {{ collection.owner.username }}
+                            {% elif collection.owner_id %}
+                                ID: {{ collection.owner_id }}
+                            {% else %}
+                                Система
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div class="info-item">
+                        <span>Доступ</span>
+                        <strong>
+                            {% if collection.is_public %}
+                                <span class="text-info">Публичная</span>
+                            {% else %}
+                                <span class="text-warning">Приватная</span>
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div class="info-item">
+                        <span>Создана</span>
+                        <strong>{{ collection.created_at|date:"d.m.Y H:i" }}</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>Документов</span>
+                        <strong>{{ total_docs }}</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>Чанков</span>
+                        <strong>{{ total_chunks }}</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>Размер</span>
+                        <strong>{{ total_size|floatformat:2 }} MB</strong>
+                    </div>
+                    <!-- ИСПРАВЛЕНО: добавлен id="current-embedding-model" -->
+                    <div class="info-item">
+                        <span>Модель эмбеддингов</span>
+                        <strong id="current-embedding-model">
+                            {% if collection.embedding_model %}
+                                <span class="badge bg-info">{{ collection.embedding_model.name }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">По умолчанию</span>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#selectModelModal">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </strong>
+                    </div>
+                </div>
+
+                <!-- Управление FAISS индексом и эмбеддингами -->
+                <div class="info-card">
+                    <h6><i class="bi bi-cpu me-2"></i> FAISS индекс и эмбеддинги</h6>
+                    <div class="mb-3">
+                        {% if collection.vector_index_created %}
+                            <span class="index-badge created mb-2">
+                                <i class="bi bi-check-circle-fill"></i> Индекс создан
+                            </span>
+                            <div class="info-item mt-2">
+                                <span>Векторов</span>
+                                <strong>{{ collection.total_vectors|default:0 }}</strong>
+                            </div>
+                            <div class="info-item">
+                                <span>Размерность</span>
+                                <strong>{{ collection.vector_dimension|default:384 }}</strong>
+                            </div>
+                            <div class="info-item">
+                                <span>Тип индекса</span>
+                                <strong>{{ collection.index_metadata.index_type|default:"flat"|upper }}</strong>
+                            </div>
+                            <div class="mt-3 d-flex flex-wrap gap-2">
+                                <button type="button" class="action-btn" onclick="updateFaissIndex({{ collection.id }})">
+                                    <i class="bi bi-arrow-repeat"></i> Обновить индекс
+                                </button>
+                                <button type="button" class="action-btn danger" onclick="rebuildAllEmbeddings({{ collection.id }})">
+                                    <i class="bi bi-arrow-clockwise"></i> Полная перестройка
+                                </button>
+                            </div>
+                        {% else %}
+                            <span class="index-badge not-created mb-2">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Индекс не создан
+                            </span>
+                            <p class="text-muted small">Семантический поиск будет работать медленнее. Рекомендуется построить индекс FAISS.</p>
+                            <div class="mt-3">
+                                <button type="button" class="action-btn w-100" onclick="buildFaissIndex({{ collection.id }})">
+                                    <i class="bi bi-database-add"></i> Построить индекс
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if total_chunks > 0 %}
+                        <hr class="bg-secondary">
+                        <h6 class="mt-3"><i class="bi bi-bar-chart me-2"></i> Прогресс эмбеддингов</h6>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="small">Создано эмбеддингов</span>
+                                <span class="small fw-bold">{{ chunks_with_embeddings }}/{{ total_chunks }}</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: {% widthratio chunks_with_embeddings total_chunks 100 %}%"></div>
+                            </div>
+                        </div>
+                        <button type="button" class="action-btn w-100" onclick="createEmbeddings({{ collection.id }})">
+                            <i class="bi bi-lightning"></i> Создать недостающие эмбеддинги
+                        </button>
+                    {% endif %}
+                </div>
+
+                <!-- Карточка прогресса выполняемой задачи -->
+                <div class="info-card task-progress-card" id="taskProgressCard">
+                    <h6><i class="bi bi-hourglass-split me-2"></i> Выполняется задача</h6>
+                    <div class="progress mb-2">
+                        <div class="progress-bar" id="taskProgressBar" style="width: 0%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span id="taskStatus">Загрузка...</span>
+                        <span id="taskPercent">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка со списком документов -->
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="bi bi-files me-2"></i> Документы в коллекции</h5>
+                <span class="text-muted small">Всего: {{ total_docs }}</span>
+            </div>
+
+            {% if documents %}
+                <div class="table-responsive">
+                    <table class="document-table">
+                        <thead>
+                            <tr>
+                                <th>Документ</th>
+                                <th>Размер</th>
+                                <th>Чанки</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                                <tr class="document-row">
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="file-icon {{ doc.document_type|lower }}">
+                                                {% if doc.document_type == 'PDF' %}
+                                                    <i class="bi bi-file-pdf"></i>
+                                                {% elif doc.document_type == 'DOCX' or doc.document_type == 'DOC' %}
+                                                    <i class="bi bi-file-word"></i>
+                                                {% elif doc.document_type == 'TXT' %}
+                                                    <i class="bi bi-file-text"></i>
+                                                {% elif doc.document_type == 'HTML' %}
+                                                    <i class="bi bi-file-code"></i>
+                                                {% elif doc.document_type == 'MD' %}
+                                                    <i class="bi bi-markdown"></i>
+                                                {% else %}
+                                                    <i class="bi bi-file-earmark"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ doc.title|default:doc.original_filename|truncatechars:40 }}</div>
+                                                <small class="text-muted">{{ doc.original_filename|truncatechars:30 }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ doc.file_size_mb|floatformat:2 }} MB</td>
+                                    <td>
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info">
+                                            {{ doc.chunk_count|default:0 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if doc.status == 'INDEXED' %}
+                                            <span class="status-badge indexed">
+                                                <i class="bi bi-check-circle"></i> Готов
+                                            </span>
+                                        {% elif doc.status == 'PROCESSING' %}
+                                            <span class="status-badge processing">
+                                                <i class="bi bi-hourglass-split"></i> Обработка
+                                            </span>
+                                        {% elif doc.status == 'ERROR' %}
+                                            <span class="status-badge error">
+                                                <i class="bi bi-exclamation-circle"></i> Ошибка
+                                            </span>
+                                        {% else %}
+                                            <span class="status-badge uploaded">
+                                                <i class="bi bi-cloud"></i> Загружен
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'document_detail' doc.id %}" class="action-btn" title="Просмотр">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'document_edit' doc.id %}" class="action-btn" title="Редактировать">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="action-btn danger" 
+                                                    onclick="confirmDeleteDocument({{ doc.id }}, '{{ doc.title|default:doc.original_filename|escapejs }}')"
+                                                    title="Удалить">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Пагинация -->
+                {% if documents.has_other_pages %}
+                    <nav aria-label="Навигация по документам">
+                        <ul class="pagination justify-content-center">
+                            {% if documents.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ documents.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+                                <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+                            {% endif %}
+
+                            {% for num in documents.paginator.page_range %}
+                                {% if documents.number == num %}
+                                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                {% elif num > documents.number|add:'-3' and num < documents.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if documents.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ documents.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ documents.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                                <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-files display-1 text-muted"></i>
+                    <h5 class="mt-3">В коллекции нет документов</h5>
+                    <p class="text-muted">Загрузите первый документ, чтобы начать работу с RAG.</p>
+                    <a href="{% url 'rag_upload_documents' %}?collection={{ collection.id }}" class="action-btn mt-2">
+                        <i class="bi bi-upload"></i> Загрузить документ
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- =============================================
+     МОДАЛЬНОЕ ОКНО ВЫБОРА МОДЕЛИ ЭМБЕДДИНГОВ
+     ============================================= -->
+<div class="modal fade" id="selectModelModal" tabindex="-1" aria-labelledby="selectModelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: rgba(26, 32, 44, 0.95); backdrop-filter: blur(10px);">
+            <div class="modal-header border-bottom border-secondary">
+                <h5 class="modal-title" id="selectModelModalLabel">
+                    <i class="bi bi-cpu me-2" style="color: var(--primary-color);"></i>
+                    Выбор модели эмбеддингов
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">
+                    Выберите модель для создания эмбеддингов в этой коллекции. Если модель не выбрана, будет использоваться модель по умолчанию.
+                </p>
+                <div class="list-group" id="embeddingModelsList">
+                    <!-- Модели будут загружены через JS -->
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <span class="ms-2">Загрузка моделей...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveModelBtn" disabled>Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =============================================
+     МОДАЛЬНОЕ ОКНО ПОИСКА
+     ============================================= -->
+<div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="background: rgba(26, 32, 44, 0.95); backdrop-filter: blur(10px);">
+            <div class="modal-header border-bottom border-secondary">
+                <h5 class="modal-title" id="searchModalLabel">
+                    <i class="bi bi-search me-2" style="color: var(--primary-color);"></i>
+                    Поиск в коллекции "{{ collection.name }}"
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Поле ввода -->
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0" style="border-color: rgba(255,255,255,0.1);">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="searchQuery" 
+                               placeholder="Введите запрос..." style="background: rgba(255,255,255,0.05); color: white;">
+                        <button class="btn btn-primary" type="button" id="searchButton" onclick="performSearch()">
+                            <i class="bi bi-arrow-right"></i> Найти
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Параметры поиска -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Количество результатов</label>
+                        <select class="form-select" id="searchLimit" style="background: rgba(255,255,255,0.05); color: white;">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Тип поиска</label>
+                        <select class="form-select" id="searchType" style="background: rgba(255,255,255,0.05); color: white;">
+                            <option value="hybrid">Гибридный</option>
+                            <option value="semantic">Семантический</option>
+                            <option value="keyword">Ключевые слова</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Порог релевантности</label>
+                        <input type="range" class="form-range" id="searchThreshold" min="0.1" max="0.9" step="0.1" value="0.5">
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>0.1</span>
+                            <span id="thresholdValue">0.5</span>
+                            <span>0.9</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Индикатор поиска -->
+                <div id="searchingIndicator" class="searching-indicator" style="display: none;">
+                    <div class="searching-dots">
+                        <div class="searching-dot"></div>
+                        <div class="searching-dot"></div>
+                        <div class="searching-dot"></div>
+                    </div>
+                    <span>Выполняется поиск...</span>
+                </div>
+
+                <!-- Результаты -->
+                <div id="searchResults"></div>
+            </div>
+            <div class="modal-footer border-top border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-primary" onclick="exportSearchResults()" id="exportBtn" disabled>
+                    <i class="bi bi-download"></i> Экспорт
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// =============================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// =============================================
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(type, title, message) {
+    const icons = {
+        success: 'bi-check-circle-fill text-success',
+        error: 'bi-exclamation-circle-fill text-danger',
+        warning: 'bi-exclamation-triangle-fill text-warning',
+        info: 'bi-info-circle-fill text-info'
+    };
+
+    const toastId = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi ${icons[type] || icons.info} me-2"></i>
+                    <strong>${title}</strong><br>${message}
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+    const container = document.getElementById('toastContainer');
+    if (container) {
+        container.insertAdjacentHTML('beforeend', toastHtml);
+    } else {
+        const newContainer = document.createElement('div');
+        newContainer.id = 'toastContainer';
+        newContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(newContainer);
+        newContainer.insertAdjacentHTML('beforeend', toastHtml);
+    }
+
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    toast.show();
+    toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+}
+
+// =============================================
+// ВЫБОР МОДЕЛИ ЭМБЕДДИНГОВ
+// =============================================
+let selectedModelId = {% if collection.embedding_model %}{{ collection.embedding_model.id }}{% else %}null{% endif %};
+
+function loadEmbeddingModels() {
+    const list = document.getElementById('embeddingModelsList');
+    fetch('/api/embedding-models/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.results && data.results.length > 0) {
+                let html = '';
+                data.results.forEach(model => {
+                    const isSelected = (model.id === selectedModelId);
+                    html += `
+                        <div class="list-group-item bg-transparent text-white border-secondary model-item" data-model-id="${model.id}" style="cursor: pointer; ${isSelected ? 'background-color: rgba(107,70,193,0.2) !important;' : ''}">
+                            <div class="d-flex align-items-center">
+                                <div class="form-check me-3">
+                                    <input class="form-check-input" type="radio" name="embedding_model" value="${model.id}" id="model_${model.id}" ${isSelected ? 'checked' : ''}>
+                                </div>
+                                <div class="flex-grow-1" onclick="this.previousElementSibling.querySelector('input').click()">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>${model.display_name || model.name}</strong>
+                                        <span class="badge ${model.is_default ? 'bg-success' : 'bg-secondary'}">${model.is_default ? 'по умолчанию' : ''}</span>
+                                    </div>
+                                    <div class="small text-muted">
+                                        ${model.embedding_dim}d • ${model.model_type_display || model.model_type}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+                document.getElementById('saveModelBtn').disabled = false;
+
+                // Добавляем обработчики кликов на пункты
+                document.querySelectorAll('.model-item').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        const radio = this.querySelector('input[type="radio"]');
+                        if (radio) {
+                            radio.checked = true;
+                            selectedModelId = parseInt(radio.value);
+                        }
+                    });
+                });
+            } else {
+                list.innerHTML = '<div class="alert alert-warning">Нет доступных моделей эмбеддингов</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading models:', error);
+            list.innerHTML = '<div class="alert alert-danger">Ошибка загрузки моделей</div>';
+        });
+}
+
+// Сохранить выбранную модель
+document.getElementById('saveModelBtn').addEventListener('click', function() {
+    const selected = document.querySelector('input[name="embedding_model"]:checked');
+    if (!selected) return;
+
+    const modelId = selected.value;
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Сохранение...';
+
+    fetch(`/collections/{{ collection.id }}/change-embedding-model/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `embedding_model_id=${modelId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', 'Модель изменена', `Теперь используется ${data.model_name}`);
+            // ИСПРАВЛЕНО: используем getElementById
+            const modelSpan = document.getElementById('current-embedding-model');
+            if (modelSpan) {
+                modelSpan.innerHTML = `<span class="badge bg-info">${data.model_name}</span> <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#selectModelModal"><i class="bi bi-pencil"></i></button>`;
+            }
+            // Закрыть модальное окно
+            bootstrap.Modal.getInstance(document.getElementById('selectModelModal')).hide();
+        } else {
+            showToast('error', 'Ошибка', data.error || 'Не удалось изменить модель');
+        }
+        btn.disabled = false;
+        btn.innerHTML = 'Сохранить';
+    })
+    .catch(error => {
+        console.error('Error saving model:', error);
+        showToast('error', 'Ошибка', 'Ошибка сети');
+        btn.disabled = false;
+        btn.innerHTML = 'Сохранить';
+    });
+});
+
+// При открытии модального окна загружаем модели
+document.getElementById('selectModelModal').addEventListener('show.bs.modal', loadEmbeddingModels);
+
+// =============================================
+// МОНИТОРИНГ ЗАДАЧ
+// =============================================
+let activeTaskInterval = null;
+
+function startTaskMonitoring(taskId, taskName, onComplete) {
+    const progressCard = document.getElementById('taskProgressCard');
+    const progressBar = document.getElementById('taskProgressBar');
+    const taskStatus = document.getElementById('taskStatus');
+    const taskPercent = document.getElementById('taskPercent');
+
+    progressCard.style.display = 'block';
+    taskStatus.textContent = 'Запуск задачи...';
+    taskPercent.textContent = '0%';
+    progressBar.style.width = '0%';
+
+    if (activeTaskInterval) clearInterval(activeTaskInterval);
+
+    activeTaskInterval = setInterval(() => {
+        fetch(`/api/tasks/${taskId}/status/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.state === 'SUCCESS') {
+                    clearInterval(activeTaskInterval);
+                    progressCard.style.display = 'none';
+                    showToast('success', taskName, 'Задача успешно завершена');
+                    if (onComplete) onComplete();
+                } else if (data.state === 'FAILURE') {
+                    clearInterval(activeTaskInterval);
+                    progressCard.style.display = 'none';
+                    showToast('error', taskName, 'Задача завершилась с ошибкой');
+                } else {
+                    if (data.info && data.info.progress !== undefined) {
+                        const p = Math.min(data.info.progress, 100);
+                        progressBar.style.width = p + '%';
+                        taskPercent.textContent = p + '%';
+                    }
+                    if (data.info && data.info.current_step) {
+                        taskStatus.textContent = data.info.current_step;
+                    } else {
+                        taskStatus.textContent = 'Выполняется...';
+                    }
+                }
+            })
+            .catch(err => {
+                console.warn('Ошибка мониторинга задачи:', err);
+                clearInterval(activeTaskInterval);
+                progressCard.style.display = 'none';
+                showToast('error', 'Ошибка', 'Не удалось отследить состояние задачи');
+            });
+    }, 2000);
+}
+
+// =============================================
+// ДЕЙСТВИЯ С FAISS ИНДЕКСОМ
+// =============================================
+function buildFaissIndex(collectionId) {
+    if (!confirm('Построить векторный индекс FAISS для этой коллекции? Это может занять некоторое время.')) return;
+
+    fetch(`/collections/${collectionId}/build-index/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new URLSearchParams({ 'index_type': 'ivf' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.task_id) {
+            showToast('info', 'Индекс строится', 'Задача запущена');
+            startTaskMonitoring(data.task_id, 'Построение индекса', () => location.reload());
+        } else {
+            showToast('error', 'Ошибка', data.error || 'Не удалось запустить построение индекса');
+        }
+    })
+    .catch(error => showToast('error', 'Ошибка сети', 'Произошла ошибка при отправке запроса'));
+}
+
+function updateFaissIndex(collectionId) {
+    if (!confirm('Обновить FAISS индекс? Будут добавлены новые векторы.')) return;
+
+    fetch(`/collections/${collectionId}/update-index/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.task_id) {
+            showToast('info', 'Индекс обновляется', 'Задача запущена');
+            startTaskMonitoring(data.task_id, 'Обновление индекса', () => location.reload());
+        } else {
+            showToast('error', 'Ошибка', data.error || 'Не удалось запустить обновление индекса');
+        }
+    })
+    .catch(error => showToast('error', 'Ошибка сети', 'Произошла ошибка при отправке запроса'));
+}
+
+function createEmbeddings(collectionId) {
+    if (!confirm('Создать недостающие эмбеддинги для всех чанков? Это может занять время.')) return;
+
+    fetch(`/collections/${collectionId}/create-embeddings/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.task_id) {
+            showToast('info', 'Эмбеддинги создаются', 'Задача запущена');
+            startTaskMonitoring(data.task_id, 'Создание эмбеддингов', () => location.reload());
+        } else {
+            showToast('error', 'Ошибка', data.error || 'Не удалось запустить создание эмбеддингов');
+        }
+    })
+    .catch(error => showToast('error', 'Ошибка сети', 'Произошла ошибка при отправке запроса'));
+}
+
+// =============================================
+// ПОЛНАЯ ПЕРЕСТРОЙКА ЭМБЕДДИНГОВ И ИНДЕКСА
+// =============================================
+function rebuildAllEmbeddings(collectionId) {
+    if (!confirm('ВНИМАНИЕ! Это удалит все существующие эмбеддинги чанков и пересоздаст их заново. Продолжить?')) return;
+
+    const btn = event.target.closest('button');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Перестройка...';
+    btn.disabled = true;
+
+    fetch(`/collections/${collectionId}/rebuild-embeddings/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.task_id) {
+            showToast('info', 'Перестройка запущена', 'Задача запущена');
+            startTaskMonitoring(data.task_id, 'Перестройка эмбеддингов и индекса', () => location.reload());
+        } else {
+            showToast('error', 'Ошибка', data.error || 'Не удалось запустить перестройку');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        showToast('error', 'Ошибка сети', 'Произошла ошибка при отправке запроса');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+// =============================================
+// ПОИСК В МОДАЛЬНОМ ОКНЕ
+// =============================================
+let currentResults = [];
+
+function openSearchModal() {
+    const modal = new bootstrap.Modal(document.getElementById('searchModal'));
+    modal.show();
+}
+
+function performSearch() {
+    const query = document.getElementById('searchQuery').value.trim();
+    if (!query) {
+        showToast('warning', 'Внимание', 'Введите запрос для поиска');
+        return;
+    }
+
+    const limit = document.getElementById('searchLimit').value;
+    const searchType = document.getElementById('searchType').value;
+    const threshold = document.getElementById('searchThreshold').value;
+
+    document.getElementById('searchingIndicator').style.display = 'flex';
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('exportBtn').disabled = true;
+
+    fetch('/api/rag/search/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            query: query,
+            collection_id: {{ collection.id }},
+            top_k: parseInt(limit),
+            search_type: searchType,
+            threshold: parseFloat(threshold)
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || 'Ошибка поиска'); });
+        }
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById('searchingIndicator').style.display = 'none';
+        if (data.success) {
+            displaySearchResults(data.results, query);
+            currentResults = data.results || [];
+            if (currentResults.length > 0) {
+                document.getElementById('exportBtn').disabled = false;
+            }
+        } else {
+            throw new Error(data.error || 'Неизвестная ошибка');
+        }
+    })
+    .catch(error => {
+        document.getElementById('searchingIndicator').style.display = 'none';
+        document.getElementById('searchResults').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> ${error.message}
+            </div>
+        `;
+    });
+}
+
+function displaySearchResults(results, query) {
+    const container = document.getElementById('searchResults');
+    if (!results || results.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">Ничего не найдено</div>';
+        return;
+    }
+
+    let html = '';
+    results.forEach((result, idx) => {
+        const relevance = (result.relevance_score * 100).toFixed(1);
+        const highlightedContent = highlightText(result.content || '', query);
+        html += `
+            <div class="result-card">
+                <div class="result-header">
+                    <span class="result-title">${escapeHtml(result.document_title || 'Без названия')}</span>
+                    <span class="result-score">${relevance}%</span>
+                </div>
+                <div class="result-content">${highlightedContent}</div>
+                <div class="result-meta">
+                    <span><i class="bi bi-hash"></i> Чанк #${result.chunk_index || '?'}</span>
+                    <span><i class="bi bi-file-text"></i> ID: ${result.document_id}</span>
+                </div>
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-primary" onclick="previewChunk(${result.chunk_id})">
+                        <i class="bi bi-eye"></i> Просмотр
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function previewChunk(chunkId) {
+    fetch(`/api/document-chunks/${chunkId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast('error', 'Ошибка', data.error);
+                return;
+            }
+            alert(`Содержимое чанка:\n\n${data.content}`);
+        })
+        .catch(err => showToast('error', 'Ошибка', 'Не удалось загрузить чанк'));
+}
+
+function exportSearchResults() {
+    if (currentResults.length === 0) return;
+    const dataStr = JSON.stringify(currentResults, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `search_results_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function highlightText(text, query) {
+    if (!query || !text) return escapeHtml(text);
+    const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    if (words.length === 0) return escapeHtml(text);
+    let highlighted = escapeHtml(text);
+    words.forEach(word => {
+        const regex = new RegExp(`(${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        highlighted = highlighted.replace(regex, '<span class="highlight">$1</span>');
+    });
+    return highlighted;
+}
+
+function escapeHtml(unsafe) {
+    return unsafe.replace(/[&<>"']/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        if (m === "'") return '&#039;';
+        return m;
+    });
+}
+
+// Обновление отображения порога релевантности
+document.getElementById('searchThreshold').addEventListener('input', function(e) {
+    document.getElementById('thresholdValue').textContent = parseFloat(e.target.value).toFixed(1);
+});
+
+// =============================================
+// УДАЛЕНИЕ КОЛЛЕКЦИИ И ДОКУМЕНТОВ
+// =============================================
+function confirmDeleteCollection(collectionId, collectionName) {
+    if (confirm(`Вы уверены, что хотите удалить коллекцию "${collectionName}"? Все документы в коллекции также будут помечены как неактивные.`)) {
+        fetch(`/rag/collections/${collectionId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('success', 'Коллекция удалена', data.message);
+                setTimeout(() => window.location.href = '{% url "rag_collection_list" %}', 1500);
+            } else {
+                showToast('error', 'Ошибка', data.error || 'Не удалось удалить коллекцию');
+            }
+        })
+        .catch(error => showToast('error', 'Ошибка сети', 'Произошла ошибка при удалении'));
+    }
+}
+
+function confirmDeleteDocument(docId, docTitle) {
+    if (confirm(`Вы уверены, что хотите удалить документ "${docTitle}"?`)) {
+        fetch(`/documents/${docId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('success', 'Документ удален', data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('error', 'Ошибка', data.error || 'Не удалось удалить документ');
+            }
+        })
+        .catch(error => showToast('error', 'Ошибка сети', 'Произошла ошибка при удалении'));
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+ivanna_lab/
+├── docker-compose.yml               # Оркестрация сервисов
+├── Dockerfile                      # Образ для Django-приложения
+├── Dockerfile.celery               # Образ для Celery worker
+├── requirements.txt                # Зависимости Python
+├── .env.example                    # Шаблон переменных окружения
+├── .dockerignore                   # Исключения для Docker
+│
+├── app/                            # Django-проект
+│   ├── manage.py
+│   ├── config/                     # Настройки Django
+│   │   ├── __init__.py
+│   │   ├── settings.py            # Основные настройки
+│   │   ├── urls.py                # Корневые URL
+│   │   └── celery.py              # Конфигурация Celery
+│   │
+│   ├── model_manager/              # Основное приложение
+│   │   ├── __init__.py
+│   │   ├── admin.py               # Админ-панель
+│   │   ├── apps.py
+│   │   ├── models.py              # Модели данных
+│   │   ├── forms.py               # Формы для UI
+│   │   ├── views.py               # Контроллеры
+│   │   ├── urls.py                # Маршруты приложения
+│   │   ├── serializers.py         # Сериализаторы API
+│   │   ├── services/              # Бизнес-логика
+│   │   │   ├── __init__.py
+│   │   │   ├── model_loader.py    # Загрузка моделей
+│   │   │   └── merger.py          # Слияние моделей
+│   │   ├── management/            # Django-команды
+│   │   │   └── commands/
+│   │   │       └── download_model.py
+│   │   ├── tasks.py               # Фоновые задачи Celery
+│   │   └── templates/model_manager/ # Шаблоны
+│   │       ├── index.html
+│   │       ├── detail.html
+│   │       ├── inference.html
+│   │       └── merge.html
+│   │
+│   ├── static/                     # Статика
+│   └── media/                      # Загружаемые файлы
+│
+├── celery_worker/                  # Для Dockerfile.celery
+│   └── entrypoint.sh
+├── nginx/
+│   └── nginx.conf                  # Конфигурация Nginx
+│
+├── scripts/                        # Вспомогательные скрипты
+│   └── entrypoint.sh              # Точка входа Django
+│
+└── docker_volumes/                 # Данные, сохраняемые вне контейнеров
+    ├── postgres_data/             # База данных
+    ├── media/                     # Загруженные модели
+    └── static/                    # Собранная статика

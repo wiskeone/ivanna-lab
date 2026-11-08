@@ -1,0 +1,62 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'ivanna-lab'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files:
+  # - "alert_rules.yml"
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+
+  # Django application metrics
+  - job_name: 'django'
+    static_configs:
+      - targets: ['web:8000']
+    metrics_path: '/metrics/'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'ivanna-web'
+
+  # Celery metrics via flower
+  - job_name: 'celery-flower'
+    static_configs:
+      - targets: ['flower:5555']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'celery-flower'
+
+  # Node/system metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node_exporter:9100']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'host-system'
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis_exporter:9121']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'redis'

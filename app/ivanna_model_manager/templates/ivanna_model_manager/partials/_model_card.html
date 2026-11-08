@@ -1,0 +1,78 @@
+<div class="col-md-4 mb-4">
+    <div class="card model-card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-cpu me-1"></i>
+                <strong class="card-title">{{ model.name|truncatechars:25 }}</strong>
+            </div>
+            <span class="badge model-type-{{ model.model_type|lower }} badge-model">
+                {{ model.get_model_type_display }}
+            </span>
+        </div>
+        
+        <div class="card-body">
+            <div class="mb-3">
+                <span class="badge status-{{ model.status|lower }} status-badge">
+                    {{ model.get_status_display }}
+                </span>
+                {% if model.quantization %}
+                <span class="badge bg-secondary badge-model">
+                    {{ model.quantization }}
+                </span>
+                {% endif %}
+            </div>
+            
+            <p class="card-text small text-muted mb-2">
+                {% if model.huggingface_id %}
+                <i class="bi bi-box"></i> {{ model.huggingface_id|truncatechars:30 }}
+                {% else %}
+                <i class="bi bi-hdd"></i> Локальная модель
+                {% endif %}
+            </p>
+            
+            <div class="row small mb-3">
+                <div class="col-6">
+                    <i class="bi bi-calculator"></i> Параметры:<br>
+                    <strong>
+                        {% if model.parameter_count %}
+                            {{ model.parameter_count|floatformat:"0" }}
+                        {% else %}
+                            Неизвестно
+                        {% endif %}
+                    </strong>
+                </div>
+                <div class="col-6">
+                    <i class="bi bi-hdd"></i> Размер:<br>
+                    <strong>
+                        {% if model.size_gb %}
+                            {{ model.size_gb }} GB
+                        {% else %}
+                            Неизвестно
+                        {% endif %}
+                    </strong>
+                </div>
+            </div>
+            
+            <div class="small text-muted">
+                <i class="bi bi-calendar"></i> 
+                {{ model.created_at|date:"d.m.Y" }}
+                {% if model.accuracy_score %}
+                <br><i class="bi bi-graph-up"></i> Точность: {{ model.accuracy_score|floatformat:3 }}
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card-footer bg-transparent">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{% url 'model_detail' model.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> Просмотр
+                </a>
+                {% if model.status == 'LOADED' %}
+                <a href="{% url 'quick_test' model.id %}" class="btn btn-sm btn-success">
+                    <i class="bi bi-lightning-charge"></i> Тест
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

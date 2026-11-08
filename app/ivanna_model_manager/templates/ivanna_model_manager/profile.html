@@ -1,0 +1,121 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Личный кабинет{% endblock %}
+{% block page_title %}Личный кабинет{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Можно добавить специфичные стили, если нужно */
+    .profile-card {
+        border: 1px solid var(--border-color);
+        background: rgba(30, 30, 30, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        transition: box-shadow 0.3s ease;
+    }
+    .profile-card:hover {
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    .info-label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.25rem;
+    }
+    .info-value {
+        font-size: 1rem;
+        color: white;
+        font-weight: 500;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), #5a32a3);
+        border: none;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Левая колонка: форма токена -->
+        <div class="col-lg-6">
+            <div class="profile-card p-4">
+                <h4 class="mb-3">
+                    <i class="bi bi-key me-2" style="color: var(--primary-color);"></i>
+                    Настройки Hugging Face
+                </h4>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.huggingface_token.id_for_label }}" class="form-label">
+                            <i class="bi bi-token me-1"></i>Токен Hugging Face
+                        </label>
+                        {{ form.huggingface_token }}
+                        {% if form.huggingface_token.errors %}
+                            <div class="text-danger small mt-1">{{ form.huggingface_token.errors }}</div>
+                        {% endif %}
+                        <div class="form-text text-muted mt-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            {{ form.huggingface_token.help_text }}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle me-2"></i>Сохранить токен
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Правая колонка: информация о пользователе -->
+        <div class="col-lg-6">
+            <div class="profile-card p-4">
+                <h4 class="mb-3">
+                    <i class="bi bi-person-circle me-2" style="color: var(--accent-color);"></i>
+                    Информация о пользователе
+                </h4>
+                <div class="info-item mb-3">
+                    <div class="info-label">Имя пользователя</div>
+                    <div class="info-value">{{ user.username }}</div>
+                </div>
+                <div class="info-item mb-3">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ user.email|default:"не указан" }}</div>
+                </div>
+                <div class="info-item mb-3">
+                    <div class="info-label">Дата регистрации</div>
+                    <div class="info-value">{{ user.date_joined|date:"d.m.Y H:i" }}</div>
+                </div>
+                <div class="info-item mb-3">
+                    <div class="info-label">Последний вход</div>
+                    <div class="info-value">{{ user.last_login|date:"d.m.Y H:i"|default:"никогда" }}</div>
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'password_change' %}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-shield-lock me-2"></i>Изменить пароль
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Дополнительный блок: статус токена (опционально) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="profile-card p-4">
+                <h5>
+                    <i class="bi bi-question-circle me-2" style="color: var(--warning-color);"></i>
+                    Зачем нужен токен?
+                </h5>
+                <p class="text-muted mb-0">
+                    Токен Hugging Face необходим для доступа к моделям, требующим аутентификации (gated models), а также для увеличения лимитов скачивания. 
+                    Вы можете получить токен на <a href="https://huggingface.co/settings/tokens" target="_blank" class="text-info">странице настроек Hugging Face</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

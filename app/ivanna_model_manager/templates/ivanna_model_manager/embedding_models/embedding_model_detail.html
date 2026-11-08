@@ -1,0 +1,371 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}{{ model.display_name|default:model.name }} — Модель эмбеддингов{% endblock %}
+{% block page_title %}{{ model.display_name|default:model.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Кнопка назад -->
+    <div class="mb-4">
+        <a href="{% url 'embedding_model_list' %}" class="action-link">
+            <i class="bi bi-arrow-left"></i> Назад к списку моделей
+        </a>
+    </div>
+
+    <!-- Карточка с заголовком и статусами -->
+    <div class="model-card mb-4">
+        <div class="model-header py-2 px-3">
+            <div class="model-name">
+                <i class="bi bi-vector-pen" style="color: var(--primary-color);"></i>
+                {{ model.display_name|default:model.name }}
+            </div>
+            <div>
+                {% if model.is_default %}
+                <span class="embedding-status status-default me-2">
+                    <i class="bi bi-star-fill"></i> По умолчанию
+                </span>
+                {% endif %}
+                <span class="embedding-status 
+                    {% if model.is_downloaded %}status-downloaded
+                    {% elif model.download_status == 'downloading' %}status-downloading
+                    {% elif model.download_status == 'failed' %}status-failed
+                    {% else %}status-not-downloaded{% endif %}">
+                    {% if model.is_downloaded %}
+                        <i class="bi bi-check-circle"></i> Скачана
+                    {% elif model.download_status == 'downloading' %}
+                        <i class="bi bi-arrow-repeat spin"></i> Загрузка...
+                    {% elif model.download_status == 'failed' %}
+                        <i class="bi bi-exclamation-triangle"></i> Ошибка
+                    {% else %}
+                        <i class="bi bi-cloud"></i> Не скачана
+                    {% endif %}
+                </span>
+                <span class="model-badge ms-2">{{ model.get_model_type_display }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Две колонки: левая (детали) и правая (системная + статистика) -->
+    <div class="row g-4">
+        <!-- Левая карточка: детали модели -->
+        <div class="col-lg-6">
+            <div class="model-card h-100">
+                <div class="card-header bg-transparent border-bottom px-3 py-2">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i> Детали модели</h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-tag me-1"></i> Имя модели</span>
+                        <span class="model-meta-value">{{ model.name }}</span>
+                    </div>
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-card-text me-1"></i> Отображаемое имя</span>
+                        <span class="model-meta-value">{{ model.display_name|default:"—" }}</span>
+                    </div>
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-hash me-1"></i> Hugging Face ID</span>
+                        <span class="model-meta-value">{{ model.model_id }}</span>
+                    </div>
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-code-slash me-1"></i> Версия</span>
+                        <span class="model-meta-value">{{ model.model_version }}</span>
+                    </div>
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-vector-pen me-1"></i> Размерность</span>
+                        <span class="model-meta-value">{{ model.embedding_dim }}d</span>
+                    </div>
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-text-paragraph me-1"></i> Макс. токенов</span>
+                        <span class="model-meta-value">{{ model.max_tokens }}</span>
+                    </div>
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-translate me-1"></i> Мультиязычная</span>
+                        <span class="model-meta-value">{% if model.is_multilingual %}Да{% else %}Нет{% endif %}</span>
+                    </div>
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-file-text me-1"></i> Лицензия</span>
+                        <span class="model-meta-value">{{ model.license_type|default:"—" }}</span>
+                    </div>
+                    <div class="model-meta-item">
+                        <span class="model-meta-label"><i class="bi bi-check-circle me-1"></i> Активна</span>
+                        <span class="model-meta-value">{% if model.is_active %}Да{% else %}Нет{% endif %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка (две карточки) -->
+        <div class="col-lg-6 d-flex flex-column gap-4">
+            <!-- Карточка: системная информация -->
+            <div class="model-card">
+                <div class="card-header bg-transparent border-bottom px-3 py-2">
+                    <h6 class="mb-0"><i class="bi bi-calendar me-2"></i> Системная информация</h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-calendar-plus me-1"></i> Создана</span>
+                        <span class="model-meta-value">{{ model.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <div class="model-meta-item">
+                        <span class="model-meta-label"><i class="bi bi-calendar-check me-1"></i> Обновлена</span>
+                        <span class="model-meta-value">{{ model.updated_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Карточка: статистика использования -->
+            <div class="model-card">
+                <div class="card-header bg-transparent border-bottom px-3 py-2">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i> Статистика использования</h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="model-meta-item mb-3 pb-2 border-bottom">
+                        <span class="model-meta-label"><i class="bi bi-database me-1"></i> Обработано токенов</span>
+                        <span class="model-meta-value">{{ model.total_tokens_processed|default:0 }}</span>
+                    </div>
+                    <div class="model-meta-item">
+                        <span class="model-meta-label"><i class="bi bi-arrow-repeat me-1"></i> Количество запросов</span>
+                        <span class="model-meta-value">{{ model.total_requests|default:0 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Прогресс загрузки (если активна) -->
+    {% if model.download_status == 'downloading' %}
+    <div class="progress-container mt-4 p-3">
+        <div class="progress">
+            <div class="progress-bar" id="downloadProgress" style="width: {{ model.download_progress }}%"></div>
+        </div>
+        <div class="progress-text mt-1 text-end">{{ model.download_progress }}%</div>
+    </div>
+    {% endif %}
+
+    {% if model.download_error %}
+    <div class="alert alert-danger small mt-3">
+        <i class="bi bi-exclamation-triangle"></i> {{ model.download_error }}
+    </div>
+    {% endif %}
+
+    <!-- Действия -->
+    <div class="model-footer mt-4 d-flex flex-wrap gap-2">
+        <a href="{% url 'embedding_model_edit' model.id %}" class="action-link">
+            <i class="bi bi-pencil"></i> Редактировать
+        </a>
+        {% if not model.is_default %}
+        <button class="action-link" data-bs-toggle="modal" data-bs-target="#setDefaultModal">
+            <i class="bi bi-star"></i> Сделать по умолчанию
+        </button>
+        {% endif %}
+        {% if not model.is_downloaded and model.download_status != 'downloading' %}
+        <button class="action-link" id="downloadBtn" onclick="startDownload()">
+            <i class="bi bi-cloud-download"></i> Скачать
+        </button>
+        {% endif %}
+        {% if model.download_status == 'downloading' or model.download_status == 'failed' %}
+        <button class="action-link" id="resetBtn" onclick="resetDownload()">
+            <i class="bi bi-arrow-repeat"></i> Сбросить статус
+        </button>
+        {% endif %}
+        {% if not model.is_default %}
+        <button class="action-link danger" onclick="confirmDelete()">
+            <i class="bi bi-trash"></i> Удалить
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения установки модели по умолчанию -->
+<div class="modal fade" id="setDefaultModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title">
+                    <i class="bi bi-star-fill me-2" style="color: #f59e0b;"></i>
+                    Сделать моделью по умолчанию
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите сделать <strong>{{ model.display_name|default:model.name }}</strong> моделью эмбеддингов по умолчанию?</p>
+                <p class="text-muted small">Модель по умолчанию будет использоваться для новых коллекций, если не указана иная.</p>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmSetDefaultBtn">
+                    <i class="bi bi-check-lg me-1"></i> Да, сделать по умолчанию
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast уведомления -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="liveToast" class="toast" role="alert">
+        <div class="toast-header bg-dark text-white">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body bg-dark text-white" id="toastMessage"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(title, message, type = 'info') {
+    const toastEl = document.getElementById('liveToast');
+    document.getElementById('toastTitle').innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>${title}`;
+    document.getElementById('toastMessage').textContent = message;
+    new bootstrap.Toast(toastEl).show();
+}
+
+// Загрузка модели
+function startDownload() {
+    const btn = document.getElementById('downloadBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch(`/embedding-models/{{ model.id }}/download/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Загрузка запущена', 'Модель будет загружена в фоновом режиме', 'info');
+            monitorDownload();
+        } else {
+            showToast('Ошибка', data.error || 'Не удалось запустить загрузку', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-cloud-download"></i> Скачать';
+        }
+    })
+    .catch(error => {
+        console.error('Download error:', error);
+        showToast('Ошибка сети', error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-cloud-download"></i> Скачать';
+    });
+}
+
+// Мониторинг прогресса
+function monitorDownload() {
+    const interval = setInterval(() => {
+        fetch(`/embedding-models/{{ model.id }}/download-status/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_downloaded) {
+                    clearInterval(interval);
+                    location.reload();
+                } else if (data.download_status === 'failed') {
+                    clearInterval(interval);
+                    location.reload();
+                } else if (data.download_status === 'downloading') {
+                    const progressBar = document.getElementById('downloadProgress');
+                    const percentSpan = document.getElementById('progressPercent');
+                    if (progressBar) progressBar.style.width = data.download_progress + '%';
+                    if (percentSpan) percentSpan.textContent = data.download_progress + '%';
+                }
+            })
+            .catch(err => console.warn('Status check error:', err));
+    }, 2000);
+}
+
+// Сброс статуса загрузки
+function resetDownload() {
+    if (!confirm('Сбросить статус загрузки? Это позволит начать загрузку заново.')) return;
+
+    const btn = document.getElementById('resetBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch(`/embedding-models/{{ model.id }}/reset-download/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Статус сброшен', 'Теперь можно запустить загрузку', 'success');
+            location.reload();
+        } else {
+            showToast('Ошибка', data.error || 'Не удалось сбросить статус', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Сбросить';
+        }
+    })
+    .catch(error => {
+        console.error('Reset error:', error);
+        showToast('Ошибка сети', error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Сбросить';
+    });
+}
+
+// Установка модели по умолчанию
+document.getElementById('confirmSetDefaultBtn')?.addEventListener('click', function() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('setDefaultModal'));
+    modal.hide();
+
+    fetch(`/api/embedding-models/{{ model.id }}/set_default/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'default set') {
+            showToast('Успех', 'Модель установлена по умолчанию', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast('Ошибка', 'Не удалось установить модель по умолчанию', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Set default error:', error);
+        showToast('Ошибка сети', error.message, 'error');
+    });
+});
+
+// Удаление модели
+function confirmDelete() {
+    if (confirm('Вы уверены, что хотите удалить эту модель?')) {
+        fetch(`/embedding-models/{{ model.id }}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{% url "embedding_model_list" %}';
+            } else {
+                showToast('Ошибка', data.error || 'Не удалось удалить модель', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            showToast('Ошибка сети', error.message, 'error');
+        });
+    }
+}
+</script>
+{% endblock %}

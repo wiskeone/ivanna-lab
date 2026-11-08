@@ -1,0 +1,45 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rag_collection_list' %}">RAG</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'document_detail' chunk.document.id %}">{{ chunk.document.title|truncatechars:30 }}</a></li>
+            <li class="breadcrumb-item active">Редактирование чанка #{{ chunk.chunk_index }}</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-pencil-square"></i>
+                Редактирование чанка #{{ chunk.chunk_index }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {{ form|crispy }}
+                
+                <div class="d-flex justify-content-between mt-3">
+                    <a href="{% url 'document_detail' chunk.document.id %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Назад к документу
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Сохранить изменения
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="card-footer text-muted">
+            <small>
+                <i class="bi bi-info-circle"></i>
+                Чанк ID: {{ chunk.id }} | Документ: {{ chunk.document.title }} |
+                Токенов: {{ chunk.token_count }} | Эмбеддинг: {% if chunk.has_embedding %}✅{% else %}❌{% endif %}
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}

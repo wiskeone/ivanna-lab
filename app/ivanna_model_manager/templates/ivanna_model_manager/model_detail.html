@@ -1,0 +1,1081 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}{{ model.display_name }} — детали модели{% endblock %}
+{% block page_title %}{{ model.display_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* =============================================
+       КАСТОМНЫЕ СТИЛИ ДЛЯ СТРАНИЦЫ ДЕТАЛЕЙ МОДЕЛИ
+       ============================================= */
+    .stats-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+    }
+    .stats-card:hover {
+        background: rgba(0, 0, 0, 0.3);
+    }
+    .model-meta-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .model-meta-label {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+    .model-meta-value {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    .model-status, .model-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        background: transparent;
+        border: 1px solid;
+    }
+    .status-loaded { color: #28a745; border-color: #28a745; }
+    .status-downloading { color: #17a2b8; border-color: #17a2b8; }
+    .status-loading { color: #f59e0b; border-color: #f59e0b; }
+    .status-error { color: #dc3545; border-color: #dc3545; }
+    .status-pending { color: #ffc107; border-color: #ffc107; }
+    .status-downloaded { color: #28a745; border-color: #28a745; }
+    .model-badge {
+        background: rgba(0, 154, 99, 0.2);
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    .progress-container {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+    }
+    .progress-text {
+        font-size: 0.7rem;
+        text-align: right;
+        color: var(--text-secondary);
+    }
+    .action-link {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: color 0.2s;
+        cursor: pointer;
+        text-decoration: none;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+    }
+    .action-link:hover {
+        color: var(--primary-color);
+        background: rgba(0, 154, 99, 0.1);
+    }
+    .action-link.danger:hover {
+        color: #dc3545;
+        background: rgba(220, 53, 69, 0.1);
+    }
+    .action-link:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .embedding-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        background: transparent;
+        border: 1px solid;
+    }
+    .status-default { color: #f59e0b; border-color: #f59e0b; }
+    .status-downloaded { color: #28a745; border-color: #28a745; }
+    .progress-bar {
+        transition: width 0.3s ease;
+    }
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .modal-content.bg-dark {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+    }
+    @media (max-width: 768px) {
+        .model-meta-item {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .d-flex.flex-wrap.gap-3 {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Основная информация -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">
+                            <i class="bi bi-cpu me-2" style="color: var(--primary-color);"></i>
+                            {{ model.display_name }}
+                        </h4>
+                        <small class="text-muted">{{ model.name }}</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'model_list' %}" class="action-link">
+                            <i class="bi bi-arrow-left"></i> Назад
+                        </a>
+                        <a href="{% url 'model_edit' model.pk %}" class="action-link">
+                            <i class="bi bi-pencil"></i> Редактировать
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Статус и метки -->
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <span class="model-status status-{{ model.status|lower }}">
+                            <i class="bi 
+                                {% if model.status == 'LOADED' %}bi-check-circle
+                                {% elif model.status == 'DOWNLOADING' %}bi-cloud-download
+                                {% elif model.status == 'LOADING' %}bi-hourglass
+                                {% elif model.status == 'ERROR' %}bi-exclamation-triangle
+                                {% else %}bi-circle{% endif %} me-1"></i>
+                            {{ model.get_status_display }}
+                        </span>
+                        <span class="model-badge">{{ model.get_model_type_display }}</span>
+                        {% if model.is_safe %}
+                        <span class="embedding-status status-downloaded">
+                            <i class="bi bi-shield-check me-1"></i> Безопасна
+                        </span>
+                        {% endif %}
+                        {% if model.is_public %}
+                        <span class="embedding-status status-default">
+                            <i class="bi bi-globe me-1"></i> Публичная
+                        </span>
+                        {% endif %}
+                        {% for tag in model.tags|slice:":5" %}
+                        <span class="badge bg-secondary">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Блок состояния в памяти -->
+                    <div class="stats-card mb-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-memory fs-4" style="color: var(--primary-color);"></i>
+                            <div class="flex-grow-1">
+                                <div id="memoryStatus">
+                                    <p class="text-muted mb-0">
+                                        <i class="bi bi-arrow-repeat spin me-2"></i> Проверка статуса...
+                                    </p>
+                                </div>
+                                <div id="loadingProgressContainer" class="mt-2" style="display: none;">
+                                    <div class="progress">
+                                        <div class="progress-bar" id="loadingProgressBar" style="width: 0%"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-1">
+                                        <span class="small text-muted" id="loadingStep">Инициализация...</span>
+                                        <span class="small text-muted" id="loadingPercent">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="memoryStats" class="row g-2 mt-3" style="display: none;"></div>
+                    </div>
+
+                    <!-- Кнопки управления (жирный шрифт) -->
+                    <div class="d-flex flex-wrap gap-3 mb-4">
+                        <button class="action-link" onclick="loadModel()" id="loadBtn" disabled>
+                            <i class="bi bi-download"></i> Загрузить в память
+                        </button>
+                        <button class="action-link" onclick="unloadModel(false)" id="unloadBtn" disabled>
+                            <i class="bi bi-eject"></i> Выгрузить
+                        </button>
+                        <button class="action-link danger" onclick="unloadModel(true)" id="forceUnloadBtn" style="display: none;">
+                            <i class="bi bi-exclamation-triangle"></i> Принудительно выгрузить
+                        </button>
+                        <button class="action-link" onclick="forceCleanMemory()" id="cleanMemoryBtn" style="display: none;">
+                            <i class="bi bi-droplet"></i> Очистить память
+                        </button>
+                        {% if model.huggingface_id %}
+                        <button class="action-link" onclick="downloadModel()" id="downloadBtn" {% if has_local_copy %}disabled{% endif %}>
+                            <i class="bi bi-cloud-download"></i> Скачать
+                        </button>
+                        {% endif %}
+                        {% if model.status == 'LOADED' %}
+                        <a href="{% url 'model_test' pk=model.id %}" class="action-link">
+                            <i class="bi bi-play-circle"></i> Тестировать
+                        </a>
+                        <a href="{% url 'chat_view' %}?model_id={{ model.id }}" class="action-link">
+                            <i class="bi bi-chat-dots"></i> Чат
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'merge_create' %}?base_model={{ model.id }}" class="action-link">
+                            <i class="bi bi-arrow-left-right"></i> Слияние
+                        </a>
+                        <a href="{% url 'chat_sessions_management' %}" class="action-link">
+                            <i class="bi bi-collection"></i> Сессии
+                        </a>
+                    </div>
+
+                    <!-- Детальная информация -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Тип модели</span>
+                                <span class="model-meta-value">{{ model.get_model_type_display }}</span>
+                            </div>
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Параметры</span>
+                                <span class="model-meta-value">{{ model.parameter_count|floatformat:0 }} ({{ model.size_gb }} GB)</span>
+                            </div>
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Запрошенная квантизация</span>
+                                <span class="model-meta-value">{{ model.get_quantization_display|default:"FP16" }}</span>
+                            </div>
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Контекст</span>
+                                <span class="model-meta-value">{{ model.context_length }} токенов</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Лицензия</span>
+                                <span class="model-meta-value">{{ model.license_type|default:"Не указана" }}</span>
+                            </div>
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Безопасность</span>
+                                <span class="model-meta-value">
+                                    {% if model.safety_score %}
+                                    <span class="badge bg-{% if model.safety_score > 0.8 %}success{% elif model.safety_score > 0.6 %}warning text-dark{% else %}danger{% endif %}">
+                                        {{ model.safety_score|floatformat:2 }}
+                                    </span>
+                                    {% else %}
+                                    Не оценена
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Публичный доступ</span>
+                                <span class="model-meta-value">
+                                    {% if model.is_public %}
+                                    <i class="bi bi-check-circle text-success"></i> Да
+                                    {% else %}
+                                    <i class="bi bi-x-circle text-danger"></i> Нет
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Активность</span>
+                                <span class="model-meta-value">
+                                    {% if model.is_active %}
+                                    <i class="bi bi-check-circle text-success"></i> Активна
+                                    {% else %}
+                                    <i class="bi bi-x-circle text-danger"></i> Неактивна
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Фактическая квантизация и устройство -->
+                    {% if model.loader_config.actual_quantization or model.loader_config.target_device %}
+                    <div class="row g-3 mt-3">
+                        {% if model.loader_config.actual_quantization %}
+                        <div class="col-md-6">
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Фактическая квантизация</span>
+                                <span class="model-meta-value">{{ model.loader_config.actual_quantization }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if model.loader_config.target_device %}
+                        <div class="col-md-6">
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Устройство</span>
+                                <span class="model-meta-value">{{ model.loader_config.target_device|upper }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if model.loader_config.loaded_at %}
+                        <div class="col-md-6">
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Загружена</span>
+                                <span class="model-meta-value">{{ model.loader_config.loaded_at|date:"d.m.Y H:i:s"|default:"—" }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Hugging Face ссылка -->
+                    {% if model.huggingface_id %}
+                    <div class="mt-3">
+                        <div class="model-meta-item">
+                            <span class="model-meta-label">Hugging Face</span>
+                            <span class="model-meta-value">
+                                <a href="https://huggingface.co/{{ model.huggingface_id }}" target="_blank" class="action-link">
+                                    {{ model.huggingface_id }}
+                                    {% if model.huggingface_revision %} ({{ model.huggingface_revision }}){% endif %}
+                                    <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                </a>
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Активные сессии -->
+                    {% if active_sessions %}
+                    <div class="mt-4">
+                        <h6 class="mb-2"><i class="bi bi-activity me-2"></i> Активные сессии</h6>
+                        <div class="list-group">
+                            {% for session in active_sessions|slice:":3" %}
+                            <a href="{% url 'chat_session' session_id=session.session_id %}" class="list-group-item list-group-item-action bg-transparent border-secondary">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ session.session_id|truncatechars:30 }}</strong>
+                                        <small class="d-block text-muted">{{ session.last_activity|timesince }} назад</small>
+                                    </div>
+                                    <span class="badge bg-primary">{{ session.total_requests }}</span>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Редактор конфигурации -->
+            <div class="card mt-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <i class="bi bi-code-slash me-2"></i> Конфигурация загрузки
+                </div>
+                <div class="card-body">
+                    <textarea id="configEditor" class="form-control font-monospace" rows="15" spellcheck="false" style="background: rgba(0,0,0,0.3);">{{ config_json }}</textarea>
+                    <div class="form-text text-muted mt-2">
+                        <i class="bi bi-info-circle me-1"></i> Редактируйте конфигурацию загрузки модели. Будьте осторожны с синтаксисом JSON.
+                    </div>
+                    <div class="d-flex justify-content-between mt-3">
+                        <div class="d-flex gap-2">
+                            <button class="action-link" onclick="resetConfig()">
+                                <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                            </button>
+                            <button class="action-link" onclick="formatConfig()">
+                                <i class="bi bi-align-left"></i> Форматировать
+                            </button>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveConfig()">
+                            <i class="bi bi-check-circle me-1"></i> Сохранить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Боковая панель -->
+        <div class="col-lg-4">
+            <!-- Системная информация -->
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-folder me-2"></i> Системная информация</h5>
+                </div>
+                <div class="card-body">
+                    {% if model.experiment %}
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Эксперимент</small>
+                        <a href="{% url 'experiment_detail' model.experiment.pk %}" class="action-link">
+                            <i class="bi bi-flask me-1"></i> {{ model.experiment.name }}
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Локальный путь</small>
+                        <div class="text-truncate" title="{{ model.local_path }}">
+                            <i class="bi bi-folder2 me-1"></i> {{ model.local_path|default:"Не скачана"|truncatechars:40 }}
+                        </div>
+                    </div>
+
+                    {% if model.relative_path %}
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Относительный путь</small>
+                        <div class="fw-bold">{{ model.relative_path }}</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Создана</small>
+                        <div>{{ model.created_at|date:"d.m.Y H:i" }}</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <small class="text-muted d-block">Обновлена</small>
+                        <div>{{ model.updated_at|date:"d.m.Y H:i" }}</div>
+                    </div>
+
+                    {% if perms.ivanna_model_manager.can_delete_protected %}
+                    <a href="{% url 'model_delete' model.pk %}" class="action-link danger"
+                       onclick="return confirm('Вы уверены, что хотите удалить эту модель?')">
+                        <i class="bi bi-trash me-1"></i> Удалить модель
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Управление версиями -->
+            <div class="card mt-4">
+                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-collection me-2"></i> Версии ({{ versions|length }})</h5>
+                    <button class="action-link" data-bs-toggle="modal" data-bs-target="#createVersionModal">
+                        <i class="bi bi-plus-lg"></i> Создать
+                    </button>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% if versions %}
+                        {% for version in versions|slice:":5" %}
+                        <div class="list-group-item bg-transparent border-secondary">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ version.version }}</strong>
+                                    {% if version.is_stable %}
+                                    <span class="embedding-status status-default ms-2">Стабильная</span>
+                                    {% endif %}
+                                    {% if version.notes %}
+                                    <div class="small text-muted mt-1">{{ version.notes|truncatechars:50 }}</div>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ version.created_at|date:"d.m.Y" }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inboxes display-6 text-muted"></i>
+                        <p class="mt-2 text-muted">Нет версий</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Оценки модели -->
+            <div class="card mt-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i> Оценки</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% if evaluations %}
+                        {% for evaluation in evaluations|slice:":3" %}
+                        <div class="list-group-item bg-transparent border-secondary">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>{{ evaluation.dataset_name }}</strong>
+                                    <small class="d-block text-muted">{{ evaluation.evaluated_at|date:"d.m.Y" }}</small>
+                                </div>
+                                <span class="badge bg-primary">{{ evaluation.primary_metric|floatformat:3 }}</span>
+                            </div>
+                            <div class="mt-2">
+                                {% for key, value in evaluation.metrics.items|slice:":2" %}
+                                <small class="me-2">
+                                    <span class="text-muted">{{ key }}:</span>
+                                    <strong>{{ value|floatformat:3 }}</strong>
+                                </small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clipboard-data display-6 text-muted"></i>
+                        <p class="mt-2 text-muted">Нет оценок</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна -->
+<div class="modal fade" id="createVersionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> Создать новую версию</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'model_create_version' model.pk %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Название версии</label>
+                        <input type="text" class="form-control" name="version_name" value="v{{ versions|length|add:1 }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" name="notes" rows="3" placeholder="Что изменилось?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать версию</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quantizationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title"><i class="bi bi-arrow-down-up me-2"></i> Выберите тип квантизации</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">Квантизация уменьшает потребление памяти, но может незначительно снизить качество.</p>
+                <div class="list-group">
+                    <label class="list-group-item bg-dark text-white border-secondary">
+                        <input class="form-check-input me-2" type="radio" name="quantization" value="none" checked>
+                        <strong>Без квантизации</strong>
+                        <span class="d-block small text-muted">FP32 / FP16 (оригинальная точность)</span>
+                    </label>
+                    <label class="list-group-item bg-dark text-white border-secondary">
+                        <input class="form-check-input me-2" type="radio" name="quantization" value="float16">
+                        <strong>FP16</strong>
+                        <span class="d-block small text-muted">Полуточность, хороший баланс</span>
+                    </label>
+                    <label class="list-group-item bg-dark text-white border-secondary">
+                        <input class="form-check-input me-2" type="radio" name="quantization" value="bfloat16">
+                        <strong>BF16</strong>
+                        <span class="d-block small text-muted">Для архитектур с поддержкой bfloat16</span>
+                    </label>
+                    <label class="list-group-item bg-dark text-white border-secondary">
+                        <input class="form-check-input me-2" type="radio" name="quantization" value="int8">
+                        <strong>8-bit (INT8)</strong>
+                        <span class="d-block small text-muted">Сильная экономия памяти, небольшое падение качества</span>
+                    </label>
+                    <label class="list-group-item bg-dark text-white border-secondary">
+                        <input class="form-check-input me-2" type="radio" name="quantization" value="int4">
+                        <strong>4-bit (INT4)</strong>
+                        <span class="d-block small text-muted">Максимальная экономия, заметное падение качества</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="confirmLoadWithQuantization()">Загрузить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="unloadConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title"><i class="bi bi-eject me-2"></i> Подтверждение выгрузки</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите выгрузить модель из памяти?</p>
+                <p class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i> Это действие остановит все активные сессии с этой моделью.</p>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="confirmUnload(false)">Выгрузить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="forceUnloadConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i> Принудительная выгрузка</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-danger">Модель зависла в памяти или не отвечает.</p>
+                <p>Принудительная выгрузка может привести к ошибкам в активных сессиях.</p>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="confirmUnload(true)">Принудительно выгрузить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="notificationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title" id="notificationTitle"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="notificationMessage"></div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const modelId = {{ model.id }};
+    const csrfToken = "{{ csrf_token }}";
+    const originalConfig = `{{ config_json|escapejs }}`;
+    let loadingInterval = null;
+    let statusInterval = null;
+    let downloadJobId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        checkModelStatus();
+        statusInterval = setInterval(checkModelStatus, 5000);
+        formatConfig();
+    });
+
+    // ========== ПОЛУЧЕНИЕ СТАТУСА МОДЕЛИ ==========
+    function checkModelStatus() {
+        fetch(`/api/models/${modelId}/status/`)
+            .then(response => response.json())
+            .then(data => {
+                updateStatusDisplay(data);
+                
+                // Ищем активную задачу загрузки (DOWNLOADING или PENDING)
+                let activeJobId = null;
+                
+                // Сначала проверяем download_progress
+                if (data.download_progress && data.download_progress.job_id && data.download_progress.status === 'downloading') {
+                    activeJobId = data.download_progress.job_id;
+                } 
+                // Если нет, ищем в массиве download_jobs
+                else if (data.download_jobs && data.download_jobs.length) {
+                    const activeJob = data.download_jobs.find(job => job.status === 'DOWNLOADING' || job.status === 'PENDING');
+                    if (activeJob) activeJobId = activeJob.id;
+                }
+                
+                if (activeJobId) {
+                    downloadJobId = activeJobId;
+                    startDownloadTracking(downloadJobId);
+                } else {
+                    downloadJobId = null;
+                    if (loadingInterval) {
+                        clearInterval(loadingInterval);
+                        loadingInterval = null;
+                    }
+                }
+            })
+            .catch(error => console.error('Error checking model status:', error));
+    }
+
+    function startDownloadTracking(jobId) {
+        if (loadingInterval) clearInterval(loadingInterval);
+        loadingInterval = setInterval(() => fetchDownloadProgress(jobId), 2000);
+        fetchDownloadProgress(jobId);
+    }
+
+    function fetchDownloadProgress(jobId) {
+        fetch(`/api/tasks/${jobId}/result/`)
+            .then(response => response.json())
+            .then(data => {
+                const progressContainer = document.getElementById('loadingProgressContainer');
+                const progressBar = document.getElementById('loadingProgressBar');
+                const stepEl = document.getElementById('loadingStep');
+                const percentEl = document.getElementById('loadingPercent');
+
+                if (data.state === 'PROGRESS' && data.info) {
+                    progressContainer.style.display = 'block';
+                    const progress = data.info.progress || 0;
+                    progressBar.style.width = progress + '%';
+                    percentEl.textContent = progress + '%';
+                    stepEl.textContent = data.info.current_step || 'Загрузка...';
+                } else if (data.state === 'SUCCESS') {
+                    progressContainer.style.display = 'none';
+                    clearInterval(loadingInterval);
+                    loadingInterval = null;
+                    downloadJobId = null;
+                    checkModelStatus();
+                } else if (data.state === 'FAILURE') {
+                    progressContainer.style.display = 'none';
+                    clearInterval(loadingInterval);
+                    loadingInterval = null;
+                    downloadJobId = null;
+                    showNotification('Ошибка загрузки', data.result?.error || 'Неизвестная ошибка');
+                    checkModelStatus();
+                }
+            })
+            .catch(error => console.error('Error fetching download progress:', error));
+    }
+
+    function updateStatusDisplay(data) {
+        const memoryStatus = document.getElementById('memoryStatus');
+        const memoryStats = document.getElementById('memoryStats');
+        const loadBtn = document.getElementById('loadBtn');
+        const unloadBtn = document.getElementById('unloadBtn');
+        const forceUnloadBtn = document.getElementById('forceUnloadBtn');
+        const cleanMemoryBtn = document.getElementById('cleanMemoryBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const progressContainer = document.getElementById('loadingProgressContainer');
+        const progressBar = document.getElementById('loadingProgressBar');
+        const loadingStep = document.getElementById('loadingStep');
+        const loadingPercent = document.getElementById('loadingPercent');
+
+        if (data.is_loaded_in_memory) {
+            // Загружена в память
+            memoryStatus.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle text-success fs-4 me-3"></i>
+                    <div>
+                        <p class="mb-1">Модель загружена в память</p>
+                        <div class="d-flex gap-2">
+                            <span class="embedding-status status-default">
+                                <i class="bi bi-${data.device === 'cuda' ? 'gpu-card' : 'cpu'} me-1"></i>
+                                ${data.device?.toUpperCase() || 'UNKNOWN'}
+                            </span>
+                            ${data.loaded_quantization ? `
+                                <span class="embedding-status status-downloaded">
+                                    <i class="bi bi-arrow-down-up me-1"></i> ${data.loaded_quantization}
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            if (data.memory_status && data.memory_status.cuda_allocated_gb !== undefined) {
+                memoryStats.innerHTML = `
+                    <div class="col"><div class="model-meta-item"><span class="model-meta-label">Allocated</span><span class="model-meta-value">${data.memory_status.cuda_allocated_gb.toFixed(2)} GB</span></div></div>
+                    <div class="col"><div class="model-meta-item"><span class="model-meta-label">Cached</span><span class="model-meta-value">${data.memory_status.cuda_cached_gb.toFixed(2)} GB</span></div></div>
+                    <div class="col"><div class="model-meta-item"><span class="model-meta-label">Free</span><span class="model-meta-value">${data.memory_status.cuda_free_gb.toFixed(2)} GB</span></div></div>
+                `;
+                memoryStats.style.display = 'flex';
+            } else {
+                memoryStats.style.display = 'none';
+            }
+            loadBtn.disabled = true;
+            unloadBtn.disabled = false;
+            forceUnloadBtn.style.display = 'inline-block';
+            cleanMemoryBtn.style.display = 'none';
+            progressContainer.style.display = 'none';
+            if (loadingInterval) clearInterval(loadingInterval);
+        }
+        else if (data.has_local_copy) {
+            // Модель скачана на диск, но не загружена в память
+            if (data.status === 'LOADING') {
+                const progress = data.progress_info?.progress || 0;
+                const step = data.progress_info?.current_step || 'Загрузка...';
+                memoryStatus.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-hourglass text-warning fs-4 me-3"></i>
+                        <div><p class="mb-1">Загрузка в память...</p><small class="text-muted">${step}</small></div>
+                    </div>
+                `;
+                progressContainer.style.display = 'block';
+                progressBar.style.width = progress + '%';
+                loadingPercent.textContent = progress + '%';
+                loadingStep.textContent = step;
+                loadBtn.disabled = true;
+                unloadBtn.disabled = true;
+                forceUnloadBtn.style.display = 'none';
+                cleanMemoryBtn.style.display = 'none';
+            } 
+            else if (data.status === 'DOWNLOADING') {
+                memoryStatus.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-cloud-download text-primary fs-4 me-3"></i>
+                        <div><p class="mb-1">Скачивание модели...</p></div>
+                    </div>
+                `;
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                loadingPercent.textContent = '0%';
+                loadingStep.textContent = 'Ожидание данных...';
+                loadBtn.disabled = true;
+                unloadBtn.disabled = true;
+                forceUnloadBtn.style.display = 'none';
+                cleanMemoryBtn.style.display = 'none';
+            } 
+            else {
+                memoryStatus.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-hdd text-warning fs-4 me-3"></i>
+                        <div><p class="mb-1">Модель загружена на диск</p><small class="text-muted">${data.local_path || ''}</small></div>
+                    </div>
+                `;
+                loadBtn.disabled = false;
+                unloadBtn.disabled = true;
+                forceUnloadBtn.style.display = 'none';
+                cleanMemoryBtn.style.display = 'none';
+                progressContainer.style.display = 'none';
+            }
+        }
+        else {
+            // Модель не скачана
+            memoryStatus.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-cloud text-muted fs-4 me-3"></i>
+                    <div><p class="mb-1">Модель не загружена</p>${data.huggingface_id ? `<small class="text-muted">${data.huggingface_id}</small>` : ''}</div>
+                </div>
+            `;
+            if (data.memory_status && data.memory_status.cuda_allocated_gb > 0.5) {
+                cleanMemoryBtn.style.display = 'inline-block';
+                memoryStats.innerHTML = `
+                    <div class="col"><div class="model-meta-item"><span class="model-meta-label">Занято (подозрительно)</span><span class="model-meta-value">${data.memory_status.cuda_allocated_gb.toFixed(2)} GB</span></div></div>
+                    <div class="col"><div class="model-meta-item"><span class="model-meta-label">Cached</span><span class="model-meta-value">${data.memory_status.cuda_cached_gb.toFixed(2)} GB</span></div></div>
+                    <div class="col"><div class="model-meta-item"><span class="model-meta-label">Free</span><span class="model-meta-value">${data.memory_status.cuda_free_gb.toFixed(2)} GB</span></div></div>
+                `;
+                memoryStats.style.display = 'flex';
+            } else {
+                cleanMemoryBtn.style.display = 'none';
+                memoryStats.style.display = 'none';
+            }
+            loadBtn.disabled = true;
+            unloadBtn.disabled = true;
+            forceUnloadBtn.style.display = 'none';
+            progressContainer.style.display = 'none';
+        }
+
+        // Управление кнопкой "Скачать"
+        if (downloadBtn) {
+            const isDownloading = data.status === 'DOWNLOADING' && downloadJobId;
+            if (data.huggingface_id && !data.has_local_copy && !isDownloading) {
+                downloadBtn.disabled = false;
+            } else {
+                downloadBtn.disabled = true;
+            }
+        }
+    }
+
+    // ========== УПРАВЛЕНИЕ МОДЕЛЬЮ ==========
+    function loadModel() {
+        new bootstrap.Modal(document.getElementById('quantizationModal')).show();
+    }
+
+    function confirmLoadWithQuantization() {
+        const selected = document.querySelector('input[name="quantization"]:checked');
+        if (!selected) return;
+        const quantization = selected.value;
+        bootstrap.Modal.getInstance(document.getElementById('quantizationModal')).hide();
+        performLoad(quantization);
+    }
+
+    function performLoad(quantization) {
+        const loadBtn = document.getElementById('loadBtn');
+        loadBtn.disabled = true;
+        loadBtn.innerHTML = '<i class="bi bi-hourglass me-1"></i> Загрузка...';
+
+        const requestBody = { device_map: 'auto' };
+        if (quantization && quantization !== 'none') requestBody.quantization = quantization;
+
+        fetch(`/api/models/${modelId}/load/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(requestBody)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.task_id) {
+                showNotification('Успех', 'Задача загрузки запущена');
+                checkModelStatus();
+            } else {
+                showNotification('Ошибка', data.error || 'Не удалось начать загрузку');
+                resetLoadButton();
+            }
+        })
+        .catch(error => {
+            showNotification('Ошибка', error.message);
+            resetLoadButton();
+        });
+    }
+
+    function unloadModel(force = false) {
+        if (force) new bootstrap.Modal(document.getElementById('forceUnloadConfirmModal')).show();
+        else new bootstrap.Modal(document.getElementById('unloadConfirmModal')).show();
+    }
+
+    function confirmUnload(force) {
+        const modalId = force ? 'forceUnloadConfirmModal' : 'unloadConfirmModal';
+        bootstrap.Modal.getInstance(document.getElementById(modalId)).hide();
+
+        const unloadBtn = document.getElementById('unloadBtn');
+        unloadBtn.disabled = true;
+        unloadBtn.innerHTML = '<i class="bi bi-hourglass me-1"></i> Выгрузка...';
+
+        fetch(`/api/models/${modelId}/unload/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ force: force })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.task_id) {
+                showNotification('Успех', 'Задача выгрузки запущена');
+                checkModelStatus();
+            } else {
+                showNotification('Ошибка', data.error || 'Не удалось выгрузить');
+                resetUnloadButton();
+            }
+        })
+        .catch(error => {
+            showNotification('Ошибка', error.message);
+            resetUnloadButton();
+        });
+    }
+
+    function forceCleanMemory() {
+        if (!confirm('Принудительно очистить память GPU? Это может повлиять на другие загруженные модели.')) return;
+
+        const cleanBtn = document.getElementById('cleanMemoryBtn');
+        cleanBtn.disabled = true;
+        cleanBtn.innerHTML = '<i class="bi bi-hourglass me-1"></i> Очистка...';
+
+        fetch('/api/utils/clean-memory/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Успех', 'Память очищена');
+                checkModelStatus();
+            } else {
+                showNotification('Ошибка', data.error || 'Не удалось очистить память');
+            }
+            cleanBtn.disabled = false;
+            cleanBtn.innerHTML = '<i class="bi bi-droplet"></i> Очистить память';
+        })
+        .catch(error => {
+            showNotification('Ошибка', error.message);
+            cleanBtn.disabled = false;
+            cleanBtn.innerHTML = '<i class="bi bi-droplet"></i> Очистить память';
+        });
+    }
+
+    function downloadModel() {
+        if (!confirm('Скачать модель с Hugging Face? Это может занять несколько минут.')) return;
+
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '<i class="bi bi-hourglass me-1"></i> Скачивание...';
+
+        fetch(`/api/models/${modelId}/download/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.task_id) {
+                showNotification('Успех', 'Загрузка начата');
+                downloadJobId = data.task_id;
+                startDownloadTracking(downloadJobId);
+                checkModelStatus();
+            } else {
+                showNotification('Ошибка', data.error || 'Не удалось начать загрузку');
+                resetDownloadButton();
+            }
+        })
+        .catch(error => {
+            showNotification('Ошибка', error.message);
+            resetDownloadButton();
+        });
+    }
+
+    function resetLoadButton() {
+        const loadBtn = document.getElementById('loadBtn');
+        loadBtn.disabled = false;
+        loadBtn.innerHTML = '<i class="bi bi-download"></i> Загрузить в память';
+    }
+
+    function resetUnloadButton() {
+        const unloadBtn = document.getElementById('unloadBtn');
+        unloadBtn.disabled = false;
+        unloadBtn.innerHTML = '<i class="bi bi-eject"></i> Выгрузить';
+    }
+
+    function resetDownloadButton() {
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '<i class="bi bi-cloud-download"></i> Скачать';
+    }
+
+    // ========== РАБОТА С КОНФИГУРАЦИЕЙ ==========
+    function formatConfig() {
+        const editor = document.getElementById('configEditor');
+        try {
+            const config = JSON.parse(editor.value);
+            editor.value = JSON.stringify(config, null, 2);
+        } catch (e) {
+            showNotification('Ошибка', 'Неверный JSON формат');
+        }
+    }
+
+    function resetConfig() {
+        if (!confirm('Сбросить конфигурацию?')) return;
+        try {
+            const config = JSON.parse(originalConfig);
+            document.getElementById('configEditor').value = JSON.stringify(config, null, 2);
+            showNotification('Успех', 'Конфигурация сброшена');
+        } catch (e) {
+            document.getElementById('configEditor').value = originalConfig;
+        }
+    }
+
+    function saveConfig() {
+        const editor = document.getElementById('configEditor');
+        let config;
+        try {
+            config = JSON.parse(editor.value);
+        } catch (e) {
+            showNotification('Ошибка', 'Неверный JSON формат');
+            return;
+        }
+
+        fetch(`/api/models/${modelId}/`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ loader_config: config })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) showNotification('Успех', 'Конфигурация сохранена');
+            else showNotification('Ошибка', 'Не удалось сохранить');
+        })
+        .catch(error => showNotification('Ошибка', error.message));
+    }
+
+    function showNotification(title, message) {
+        const modalEl = document.getElementById('notificationModal');
+        document.getElementById('notificationTitle').textContent = title;
+        document.getElementById('notificationMessage').textContent = message;
+        new bootstrap.Modal(modalEl).show();
+    }
+</script>
+{% endblock %}

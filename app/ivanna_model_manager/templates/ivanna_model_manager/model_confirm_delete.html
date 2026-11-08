@@ -1,0 +1,117 @@
+{% extends 'ivanna_model_manager/base.html' %}
+
+{% block title %}Удаление модели - Ivanna Lab{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0 text-center">
+                        <i class="fas fa-exclamation-triangle"></i> Подтверждение удаления
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-exclamation-circle"></i> Внимание!
+                        </h5>
+                        <p class="mb-0">
+                            Вы собираетесь удалить модель <strong>"{{ model.display_name }}"</strong>.
+                            Это действие нельзя отменить.
+                        </p>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Информация о модели</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Тип:</strong></td>
+                                    <td>{{ model.get_model_type_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Параметры:</strong></td>
+                                    <td>{{ model.parameter_count|floatformat:0 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Статус:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ model.status|lower }}">
+                                            {{ model.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Создана:</strong></td>
+                                    <td>{{ model.created_at|date:"d.m.Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if related_count.sessions > 0 or related_count.evaluations > 0 %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Связанные данные</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                {% if related_count.sessions > 0 %}
+                                <li class="mb-2">
+                                    <i class="fas fa-video text-info"></i>
+                                    Активных сессий: {{ related_count.sessions }}
+                                </li>
+                                {% endif %}
+                                {% if related_count.evaluations > 0 %}
+                                <li class="mb-2">
+                                    <i class="fas fa-chart-bar text-success"></i>
+                                    Оценок: {{ related_count.evaluations }}
+                                </li>
+                                {% endif %}
+                                {% if related_count.versions > 0 %}
+                                <li class="mb-2">
+                                    <i class="fas fa-code-branch text-warning"></i>
+                                    Версий: {{ related_count.versions }}
+                                </li>
+                                {% endif %}
+                                {% if related_count.chat_sessions > 0 %}
+                                <li>
+                                    <i class="fas fa-comments text-primary"></i>
+                                    Чат-сессий: {{ related_count.chat_sessions }}
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Примечание:</strong> Удаление будет "мягким" - модель будет деактивирована и перемещена в архив.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'model_detail' model.pk %}" 
+                               class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Удалить модель
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center text-muted">
+                    <small>Ivanna Lab Model Manager</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

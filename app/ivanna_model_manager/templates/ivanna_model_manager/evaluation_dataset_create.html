@@ -1,0 +1,385 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Создание датасета{% endblock %}
+{% block page_title %}Создание датасета{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil-square me-2"></i>Создание датасета вручную
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="createForm">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Ошибка!</strong> Пожалуйста, исправьте ошибки ниже.
+                            <ul class="mb-0 mt-2">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                    <li>{{ field }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Скрытое поле для source_type -->
+                        {{ form.source_type }}
+                        
+                        <!-- Основная информация -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_name" class="form-label">
+                                        <i class="bi bi-card-heading me-1"></i>Название датасета
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.name.errors }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">Уникальное имя для идентификации</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_tags" class="form-label">
+                                        <i class="bi bi-tags me-1"></i>Теги
+                                    </label>
+                                    {{ form.tags }}
+                                    {% if form.tags.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.tags.errors }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">Теги через запятую (russian, general, code)</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Описание -->
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label">
+                                <i class="bi bi-text-paragraph me-1"></i>Описание
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Опциональное описание датасета</div>
+                        </div>
+                        
+                        <!-- Вопросы -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-question-circle me-2"></i>Вопросы
+                                </h6>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="addQuestion()">
+                                        <i class="bi bi-plus me-1"></i>Добавить вопрос
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="importFromText()">
+                                        <i class="bi bi-file-text me-1"></i>Импорт текста
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="questionsContainer">
+                                <!-- Вопросы будут добавляться сюда динамически -->
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Добавьте вопросы с помощью кнопки "Добавить вопрос" или импортируйте из текста
+                                </div>
+                            </div>
+                            
+                            <!-- Скрытое поле для JSON данных -->
+                            <input type="hidden" name="questions_json" id="questionsJson" value="[]">
+                        </div>
+                        
+                        <!-- Статистика -->
+                        <div class="card bg-dark border mb-4">
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <h5 id="questionsCount">0</h5>
+                                        <small class="text-muted">Всего вопросов</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h5 id="totalChars">0</h5>
+                                        <small class="text-muted">Всего символов</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h5 id="avgLength">0</h5>
+                                        <small class="text-muted">Средняя длина</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'evaluation_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Назад
+                            </a>
+                            <div>
+                                <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-outline-primary me-2">
+                                    <i class="bi bi-cloud-upload me-1"></i>Загрузить из файла
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="bi bi-check-circle me-1"></i>Создать датасет
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для импорта текста -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-text me-2"></i>Импорт вопросов из текста
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Введите вопросы (один на строку):</label>
+                    <textarea class="form-control" id="importText" rows="10" 
+                              placeholder="Что такое искусственный интеллект?
+Как работает нейронная сеть?
+Назовите основные типы машинного обучения..."></textarea>
+                </div>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Каждая строка будет преобразована в отдельный вопрос. Пустые строки игнорируются.
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="processImport()">Импортировать</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let questions = [];
+let questionCounter = 1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Настройка полей формы
+    const nameField = document.getElementById('id_name');
+    const descriptionField = document.getElementById('id_description');
+    const tagsField = document.getElementById('id_tags');
+    const sourceTypeField = document.getElementById('id_source_type');
+    
+    [nameField, descriptionField, tagsField].forEach(field => {
+        if (field) field.className = 'form-control';
+    });
+    
+    // Устанавливаем значение по умолчанию для source_type если пустое
+    if (sourceTypeField && !sourceTypeField.value) {
+        sourceTypeField.value = 'MANUAL';
+    }
+    
+    // Добавляем первый вопрос по умолчанию
+    addQuestion();
+    
+    // Обработка отправки формы
+    const createForm = document.getElementById('createForm');
+    if (createForm) {
+        createForm.addEventListener('submit', function(e) {
+            updateQuestionsJson();
+            
+            if (questions.length === 0) {
+                e.preventDefault();
+                showToast('error', 'Ошибка', 'Добавьте хотя бы один вопрос');
+                return;
+            }
+            
+            // Преобразуем теги из строки в JSON массив перед отправкой
+            const tagsField = document.getElementById('id_tags');
+            if (tagsField && tagsField.value) {
+                const tagsArray = tagsField.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                tagsField.value = JSON.stringify(tagsArray);
+            } else {
+                tagsField.value = JSON.stringify([]);
+            }
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Создание...';
+        });
+    }
+});
+
+function addQuestion(text = '', category = '', difficulty = 'medium') {
+    const questionId = questionCounter++;
+    const questionDiv = document.createElement('div');
+    questionDiv.className = 'card mb-3 question-card';
+    questionDiv.id = `question-${questionId}`;
+    
+    questionDiv.innerHTML = `
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h6 class="mb-0">
+                    <span class="badge bg-secondary me-2">#${questionId}</span>
+                    Вопрос ${questionId}
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(${questionId})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Текст вопроса:</label>
+                <textarea class="form-control question-text" rows="3" 
+                          placeholder="Введите текст вопроса..." 
+                          oninput="updateQuestion(${questionId})">${text}</textarea>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Категория:</label>
+                    <input type="text" class="form-control question-category" 
+                           placeholder="Например: AI, Python, Math" 
+                           value="${category}" oninput="updateQuestion(${questionId})">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Сложность:</label>
+                    <select class="form-select question-difficulty" onchange="updateQuestion(${questionId})">
+                        <option value="easy" ${difficulty === 'easy' ? 'selected' : ''}>Легкая</option>
+                        <option value="medium" ${difficulty === 'medium' ? 'selected' : ''}>Средняя</option>
+                        <option value="hard" ${difficulty === 'hard' ? 'selected' : ''}>Сложная</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const container = document.getElementById('questionsContainer');
+    const alert = container.querySelector('.alert');
+    if (alert) {
+        alert.remove();
+    }
+    container.appendChild(questionDiv);
+    
+    // Добавляем вопрос в массив
+    questions.push({
+        id: questionId,
+        text: text,
+        category: category,
+        difficulty: difficulty,
+        element: questionDiv
+    });
+    
+    updateStatistics();
+}
+
+function removeQuestion(id) {
+    const index = questions.findIndex(q => q.id === id);
+    if (index !== -1) {
+        // Удаляем элемент из DOM
+        const element = document.getElementById(`question-${id}`);
+        if (element) {
+            element.remove();
+        }
+        
+        // Удаляем из массива
+        questions.splice(index, 1);
+        
+        // Обновляем статистику
+        updateStatistics();
+        
+        // Если вопросы закончились, показываем сообщение
+        if (questions.length === 0) {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Добавьте вопросы с помощью кнопки "Добавить вопрос" или импортируйте из текста
+                </div>
+            `;
+        }
+    }
+}
+
+function updateQuestion(id) {
+    const index = questions.findIndex(q => q.id === id);
+    if (index !== -1) {
+        const question = questions[index];
+        const element = question.element;
+        
+        question.text = element.querySelector('.question-text').value;
+        question.category = element.querySelector('.question-category').value;
+        question.difficulty = element.querySelector('.question-difficulty').value;
+        
+        updateStatistics();
+    }
+}
+
+function updateStatistics() {
+    const totalQuestions = questions.length;
+    const totalChars = questions.reduce((sum, q) => sum + q.text.length, 0);
+    const avgLength = totalQuestions > 0 ? Math.round(totalChars / totalQuestions) : 0;
+    
+    document.getElementById('questionsCount').textContent = totalQuestions;
+    document.getElementById('totalChars').textContent = totalChars;
+    document.getElementById('avgLength').textContent = avgLength;
+    
+    // Обновляем скрытое поле с JSON
+    updateQuestionsJson();
+}
+
+function updateQuestionsJson() {
+    const questionsData = questions.map((q, index) => ({
+        id: index + 1,
+        text: q.text.trim(),
+        category: q.category.trim(),
+        difficulty: q.difficulty
+    })).filter(q => q.text.length > 0); // Фильтруем пустые вопросы
+    
+    document.getElementById('questionsJson').value = JSON.stringify(questionsData);
+}
+
+function importFromText() {
+    const modal = new bootstrap.Modal(document.getElementById('importModal'));
+    modal.show();
+}
+
+function processImport() {
+    const importText = document.getElementById('importText').value;
+    const lines = importText.split('\n').filter(line => line.trim());
+    
+    lines.forEach(line => {
+        addQuestion(line.trim(), '', 'medium');
+    });
+    
+    // Закрываем модальное окно
+    const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+    modal.hide();
+    
+    showToast('success', 'Импорт завершен', `Добавлено ${lines.length} вопросов`);
+}
+</script>
+{% endblock %}

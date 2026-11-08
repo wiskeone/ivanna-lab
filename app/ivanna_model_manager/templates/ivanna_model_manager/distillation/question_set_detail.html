@@ -1,0 +1,570 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Набор: {{ question_set.name }}{% endblock %}
+{% block page_title %}Набор: {{ question_set.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Стили, аналогичные answer_job_detail.html */
+    .progress-container {
+        margin: 20px 0;
+        padding: 20px;
+        background: rgba(30, 30, 30, 0.7);
+        border-radius: 8px;
+        border: 1px solid #444;
+    }
+    .progress {
+        height: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        transition: width 0.3s ease;
+    }
+    .checkpoint-alert {
+        background: rgba(107, 70, 193, 0.15);
+        border: 1px solid rgba(107, 70, 193, 0.3);
+        border-left: 4px solid var(--primary-color);
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin: 20px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .btn-resume {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        border: none;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+    .btn-resume:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 70, 193, 0.3);
+    }
+    .logs-container {
+        background: rgba(20, 20, 20, 0.95);
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 15px;
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: #0f0;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 20px;
+    }
+    .log-line {
+        padding: 2px 0;
+        border-bottom: 1px solid #2a2a2a;
+    }
+
+    /* Карточка группы */
+    .group-card {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid #444;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        padding: 15px;
+    }
+    .group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .group-name {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+    .chunk-preview {
+        max-height: 80px;
+        overflow-y: auto;
+        font-size: 0.85rem;
+        background: rgba(0,0,0,0.2);
+        padding: 8px;
+        border-radius: 4px;
+        margin-top: 8px;
+    }
+
+    /* Карточка вопроса */
+    .question-card {
+        background: rgba(40,40,40,0.8);
+        border: 1px solid #444;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        padding: 20px;
+        transition: all 0.2s ease;
+    }
+    .question-card:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 20px rgba(107,70,193,0.2);
+    }
+    .question-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+    .question-text {
+        margin-bottom: 12px;
+        line-height: 1.5;
+    }
+    .answer-text {
+        background: rgba(0,0,0,0.2);
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 8px;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .status-pending { background: rgba(108, 117, 125, 0.2); color: #adb5bd; }
+    .status-answered { background: rgba(40, 167, 69, 0.2); color: #28a745; }
+    .status-reviewed { background: rgba(23, 162, 184, 0.2); color: #17a2b8; }
+
+    .meta-info {
+        display: flex;
+        gap: 16px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 8px;
+    }
+
+    .pagination .page-link {
+        background: rgba(0,0,0,0.3);
+        border-color: rgba(255,255,255,0.1);
+        color: var(--text-secondary);
+    }
+    .pagination .page-link:hover {
+        background: var(--primary-color);
+        color: white;
+    }
+    .pagination .active .page-link {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Верхняя панель -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{% url 'distillation_question_set_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>К списку наборов
+        </a>
+        <div>
+            <span class="badge 
+                {% if question_set.status == 'COMPLETED' %}bg-success
+                {% elif question_set.status == 'RUNNING' %}bg-primary
+                {% elif question_set.status == 'FAILED' %}bg-danger
+                {% else %}bg-secondary{% endif %}">
+                {{ question_set.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Информация о наборе -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4 class="card-title mb-2">{{ question_set.name }}</h4>
+            <p class="text-muted mb-3">{{ question_set.description|default:"Нет описания" }}</p>
+            
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="small text-muted">Прогресс</div>
+                    <div class="fw-medium">{{ question_set.progress|floatformat:1 }}%</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted">Групп / Вопросов</div>
+                    <div class="fw-medium">{{ groups.count }} / <span id="totalQuestionsCount">{{ question_set.questions.count }}</span></div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted">Коллекция</div>
+                    <div class="fw-medium">{{ question_set.collection.name|default:"—" }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted">Создан</div>
+                    <div class="fw-medium">{{ question_set.created_at|date:"d.m.Y H:i" }}</div>
+                </div>
+            </div>
+
+            <!-- Прогресс бар -->
+            <div class="progress mt-3" style="height: 8px;">
+                <div class="progress-bar {% if question_set.status == 'COMPLETED' %}bg-success{% elif question_set.status == 'FAILED' %}bg-danger{% else %}bg-primary{% endif %}" 
+                     role="progressbar" 
+                     style="width: {{ question_set.progress }}%;"
+                     aria-valuenow="{{ question_set.progress }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            </div>
+
+            <!-- Чекпоинт -->
+            {% if question_set.checkpoint_data and question_set.status != 'RUNNING' %}
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Чекпоинт доступен!</strong>
+                Задача прервана после обработки 
+                {{ question_set.checkpoint_data.last_group_idx|add:1 }} из {{ question_set.checkpoint_data.total_groups }} групп.
+                <form method="post" action="{% url 'distillation_resume_question_generation' question_set.id %}" class="d-inline ms-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise"></i> Возобновить
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Логи -->
+    {% if question_set.logs %}
+    <div class="card mb-4">
+        <div class="card-header bg-transparent border-bottom">
+            <h5 class="mb-0">Логи выполнения</h5>
+        </div>
+        <div class="card-body">
+            <div class="bg-dark rounded p-3" style="max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
+                {% for line in question_set.logs.splitlines %}
+                <div class="text-muted">{{ line }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Вопросы (пагинированные) -->
+    <div class="card">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Сгенерированные вопросы</h5>
+            <span class="badge bg-secondary">{{ page_obj.paginator.count }} вопросов</span>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+                {% for q in page_obj %}
+                <div class="question-card" data-question-id="{{ q.id }}">
+                    <div class="question-header">
+                        <div>
+                            <span class="badge bg-secondary me-2">ID: {{ q.id }}</span>
+                            <span class="status-badge status-{{ q.status }}">
+                                {{ q.get_status_display }}
+                            </span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger delete-question-btn" data-id="{{ q.id }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    <div class="question-text">
+                        <strong>Вопрос:</strong> {{ q.question_text }}
+                    </div>
+                    {% if q.answer_text %}
+                    <div class="answer-text">
+                        <strong>Ответ:</strong> {{ q.answer_text|linebreaksbr }}
+                    </div>
+                    {% endif %}
+                    <div class="meta-info">
+                        <span><i class="bi bi-folder"></i> Группа #{{ q.group.order }}</span>
+                        <span><i class="bi bi-calendar"></i> {{ q.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Пагинация -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.question_set %}&question_set={{ request.GET.question_set }}{% endif %}">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.question_set %}&question_set={{ request.GET.question_set }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+                        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.question_set %}&question_set={{ request.GET.question_set }}{% endif %}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.question_set %}&question_set={{ request.GET.question_set }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.question_set %}&question_set={{ request.GET.question_set }}{% endif %}">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center text-muted py-4">Вопросы ещё не сгенерированы</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Форма генерации вопросов -->
+    <div class="card mt-4">
+        <div class="card-header bg-transparent border-bottom">
+            <h5 class="mb-0">Генерация вопросов</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'distillation_start_question_generation' question_set.id %}" id="startForm">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Модель-учитель *</label>
+                        <select name="teacher_model_id" class="form-select" required>
+                            <option value="">Выберите модель</option>
+                            {% for model in available_models %}
+                            <option value="{{ model.id }}">{{ model.display_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Квантизация</label>
+                        <select name="quantization" class="form-select">
+                            <option value="int4">INT4</option>
+                            <option value="int8">INT8</option>
+                            <option value="fp16">FP16</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Максимум токенов</label>
+                        <input type="number" name="max_tokens" class="form-control" value="1024" min="256" max="4096">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100" id="startGenerationBtn" {% if not groups %}disabled{% endif %}>
+                            <i class="bi bi-play-fill"></i> Запустить
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+    <!-- Группы чанков -->
+        <div class="card mb-4">
+            <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Группы чанков</h5>
+                <a href="{% url 'distillation_question_set_edit_groups' question_set.id %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-pencil"></i> Редактировать
+                </a>
+            </div>
+            <div class="card-body">
+                {% if groups %}
+                    {% for group in groups %}
+                    <div class="group-card">
+                        <div class="group-header">
+                            <div>
+                                <span class="group-name">Группа #{{ group.order }}</span>
+                                {% if group.name %}<span class="text-muted ms-2">({{ group.name }})</span>{% endif %}
+                            </div>
+                            <div>
+                                <span class="badge {% if group.questions.exists %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if group.questions.exists %}{{ group.questions.count }} вопросов{% else %}ожидает{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            Чанки: {{ group.chunk_ids|length }} шт., вопросов: {{ group.num_questions }}
+                        </div>
+                        {% if group.logs %}
+                        <div class="small text-muted mt-2">{{ group.logs }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">Нет групп. Создайте группы чанков через редактирование.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const questionSetId = {{ question_set.id }};
+    let updateInterval = null;
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message, type = 'info') {
+        if (typeof window.showGlobalToast === 'function') {
+            window.showGlobalToast(message, type);
+            return;
+        }
+        if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+            const toastEl = document.createElement('div');
+            const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info';
+            toastEl.className = `toast align-items-center text-bg-${bgClass} border-0 position-fixed top-0 end-0 m-3`;
+            toastEl.style.zIndex = '9999';
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toastEl);
+            const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+            toast.show();
+            toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+        } else {
+            alert(message);
+        }
+    }
+
+    function deleteQuestion(questionId, questionElement) {
+        if (!confirm('Удалить этот вопрос? Это действие нельзя отменить.')) return;
+        fetch(`/api/distillation/questions/${questionId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                questionElement.remove();
+                const totalCountSpan = document.querySelector('#totalQuestionsCount');
+                if (totalCountSpan) {
+                    let currentCount = parseInt(totalCountSpan.textContent);
+                    totalCountSpan.textContent = currentCount - 1;
+                }
+                showToast('Вопрос удалён', 'success');
+            } else {
+                return response.json().then(data => { throw new Error(data.error || 'Ошибка удаления'); });
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка удаления вопроса:', error);
+            showToast(error.message, 'error');
+        });
+    }
+
+    function updateProgress(data) {
+        const progressBar = document.querySelector('#progressBar');
+        const progressPercent = document.querySelector('#progressPercent');
+        const currentStep = document.querySelector('#currentStep');
+        const statusBadge = document.querySelector('#taskStatusBadge');
+
+        if (progressBar && progressPercent) {
+            const progress = data.progress || 0;
+            progressBar.style.width = progress + '%';
+            progressPercent.textContent = progress.toFixed(1);
+        }
+        if (currentStep && data.current_step) {
+            currentStep.innerHTML = `<i class="bi bi-info-circle me-1"></i> ${data.current_step}`;
+        }
+        if (statusBadge && data.status_display) {
+            statusBadge.textContent = data.status_display;
+            statusBadge.className = `badge ${
+                data.status === 'RUNNING' ? 'bg-warning' :
+                data.status === 'COMPLETED' ? 'bg-success' :
+                data.status === 'FAILED' ? 'bg-danger' : 'bg-secondary'
+            }`;
+        }
+        if (data.logs) {
+            const logsDiv = document.querySelector('#logs');
+            if (logsDiv) {
+                logsDiv.innerHTML = data.logs.split('\n').map(line => `<div class="log-line">${escapeHtml(line)}</div>`).join('');
+            }
+        }
+    }
+
+    function startPolling() {
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(() => {
+            fetch(`/api/distillation/task-status/${questionSetId}/`)
+                .then(res => res.json())
+                .then(data => {
+                    updateProgress(data);
+                    if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+                        clearInterval(updateInterval);
+                        if (data.status === 'COMPLETED') {
+                            showToast('Генерация вопросов завершена', 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showToast('Генерация вопросов завершилась ошибкой', 'error');
+                        }
+                    }
+                })
+                .catch(err => console.warn('Polling error:', err));
+        }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const status = "{{ question_set.status }}";
+        if (status === 'RUNNING') {
+            startPolling();
+        }
+
+        document.querySelectorAll('.delete-question-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const questionId = this.dataset.id;
+                const questionCard = this.closest('.question-card');
+                deleteQuestion(questionId, questionCard);
+            });
+        });
+    });
+</script>
+{% endblock %}

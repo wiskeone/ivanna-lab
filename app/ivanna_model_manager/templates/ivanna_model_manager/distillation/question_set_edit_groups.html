@@ -1,0 +1,752 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Редактирование групп: {{ question_set.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chunk-selector {
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 10px;
+        background: rgba(30,30,30,0.5);
+    }
+    .document-list {
+        max-height: 500px;
+        overflow-y: auto;
+        border-right: 1px solid #444;
+    }
+    .document-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #444;
+        transition: background 0.2s;
+    }
+    .document-item:hover {
+        background: rgba(107,70,193,0.3);
+    }
+    .document-item.active {
+        background: var(--primary-color);
+    }
+    .chunk-item {
+        padding: 8px;
+        margin: 4px 0;
+        border-radius: 4px;
+        cursor: pointer;
+        background: rgba(50,50,50,0.6);
+        transition: background 0.2s;
+    }
+    .chunk-item:hover {
+        background: rgba(107,70,193,0.3);
+    }
+    .chunk-item.selected {
+        background: var(--primary-color);
+        color: white;
+    }
+    .chunk-item.in-other-group {
+        background: rgba(255,193,7,0.3);
+        border-left: 3px solid #ffc107;
+    }
+    .group-card {
+        background: rgba(40,40,40,0.8);
+        border: 1px solid #444;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        padding: 15px;
+        position: relative;
+    }
+    .chunk-preview {
+        max-height: 100px;
+        overflow-y: auto;
+        font-size: 0.85rem;
+        background: rgba(0,0,0,0.2);
+        padding: 8px;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .toast-container {
+        z-index: 1100;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3>Редактирование групп: {{ question_set.name }}</h3>
+                    <p class="text-muted">Создавайте группы чанков, для каждой группы будут сгенерированы вопросы</p>
+                </div>
+                <div>
+                    <a href="{% url 'distillation_question_set_detail' question_set.id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Вернуться к набору
+                    </a>
+                </div>
+            </div>
+
+            <!-- Информация о коллекции -->
+            {% if question_set.collection %}
+            <div class="card mb-4 bg-dark border-secondary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title text-light">
+                                <i class="bi bi-collection me-2"></i>{{ question_set.collection.name }}
+                            </h5>
+                            {% if question_set.collection.description %}
+                            <p class="card-text text-muted">{{ question_set.collection.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if question_set.collection.vector_index_created %}bg-success{% else %}bg-warning{% endif %}">
+                                {% if question_set.collection.vector_index_created %}
+                                <i class="bi bi-check-circle"></i> Индекс создан
+                                {% else %}
+                                <i class="bi bi-exclamation-triangle"></i> Индекс не создан
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <hr class="border-secondary">
+                    <div class="row mt-2">
+                        <div class="col-md-3">
+                            <div class="text-muted small">Документы</div>
+                            <div class="fw-bold">{{ question_set.collection.total_documents }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted small">Всего чанков</div>
+                            <div class="fw-bold">{{ question_set.collection.total_chunks }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted small">Чанков с эмбеддингами</div>
+                            <div class="fw-bold">
+                                {% if question_set.collection.total_vectors %}
+                                {{ question_set.collection.total_vectors }}
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted small">Модель эмбеддингов</div>
+                            <div class="fw-bold">
+                                {% if question_set.collection.embedding_model %}
+                                {{ question_set.collection.embedding_model.name }}
+                                {% else %}
+                                <span class="text-muted">не выбрана</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <div class="text-muted small">Размер чанков: {{ question_set.collection.chunk_size }} | Перекрытие: {{ question_set.collection.chunk_overlap }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card mb-4 bg-dark border-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill text-warning me-3" style="font-size: 1.5rem;"></i>
+                        <div>
+                            <h5 class="card-title mb-1">Коллекция не выбрана</h5>
+                            <p class="card-text text-muted mb-0">
+                                Для автоматического выбора чанков необходимо привязать набор к коллекции. 
+                                Вы можете сделать это <a href="{% url 'distillation_question_set_edit' question_set.id %}">при редактировании набора</a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if question_set.collection %}
+            <!-- Быстрое создание групп -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Быстрое создание групп</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Выберите чанки (через запятую или диапазоны)</label>
+                            <input type="text" id="chunkRangeInput" class="form-control" placeholder="Например: 1-50, 60-100, 105, 110">
+                            <div class="form-text">Можно указать диапазоны (начало-конец) и отдельные ID</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Размер окна</label>
+                            <input type="number" id="windowSize" class="form-control" value="3" min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Вопросов на группу</label>
+                            <input type="number" id="numQuestions" class="form-control" value="3" min="1">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" id="autoCreateGroupsBtn">
+                            <i class="bi bi-magic"></i> Автоматически создать группы
+                        </button>
+                        <span class="text-muted ms-3">Все существующие группы будут удалены (при необходимости)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Список групп -->
+            <div id="groupsContainer">
+                {% for group in groups %}
+                <div class="group-card" data-group-id="{{ group.id }}" data-group-order="{{ group.order }}">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <input type="text" class="form-control group-name mb-2" value="{{ group.name }}" placeholder="Название группы (опционально)">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label small">Количество вопросов</label>
+                                    <input type="number" class="form-control form-control-sm group-num-questions" value="{{ group.num_questions }}" min="1">
+                                </div>
+                                <div class="col-md-9">
+                                    <label class="form-label small">ID чанков (через запятую)</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control form-control-sm group-chunk-ids" value="{{ group.chunk_ids|join:',' }}">
+                                        <button class="btn btn-sm btn-outline-primary select-chunks-btn" data-group-id="{{ group.id }}" data-group-chunks="{{ group.chunk_ids|join:',' }}">
+                                            <i class="bi bi-list-check"></i> Выбрать
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger delete-group-btn ms-3">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    <div class="chunk-preview" data-group-id="{{ group.id }}">
+                        <div class="text-muted small">Загрузка предпросмотра...</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-3">
+                <button class="btn btn-outline-primary" id="addGroupBtn">
+                    <i class="bi bi-plus-circle"></i> Добавить группу
+                </button>
+                <button class="btn btn-success" id="saveGroupsBtn">
+                    <i class="bi bi-save"></i> Сохранить изменения
+                </button>
+                <a href="{% url 'distillation_question_set_detail' question_set.id %}" class="btn btn-secondary">Отмена</a>
+            </div>
+
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                Для автоматического выбора чанков необходимо выбрать коллекцию при создании набора.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для выбора чанков -->
+<div class="modal fade" id="chunkSelectorModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Выбор чанков для группы</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Документы коллекции</h6>
+                        <div id="documentList" class="document-list">
+                            <div class="text-muted text-center p-3">Загрузка документов...</div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h6>Чанки документа <span id="selectedDocTitle"></span></h6>
+                        <div id="chunksContainer" class="chunk-selector">
+                            <div class="text-muted text-center p-3">Выберите документ слева</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="applyChunkSelection">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Конфигурация
+    const questionSetId = {{ question_set.id }};
+    const collectionId = {{ question_set.collection.id|default:"null" }};
+    let currentGroupId = null;
+    let currentGroupChunks = []; // текущий набор чанков для группы (для отображения выбранных)
+    let selectedChunkIds = new Set(); // временно выбранные чанки в модалке
+    let allDocuments = [];
+    let allChunksByDoc = {}; // кэш чанков по id документа
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(type, title, message) {
+        const container = document.querySelector('.toast-container');
+        if (!container) {
+            const newContainer = document.createElement('div');
+            newContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            newContainer.style.zIndex = '1060';
+            document.body.appendChild(newContainer);
+        }
+        const toastId = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong>${title}</strong> ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        document.querySelector('.toast-container').insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    function showLoading(containerId, show = true) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        if (show) {
+            container.innerHTML = '<div class="text-center p-3"><div class="loading-spinner"></div> Загрузка...</div>';
+        }
+    }
+
+    function hideLoading(containerId) {
+        const container = document.getElementById(containerId);
+        if (container && container.innerHTML.includes('loading-spinner')) {
+            container.innerHTML = '';
+        }
+    }
+
+    // ========== ЗАГРУЗКА ДАННЫХ ДЛЯ МОДАЛЬНОГО ОКНА ==========
+    function loadDocuments() {
+        if (!collectionId) return;
+        showLoading('documentList', true);
+        fetch(`/api/rag/collections/${collectionId}/documents/`)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                allDocuments = data;
+                renderDocumentList();
+                hideLoading('documentList');
+            })
+            .catch(err => {
+                console.error('Ошибка загрузки документов:', err);
+                document.getElementById('documentList').innerHTML = `<div class="text-danger p-3">Ошибка загрузки документов</div>`;
+                showToast('danger', 'Ошибка', 'Не удалось загрузить документы');
+            });
+    }
+
+    function renderDocumentList() {
+        const container = document.getElementById('documentList');
+        if (!allDocuments.length) {
+            container.innerHTML = '<div class="text-muted p-3">Нет документов в коллекции</div>';
+            return;
+        }
+        let html = '';
+        allDocuments.forEach(doc => {
+            html += `<div class="document-item" data-doc-id="${doc.id}" data-doc-title="${doc.title}">
+                        <strong>${doc.title}</strong><br>
+                        <small class="text-muted">ID: ${doc.id}</small>
+                    </div>`;
+        });
+        container.innerHTML = html;
+
+        // Добавляем обработчики
+        container.querySelectorAll('.document-item').forEach(el => {
+            el.addEventListener('click', () => {
+                container.querySelectorAll('.document-item').forEach(item => item.classList.remove('active'));
+                el.classList.add('active');
+                const docId = el.dataset.docId;
+                const docTitle = el.dataset.docTitle;
+                document.getElementById('selectedDocTitle').innerText = docTitle;
+                loadChunksForDocument(docId);
+            });
+        });
+    }
+
+    function loadChunksForDocument(docId) {
+        if (allChunksByDoc[docId]) {
+            renderChunks(docId);
+            return;
+        }
+        showLoading('chunksContainer', true);
+        fetch(`/api/rag/documents/${docId}/chunks/`)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                allChunksByDoc[docId] = data;
+                renderChunks(docId);
+                hideLoading('chunksContainer');
+            })
+            .catch(err => {
+                console.error('Ошибка загрузки чанков:', err);
+                document.getElementById('chunksContainer').innerHTML = `<div class="text-danger p-3">Ошибка загрузки чанков</div>`;
+                showToast('danger', 'Ошибка', 'Не удалось загрузить чанки документа');
+            });
+    }
+
+    function renderChunks(docId) {
+        const container = document.getElementById('chunksContainer');
+        const chunks = allChunksByDoc[docId] || [];
+        if (!chunks.length) {
+            container.innerHTML = '<div class="text-muted p-3">Нет чанков в этом документе</div>';
+            return;
+        }
+        let html = '';
+        // Получаем все ID чанков, уже выбранные в других группах (для подсветки)
+        const allUsedChunkIds = new Set();
+        document.querySelectorAll('.group-card').forEach(card => {
+            const input = card.querySelector('.group-chunk-ids');
+            if (input && input.value) {
+                input.value.split(',').forEach(id => {
+                    const num = parseInt(id.trim());
+                    if (!isNaN(num)) allUsedChunkIds.add(num);
+                });
+            }
+        });
+
+        chunks.forEach(chunk => {
+            const isSelected = selectedChunkIds.has(chunk.id);
+            const isUsedInOther = allUsedChunkIds.has(chunk.id) && !isSelected;
+            let extraClass = '';
+            if (isSelected) extraClass = 'selected';
+            if (isUsedInOther && !isSelected) extraClass = 'in-other-group';
+            html += `
+                <div class="chunk-item ${extraClass}" data-chunk-id="${chunk.id}" data-chunk-text="${chunk.content_preview || chunk.content.substring(0, 100)}">
+                    <div><strong>Чанк #${chunk.chunk_index}</strong> (ID: ${chunk.id})</div>
+                    <div class="small text-muted">${chunk.content_preview || chunk.content.substring(0, 100)}...</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        // Обработчики выбора чанков
+        container.querySelectorAll('.chunk-item').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const chunkId = parseInt(el.dataset.chunkId);
+                if (selectedChunkIds.has(chunkId)) {
+                    selectedChunkIds.delete(chunkId);
+                    el.classList.remove('selected');
+                } else {
+                    selectedChunkIds.add(chunkId);
+                    el.classList.add('selected');
+                }
+                // Если чанк был в other-group, при выборе убираем класс in-other-group
+                if (el.classList.contains('in-other-group')) {
+                    el.classList.remove('in-other-group');
+                }
+            });
+        });
+    }
+
+    // ========== ОТКРЫТИЕ МОДАЛКИ ДЛЯ ГРУППЫ ==========
+    function openChunkSelector(groupId) {
+        currentGroupId = groupId;
+        const groupCard = document.querySelector(`.group-card[data-group-id="${groupId}"]`);
+        const chunkIdsInput = groupCard.querySelector('.group-chunk-ids');
+        if (chunkIdsInput && chunkIdsInput.value) {
+            currentGroupChunks = chunkIdsInput.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            selectedChunkIds = new Set(currentGroupChunks);
+        } else {
+            currentGroupChunks = [];
+            selectedChunkIds = new Set();
+        }
+
+        // Загружаем документы, если ещё не загружены
+        if (allDocuments.length === 0) {
+            loadDocuments();
+        } else {
+            renderDocumentList();
+            // Сброс выбранного документа
+            document.getElementById('selectedDocTitle').innerText = '';
+            document.getElementById('chunksContainer').innerHTML = '<div class="text-muted text-center p-3">Выберите документ слева</div>';
+            // Снимаем активный класс со всех документов
+            const docList = document.getElementById('documentList');
+            if (docList) {
+                docList.querySelectorAll('.document-item').forEach(item => item.classList.remove('active'));
+            }
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('chunkSelectorModal'));
+        modal.show();
+    }
+
+    // Применить выбранные чанки к группе
+    function applyChunkSelection() {
+        if (currentGroupId === null) return;
+        const groupCard = document.querySelector(`.group-card[data-group-id="${currentGroupId}"]`);
+        const chunkIdsInput = groupCard.querySelector('.group-chunk-ids');
+        if (chunkIdsInput) {
+            const newChunkIds = Array.from(selectedChunkIds).sort((a,b)=>a-b);
+            chunkIdsInput.value = newChunkIds.join(',');
+            // Обновить предпросмотр
+            updateGroupPreview(groupCard);
+            showToast('success', 'Готово', `Выбрано ${newChunkIds.length} чанков`);
+        }
+        const modal = bootstrap.Modal.getInstance(document.getElementById('chunkSelectorModal'));
+        modal.hide();
+    }
+
+    // Обновить предпросмотр для группы
+    async function updateGroupPreview(groupCard) {
+        const chunkIdsInput = groupCard.querySelector('.group-chunk-ids');
+        const previewDiv = groupCard.querySelector('.chunk-preview');
+        const ids = chunkIdsInput.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        if (ids.length === 0) {
+            previewDiv.innerHTML = '<span class="text-muted">Нет выбранных чанков</span>';
+            return;
+        }
+        previewDiv.innerHTML = '<div class="text-muted small"><div class="loading-spinner"></div> Загрузка предпросмотра...</div>';
+        // Загружаем содержимое чанков (можно использовать API /api/document-chunks/{id}/)
+        let previewHtml = '';
+        for (let chunkId of ids.slice(0, 5)) { // показываем первые 5
+            try {
+                const res = await fetch(`/api/document-chunks/${chunkId}/`);
+                if (res.ok) {
+                    const data = await res.json();
+                    previewHtml += `<div><strong>Чанк ${chunkId}</strong>: ${(data.content || '').substring(0, 80)}...</div>`;
+                } else {
+                    previewHtml += `<div><strong>Чанк ${chunkId}</strong>: не удалось загрузить</div>`;
+                }
+            } catch(e) {
+                previewHtml += `<div><strong>Чанк ${chunkId}</strong>: ошибка загрузки</div>`;
+            }
+        }
+        if (ids.length > 5) {
+            previewHtml += `<div class="text-muted">... и еще ${ids.length - 5} чанков</div>`;
+        }
+        previewDiv.innerHTML = previewHtml;
+    }
+
+    // Обновить все предпросмотры
+    async function updateAllPreviews() {
+        const cards = document.querySelectorAll('.group-card');
+        for (let card of cards) {
+            await updateGroupPreview(card);
+        }
+    }
+
+    // ========== СОХРАНЕНИЕ ГРУПП ==========
+    async function saveGroups() {
+        const groups = [];
+        document.querySelectorAll('.group-card').forEach(card => {
+            const groupId = card.dataset.groupId;
+            const name = card.querySelector('.group-name').value;
+            const numQuestions = parseInt(card.querySelector('.group-num-questions').value);
+            const chunkIdsStr = card.querySelector('.group-chunk-ids').value;
+            const chunkIds = chunkIdsStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            groups.push({
+                id: groupId,
+                name: name,
+                chunk_ids: chunkIds,
+                num_questions: numQuestions,
+                order: parseInt(card.dataset.groupOrder)
+            });
+        });
+
+        showToast('info', 'Сохранение', 'Сохранение групп...');
+        try {
+            const res = await fetch(`/api/distillation/groups/bulk_update/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ question_set_id: questionSetId, groups: groups })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('success', 'Сохранено', 'Группы сохранены');
+                location.reload();
+            } else {
+                showToast('error', 'Ошибка', data.error);
+            }
+        } catch (err) {
+            showToast('error', 'Ошибка сети', err.message);
+        }
+    }
+
+    // ========== ДОБАВЛЕНИЕ ГРУППЫ ==========
+    async function addGroup() {
+        const order = document.querySelectorAll('.group-card').length;
+        try {
+            const res = await fetch(`/api/distillation/groups/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    question_set: questionSetId,
+                    name: '',
+                    chunk_ids: [],
+                    num_questions: 3,
+                    order: order
+                })
+            });
+            const data = await res.json();
+            if (data.id) {
+                location.reload();
+            } else {
+                showToast('error', 'Ошибка', data.error);
+            }
+        } catch (err) {
+            showToast('error', 'Ошибка', err.message);
+        }
+    }
+
+    // ========== УДАЛЕНИЕ ГРУППЫ ==========
+    async function deleteGroup(btn) {
+        const groupCard = btn.closest('.group-card');
+        const groupId = groupCard.dataset.groupId;
+        if (!confirm('Удалить группу?')) return;
+        try {
+            const res = await fetch(`/api/distillation/groups/${groupId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+            if (res.ok) {
+                groupCard.remove();
+                showToast('success', 'Удалено', 'Группа удалена');
+            } else {
+                showToast('error', 'Ошибка', 'Не удалось удалить группу');
+            }
+        } catch (err) {
+            showToast('error', 'Ошибка', err.message);
+        }
+    }
+
+    // ========== АВТОМАТИЧЕСКОЕ СОЗДАНИЕ ГРУПП ==========
+    async function autoCreateGroups() {
+        const chunkRange = document.getElementById('chunkRangeInput').value;
+        const windowSize = parseInt(document.getElementById('windowSize').value);
+        const numQuestions = parseInt(document.getElementById('numQuestions').value);
+        if (!chunkRange) {
+            showToast('warning', 'Внимание', 'Укажите диапазон чанков');
+            return;
+        }
+        // Преобразуем строку в список ID
+        let chunkIds = [];
+        const parts = chunkRange.split(',');
+        for (let part of parts) {
+            part = part.trim();
+            if (part.includes('-')) {
+                const [start, end] = part.split('-').map(Number);
+                for (let i = start; i <= end; i++) {
+                    chunkIds.push(i);
+                }
+            } else {
+                chunkIds.push(parseInt(part));
+            }
+        }
+        if (chunkIds.length === 0) return;
+
+        showToast('info', 'Создание групп', 'Создание групп...');
+        try {
+            const res = await fetch(`/api/distillation/questionsets/${questionSetId}/auto_create_groups/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    chunk_ids: chunkIds,
+                    window_size: windowSize,
+                    num_questions: numQuestions,
+                    include_partial: false
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('success', 'Готово', `Создано ${data.groups_created} групп`);
+                location.reload();
+            } else {
+                showToast('error', 'Ошибка', data.error);
+            }
+        } catch (err) {
+            showToast('error', 'Ошибка сети', err.message);
+        }
+    }
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', function() {
+        if (collectionId) {
+            // Загружаем предпросмотры для существующих групп
+            updateAllPreviews();
+
+            // Привязываем кнопки
+            document.getElementById('autoCreateGroupsBtn').addEventListener('click', autoCreateGroups);
+            document.getElementById('addGroupBtn').addEventListener('click', addGroup);
+            document.getElementById('saveGroupsBtn').addEventListener('click', saveGroups);
+            document.querySelectorAll('.delete-group-btn').forEach(btn => {
+                btn.addEventListener('click', () => deleteGroup(btn));
+            });
+
+            // Кнопки выбора чанков в группах
+            document.querySelectorAll('.select-chunks-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const groupId = btn.dataset.groupId;
+                    openChunkSelector(groupId);
+                });
+            });
+        }
+
+        // Обработчик для модального окна
+        document.getElementById('applyChunkSelection').addEventListener('click', applyChunkSelection);
+    });
+</script>
+{% endblock %}

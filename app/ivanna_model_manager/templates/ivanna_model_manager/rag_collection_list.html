@@ -1,0 +1,549 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Коллекции документов - RAG | Ivanna Lab{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-folder me-2" style="color: var(--primary-color);"></i> Коллекции документов
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* =============================================
+       СТИЛИ ДЛЯ КАРТОЧЕК КОЛЛЕКЦИЙ
+       ============================================= */
+    .collection-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 20px;
+        transition: all 0.2s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .collection-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--primary-color);
+        box-shadow: 0 10px 30px rgba(var(--primary-rgb), 0.15);
+    }
+
+    .collection-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .collection-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .collection-name i {
+        color: var(--primary-color);
+        font-size: 1.4rem;
+    }
+
+    .collection-name:hover {
+        color: var(--primary-color);
+    }
+
+    .collection-badge {
+        background: rgba(var(--primary-rgb), 0.15);
+        color: var(--primary-color);
+        border-radius: 30px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border: 1px solid rgba(var(--primary-rgb), 0.3);
+    }
+
+    .collection-description {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+        line-height: 1.5;
+        flex: 1;
+    }
+
+    .collection-stats {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.85rem;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
+
+    .stat-item i {
+        color: var(--primary-color);
+        font-size: 0.9rem;
+    }
+
+    .index-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 15px;
+        font-size: 0.85rem;
+    }
+
+    .index-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 30px;
+        font-weight: 500;
+    }
+
+    .index-badge.created {
+        background: rgba(25, 135, 84, 0.15);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+
+    .index-badge.not-created {
+        background: rgba(255, 193, 7, 0.15);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .index-badge i {
+        font-size: 0.9rem;
+    }
+
+    .embedding-progress {
+        margin-bottom: 15px;
+    }
+
+    .progress {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        border-radius: 3px;
+    }
+
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 5px;
+    }
+
+    .collection-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;
+        padding: 6px 14px;
+        color: white;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .action-btn:hover {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .action-btn.danger:hover {
+        background: #dc3545;
+        border-color: #dc3545;
+    }
+
+    /* Фильтры */
+    .filters-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .stat-cards .stat-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1.2;
+    }
+
+    .stat-label {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    /* Пагинация */
+    .pagination {
+        margin-top: 30px;
+    }
+
+    .page-link {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        border-radius: 8px;
+        margin: 0 3px;
+    }
+
+    .page-link:hover {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+
+    .page-item.active .page-link {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .page-item.disabled .page-link {
+        background: rgba(255, 255, 255, 0.02);
+        color: rgba(255, 255, 255, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Статистика -->
+    <div class="row g-4 mb-4 stat-cards">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_collections }}</div>
+                <div class="stat-label">Всего коллекций</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_documents }}</div>
+                <div class="stat-label">Документов</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-number">{{ indexed_count }}</div>
+                <div class="stat-label">Индексов FAISS</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="filters-card">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0" 
+                           name="q" value="{{ request.GET.q }}" 
+                           placeholder="Поиск по названию коллекции...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select name="status" class="form-select">
+                    <option value="">Все статусы</option>
+                    <option value="indexed" {% if request.GET.status == 'indexed' %}selected{% endif %}>
+                        Только с индексом
+                    </option>
+                    <option value="no_index" {% if request.GET.status == 'no_index' %}selected{% endif %}>
+                        Без индекса
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i> Применить
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Список коллекций -->
+    {% if page_obj %}
+        <div class="row g-4">
+            {% for collection in page_obj %}
+                <div class="col-xl-4 col-lg-6">
+                    <div class="collection-card">
+                        <div class="collection-header">
+                            <a href="{% url 'rag_collection_detail' collection.id %}" class="collection-name">
+                                <i class="bi bi-folder2-open"></i>
+                                {{ collection.name|truncatechars:30 }}
+                            </a>
+                            {% if collection.owner_id == request.user.id|stringformat:"s" %}
+                                <span class="collection-badge">
+                                    <i class="bi bi-person-check me-1"></i> Моя
+                                </span>
+                            {% elif collection.is_public %}
+                                <span class="collection-badge" style="background: rgba(23, 162, 184, 0.15); color: #17a2b8;">
+                                    <i class="bi bi-globe me-1"></i> Публичная
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        {% if collection.description %}
+                            <div class="collection-description">
+                                {{ collection.description|truncatechars:80 }}
+                            </div>
+                        {% else %}
+                            <div class="collection-description text-muted">
+                                <em>Нет описания</em>
+                            </div>
+                        {% endif %}
+
+                        <div class="collection-stats">
+                            <span class="stat-item">
+                                <i class="bi bi-file-text"></i>
+                                {{ collection.doc_count|default:0 }} док.
+                            </span>
+                            <span class="stat-item">
+                                <i class="bi bi-grid-3x3-gap"></i>
+                                {{ collection.chunk_count|default:0 }} чанков
+                            </span>
+                        </div>
+
+                        <div class="index-status">
+                            {% if collection.vector_index_created %}
+                                <span class="index-badge created">
+                                    <i class="bi bi-check-circle-fill"></i> FAISS готов
+                                </span>
+                                <span class="stat-item" style="background: transparent; padding-left: 0;">
+                                    <i class="bi bi-database"></i>
+                                    {{ collection.total_vectors|default:0 }} вект.
+                                </span>
+                            {% else %}
+                                <span class="index-badge not-created">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Индекс не создан
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        {% if collection.has_embeddings_count is not None %}
+                            <div class="embedding-progress">
+                                <div class="progress-label">
+                                    <span>Эмбеддинги</span>
+                                    <span>{{ collection.has_embeddings_count|default:0 }}/{{ collection.chunk_count|default:0 }}</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" 
+                                         style="width: {% widthratio collection.has_embeddings_count|default:0 collection.chunk_count|default:1 100 %}%">
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="collection-actions">
+                            <a href="{% url 'rag_collection_detail' collection.id %}" class="action-btn">
+                                <i class="bi bi-eye"></i> Просмотр
+                            </a>
+                            <a href="{% url 'rag_upload_documents' %}?collection={{ collection.id }}" class="action-btn">
+                                <i class="bi bi-upload"></i> Загрузить
+                            </a>
+                            {% if collection.owner_id == request.user.id|stringformat:"s" %}
+                                <button type="button" class="action-btn danger" 
+                                        onclick="confirmDelete({{ collection.id }}, '{{ collection.name|escapejs }}')">
+                                    <i class="bi bi-trash"></i> Удалить
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Навигация по страницам">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-folder-x display-1 text-muted"></i>
+            <h4 class="mt-3">Нет коллекций</h4>
+            <p class="text-muted mb-4">Создайте первую коллекцию, чтобы начать работу с RAG-системой</p>
+            <a href="{% url 'rag_collection_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Создать коллекцию
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(collectionId, collectionName) {
+    if (confirm(`Вы уверены, что хотите удалить коллекцию "${collectionName}"? Все документы в коллекции также будут помечены как неактивные.`)) {
+        fetch(`/rag/collections/${collectionId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('success', 'Коллекция удалена', data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('error', 'Ошибка', data.error || 'Не удалось удалить коллекцию');
+            }
+        })
+        .catch(error => {
+            showToast('error', 'Ошибка сети', 'Произошла ошибка при удалении');
+        });
+    }
+}
+
+// Вспомогательные функции (можно вынести в base.html, но для полноты оставим)
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(type, title, message) {
+    const icons = {
+        success: 'bi-check-circle-fill text-success',
+        error: 'bi-exclamation-circle-fill text-danger',
+        warning: 'bi-exclamation-triangle-fill text-warning',
+        info: 'bi-info-circle-fill text-info'
+    };
+
+    const toastId = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi ${icons[type] || icons.info} me-2"></i>
+                    <strong>${title}</strong><br>${message}
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+    const container = document.getElementById('toastContainer');
+    if (container) {
+        container.insertAdjacentHTML('beforeend', toastHtml);
+    } else {
+        const newContainer = document.createElement('div');
+        newContainer.id = 'toastContainer';
+        newContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(newContainer);
+        newContainer.insertAdjacentHTML('beforeend', toastHtml);
+    }
+
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    toast.show();
+    toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+}
+</script>
+{% endblock %}

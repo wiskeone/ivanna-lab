@@ -1,0 +1,92 @@
+FROM ubuntu:24.04
+
+# Установка Python 3.13 из PPA deadsnakes
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3.13 \
+        python3.13-dev \
+        python3.13-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13
+
+# Системные зависимости
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    gcc \
+    g++ \
+    curl \
+    git \
+    netcat-openbsd \
+    ca-certificates \
+    poppler-utils \
+    libmagic1 \
+    libfreetype6 \
+    libjpeg-turbo8 \
+    libopenjp2-7 \
+    libpng16-16 \
+    libtiff6 \
+    libxcb1 \
+    libxext6 \
+    libxrender1 \
+    cmake \
+    ninja-build \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ENV PIP_DEFAULT_TIMEOUT=6000 \
+    PIP_RETRIES=10
+
+# Виртуальное окружение
+RUN python3.13 -m venv /opt/venv
+ENV VIRTUAL_ENV="/opt/venv"
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN pip install uv
+
+# Увеличиваем таймаут для uv (сетевые задержки)
+ENV UV_HTTP_TIMEOUT=6000
+
+COPY requirements.in .
+RUN uv pip compile requirements.in --output-file requirements.txt && \
+    uv pip install -r requirements.txt
+
+# Установка CPU-версий PyTorch и семейства
+RUN uv pip install \
+    --find-links https://mirrors.aliyun.com/pytorch-wheels/cpu/ \
+    torch==2.10.0+cpu \
+    torchvision==0.25.0+cpu \
+    torchaudio==2.10.0+cpu \
+    torchcodec==0.10.0+cpu || \
+    uv pip install torch==2.10.0 torchvision==0.25.0 torchaudio==2.10.0 torchcodec==0.10.0 --index-url https://download.pytorch.org/whl/cpu
+
+# bitsandbytes (для CPU может не собраться, но попытаемся)
+RUN uv pip install bitsandbytes==0.49.2 || echo "bitsandbytes not available for CPU, skipping"
+
+# vLLM не устанавливаем (отдельный сервис)
+
+# mergekit (чистый Python, ставится без проблем)
+RUN uv pip install mergekit==0.1.4
+
+# Сборка llama.cpp (CPU)
+RUN git clone https://github.com/ggerganov/llama.cpp.git /opt/llama.cpp && \
+    cd /opt/llama.cpp && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release \
+             -GNinja \
+             -DLLAMA_BUILD_TESTS=OFF \
+             -DLLAMA_BUILD_EXAMPLES=OFF \
+             -DLLAMA_BUILD_SERVER=OFF && \
+    ninja -j$(nproc) && \
+    cp bin/* /usr/local/bin/ && \
+    cd / && rm -rf /opt/llama.cpp/build
+
+COPY . .
+
+RUN echo '#!/bin/bash\nset -e\necho "=== Запуск Celery ==="\nexec "$@"\n' > /entrypoint.sh && chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

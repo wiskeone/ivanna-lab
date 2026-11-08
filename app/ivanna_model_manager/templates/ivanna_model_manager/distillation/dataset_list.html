@@ -1,0 +1,189 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Датасеты дистилляции{% endblock %}
+{% block page_title %}Датасеты дистилляции{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="bi bi-database me-2"></i>Датасеты дистилляции</h2>
+                    <p class="text-muted mb-0">Собранные датасеты для дообучения моделей</p>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-plus-circle me-1"></i>Создать датасет
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'distillation_dataset_builder' %}">Из вопросов и ответов</a></li>
+                        <li><a class="dropdown-item" href="{% url 'manual_instruction_builder' %}">Вручную</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control border-start-0" name="q" value="{{ request.GET.q }}" placeholder="Поиск по названию...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select name="sort" class="form-select">
+                                <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>По дате (новые)</option>
+                                <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>По дате (старые)</option>
+                                <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>По названию</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">Применить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Список датасетов -->
+            {% if page_obj %}
+            <div class="row">
+                {% for dataset in page_obj %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <a href="{{ dataset.url_detail }}" class="text-decoration-none">{{ dataset.name }}</a>
+                            </h6>
+                            <div>
+                                <span class="badge {% if dataset.type == 'manual' %}bg-secondary{% else %}bg-info{% endif %}">
+                                    {% if dataset.type == 'manual' %}Ручной{% else %}Собранный{% endif %}
+                                </span>
+                                <span class="badge bg-secondary ms-1">{{ dataset.item_count }} записей</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text small text-muted">{{ dataset.description|truncatechars:150 }}</p>
+                            <div class="small text-muted">
+                                <div>Создан: {{ dataset.created_at|date:"d.m.Y H:i" }}</div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="{{ dataset.url_detail }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Просмотр</a>
+                                    <a href="{{ dataset.url_export }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download"></i> Экспорт JSONL</a>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger delete-dataset-btn" data-id="{{ dataset.id }}" data-type="{{ dataset.type }}" data-name="{{ dataset.name|escapejs }}">
+                                    <i class="bi bi-trash"></i> Удалить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Пагинация -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}"><i class="bi bi-chevron-double-left"></i></a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}"><i class="bi bi-chevron-left"></i></a></li>
+                    {% endif %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}"><i class="bi bi-chevron-right"></i></a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}"><i class="bi bi-chevron-double-right"></i></a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-database-x display-4 text-muted mb-3"></i>
+                <h5 class="text-muted mb-3">Нет датасетов</h5>
+                <p class="text-muted mb-4">Создайте первый датасет</p>
+                <div class="btn-group">
+                    <a href="{% url 'distillation_dataset_builder' %}" class="btn btn-primary">Из вопросов и ответов</a>
+                    <a href="{% url 'manual_instruction_builder' %}" class="btn btn-primary">Вручную</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showNotification(message, type = 'info') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+        } else {
+            alert(message);
+        }
+    }
+
+    document.querySelectorAll('.delete-dataset-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const datasetId = this.dataset.id;
+            const datasetType = this.dataset.type;
+            const datasetName = this.dataset.name;
+            if (!confirm(`Удалить датасет "${datasetName}"? Все данные будут потеряны.`)) return;
+            let url = '';
+            if (datasetType === 'distillation') {
+                url = `/api/distillation/datasets/${datasetId}/`;
+            } else {
+                url = `/api/manual-instruction-sets/${datasetId}/`;
+            }
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => {
+                if (res.ok) {
+                    showNotification('Датасет удалён', 'success');
+                    this.closest('.col-md-6').remove();
+                    if (document.querySelectorAll('.col-md-6').length === 0) {
+                        location.reload();
+                    }
+                } else {
+                    showNotification('Ошибка удаления', 'error');
+                }
+            })
+            .catch(err => showNotification(err.message, 'error'));
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,439 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Задачи оценки{% endblock %}
+{% block page_title %}Задачи оценки моделей{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="bi bi-clipboard-data me-2"></i>Задачи оценки
+                    </h2>
+                    <p class="text-muted mb-0">История и статус выполнения задач оценки</p>
+                </div>
+                <a href="{% url 'evaluation_task_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Новая задача
+                </a>
+            </div>
+            
+            <!-- Фильтры -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <form method="get" class="d-flex">
+                                <input type="text" name="q" 
+                                       class="form-control me-2" 
+                                       placeholder="Поиск по названию..."
+                                       value="{{ request.GET.q }}">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center h-100">
+                                <div class="btn-group ms-auto">
+                                    <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}" 
+                                       class="btn btn-outline-secondary {% if not request.GET.status %}active{% endif %}">
+                                        Все
+                                    </a>
+                                    {% for status_code, status_name in status_choices %}
+                                    <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}status={{ status_code }}" 
+                                       class="btn btn-outline-secondary {% if request.GET.status == status_code %}active{% endif %}">
+                                        {{ status_name }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Список задач -->
+            {% if page_obj %}
+            <div class="row">
+                {% for task in page_obj %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <a href="{% url 'evaluation_task_detail' task.id %}" 
+                                   class="text-decoration-none">
+                                    {{ task.name }}
+                                </a>
+                            </h6>
+                            <div class="d-flex align-items-center">
+                                <span class="badge {% if task.status == 'COMPLETED' %}bg-success
+                                                 {% elif task.status == 'RUNNING' %}bg-warning
+                                                 {% elif task.status == 'FAILED' %}bg-danger
+                                                 {% elif task.status == 'PENDING' %}bg-info
+                                                 {% else %}bg-secondary{% endif %} me-2">
+                                    {{ task.get_status_display }}
+                                </span>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                            type="button" 
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'evaluation_task_detail' task.id %}">
+                                                <i class="bi bi-eye me-2"></i>Просмотр
+                                            </a>
+                                        </li>
+                                        {% if task.status == 'COMPLETED' %}
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'evaluation_task_compare' task.id %}">
+                                                <i class="bi bi-bar-chart me-2"></i>Сравнить
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                        {% if task.status != 'RUNNING' %}
+                                        <li>
+                                            <a class="dropdown-item text-warning" 
+                                               href="#"
+                                               onclick="restartTask({{ task.id }}, '{{ task.name }}')">
+                                                <i class="bi bi-arrow-clockwise me-2"></i>Перезапустить
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" 
+                                               href="#"
+                                               onclick="deleteTask({{ task.id }}, '{{ task.name }}')">
+                                                <i class="bi bi-trash me-2"></i>Удалить
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if task.description %}
+                            <p class="card-text small text-muted mb-3">{{ task.description|truncatechars:150 }}</p>
+                            {% endif %}
+                            
+                            <div class="row small mb-3">
+                                <div class="col-6">
+                                    <div class="text-muted">Датасет</div>
+                                    <div class="fw-bold">
+                                        {% if task.dataset %}
+                                        <a href="{% url 'evaluation_dataset_detail' task.dataset.id %}" 
+                                           class="text-decoration-none">
+                                            {{ task.dataset.name }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-danger">Удален</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-muted">Моделей</div>
+                                    <div class="fw-bold">{{ task.total_models }}</div>
+                                </div>
+                            </div>
+                            
+                            {% if task.status == 'RUNNING' %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span>Прогресс</span>
+                                    <span>{{ task.progress|floatformat:1 }}%</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" 
+                                         style="width: {{ task.progress }}%"></div>
+                                </div>
+                                {% if task.current_step %}
+                                <small class="text-muted mt-1 d-block">
+                                    <i class="bi bi-arrow-right"></i> {{ task.current_step }}
+                                </small>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if task.status == 'COMPLETED' and task.summary_metrics %}
+                            <div class="mb-3">
+                                <h6 class="small mb-2">Лучшие модели:</h6>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for model_id, metrics in task.summary_metrics.items %}
+                                    <span class="badge bg-light text-dark">
+                                        {{ metrics.avg_score|floatformat:1 }} ⭐
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="row small text-muted">
+                                <div class="col-6">
+                                    <i class="bi bi-calendar me-1"></i>
+                                    {{ task.created_at|date:"d.m.Y" }}
+                                </div>
+                                <div class="col-6 text-end">
+                                    {% if task.started_at %}
+                                    <i class="bi bi-clock me-1"></i>
+                                    {{ task.started_at|timesince:task.completed_at|default:"..." }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">
+                                    <i class="bi bi-question-circle me-1"></i>
+                                    {{ task.total_questions }} вопросов
+                                </small>
+                                <div>
+                                    <a href="{% url 'evaluation_task_detail' task.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>Подробнее
+                                    </a>
+                                    {% if task.status == 'COMPLETED' %}
+                                    <a href="{% url 'evaluation_task_compare' task.id %}" 
+                                       class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-bar-chart me-1"></i>Сравнить
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Пагинация -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-clipboard-x display-4 text-muted mb-3"></i>
+                <h5 class="text-muted mb-3">Нет задач оценки</h5>
+                <p class="text-muted mb-4">Создайте первую задачу оценки моделей</p>
+                <a href="{% url 'evaluation_task_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Создать задачу
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Функция для перезапуска задачи
+function restartTask(taskId, taskName) {
+    if (!confirm(`Перезапустить задачу "${taskName}"? Все предыдущие результаты будут удалены.`)) {
+        return;
+    }
+    
+    const button = event.target.closest('a');
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-arrow-clockwise me-2"></i>Запуск...';
+    button.classList.add('disabled');
+    
+    fetch(`/evaluation/tasks/${taskId}/restart/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', `Задача "${taskName}" перезапущена`, 'Запущена в фоновом режиме');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast('error', 'Ошибка', data.error || 'Не удалось перезапустить задачу');
+            button.innerHTML = originalHtml;
+            button.classList.remove('disabled');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Ошибка', 'Не удалось перезапустить задачу');
+        button.innerHTML = originalHtml;
+        button.classList.remove('disabled');
+    });
+}
+
+// Функция для удаления задачи
+function deleteTask(taskId, taskName) {
+    if (!confirm(`Удалить задачу "${taskName}"? Это действие нельзя отменить.`)) {
+        return;
+    }
+    
+    const button = event.target.closest('a');
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-trash me-2"></i>Удаление...';
+    button.classList.add('disabled');
+    
+    fetch(`/evaluation/tasks/${taskId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', `Задача "${taskName}" удалена`, '');
+            const card = button.closest('.card');
+            if (card) {
+                card.style.opacity = '0.5';
+                card.style.transition = 'opacity 0.3s';
+                setTimeout(() => card.remove(), 500);
+            }
+            if (document.querySelectorAll('.card').length === 0) {
+                location.reload();
+            }
+        } else {
+            showToast('error', 'Ошибка', data.error || 'Не удалось удалить задачу');
+            button.innerHTML = originalHtml;
+            button.classList.remove('disabled');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Ошибка', 'Не удалось удалить задачу');
+        button.innerHTML = originalHtml;
+        button.classList.remove('disabled');
+    });
+}
+
+// Функция для показа toast-уведомлений
+function showToast(type, title, message) {
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-bg-${type} border-0`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        const container = document.querySelector('.toast-container') || createToastContainer();
+        container.appendChild(toastEl);
+        
+        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        toast.show();
+    } else {
+        alert(`${title}: ${message}`);
+    }
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    container.style.zIndex = '1060';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Автоматическое обновление статуса для RUNNING задач
+function updateRunningTasks() {
+    const runningTasks = document.querySelectorAll('.badge.bg-warning');
+    runningTasks.forEach(badge => {
+        const card = badge.closest('.card');
+        if (!card) return; // пропускаем, если бейдж не в карточке (например, в фильтре)
+        
+        const link = card.querySelector('a[href*="/evaluation/tasks/"]');
+        if (!link) return;
+        
+        const hrefParts = link.href.split('/').filter(Boolean);
+        const taskId = hrefParts.pop();
+        
+        fetch(`/api/evaluation/tasks/${taskId}/status/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== 'RUNNING') {
+                    location.reload();
+                } else {
+                    const progressBar = card.querySelector('.progress-bar');
+                    const progressText = card.querySelector('.progress span:last-child');
+                    if (progressBar && data.progress !== undefined) {
+                        progressBar.style.width = data.progress + '%';
+                    }
+                    if (progressText && data.progress !== undefined) {
+                        progressText.textContent = data.progress.toFixed(1) + '%';
+                    }
+                }
+            })
+            .catch(console.error);
+    });
+}
+
+// Запускаем обновление каждые 10 секунд, если есть RUNNING задачи
+if (document.querySelector('.badge.bg-warning')) {
+    setInterval(updateRunningTasks, 10000);
+}
+</script>
+{% endblock %}

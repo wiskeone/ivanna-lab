@@ -1,0 +1,239 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Датасеты для оценки{% endblock %}
+{% block page_title %}Датасеты для оценки моделей{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2>
+                        <i class="bi bi-database me-2"></i>Датасеты
+                    </h2>
+                    <p class="text-muted mb-0">Коллекции вопросов для оценки моделей</p>
+                </div>
+                <div>
+                    <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-secondary me-2">
+                        <i class="bi bi-plus-circle me-1"></i>Создать
+                    </a>
+                    <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i>Загрузить
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Фильтры и поиск -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <form method="get" class="d-flex">
+                                <input type="text" name="q" 
+                                       class="form-control me-2" 
+                                       placeholder="Поиск по названию..."
+                                       value="{{ request.GET.q }}">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center h-100">
+                                {% if all_tags %}
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-tags me-1"></i>
+                                        {% if request.GET.tag %}Тег: {{ request.GET.tag }}
+                                        {% else %}Все теги{% endif %}
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}">Все теги</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        {% for tag in all_tags %}
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}tag={{ tag }}">
+                                                {{ tag }}
+                                            </a>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Список датасетов -->
+            <div class="card">
+                <div class="card-body">
+                    {% if datasets %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Вопросов</th>
+                                    <th>Теги</th>
+                                    <th>Источник</th>
+                                    <th>Создан</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dataset in datasets %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'evaluation_dataset_detail' dataset.id %}" 
+                                           class="text-decoration-none fw-bold">
+                                            {{ dataset.name }}
+                                        </a>
+                                        {% if dataset.description %}
+                                        <small class="d-block text-muted mt-1">
+                                            {{ dataset.description|truncatechars:100 }}
+                                        </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary rounded-pill">
+                                            {{ dataset.total_questions }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% for tag in dataset.tags|slice:":3" %}
+                                        <span class="badge bg-light text-dark mb-1">{{ tag }}</span>
+                                        {% endfor %}
+                                        {% if dataset.tags|length > 3 %}
+                                        <span class="badge bg-light text-dark">+{{ dataset.tags|length|add:"-3" }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if dataset.source_type == 'FILE' %}
+                                        <span class="badge bg-info">Файл</span>
+                                        {% elif dataset.source_type == 'MANUAL' %}
+                                        <span class="badge bg-secondary">Ручной</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">API</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ dataset.created_at|date:"d.m.Y" }}<br>
+                                            <span class="text-muted">{{ dataset.created_at|date:"H:i" }}</span>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'evaluation_dataset_detail' dataset.id %}" 
+                                               class="btn btn-outline-primary" title="Просмотр">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'evaluation_dataset_edit' dataset.id %}" 
+                                               class="btn btn-outline-secondary" title="Редактировать">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="useDatasetForEvaluation({{ dataset.id }})" title="Использовать для оценки">
+                                                <i class="bi bi-play"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Пагинация -->
+                    {% if is_paginated %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag }}{% endif %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag }}{% endif %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-database-slash display-4 text-muted mb-3"></i>
+                        <h5 class="text-muted mb-3">Нет датасетов</h5>
+                        <p class="text-muted mb-4">Создайте или загрузите датасет для начала оценки моделей</p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-primary">
+                                <i class="bi bi-upload me-1"></i>Загрузить датасет
+                            </a>
+                            <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-secondary">
+                                <i class="bi bi-plus-circle me-1"></i>Создать вручную
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function useDatasetForEvaluation(datasetId) {
+    // Сохраняем ID датасета в sessionStorage и перенаправляем на создание задачи
+    sessionStorage.setItem('selectedDatasetId', datasetId);
+    window.location.href = "{% url 'evaluation_task_create' %}";
+}
+
+// Восстанавливаем выбранный датасет при загрузке страницы создания задачи
+if (window.location.pathname.includes('create')) {
+    const selectedDatasetId = sessionStorage.getItem('selectedDatasetId');
+    if (selectedDatasetId) {
+        // Здесь можно автоматически выбрать датасет в форме
+        console.log('Выбран датасет ID:', selectedDatasetId);
+    }
+}
+</script>
+{% endblock %}

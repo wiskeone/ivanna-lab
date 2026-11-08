@@ -1,0 +1,189 @@
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> Основная информация
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th><i class="bi bi-tag"></i> Тип:</th>
+                                    <td>
+                                        <span class="badge model-type-{{ model.model_type|lower }}">
+                                            {{ model.get_model_type_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><i class="bi bi-cloud-arrow-down"></i> Статус:</th>
+                                    <td>
+                                        <span class="badge status-{{ model.status|lower }}">
+                                            {{ model.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><i class="bi bi-calculator"></i> Параметры:</th>
+                                    <td>
+                                        {% if model.parameter_count %}
+                                            {{ model.parameter_count|floatformat:"0" }}
+                                        {% else %}
+                                            <span class="text-muted">Неизвестно</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><i class="bi bi-hdd"></i> Размер:</th>
+                                    <td>
+                                        {% if model.size_gb %}
+                                            {{ model.size_gb }} GB
+                                        {% else %}
+                                            <span class="text-muted">Неизвестно</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th><i class="bi bi-memory"></i> Квантизация:</th>
+                                    <td>
+                                        {% if model.quantization %}
+                                            <span class="badge bg-secondary">{{ model.quantization }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Нет</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><i class="bi bi-textarea-t"></i> Контекст:</th>
+                                    <td>{{ model.context_length }} токенов</td>
+                                </tr>
+                                <tr>
+                                    <th><i class="bi bi-speedometer2"></i> Скорость:</th>
+                                    <td>
+                                        {% if model.inference_speed %}
+                                            {{ model.inference_speed|floatformat:1 }} токенов/сек
+                                        {% else %}
+                                            <span class="text-muted">Не измерена</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><i class="bi bi-graph-up"></i> Точность:</th>
+                                    <td>
+                                        {% if model.accuracy_score %}
+                                            {{ model.accuracy_score|floatformat:3 }}
+                                        {% else %}
+                                            <span class="text-muted">Не оценена</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if model.error_message %}
+        <div class="card mt-3 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Ошибка
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <pre class="mb-0">{{ model.error_message }}</pre>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning-charge"></i> Быстрые действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if model.status == 'LOADED' %}
+                    <a href="{% url 'quick_test' model.id %}" class="btn btn-success">
+                        <i class="bi bi-lightning-charge"></i> Быстрое тестирование
+                    </a>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inferenceModal">
+                        <i class="bi bi-chat-left-text"></i> Запустить инференс
+                    </button>
+                    {% elif model.status == 'DOWNLOADING' %}
+                    <button class="btn btn-warning" disabled>
+                        <i class="bi bi-hourglass-split"></i> Загрузка в процессе...
+                    </button>
+                    {% elif model.status == 'ERROR' %}
+                    <form method="post" action="{% url 'retry_download' model.id %}" class="d-grid">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-arrow-clockwise"></i> Повторить загрузку
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    <a href="{% url 'edit_config' model.id %}" class="btn btn-outline-primary">
+                        <i class="bi bi-gear"></i> Редактировать конфигурацию
+                    </a>
+                    
+                    <button class="btn btn-outline-info" onclick="showModelDetails()">
+                        <i class="bi bi-code-slash"></i> Технические детали
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history"></i> История
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="bi bi-calendar-plus text-success"></i>
+                        <small>Создана:</small><br>
+                        {{ model.created_at|date:"d.m.Y H:i" }}
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-calendar-check text-primary"></i>
+                        <small>Обновлена:</small><br>
+                        {{ model.updated_at|date:"d.m.Y H:i" }}
+                    </li>
+                    {% if model.started_at %}
+                    <li class="mb-2">
+                        <i class="bi bi-play-circle text-info"></i>
+                        <small>Запущена:</small><br>
+                        {{ model.started_at|date:"d.m.Y H:i" }}
+                    </li>
+                    {% endif %}
+                    {% if model.completed_at %}
+                    <li>
+                        <i class="bi bi-check-circle text-success"></i>
+                        <small>Завершена:</small><br>
+                        {{ model.completed_at|date:"d.m.Y H:i" }}
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

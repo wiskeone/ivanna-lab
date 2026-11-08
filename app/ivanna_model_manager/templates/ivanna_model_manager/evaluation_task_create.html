@@ -1,0 +1,647 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Создание задачи оценки{% endblock %}
+{% block page_title %}Создание задачи оценки{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-play-circle me-2"></i>Создание новой задачи оценки
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="createTaskForm" action="{% url 'evaluation_task_create' %}">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Ошибка!</strong> Пожалуйста, исправьте ошибки ниже.
+                            <ul class="mb-0 mt-2">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                    <li>{{ field }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Основная информация -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="id_name" class="form-label">
+                                        <i class="bi bi-card-heading me-1"></i>Название задачи
+                                    </label>
+                                    <input type="text" name="name" class="form-control" id="id_name" 
+                                           value="{{ form.name.value|default:'' }}" required>
+                                    <div class="form-text">Например: "Сравнение Qwen и Llama на русских вопросах"</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="id_dataset" class="form-label">
+                                        <i class="bi bi-database me-1"></i>Датасет
+                                    </label>
+                                    <select name="dataset" class="form-select" id="id_dataset" required>
+                                        <option value="">Выберите датасет...</option>
+                                        {% for dataset in available_datasets %}
+                                        <option value="{{ dataset.id }}" 
+                                                data-questions="{{ dataset.total_questions }}">
+                                            {{ dataset.name }} ({{ dataset.total_questions }} вопросов)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label">
+                                <i class="bi bi-text-paragraph me-1"></i>Описание (необязательно)
+                            </label>
+                            <textarea name="description" class="form-control" id="id_description" 
+                                      rows="3">{{ form.description.value|default:'' }}</textarea>
+                        </div>
+                        
+                        <!-- Выбор моделей -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-cpu me-2"></i>Выбор моделей для оценки
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Список доступных моделей -->
+                                <div class="mt-3">
+                                    <h6 class="small text-muted mb-2">Доступные модели:</h6>
+                                    {% if available_models %}
+                                    <div class="row">
+                                        {% for model in available_models %}
+                                        <div class="col-md-4 col-sm-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input model-checkbox" type="checkbox" 
+                                                       name="models" value="{{ model.id }}" 
+                                                       id="model_{{ model.id }}">
+                                                <label class="form-check-label d-flex align-items-center" 
+                                                       for="model_{{ model.id }}">
+                                                    {% if model.model_type == 'QWEN' %}
+                                                    <span class="badge bg-primary me-2">QWEN</span>
+                                                    {% elif model.model_type == 'LLAMA' %}
+                                                    <span class="badge bg-success me-2">LLAMA</span>
+                                                    {% elif model.model_type == 'MISTRAL' %}
+                                                    <span class="badge bg-info me-2">MISTRAL</span>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary me-2">CUSTOM</span>
+                                                    {% endif %}
+                                                    {{ model.display_name|truncatechars:20 }}
+                                                </label>
+                                            </div>
+                                            <small class="text-muted ms-4">
+                                                {{ model.parameter_count|floatformat:0 }} параметров
+                                            </small>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        Нет доступных моделей. Сначала загрузите модели в интерфейсе моделей.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- RAG блок -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-database me-2"></i>Интеграция с RAG
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="use_rag" id="use_rag" value="on">
+                                    <label class="form-check-label" for="use_rag">
+                                        <strong>Использовать RAG (поиск по документам)</strong>
+                                    </label>
+                                    <div class="form-text">При включении модель будет получать контекст из выбранных коллекций документов</div>
+                                </div>
+                                
+                                <div id="ragCollectionsBlock" style="display: none;">
+                                    <h6 class="small text-muted mb-2">Выберите коллекции:</h6>
+                                    {% if rag_collections %}
+                                        <div class="row">
+                                            {% for collection in rag_collections %}
+                                            <div class="col-md-4 col-sm-6 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input rag-collection-checkbox" type="checkbox" 
+                                                           name="rag_collections" value="{{ collection.id }}" 
+                                                           id="collection_{{ collection.id }}">
+                                                    <label class="form-check-label" for="collection_{{ collection.id }}">
+                                                        {{ collection.name }}
+                                                        <small class="text-muted d-block">
+                                                            {{ collection.total_documents }} док., {{ collection.total_vectors }} векторов
+                                                        </small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            Нет доступных коллекций. Сначала создайте коллекции и загрузите документы.
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Квантизация -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-arrow-down-up me-2"></i>Квантизация моделей
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="id_quantization" class="form-label">Тип квантизации (для всех моделей)</label>
+                                    <select name="quantization" id="id_quantization" class="form-select">
+                                        <option value="">--- Без квантизации (использовать настройки модели) ---</option>
+                                        <option value="float16">FP16 (половинная точность)</option>
+                                        <option value="bfloat16">BF16 (bfloat16)</option>
+                                        <option value="int8">INT8 (8‑бит)</option>
+                                        <option value="int4">INT4 (4‑бит)</option>
+                                    </select>
+                                    <div class="form-text">
+                                        Если выбрано, переопределит квантизацию моделей при загрузке в память.
+                                        Для 8/4‑бит требуется установленный bitsandbytes.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Параметры генерации -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-gear me-2"></i>Параметры генерации
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_max_tokens" class="form-label">Максимальное количество токенов</label>
+                                        <input type="number" name="max_tokens" class="form-control" 
+                                               id="id_max_tokens" value="512" min="1" max="4096">
+                                        <div class="form-text">Максимальная длина ответа в токенах</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_temperature" class="form-label">Температура</label>
+                                        <input type="number" name="temperature" class="form-control" 
+                                               id="id_temperature" value="0.7" step="0.1" min="0" max="2">
+                                        <div class="form-text">Контроль случайности (0.0-2.0)</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_top_p" class="form-label">Top P</label>
+                                        <input type="number" name="top_p" class="form-control" 
+                                               id="id_top_p" value="0.9" step="0.05" min="0" max="1">
+                                        <div class="form-text">Нуклеусная выборка (0.0-1.0)</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_top_k" class="form-label">Top K</label>
+                                        <input type="number" name="top_k" class="form-control" 
+                                               id="id_top_k" value="50" min="1" max="100">
+                                        <div class="form-text">Ограничение словаря (1-100)</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_repetition_penalty" class="form-label">Repetition Penalty</label>
+                                        <input type="number" name="repetition_penalty" class="form-control" 
+                                               id="id_repetition_penalty" value="1.0" step="0.1" min="0" max="2">
+                                        <div class="form-text">Штраф за повторения (0.0-2.0)</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Предустановки -->
+                                <div class="mt-3">
+                                    <h6 class="small text-muted mb-2">Предустановки:</h6>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setPreset('creative')">
+                                            Креативный
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setPreset('balanced')">
+                                            Сбалансированный
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setPreset('precise')">
+                                            Точный
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setPreset('fast')">
+                                            Быстрый
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Предпросмотр задачи -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-eye me-2"></i>Предпросмотр задачи
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card bg-dark border h-100">
+                                            <div class="card-body text-center">
+                                                <h5 id="previewModels">0</h5>
+                                                <small class="text-muted">Моделей</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card bg-dark border h-100">
+                                            <div class="card-body text-center">
+                                                <h5 id="previewQuestions">0</h5>
+                                                <small class="text-muted">Вопросов</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card bg-dark border h-100">
+                                            <div class="card-body text-center">
+                                                <h5 id="previewTime">0</h5>
+                                                <small class="text-muted">Минут</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <span id="previewMessage">Задача будет выполнена в фоновом режиме. Вы можете закрыть страницу после запуска.</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'evaluation_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Назад
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-outline-primary me-2" onclick="previewTask()">
+                                    <i class="bi bi-eye me-1"></i>Предпросмотр
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="bi bi-play-circle me-1"></i>Запустить оценку
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Показываем/скрываем блок коллекций при переключении RAG
+    const useRagCheckbox = document.getElementById('use_rag');
+    const ragCollectionsBlock = document.getElementById('ragCollectionsBlock');
+    
+    if (useRagCheckbox) {
+        useRagCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                ragCollectionsBlock.style.display = 'block';
+            } else {
+                ragCollectionsBlock.style.display = 'none';
+            }
+            updatePreview();
+        });
+    }
+    
+    // Обновляем предпросмотр при изменениях
+    document.getElementById('id_dataset').addEventListener('change', updatePreview);
+    document.getElementById('id_max_tokens').addEventListener('input', updatePreview);
+    
+    // Обработка выбора моделей
+    const modelCheckboxes = document.querySelectorAll('.model-checkbox');
+    modelCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updatePreview);
+    });
+    
+    // Обработка выбора коллекций
+    const collectionCheckboxes = document.querySelectorAll('.rag-collection-checkbox');
+    collectionCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updatePreview);
+    });
+    
+    // Инициализация предпросмотра
+    updatePreview();
+    
+    // Обработка отправки формы
+    const createTaskForm = document.getElementById('createTaskForm');
+    if (createTaskForm) {
+        createTaskForm.addEventListener('submit', function(e) {
+            // Проверяем, что выбрана хотя бы одна модель
+            const selectedModels = document.querySelectorAll('.model-checkbox:checked');
+            if (selectedModels.length === 0) {
+                e.preventDefault();
+                showToast('error', 'Ошибка', 'Выберите хотя бы одну модель');
+                return;
+            }
+            
+            // Проверяем, что выбран датасет
+            const datasetField = document.getElementById('id_dataset');
+            if (!datasetField.value) {
+                e.preventDefault();
+                showToast('error', 'Ошибка', 'Выберите датасет');
+                return;
+            }
+            
+            // Если включён RAG, проверяем, выбрана ли хотя бы одна коллекция
+            if (useRagCheckbox && useRagCheckbox.checked) {
+                const selectedCollections = document.querySelectorAll('.rag-collection-checkbox:checked');
+                if (selectedCollections.length === 0) {
+                    e.preventDefault();
+                    showToast('error', 'Ошибка', 'При использовании RAG выберите хотя бы одну коллекцию');
+                    return;
+                }
+            }
+            
+            // Показываем индикатор загрузки
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Запуск...';
+            
+            showLoading('Создание задачи оценки...');
+        });
+    }
+});
+
+function updatePreview() {
+    // Получаем выбранные модели
+    const selectedModels = document.querySelectorAll('.model-checkbox:checked');
+    const modelsCount = selectedModels.length;
+    
+    // Получаем выбранный датасет
+    const datasetField = document.getElementById('id_dataset');
+    const selectedOption = datasetField.options[datasetField.selectedIndex];
+    
+    // Получаем RAG статус
+    const useRag = document.getElementById('use_rag')?.checked || false;
+    const selectedCollections = document.querySelectorAll('.rag-collection-checkbox:checked');
+    const collectionsCount = selectedCollections.length;
+    
+    // Получаем квантизацию (не влияет на расчёт времени, но добавим для информации)
+    const quantization = document.getElementById('id_quantization')?.value || 'none';
+    
+    // Обновляем предпросмотр
+    document.getElementById('previewModels').textContent = modelsCount;
+    
+    if (selectedOption && selectedOption.value) {
+        const questionsCount = selectedOption.getAttribute('data-questions') || 0;
+        document.getElementById('previewQuestions').textContent = questionsCount;
+        
+        if (modelsCount > 0 && questionsCount > 0) {
+            // Примерная оценка: 2 секунды на ответ, с RAG немного дольше
+            const baseTime = modelsCount * questionsCount * 2;
+            const ragFactor = useRag ? 1.5 : 1.0;
+            const totalTimeMinutes = Math.ceil((baseTime * ragFactor) / 60);
+            document.getElementById('previewTime').textContent = totalTimeMinutes;
+            
+            let message = `Задача оценит ${modelsCount} моделей на ${questionsCount} вопросах. `;
+            if (useRag) {
+                message += `Будет использован RAG с ${collectionsCount} коллекциями. `;
+            }
+            if (quantization && quantization !== '') {
+                message += `Квантизация: ${quantization}. `;
+            }
+            message += `Примерное время выполнения: ${totalTimeMinutes} минут. `;
+            message += `Задача будет выполнена в фоновом режиме.`;
+            document.getElementById('previewMessage').textContent = message;
+        } else {
+            document.getElementById('previewQuestions').textContent = '0';
+            document.getElementById('previewTime').textContent = '0';
+            document.getElementById('previewMessage').textContent = 
+                'Выберите модели и датасет для предпросмотра задачи.';
+        }
+    } else {
+        document.getElementById('previewQuestions').textContent = '0';
+        document.getElementById('previewTime').textContent = '0';
+        document.getElementById('previewMessage').textContent = 
+            'Выберите датасет для предпросмотра задачи.';
+    }
+}
+
+function setPreset(preset) {
+    const presets = {
+        'creative': {
+            temperature: 0.9,
+            top_p: 0.95,
+            top_k: 60,
+            repetition_penalty: 1.1,
+            max_tokens: 1024
+        },
+        'balanced': {
+            temperature: 0.7,
+            top_p: 0.9,
+            top_k: 50,
+            repetition_penalty: 1.0,
+            max_tokens: 512
+        },
+        'precise': {
+            temperature: 0.3,
+            top_p: 0.8,
+            top_k: 40,
+            repetition_penalty: 1.2,
+            max_tokens: 256
+        },
+        'fast': {
+            temperature: 0.5,
+            top_p: 0.85,
+            top_k: 30,
+            repetition_penalty: 1.0,
+            max_tokens: 256
+        }
+    };
+    
+    const config = presets[preset];
+    if (config) {
+        document.getElementById('id_temperature').value = config.temperature;
+        document.getElementById('id_top_p').value = config.top_p;
+        document.getElementById('id_top_k').value = config.top_k;
+        document.getElementById('id_repetition_penalty').value = config.repetition_penalty;
+        document.getElementById('id_max_tokens').value = config.max_tokens;
+        
+        updatePreview();
+        showToast('success', 'Предустановка', `Применена предустановка "${preset}"`);
+    }
+}
+
+function previewTask() {
+    // Собираем данные для предпросмотра
+    const selectedModels = document.querySelectorAll('.model-checkbox:checked');
+    const modelsCount = selectedModels.length;
+    const datasetField = document.getElementById('id_dataset');
+    const datasetName = datasetField.options[datasetField.selectedIndex]?.text || 'Не выбран';
+    const useRag = document.getElementById('use_rag')?.checked || false;
+    const selectedCollections = document.querySelectorAll('.rag-collection-checkbox:checked');
+    const collectionsCount = selectedCollections.length;
+    const quantization = document.getElementById('id_quantization')?.value || 'не выбрана';
+    
+    if (modelsCount === 0) {
+        showToast('error', 'Ошибка', 'Выберите хотя бы одну модель');
+        return;
+    }
+    
+    if (!datasetField.value) {
+        showToast('error', 'Ошибка', 'Выберите датасет');
+        return;
+    }
+    
+    if (useRag && collectionsCount === 0) {
+        showToast('error', 'Ошибка', 'При использовании RAG выберите хотя бы одну коллекцию');
+        return;
+    }
+    
+    let ragInfo = '';
+    if (useRag) {
+        ragInfo = `<li>RAG: включен, выбрано коллекций: <strong>${collectionsCount}</strong></li>`;
+    }
+    
+    const modalContent = `
+        <div class="mb-3">
+            <h6>Детали задачи:</h6>
+            <ul class="mb-0">
+                <li>Моделей для оценки: <strong>${modelsCount}</strong></li>
+                ${ragInfo}
+                <li>Квантизация: <strong>${quantization}</strong></li>
+                <li>Датасет: <strong>${datasetName}</strong></li>
+                <li>Параметры генерации: 
+                    <span class="badge bg-dark">temp: ${document.getElementById('id_temperature').value}</span>
+                    <span class="badge bg-dark">top_p: ${document.getElementById('id_top_p').value}</span>
+                    <span class="badge bg-dark">max_tokens: ${document.getElementById('id_max_tokens').value}</span>
+                </li>
+            </ul>
+        </div>
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            После запуска задача будет выполняться в фоновом режиме. 
+            Вы можете отслеживать прогресс на странице задачи.
+        </div>
+    `;
+    
+    showCustomModal('Предпросмотр задачи', modalContent);
+}
+
+function showCustomModal(title, content) {
+    const modalId = 'customModal_' + Date.now();
+    const modalHtml = `
+        <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark">
+                    <div class="modal-header border-bottom">
+                        <h5 class="modal-title">${title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        ${content}
+                    </div>
+                    <div class="modal-footer border-top">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    const modalElement = document.getElementById(modalId);
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    
+    modalElement.addEventListener('hidden.bs.modal', function() {
+        modalElement.remove();
+    });
+}
+
+function showToast(type, title, message) {
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}:</strong> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    if (toastElement && typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+        toast.show();
+        
+        toastElement.addEventListener('hidden.bs.toast', function() {
+            toastElement.remove();
+        });
+    }
+}
+
+function showLoading(message = 'Загрузка...') {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loadingOverlay';
+    loadingDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+    loadingDiv.innerHTML = `
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">${message}</span>
+        </div>
+    `;
+    document.body.appendChild(loadingDiv);
+}
+
+function hideLoading() {
+    const loadingDiv = document.getElementById('loadingOverlay');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
+}
+</script>
+{% endblock %}

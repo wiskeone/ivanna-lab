@@ -1,0 +1,548 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Специфические стили для страницы чат-сессий */
+    .session-card {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        transition: all 0.2s ease;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    .session-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 154, 99, 0.15);
+    }
+    .session-header {
+        padding: 1rem 1.25rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .session-info {
+        flex: 1;
+    }
+    .session-title {
+        font-weight: 600;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.5rem;
+    }
+    .session-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+    .session-meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    .session-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    .session-details {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        background: rgba(0,0,0,0.2);
+        display: none;
+    }
+    .session-details.show {
+        display: block;
+    }
+    .stats-grid-sessions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .conversation-preview {
+        max-height: 300px;
+        overflow-y: auto;
+        background: rgba(0,0,0,0.2);
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    .message-preview {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.03);
+    }
+    .message-preview:last-child {
+        margin-bottom: 0;
+    }
+    .message-role {
+        font-weight: 600;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.25rem;
+    }
+    .message-content {
+        font-size: 0.85rem;
+        line-height: 1.4;
+        color: var(--text-primary);
+    }
+    .empty-state-sessions {
+        text-align: center;
+        padding: 3rem;
+        background: rgba(40,40,40,0.6);
+        border-radius: 24px;
+        border: 1px solid var(--border-color);
+    }
+    .model-selector {
+        background: rgba(0,0,0,0.2);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок и кнопки -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">{{ page_title }}</h2>
+            <p class="text-muted mb-0">Управление вашими диалогами с AI</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'chat_view' %}?force_new=true" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Новая сессия
+            </a>
+            <button class="action-link" onclick="window.location.reload()">
+                <i class="bi bi-arrow-repeat"></i> Обновить
+            </button>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    {% if sessions %}
+    <div class="stats-grid-sessions">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>
+                <div class="stat-title">Всего сессий</div>
+            </div>
+            <div class="stat-value">{{ total_sessions }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                <div class="stat-title">Активные</div>
+            </div>
+            <div class="stat-value">{{ active_sessions }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-cpu"></i></div>
+                <div class="stat-title">С загруженной моделью</div>
+            </div>
+            <div class="stat-value">{{ loaded_models_count }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Список сессий -->
+    {% if sessions %}
+        {% for session in sessions %}
+        <div class="session-card" data-session-id="{{ session.session_id }}">
+            <div class="session-header" onclick="toggleSessionDetails('{{ session.session_id }}')">
+                <div class="session-info">
+                    <div class="session-title">
+                        <span id="session-name-{{ session.session_id }}">{{ session.notes }}</span>
+                        <span class="embedding-status {% if session.model_loaded %}status-downloaded{% else %}status-failed{% endif %}">
+                            <i class="bi {% if session.model_loaded %}bi-check-circle{% else %}bi-exclamation-triangle{% endif %}"></i>
+                            {% if session.model_loaded %}Модель загружена{% else %}Модель не загружена{% endif %}
+                        </span>
+                    </div>
+                    <div class="session-meta">
+                        <span class="session-meta-item"><i class="bi bi-chat-text"></i> <span id="message-count-{{ session.session_id }}">{{ session.total_messages }}</span> сообщ.</span>
+                        <span class="session-meta-item"><i class="bi bi-hash"></i> <span id="token-count-{{ session.session_id }}">{{ session.total_tokens }}</span> токенов</span>
+                        <span class="session-meta-item"><i class="bi bi-clock"></i> {{ session.last_activity|date:"d.m.Y H:i" }}</span>
+                        {% if session.model_name %}
+                        <span class="session-meta-item"><i class="bi bi-cpu"></i> <span id="model-name-{{ session.session_id }}">{{ session.model_name }}</span></span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="session-actions" onclick="event.stopPropagation()">
+                    <a href="{% url 'chat_session' session_id=session.session_id %}" class="action-link" title="Перейти в чат">
+                        <i class="bi bi-chat-dots"></i> Чат
+                    </a>
+                    <button class="action-link rename-btn" data-session-id="{{ session.session_id }}" data-current-name="{{ session.notes }}" title="Переименовать">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="action-link danger delete-btn" data-session-id="{{ session.session_id }}" data-session-name="{{ session.notes }}" title="Удалить">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="session-details" id="details-{{ session.session_id }}">
+                <div class="details-grid">
+                    <div class="model-meta-item"><span class="model-meta-label">ID сессии</span><span class="model-meta-value">{{ session.session_id|truncatechars:30 }}</span></div>
+                    <div class="model-meta-item"><span class="model-meta-label">Создана</span><span class="model-meta-value">{{ session.created_at|date:"d.m.Y H:i" }}</span></div>
+                    <div class="model-meta-item"><span class="model-meta-label">Последняя активность</span><span class="model-meta-value">{{ session.last_activity|date:"d.m.Y H:i" }}</span></div>
+                </div>
+
+                {% if available_models %}
+                <div class="model-selector">
+                    <label class="form-label small text-muted mb-2">Сменить модель:</label>
+                    <select class="form-select form-select-sm session-model-select" data-session-id="{{ session.session_id }}" style="max-width: 300px;">
+                        <option value="">-- Выберите модель --</option>
+                        {% for model in available_models %}
+                            <option value="{{ model.id }}" {% if session.model_id == model.id %}selected{% endif %} {% if not model.is_loaded_in_memory_cache %}disabled{% endif %}>
+                                {{ model.display_name }} {% if model.is_loaded_in_memory_cache %}✓{% else %}(не загружена){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <h6 class="mb-2">История диалога:</h6>
+                <div class="conversation-preview" id="conversation-{{ session.session_id }}">
+                    <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Загрузка...</div>
+                </div>
+                <div class="mt-2 d-flex gap-2">
+                    <button class="action-link refresh-history" data-session-id="{{ session.session_id }}">
+                        <i class="bi bi-arrow-repeat"></i> Обновить
+                    </button>
+                    <button class="action-link clear-history" data-session-id="{{ session.session_id }}">
+                        <i class="bi bi-brush"></i> Очистить историю
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state-sessions">
+            <div class="empty-state-icon"><i class="bi bi-chat-dots"></i></div>
+            <h3 class="mt-3">Нет активных сессий</h3>
+            <p class="text-muted">Создайте новую сессию для начала диалога</p>
+            <a href="{% url 'chat_view' %}?force_new=true" class="btn btn-primary mt-2">
+                <i class="bi bi-plus-circle me-1"></i> Создать сессию
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно переименования -->
+<div class="modal fade" id="renameModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title">Переименовать сессию</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control" id="newSessionName" placeholder="Название сессии">
+            </div>
+            <div class="modal-footer border-top">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-primary" id="confirmRenameBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title text-danger">Удаление сессии</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Удалить сессию <strong id="deleteSessionName"></strong>?</p>
+                <p class="text-muted small">Все сообщения будут удалены без возможности восстановления.</p>
+            </div>
+            <div class="modal-footer border-top">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ============================================================================
+    // Утилиты
+    // ============================================================================
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('[name="csrfmiddlewaretoken"]');
+        return csrfInput ? csrfInput.value : '';
+    }
+
+    function showToast(title, message, type = 'info') {
+        const toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) return;
+        const toastId = 'toast-' + Date.now();
+        const icons = { success: 'bi-check-circle', error: 'bi-exclamation-circle', warning: 'bi-exclamation-triangle', info: 'bi-info-circle' };
+        const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+        const html = `
+            <div class="toast align-items-center text-bg-${bgClass} border-0" id="${toastId}" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body"><i class="bi ${icons[type]} me-2"></i>${title}<br><small>${message}</small></div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        toastContainer.insertAdjacentHTML('beforeend', html);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    // ============================================================================
+    // Загрузка истории
+    // ============================================================================
+    async function loadConversationHistory(sessionId) {
+        const container = document.getElementById(`conversation-${sessionId}`);
+        if (!container) {
+            console.error('Container not found for session', sessionId);
+            return;
+        }
+        try {
+            const response = await fetch(`/api/chat/sessions/${sessionId}/preview/`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (data.success && data.messages && data.messages.length > 0) {
+                let html = '';
+                data.messages.forEach(msg => {
+                    const content = msg.content.length > 200 ? msg.content.substring(0, 200) + '...' : msg.content;
+                    html += `
+                        <div class="message-preview">
+                            <div class="message-role">${msg.role === 'user' ? 'Вы' : 'Ассистент'}</div>
+                            <div class="message-content">${escapeHtml(content)}</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center text-muted py-3">История диалога пуста</div>';
+            }
+        } catch (error) {
+            console.error('Error loading conversation:', error);
+            container.innerHTML = '<div class="text-center text-danger py-3">Ошибка загрузки истории</div>';
+        }
+    }
+
+    // ============================================================================
+    // Управление сессиями
+    // ============================================================================
+    let currentSessionId = null;
+    let renameModal, deleteModal;
+
+    function toggleSessionDetails(sessionId) {
+        const details = document.getElementById(`details-${sessionId}`);
+        if (details) {
+            details.classList.toggle('show');
+            if (details.classList.contains('show')) {
+                loadConversationHistory(sessionId);
+            }
+        }
+    }
+
+    async function renameSession(sessionId, newName) {
+        try {
+            const resp = await fetch(`/chat/sessions/${sessionId}/rename/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRFToken() },
+                body: `name=${encodeURIComponent(newName)}`
+            });
+            const data = await resp.json();
+            if (data.success) {
+                document.getElementById(`session-name-${sessionId}`).textContent = newName;
+                const renameBtn = document.querySelector(`.rename-btn[data-session-id="${sessionId}"]`);
+                if (renameBtn) renameBtn.dataset.currentName = newName;
+                showToast('Успех', 'Сессия переименована', 'success');
+                return true;
+            } else {
+                showToast('Ошибка', data.error || 'Не удалось переименовать', 'error');
+                return false;
+            }
+        } catch (err) {
+            showToast('Ошибка', err.message, 'error');
+            return false;
+        }
+    }
+
+    async function deleteSession(sessionId, sessionName) {
+        try {
+            const resp = await fetch(`/chat/sessions/${sessionId}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRFToken() }
+            });
+            const data = await resp.json();
+            if (data.success) {
+                const card = document.querySelector(`.session-card[data-session-id="${sessionId}"]`);
+                if (card) card.remove();
+                showToast('Удалено', `Сессия "${sessionName}" удалена`, 'success');
+                if (!document.querySelector('.session-card')) location.reload();
+                return true;
+            } else {
+                showToast('Ошибка', data.error || 'Не удалось удалить', 'error');
+                return false;
+            }
+        } catch (err) {
+            showToast('Ошибка', err.message, 'error');
+            return false;
+        }
+    }
+
+    async function changeModel(sessionId, modelId) {
+        try {
+            const resp = await fetch(`/chat/sessions/${sessionId}/change-model/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRFToken() },
+                body: `model_id=${modelId}`
+            });
+            const data = await resp.json();
+            if (data.success) {
+                showToast('Модель изменена', `Теперь используется ${data.new_model_name}`, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('Ошибка', data.error || 'Не удалось сменить модель', 'error');
+                const select = document.querySelector(`.session-model-select[data-session-id="${sessionId}"]`);
+                if (select) select.value = '';
+            }
+        } catch (err) {
+            showToast('Ошибка', err.message, 'error');
+        }
+    }
+
+    async function clearChatHistory(sessionId) {
+        if (!confirm('Очистить историю диалога? Это действие нельзя отменить.')) return;
+        try {
+            const resp = await fetch(`/chat/sessions/${sessionId}/clear/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRFToken() }
+            });
+            const data = await resp.json();
+            if (data.success) {
+                document.getElementById(`message-count-${sessionId}`).textContent = '0';
+                document.getElementById(`token-count-${sessionId}`).textContent = '0';
+                document.getElementById(`conversation-${sessionId}`).innerHTML = '<div class="text-center text-muted py-3">История очищена</div>';
+                showToast('Готово', 'История диалога очищена', 'success');
+            } else {
+                showToast('Ошибка', data.error || 'Не удалось очистить историю', 'error');
+            }
+        } catch (err) {
+            showToast('Ошибка', err.message, 'error');
+        }
+    }
+
+    // ============================================================================
+    // Инициализация
+    // ============================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
+        deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+
+        // Переименование
+        document.querySelectorAll('.rename-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentSessionId = btn.dataset.sessionId;
+                const currentName = btn.dataset.currentName;
+                document.getElementById('newSessionName').value = currentName;
+                renameModal.show();
+            });
+        });
+
+        document.getElementById('confirmRenameBtn').addEventListener('click', async () => {
+            const newName = document.getElementById('newSessionName').value.trim();
+            if (!newName) {
+                showToast('Внимание', 'Введите название сессии', 'warning');
+                return;
+            }
+            await renameSession(currentSessionId, newName);
+            renameModal.hide();
+        });
+
+        // Удаление
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentSessionId = btn.dataset.sessionId;
+                document.getElementById('deleteSessionName').textContent = btn.dataset.sessionName;
+                deleteModal.show();
+            });
+        });
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            const sessionName = document.getElementById('deleteSessionName').textContent;
+            await deleteSession(currentSessionId, sessionName);
+            deleteModal.hide();
+        });
+
+        // Смена модели
+        document.querySelectorAll('.session-model-select').forEach(select => {
+            select.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const sessionId = select.dataset.sessionId;
+                const modelId = select.value;
+                if (modelId) changeModel(sessionId, modelId);
+            });
+        });
+
+        // Обновление истории
+        document.querySelectorAll('.refresh-history').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const sessionId = btn.dataset.sessionId;
+                loadConversationHistory(sessionId);
+            });
+        });
+
+        // Очистка истории
+        document.querySelectorAll('.clear-history').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const sessionId = btn.dataset.sessionId;
+                clearChatHistory(sessionId);
+            });
+        });
+
+        // Enter в модальном окне
+        document.getElementById('newSessionName').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('confirmRenameBtn').click();
+        });
+    });
+</script>
+{% endblock %}

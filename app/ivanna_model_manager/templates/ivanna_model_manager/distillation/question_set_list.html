@@ -1,0 +1,523 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Наборы вопросов — Дистилляция{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-set-card {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid #444;
+        border-radius: 16px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .question-set-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(107, 70, 193, 0.2);
+    }
+    .card-header-row {
+        padding: 20px 20px 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: white;
+        margin: 0;
+        line-height: 1.3;
+    }
+    .card-badges {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+        margin-left: 12px;
+    }
+    .card-body-custom {
+        padding: 16px 20px;
+        flex: 1;
+    }
+    .description {
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+        line-height: 1.4;
+        font-size: 0.9rem;
+    }
+    .stat-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .stat-item {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 6px 12px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+    .stat-item i {
+        color: var(--primary-color);
+        font-size: 0.9rem;
+    }
+    .embedding-info {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 12px;
+        margin-top: 12px;
+        font-size: 0.75rem;
+        border-left: 2px solid var(--primary-color);
+    }
+    .embedding-info .label {
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .embedding-info .value {
+        color: white;
+        word-break: break-word;
+    }
+    .card-footer-custom {
+        padding: 12px 20px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+    .delete-set-btn {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 30px;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+    }
+    .delete-set-btn:hover {
+        background: rgba(220, 53, 69, 0.2);
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+    .filter-section {
+        background: rgba(40, 40, 40, 0.6);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 28px;
+        backdrop-filter: blur(4px);
+    }
+    .btn-filter {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        border: none;
+        transition: transform 0.2s;
+    }
+    .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 70, 193, 0.3);
+    }
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: rgba(40,40,40,0.6);
+        border-radius: 24px;
+        border: 1px solid #444;
+    }
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        opacity: 0.7;
+    }
+    .empty-state h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+    .empty-state p {
+        color: var(--text-secondary);
+        max-width: 500px;
+        margin: 0 auto 24px;
+    }
+    .pagination .page-link {
+        background: rgba(0,0,0,0.3);
+        border-color: rgba(255,255,255,0.1);
+        color: var(--text-secondary);
+    }
+    .pagination .page-link:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    .pagination .active .page-link {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    .badge-status {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+    .badge-collection {
+        background: rgba(107, 70, 193, 0.2);
+        color: #a78bfa;
+        border: 1px solid rgba(107, 70, 193, 0.3);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-question-diamond me-2" style="color: var(--primary-color);"></i>
+                Наборы вопросов
+            </h2>
+            <p class="text-muted mb-0">Создавайте наборы из документов и генерируйте вопросы для дистилляции</p>
+        </div>
+        <a href="{% url 'distillation_question_set_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Создать набор
+        </a>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filter-section">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" name="q" class="form-control" value="{{ request.GET.q }}" placeholder="Название набора...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Статус</label>
+                <select name="status" class="form-select">
+                    <option value="">Все</option>
+                    <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>В ожидании</option>
+                    <option value="RUNNING" {% if request.GET.status == 'RUNNING' %}selected{% endif %}>Выполняется</option>
+                    <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Завершено</option>
+                    <option value="FAILED" {% if request.GET.status == 'FAILED' %}selected{% endif %}>Ошибка</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Коллекция</label>
+                <select name="collection" class="form-select">
+                    <option value="">Все</option>
+                    {% for coll in collections %}
+                    <option value="{{ coll.id }}" {% if request.GET.collection == coll.id|stringformat:"s" %}selected{% endif %}>{{ coll.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-filter w-100">
+                    <i class="bi bi-funnel me-1"></i> Применить
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Список наборов -->
+    {% if page_obj %}
+    <div class="row g-4">
+        {% for qset in page_obj %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="question-set-card" data-set-id="{{ qset.id }}">
+                <div class="card-header-row">
+                    <div class="card-title">{{ qset.name }}</div>
+                    <div class="card-badges">
+                        <span class="badge-status 
+                            {% if qset.status == 'COMPLETED' %}bg-success
+                            {% elif qset.status == 'RUNNING' %}bg-primary
+                            {% elif qset.status == 'FAILED' %}bg-danger
+                            {% else %}bg-secondary{% endif %}">
+                            {{ qset.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-body-custom">
+                    {% if qset.description %}
+                    <div class="description">{{ qset.description|truncatechars:120 }}</div>
+                    {% endif %}
+
+                    <div class="stat-grid">
+                        <div class="stat-item" title="Группы чанков">
+                            <i class="bi bi-grid-3x3-gap-fill"></i>
+                            <span>{{ qset.groups.count }}</span> групп
+                        </div>
+                        <div class="stat-item" title="Всего вопросов">
+                            <i class="bi bi-question-circle-fill"></i>
+                            <span>{{ qset.questions.count }}</span> вопросов
+                        </div>
+                    </div>
+
+                    {% if qset.collection %}
+                    <div class="embedding-info">
+                        <div class="label">📄 Коллекция</div>
+                        <div class="value mb-2">{{ qset.collection.name }}</div>
+                        <div class="stat-grid" style="margin-bottom: 0; gap: 8px;">
+                            <div class="stat-item" style="background: rgba(0,0,0,0.2);">
+                                <i class="bi bi-file-text"></i> {{ qset.collection.total_documents }} док.
+                            </div>
+                            <div class="stat-item" style="background: rgba(0,0,0,0.2);">
+                                <i class="bi bi-layout-text-window"></i> {{ qset.collection.total_chunks }} чанков
+                            </div>
+                        </div>
+                        {% if qset.collection.embedding_model %}
+                        <div class="mt-2">
+                            <div class="label">🧠 Модель эмбеддингов</div>
+                            <div class="value small">{{ qset.collection.embedding_model.display_name|default:qset.collection.embedding_model.name }}</div>
+                            <div class="small text-muted">размерность: {{ qset.collection.embedding_model.embedding_dim }}d</div>
+                        </div>
+                        {% else %}
+                        <div class="small text-warning mt-1">
+                            <i class="bi bi-exclamation-triangle"></i> Модель эмбеддингов не выбрана
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer-custom">
+                    <span>
+                        <i class="bi bi-calendar"></i> {{ qset.created_at|date:"d.m.Y" }}
+                    </span>
+                    <button class="delete-set-btn" data-id="{{ qset.id }}" data-name="{{ qset.name|escapejs }}">
+                        <i class="bi bi-trash me-1"></i> Удалить
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.collection %}&collection={{ request.GET.collection }}{% endif %}">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.collection %}&collection={{ request.GET.collection }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.collection %}&collection={{ request.GET.collection }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.collection %}&collection={{ request.GET.collection }}{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.collection %}&collection={{ request.GET.collection }}{% endif %}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="bi bi-folder-x"></i>
+        </div>
+        <h3>Нет наборов вопросов</h3>
+        <p>Создайте первый набор для генерации вопросов из документов вашей коллекции.</p>
+        <a href="{% url 'distillation_question_set_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Создать набор
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteSetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Удаление набора
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить набор <strong id="deleteSetName"></strong>?</p>
+                <p class="text-muted small mb-0">Все группы, вопросы и связанные данные будут удалены без возможности восстановления.</p>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash me-1"></i> Удалить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let setIdToDelete = null;
+    let setNameToDelete = null;
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message, type = 'info') {
+        if (typeof window.showGlobalToast === 'function') {
+            window.showGlobalToast(message, type);
+            return;
+        }
+        const toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            const container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1060';
+            document.body.appendChild(container);
+        }
+        const toastId = 'toast-' + Date.now();
+        const icons = {
+            success: 'bi-check-circle',
+            error: 'bi-exclamation-circle',
+            warning: 'bi-exclamation-triangle',
+            info: 'bi-info-circle'
+        };
+        const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+        const toastHtml = `
+            <div class="toast align-items-center text-bg-${bgClass} border-0" id="${toastId}" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${icons[type] || icons.info} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        document.getElementById('toastContainer').insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    function deleteQuestionSet(setId, setName) {
+        fetch(`/api/distillation/questionsets/${setId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showToast(`Набор "${setName}" удалён`, 'success');
+                const card = document.querySelector(`.question-set-card[data-set-id="${setId}"]`);
+                if (card) card.remove();
+                if (document.querySelectorAll('.question-set-card').length === 0) {
+                    location.reload(); // перезагрузка для показа empty-state
+                }
+            } else {
+                return response.json().then(data => { throw new Error(data.error || 'Ошибка удаления'); });
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            showToast(error.message, 'error');
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteBtns = document.querySelectorAll('.delete-set-btn');
+        const modal = new bootstrap.Modal(document.getElementById('deleteSetModal'));
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+        deleteBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                setIdToDelete = btn.dataset.id;
+                setNameToDelete = btn.dataset.name;
+                document.getElementById('deleteSetName').textContent = setNameToDelete;
+                modal.show();
+            });
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            if (setIdToDelete) {
+                deleteQuestionSet(setIdToDelete, setNameToDelete);
+                modal.hide();
+                setIdToDelete = null;
+                setNameToDelete = null;
+            }
+        });
+
+        // Клик по карточке для перехода на детальную страницу (кроме кнопки)
+        document.querySelectorAll('.question-set-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.delete-set-btn')) return;
+                const setId = card.dataset.setId;
+                if (setId) {
+                    window.location.href = `/questionsets/${setId}/`;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

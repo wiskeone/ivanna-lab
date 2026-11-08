@@ -1,0 +1,34 @@
+# ═══ секреты и окружение ═══
+.env
+.env.*
+!.env.example
+
+# ═══ Python ═══
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# ═══ кэши моделей и данные (гигабайты — не в git) ═══
+app/.cache/
+app/models/
+app/media/
+app/data/
+media/
+data/
+docker_volumes/
+
+# ═══ логи и стейт ═══
+app/logs/
+nginx/logs/
+*.log
+celerybeat-schedule*
+app/0
+
+# ═══ разное ═══
+*.sqlite3
+.DS_Store
+docker-compose.yml.patch
+*.patch
+app/fix_document_paths.py

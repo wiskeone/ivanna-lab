@@ -1,0 +1,347 @@
+{% extends 'ivanna_model_manager/base.html' %}
+
+{% block title %}Создание коллекции - RAG - Ivanna Lab{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-folder-plus"></i> Создание новой коллекции документов
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Что такое коллекция документов?</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Коллекция группирует связанные документы по теме, проекту или пользователю</li>
+                            <li>Вы можете создавать разные коллекции для разных типов документов</li>
+                            <li>Настройки коллекции определяют, как документы будут обрабатываться</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post" id="collection-form">
+                        {% csrf_token %}
+                        
+                        <input type="hidden" name="next" value="{{ request.GET.next|default:'detail' }}">
+                        
+                        <!-- Основная информация -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">
+                                <i class="bi bi-info-circle"></i> Основная информация
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Название коллекции *</label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                <div class="text-danger small">{{ form.name.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Дайте коллекции понятное название</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Описание</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Опишите назначение и содержание коллекции</div>
+                            </div>
+                            
+                            {% if request.user.is_staff %}
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.is_public }}
+                                    <label class="form-check-label fw-bold" for="{{ form.is_public.id_for_label }}">
+                                        Публичная коллекция
+                                    </label>
+                                    <div class="form-text">{{ form.is_public.help_text }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Настройки обработки -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">
+                                <i class="bi bi-gear"></i> Настройки обработки документов
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Стратегия разделения *</label>
+                                    {{ form.chunking_strategy }}
+                                    {% if form.chunking_strategy.errors %}
+                                    <div class="text-danger small">{{ form.chunking_strategy.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        <small>
+                                            <strong>Рекурсивное</strong> - по структуре документа<br>
+                                            <strong>Семантическое</strong> - по смыслу<br>
+                                            <strong>Фиксированный</strong> - по размеру<br>
+                                            <strong>По параграфам</strong> - по абзацам
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.auto_process }}
+                                        <label class="form-check-label fw-bold" for="{{ form.auto_process.id_for_label }}">
+                                            Автоматическая обработка
+                                        </label>
+                                        <div class="form-text">Автоматически обрабатывать новые документы</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Размер чанка (символов) *</label>
+                                    {{ form.chunk_size }}
+                                    {% if form.chunk_size.errors %}
+                                    <div class="text-danger small">{{ form.chunk_size.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.chunk_size.help_text }}</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Перекрытие чанков (символов) *</label>
+                                    {{ form.chunk_overlap }}
+                                    {% if form.chunk_overlap.errors %}
+                                    <div class="text-danger small">{{ form.chunk_overlap.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.chunk_overlap.help_text }}</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Визуализация чанков -->
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-eye"></i> Визуализация разделения на чанки
+                                    </h6>
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <small>Размер чанка: <span id="chunk-size-display">1000</span> символов</small>
+                                            <small class="ms-auto">Перекрытие: <span id="chunk-overlap-display">200</span> символов</small>
+                                        </div>
+                                        <div class="chunk-visualization mb-3">
+                                            <div class="document-bar" style="height: 20px; background: #e9ecef; position: relative;">
+                                                <div class="chunk" style="position: absolute; left: 0; width: 50%; height: 100%; background: #0d6efd; opacity: 0.7;"></div>
+                                                <div class="chunk" style="position: absolute; left: 40%; width: 50%; height: 100%; background: #0d6efd; opacity: 0.7;"></div>
+                                                <div class="overlap" style="position: absolute; left: 40%; width: 10%; height: 100%; background: #198754; opacity: 0.5;"></div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mt-1">
+                                                <small>Чанк 1</small>
+                                                <small>Перекрытие</small>
+                                                <small>Чанк 2</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-text small">
+                                            <i class="bi bi-lightbulb"></i> Перекрытие помогает сохранить контекст между фрагментами текста
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'rag_collection_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                            
+                            <div>
+                                <button type="submit" name="action" value="create" class="btn btn-success">
+                                    <i class="bi bi-check-circle"></i> Создать коллекцию
+                                </button>
+                                
+                                <button type="submit" name="action" value="create_and_add" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> Создать и добавить документы
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-check"></i> 
+                                Ваши данные защищены
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small class="text-muted">
+                                <i class="bi bi-collection"></i>
+                                Коллекций у вас: {{ user_collections.count }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Советы -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightbulb"></i> Рекомендации по настройке
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-primary">
+                                        <i class="bi bi-file-text"></i> Текстовые документы
+                                    </h6>
+                                    <p class="card-text small">
+                                        <strong>Рекомендуемые настройки:</strong>
+                                        <ul class="small mb-0">
+                                            <li>Стратегия: Рекурсивное</li>
+                                            <li>Размер чанка: 1000</li>
+                                            <li>Перекрытие: 200</li>
+                                        </ul>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-primary">
+                                        <i class="bi bi-file-earmark-pdf"></i> PDF/Документы
+                                    </h6>
+                                    <p class="card-text small">
+                                        <strong>Рекомендуемые настройки:</strong>
+                                        <ul class="small mb-0">
+                                            <li>Стратегия: По параграфам</li>
+                                            <li>Размер чанка: 1500</li>
+                                            <li>Перекрытие: 300</li>
+                                        </ul>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-primary">
+                                        <i class="bi bi-code-slash"></i> Код/Техническая документация
+                                    </h6>
+                                    <p class="card-text small">
+                                        <strong>Рекомендуемые настройки:</strong>
+                                        <ul class="small mb-0">
+                                            <li>Стратегия: Фиксированный</li>
+                                            <li>Размер чанка: 2000</li>
+                                            <li>Перекрытие: 400</li>
+                                        </ul>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Обновление визуализации при изменении значений
+    const chunkSizeInput = document.getElementById('{{ form.chunk_size.id_for_label }}');
+    const chunkOverlapInput = document.getElementById('{{ form.chunk_overlap.id_for_label }}');
+    const chunkSizeDisplay = document.getElementById('chunk-size-display');
+    const chunkOverlapDisplay = document.getElementById('chunk-overlap-display');
+    
+    function updateVisualization() {
+        const chunkSize = parseInt(chunkSizeInput.value) || 1000;
+        const chunkOverlap = parseInt(chunkOverlapInput.value) || 200;
+        
+        // Обновляем отображение
+        chunkSizeDisplay.textContent = chunkSize;
+        chunkOverlapDisplay.textContent = chunkOverlap;
+        
+        // Валидация
+        if (chunkOverlap >= chunkSize) {
+            chunkOverlapInput.classList.add('is-invalid');
+            document.getElementById('submit-button').disabled = true;
+        } else {
+            chunkOverlapInput.classList.remove('is-invalid');
+            document.getElementById('submit-button').disabled = false;
+        }
+    }
+    
+    // Слушаем изменения
+    chunkSizeInput.addEventListener('input', updateVisualization);
+    chunkOverlapInput.addEventListener('input', updateVisualization);
+    
+    // Инициализация
+    updateVisualization();
+    
+    // Обработка разных кнопок отправки
+    const form = document.getElementById('collection-form');
+    form.addEventListener('submit', function(e) {
+        const submitButton = e.submitter;
+        if (submitButton && submitButton.name === 'action') {
+            // Добавляем скрытое поле с action
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = submitButton.value;
+            form.appendChild(actionInput);
+        }
+    });
+    
+    // Подсказки для стратегий
+    const strategySelect = document.getElementById('{{ form.chunking_strategy.id_for_label }}');
+    strategySelect.addEventListener('change', function() {
+        const strategy = this.value;
+        const recommendations = {
+            'recursive': { size: 1000, overlap: 200 },
+            'semantic': { size: 1500, overlap: 300 },
+            'fixed': { size: 2000, overlap: 400 },
+            'paragraph': { size: 1500, overlap: 300 }
+        };
+        
+        if (recommendations[strategy]) {
+            chunkSizeInput.value = recommendations[strategy].size;
+            chunkOverlapInput.value = recommendations[strategy].overlap;
+            updateVisualization();
+        }
+    });
+});
+</script>
+
+<style>
+.chunk-visualization {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+.document-bar {
+    border-radius: 3px;
+    overflow: hidden;
+}
+.chunk {
+    border-radius: 2px;
+}
+.overlap {
+    border-radius: 2px;
+}
+</style>
+{% endblock %}

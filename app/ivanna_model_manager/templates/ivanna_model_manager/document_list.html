@@ -1,0 +1,468 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load custom_filters %}
+
+{% block title %}
+{% if collection %}{{ collection.name }} - Документы{% else %}Все документы{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок и кнопки -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-files me-2" style="color: var(--primary-color);"></i>
+                {% if collection %}
+                Документы: {{ collection.name }}
+                {% else %}
+                Все документы
+                {% endif %}
+            </h2>
+            {% if collection %}
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'rag_collection_list' %}">Коллекции</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'rag_collection_detail' collection.id %}">{{ collection.name|truncatechars:30 }}</a></li>
+                    <li class="breadcrumb-item active">Документы</li>
+                </ol>
+            </nav>
+            {% endif %}
+        </div>
+        <div>
+            <div class="btn-group">
+                <a href="{% url 'rag_upload_documents' %}" class="btn btn-primary">
+                    <i class="bi bi-upload"></i> Загрузить
+                </a>
+                <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+                    <span class="visually-hidden">Меню</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    {% if page_obj and page_obj.object_list %}
+                    <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#bulkActionModal">
+                            <i class="bi bi-check-square"></i> Массовые действия
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    {% endif %}
+                    <li>
+                        <a class="dropdown-item" href="{% url 'rag_chat' %}">
+                            <i class="bi bi-chat"></i> RAG Чат
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="filter-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" class="form-control" name="q" value="{{ filters.q }}" placeholder="Название, описание...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Статус</label>
+                <select class="form-select" name="status">
+                    <option value="">Все статусы</option>
+                    <option value="UPLOADED" {% if filters.status == 'UPLOADED' %}selected{% endif %}>Загружен</option>
+                    <option value="PROCESSING" {% if filters.status == 'PROCESSING' %}selected{% endif %}>Обрабатывается</option>
+                    <option value="INDEXED" {% if filters.status == 'INDEXED' %}selected{% endif %}>Проиндексирован</option>
+                    <option value="ERROR" {% if filters.status == 'ERROR' %}selected{% endif %}>Ошибка</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Тип</label>
+                <select class="form-select" name="type">
+                    <option value="">Все типы</option>
+                    <option value="PDF" {% if filters.type == 'PDF' %}selected{% endif %}>PDF</option>
+                    <option value="DOCX" {% if filters.type == 'DOCX' %}selected{% endif %}>Word</option>
+                    <option value="TXT" {% if filters.type == 'TXT' %}selected{% endif %}>Text</option>
+                    <option value="HTML" {% if filters.type == 'HTML' %}selected{% endif %}>HTML</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Сортировка</label>
+                <select class="form-select" name="sort">
+                    <option value="-uploaded_at" {% if filters.sort == '-uploaded_at' %}selected{% endif %}>Сначала новые</option>
+                    <option value="uploaded_at" {% if filters.sort == 'uploaded_at' %}selected{% endif %}>Сначала старые</option>
+                    <option value="title" {% if filters.sort == 'title' %}selected{% endif %}>По названию (А-Я)</option>
+                    <option value="-title" {% if filters.sort == '-title' %}selected{% endif %}>По названию (Я-А)</option>
+                    <option value="file_size_mb" {% if filters.sort == 'file_size_mb' %}selected{% endif %}>По размеру (↑)</option>
+                    <option value="-file_size_mb" {% if filters.sort == '-file_size_mb' %}selected{% endif %}>По размеру (↓)</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-filter">
+                        <i class="bi bi-funnel me-1"></i> Применить фильтры
+                    </button>
+                    <a href="{% if collection %}{% url 'document_list' collection.id %}{% else %}{% url 'document_list' %}{% endif %}" class="action-link">
+                        <i class="bi bi-x-circle"></i> Сбросить
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats-grid mb-4">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-files"></i></div>
+                <div class="stat-title">Всего</div>
+            </div>
+            <div class="stat-value">{{ stats.total }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-hdd"></i></div>
+                <div class="stat-title">Размер</div>
+            </div>
+            <div class="stat-value">{{ stats.total_size_mb|floatformat:1 }} MB</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                <div class="stat-title">Проиндексировано</div>
+            </div>
+            <div class="stat-value">
+                {% for stat in stats.by_status %}{% if stat.status == 'INDEXED' %}{{ stat.count }}{% endif %}{% endfor %}
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="stat-title">Ошибок</div>
+            </div>
+            <div class="stat-value">
+                {% for stat in stats.by_status %}{% if stat.status == 'ERROR' %}{{ stat.count }}{% endif %}{% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Список документов (карточки) -->
+    {% if page_obj and page_obj.object_list %}
+    <div class="row g-4">
+        {% for document in page_obj %}
+        <div class="col-md-6 col-xl-4">
+            <div class="model-card" data-document-id="{{ document.id }}">
+                <div class="model-header">
+                    <div class="model-name">
+                        {% if document.document_type == 'PDF' %}
+                        <i class="bi bi-file-pdf text-danger"></i>
+                        {% elif document.document_type == 'DOCX' %}
+                        <i class="bi bi-file-word text-primary"></i>
+                        {% elif document.document_type == 'TXT' %}
+                        <i class="bi bi-file-text text-secondary"></i>
+                        {% elif document.document_type == 'HTML' %}
+                        <i class="bi bi-file-code text-success"></i>
+                        {% else %}
+                        <i class="bi bi-file-earmark"></i>
+                        {% endif %}
+                        {{ document.title|truncatechars:40 }}
+                    </div>
+                    <span class="model-badge">{{ document.document_type|default:"DOC" }}</span>
+                </div>
+                <div class="model-body">
+                    <div class="model-meta-item">
+                        <span class="model-meta-label">Файл</span>
+                        <span class="model-meta-value">{{ document.original_filename|truncatechars:30 }}</span>
+                    </div>
+                    <div class="model-meta-item">
+                        <span class="model-meta-label">Коллекция</span>
+                        <span class="model-meta-value">
+                            {% if document.collection %}
+                            <a href="{% url 'rag_collection_detail' document.collection.id %}" class="action-link">{{ document.collection.name|truncatechars:20 }}</a>
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        </span>
+                    </div>
+                    <div class="model-meta-item">
+                        <span class="model-meta-label">Размер</span>
+                        <span class="model-meta-value">{{ document.file_size_mb|floatformat:1 }} MB</span>
+                    </div>
+                    <div class="model-meta-item">
+                        <span class="model-meta-label">Дата</span>
+                        <span class="model-meta-value">{{ document.uploaded_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+
+                    <!-- Статус -->
+                    <div class="mt-3">
+                        {% if document.status == 'INDEXED' %}
+                        <span class="embedding-status status-downloaded"><i class="bi bi-check-circle"></i> Готов</span>
+                        {% elif document.status == 'PROCESSING' %}
+                        <span class="embedding-status status-downloading"><i class="bi bi-hourglass-split"></i> Обработка</span>
+                        {% if document.processing_progress > 0 %}
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar" style="width: {{ document.processing_progress }}%"></div>
+                        </div>
+                        {% endif %}
+                        {% elif document.status == 'ERROR' %}
+                        <span class="embedding-status status-failed"><i class="bi bi-x-circle"></i> Ошибка</span>
+                        {% if document.error_message %}
+                        <div class="small text-danger mt-1" title="{{ document.error_message }}">{{ document.error_message|truncatechars:50 }}</div>
+                        {% endif %}
+                        {% else %}
+                        <span class="embedding-status status-not-downloaded">{{ document.get_status_display }}</span>
+                        {% endif %}
+                        {% if document.chunk_count > 0 %}
+                        <div class="small text-muted mt-1">{{ document.chunk_count }} чанков</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="model-footer">
+                    <a href="{% url 'document_detail' document.id %}" class="action-link" title="Просмотр"><i class="bi bi-eye"></i> Детали</a>
+                    <a href="{% url 'document_edit' document.id %}" class="action-link" title="Редактировать"><i class="bi bi-pencil"></i> Изменить</a>
+                    <button type="button" class="action-link danger document-delete-btn" data-document-id="{{ document.id }}" title="Удалить"><i class="bi bi-trash"></i> Удалить</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filters.q %}&q={{ filters.q }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.sort %}&sort={{ filters.sort }}{% endif %}"><i class="bi bi-chevron-left"></i></a></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}{% if filters.q %}&q={{ filters.q }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.sort %}&sort={{ filters.sort }}{% endif %}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filters.q %}&q={{ filters.q }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.sort %}&sort={{ filters.sort }}{% endif %}"><i class="bi bi-chevron-right"></i></a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon"><i class="bi bi-files"></i></div>
+        <h3>Документы не найдены</h3>
+        <p>{% if filters.q or filters.status or filters.type %}Попробуйте изменить параметры поиска{% else %}Загрузите первый документ, чтобы начать работу с RAG системой{% endif %}</p>
+        <a href="{% url 'rag_upload_documents' %}" class="btn btn-primary mt-2"><i class="bi bi-upload me-1"></i> Загрузить документы</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно массовых действий -->
+{% if page_obj and page_obj.object_list %}
+<div class="modal fade" id="bulkActionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title">Массовые действия</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'document_bulk_action' %}" id="bulk-action-form">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <p>Выбрано документов: <span id="selected-count">0</span></p>
+                        <input type="hidden" name="document_ids" id="selected-ids" value="">
+                    </div>
+                    <div id="bulk-actions-content">
+                        <div class="mb-3">
+                            <label class="form-label">Действие</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="action" id="action1" value="reprocess" checked>
+                                <label class="form-check-label" for="action1"><i class="bi bi-arrow-clockwise"></i> Переобработать</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="action" id="action2" value="archive">
+                                <label class="form-check-label" for="action2"><i class="bi bi-archive"></i> Архивировать</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="action" id="action3" value="delete">
+                                <label class="form-check-label" for="action3"><i class="bi bi-trash"></i> Удалить</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="action" id="action4" value="export">
+                                <label class="form-check-label" for="action4"><i class="bi bi-download"></i> Экспортировать метаданные</label>
+                            </div>
+                        </div>
+                        <div class="mb-3" id="confirm-section" style="display: none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="confirm" id="confirm-action" required>
+                                <label class="form-check-label text-danger" for="confirm-action"><i class="bi bi-exclamation-triangle"></i> Подтверждаю необратимое действие</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="no-documents-message" style="display: none;">
+                        <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Не выбрано ни одного документа.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary" id="bulk-action-btn" disabled>Выполнить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(title, message, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) return;
+    const toastId = 'toast-' + Date.now();
+    const icons = { success: 'bi-check-circle', error: 'bi-exclamation-circle', warning: 'bi-exclamation-triangle', info: 'bi-info-circle' };
+    const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+    const html = `<div class="toast align-items-center text-bg-${bgClass} border-0" id="${toastId}" role="alert"><div class="d-flex"><div class="toast-body"><i class="bi ${icons[type]} me-2"></i>${title}<br><small>${message}</small></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+    toastContainer.insertAdjacentHTML('beforeend', html);
+    const toastEl = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+    toast.show();
+    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Удаление документа
+    document.querySelectorAll('.document-delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const docId = this.dataset.documentId;
+            if (!confirm('Удалить документ? Это действие нельзя отменить.')) return;
+            fetch(`/documents/${docId}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Удалено', 'Документ удалён', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('Ошибка', data.error || 'Не удалось удалить', 'error');
+                }
+            })
+            .catch(err => showToast('Ошибка', err.message, 'error'));
+        });
+    });
+
+    // Массовые действия (копия из старого шаблона, но адаптированная)
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.document-checkbox');
+    const selectedCount = document.getElementById('selected-count');
+    const selectedIds = document.getElementById('selected-ids');
+    const bulkActionForm = document.getElementById('bulk-action-form');
+    const confirmSection = document.getElementById('confirm-section');
+    const actionRadios = document.querySelectorAll('input[name="action"]');
+    const bulkActionBtn = document.getElementById('bulk-action-btn');
+    const noDocsMessage = document.getElementById('no-documents-message');
+    const actionsContent = document.getElementById('bulk-actions-content');
+
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('.document-checkbox:checked');
+        const ids = Array.from(checked).map(cb => cb.value);
+        if (selectedCount) selectedCount.textContent = ids.length;
+        if (selectedIds) selectedIds.value = ids.join(',');
+        const modal = document.getElementById('bulkActionModal');
+        if (modal && modal.classList.contains('show')) {
+            if (ids.length === 0) {
+                if (noDocsMessage) noDocsMessage.style.display = 'block';
+                if (actionsContent) actionsContent.style.display = 'none';
+                if (bulkActionBtn) bulkActionBtn.disabled = true;
+            } else {
+                if (noDocsMessage) noDocsMessage.style.display = 'none';
+                if (actionsContent) actionsContent.style.display = 'block';
+                const selectedAction = document.querySelector('input[name="action"]:checked');
+                if (selectedAction && ['delete', 'archive'].includes(selectedAction.value)) {
+                    if (confirmSection) confirmSection.style.display = 'block';
+                    if (bulkActionBtn) bulkActionBtn.disabled = true;
+                } else {
+                    if (confirmSection) confirmSection.style.display = 'none';
+                    if (bulkActionBtn) bulkActionBtn.disabled = false;
+                }
+            }
+        }
+        const confirmCheckbox = document.getElementById('confirm-action');
+        if (confirmCheckbox) {
+            confirmCheckbox.checked = false;
+            if (bulkActionBtn) bulkActionBtn.disabled = !confirmCheckbox.checked;
+        }
+    }
+
+    if (selectAll && checkboxes.length) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateSelectedCount();
+        });
+        checkboxes.forEach(cb => cb.addEventListener('change', updateSelectedCount));
+    }
+
+    if (actionRadios.length) {
+        actionRadios.forEach(radio => radio.addEventListener('change', updateSelectedCount));
+    }
+
+    const confirmCheckbox = document.getElementById('confirm-action');
+    if (confirmCheckbox) {
+        confirmCheckbox.addEventListener('change', function() {
+            if (bulkActionBtn) bulkActionBtn.disabled = !this.checked;
+        });
+    }
+
+    const bulkModal = document.getElementById('bulkActionModal');
+    if (bulkModal) {
+        bulkModal.addEventListener('show.bs.modal', updateSelectedCount);
+        bulkModal.addEventListener('hidden.bs.modal', function() {
+            if (bulkActionForm) bulkActionForm.reset();
+            if (confirmCheckbox) confirmCheckbox.checked = false;
+            updateSelectedCount();
+        });
+    }
+
+    if (bulkActionForm) {
+        bulkActionForm.addEventListener('submit', function(e) {
+            const selectedIdsField = document.getElementById('selected-ids');
+            if (!selectedIdsField || !selectedIdsField.value) {
+                e.preventDefault();
+                alert('Выберите хотя бы один документ');
+                return;
+            }
+            const selectedAction = document.querySelector('input[name="action"]:checked');
+            if (selectedAction && ['delete', 'archive'].includes(selectedAction.value)) {
+                const confirmCheckbox = document.getElementById('confirm-action');
+                if (!confirmCheckbox || !confirmCheckbox.checked) {
+                    e.preventDefault();
+                    alert('Подтвердите действие');
+                    return;
+                }
+            }
+        });
+    }
+
+    // Фильтр по Enter
+    const searchInput = document.querySelector('input[name="q"]');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') this.form.submit();
+        });
+    }
+});
+</script>
+{% endblock %}

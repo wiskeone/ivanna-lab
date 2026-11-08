@@ -1,0 +1,38 @@
+<!-- templates/admin/custom_index.html -->
+{% extends "admin/index.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="module">
+        <h2>📊 Быстрая статистика</h2>
+        <ul>
+            <li><a href="{% url 'admin_dashboard' %}">Перейти к дашборду</a></li>
+            <li><a href="{% url 'admin:app_modelcheckpoint_changelist' %}?status__exact=LOADED">
+                Загруженные модели ({{ loaded_count }})
+            </a></li>
+            <li><a href="{% url 'admin:app_modelmergejob_changelist' %}?status__exact=RUNNING">
+                Активные задачи слияния ({{ running_jobs }})
+            </a></li>
+        </ul>
+    </div>
+    
+    {{ block.super }}
+</div>
+
+<style>
+.dashboard {
+    margin-bottom: 20px;
+}
+.module {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+.module h2 {
+    margin-top: 0;
+    color: #666;
+}
+</style>
+{% endblock %}

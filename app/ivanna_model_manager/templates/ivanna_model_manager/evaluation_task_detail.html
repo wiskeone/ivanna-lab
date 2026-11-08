@@ -1,0 +1,1084 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Задача оценки: {{ task.name }}{% endblock %}
+
+{% block page_title %}{{ task.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress-container {
+        margin: 20px 0;
+        padding: 20px;
+        background: rgba(30, 30, 30, 0.7);
+        border-radius: 8px;
+        border: 1px solid #444;
+    }
+    
+    .progress {
+        height: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        transition: width 0.3s ease;
+    }
+    
+    .task-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+    }
+    
+    .info-card {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .info-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+    
+    .info-label {
+        font-size: 0.85rem;
+        color: #aaa;
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .checkpoint-alert {
+        background: rgba(107, 70, 193, 0.15);
+        border: 1px solid rgba(107, 70, 193, 0.3);
+        border-left: 4px solid var(--primary-color);
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin: 20px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .checkpoint-info {
+        flex: 1;
+    }
+    
+    .checkpoint-title {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
+    
+    .checkpoint-details {
+        font-size: 0.9rem;
+        color: #ddd;
+    }
+    
+    .checkpoint-details span {
+        color: var(--accent-color);
+        font-weight: 500;
+    }
+    
+    .btn-resume {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-resume:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 70, 193, 0.3);
+    }
+    
+    .btn-resume:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .status-running {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-pending {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-completed {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-failed {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .model-results {
+        margin-top: 30px;
+    }
+    
+    .model-card {
+        background: rgba(35, 35, 35, 0.9);
+        border: 1px solid #444;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        overflow: hidden;
+    }
+    
+    .model-header {
+        background: rgba(45, 45, 45, 0.9);
+        padding: 15px 20px;
+        border-bottom: 1px solid #444;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .model-header:hover {
+        background: rgba(55, 55, 55, 0.9);
+    }
+    
+    .model-name {
+        font-weight: 600;
+        color: white;
+    }
+    
+    .model-metrics {
+        display: flex;
+        gap: 15px;
+        color: #aaa;
+        font-size: 0.9rem;
+    }
+    
+    .model-questions {
+        padding: 15px 20px;
+        display: none;
+    }
+    
+    .model-questions.expanded {
+        display: block;
+    }
+    
+    .question-item {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid #3a3a3a;
+        border-radius: 6px;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+    }
+    
+    .question-text {
+        color: #ddd;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+    
+    .question-response {
+        background: rgba(30, 30, 30, 0.8);
+        border-left: 3px solid var(--accent-color);
+        padding: 10px 12px;
+        border-radius: 0 4px 4px 0;
+        margin-top: 8px;
+        font-size: 0.9rem;
+        color: #ccc;
+        white-space: pre-wrap;
+    }
+    
+    /* Блок рассуждений — убрана левая рамка */
+    .think-block {
+        border-left: none;
+        background: rgba(107, 70, 193, 0.08);
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+    }
+    .think-block small {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.8rem;
+        color: #aaa;
+    }
+    .think-content {
+        font-style: italic;
+        color: #e0e0e0;
+        line-height: 1.4;
+        font-size: 0.9rem;
+    }
+    
+    .rating-stars {
+        display: inline-flex;
+        gap: 2px;
+        margin-left: 10px;
+    }
+    
+    .rating-star {
+        color: #ffc107;
+        cursor: pointer;
+        font-size: 1.1rem;
+    }
+    
+    .rating-star:hover,
+    .rating-star.active {
+        color: #ffd700;
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    }
+    
+    .logs-container {
+        background: rgba(20, 20, 20, 0.95);
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 15px;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 0.85rem;
+        color: #0f0;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 20px;
+    }
+    
+    .log-line {
+        padding: 2px 0;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    
+    .log-line.error {
+        color: #ff6b6b;
+    }
+    
+    .log-line.warning {
+        color: #ffd93d;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-danger {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+    }
+    
+    .btn-danger:hover {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: #ef4444;
+    }
+    
+    .btn-warning {
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        color: #f59e0b;
+    }
+    
+    .btn-warning:hover {
+        background: rgba(245, 158, 11, 0.25);
+        border-color: #f59e0b;
+    }
+    
+    .btn-success {
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: #10b981;
+    }
+    
+    .btn-success:hover {
+        background: rgba(16, 185, 129, 0.25);
+        border-color: #10b981;
+    }
+    
+    .btn-primary {
+        background: rgba(107, 70, 193, 0.15);
+        border: 1px solid rgba(107, 70, 193, 0.3);
+        color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+        background: rgba(107, 70, 193, 0.25);
+        border-color: var(--primary-color);
+    }
+    
+    .btn-outline-secondary {
+        background: transparent;
+        border: 1px solid rgba(108, 117, 125, 0.5);
+        color: #adb5bd;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: rgba(108, 117, 125, 0.2);
+        border-color: #adb5bd;
+        color: white;
+    }
+
+    /* Стили для источников RAG */
+    .source-item {
+        background: rgba(30,30,30,0.9);
+        border: 1px solid #444;
+        border-radius: 6px;
+    }
+    .source-preview {
+        max-height: 100px;
+        overflow-y: auto;
+        font-size: 0.85rem;
+    }
+    .btn-xs {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок и действия -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="text-light">{{ task.name }}</h3>
+                    <p class="text-muted mb-0">{{ task.description|default:"Нет описания" }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'evaluation_dashboard' %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left"></i> Назад
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Статус и прогресс -->
+            <div class="progress-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span id="taskStatusBadge" class="status-badge 
+                            {% if task.status == 'RUNNING' %}status-running
+                            {% elif task.status == 'PENDING' %}status-pending
+                            {% elif task.status == 'COMPLETED' %}status-completed
+                            {% elif task.status == 'FAILED' %}status-failed
+                            {% endif %}">
+                            <i id="statusIcon" class="bi 
+                                {% if task.status == 'RUNNING' %}bi-arrow-repeat spin
+                                {% elif task.status == 'PENDING' %}bi-hourglass
+                                {% elif task.status == 'COMPLETED' %}bi-check-circle
+                                {% elif task.status == 'FAILED' %}bi-exclamation-circle
+                                {% endif %} me-1"></i>
+                            <span id="taskStatusText">{{ task.get_status_display }}</span>
+                        </span>
+                    </div>
+                    <div>
+                        <small class="text-muted">Прогресс: <span id="progressPercent">{{ task.progress|floatformat:1 }}</span>%</small>
+                    </div>
+                </div>
+                
+                <div class="progress">
+                    <div id="progressBar" class="progress-bar" style="width: {{ task.progress }}%"></div>
+                </div>
+                
+                <div id="currentStep" class="mt-2 text-muted small">
+                    <i class="bi bi-info-circle me-1"></i> {{ task.current_step|default:"" }}
+                </div>
+            </div>
+            
+            <!-- Блок чекпоинта -->
+            {% if task.metadata.checkpoint and task.status != 'RUNNING' and task.status != 'COMPLETED' %}
+            <div class="checkpoint-alert">
+                <div class="checkpoint-info">
+                    <div class="checkpoint-title">
+                        <i class="bi bi-save me-2"></i>Чекпоинт доступен!
+                    </div>
+                    <div class="checkpoint-details">
+                        Задача была прервана на 
+                        <span>модели {{ task.metadata.checkpoint.last_model_idx|add:1 }}</span> из {{ task.evaluation_models.count }},
+                        <span>вопросе {{ task.metadata.checkpoint.last_question_idx|add:1 }}</span>
+                        {% if task.metadata.checkpoint.timestamp %}
+                        ({{ task.metadata.checkpoint.timestamp|slice:":16" }})
+                        {% endif %}
+                    </div>
+                </div>
+                <button class="btn-resume" onclick="resumeTask()" id="resumeBtn">
+                    <i class="bi bi-play-circle"></i>
+                    Возобновить выполнение
+                </button>
+            </div>
+            {% endif %}
+            
+            <!-- Информация о задаче -->
+            <div class="task-info">
+                <div class="info-card">
+                    <div class="info-label">Датасет</div>
+                    <div class="info-value">{{ task.dataset.name }}</div>
+                    <small class="text-muted">{{ task.dataset.total_questions }} вопросов</small>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-label">Модели</div>
+                    <div class="info-value">{{ task.evaluation_models.count }}</div>
+                    <small class="text-muted">всего моделей</small>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-label">Создана</div>
+                    <div class="info-value">{{ task.created_at|date:"d.m.Y" }}</div>
+                    <small class="text-muted">{{ task.created_by|default:"Система" }}</small>
+                </div>
+                
+                {% if task.completed_at %}
+                <div class="info-card">
+                    <div class="info-label">Завершена</div>
+                    <div class="info-value">{{ task.completed_at|date:"d.m.Y H:i" }}</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Кнопки действий -->
+            <div class="action-buttons">
+                {% if task.status == 'RUNNING' or task.status == 'PENDING' %}
+                <button class="btn-action btn-danger" onclick="cancelTask()">
+                    <i class="bi bi-x-circle"></i> Отменить
+                </button>
+                {% endif %}
+                
+                {% if task.status == 'RUNNING' and not task.celery_task_active %}
+                <button class="btn-action btn-warning" onclick="forceResetTask()">
+                    <i class="bi bi-arrow-repeat"></i> Сбросить зависшую задачу
+                </button>
+                {% endif %}
+                
+                {% if task.status == 'FAILED' or task.status == 'COMPLETED' %}
+                <button class="btn-action btn-warning" onclick="restartTask(false)" id="restartBtn">
+                    <i class="bi bi-arrow-repeat"></i> Перезапустить
+                </button>
+                {% endif %}
+                
+                {% if task.status == 'COMPLETED' %}
+                <button class="btn-action btn-success" onclick="exportResults()">
+                    <i class="bi bi-download"></i> Экспорт результатов
+                </button>
+                
+                <a href="{% url 'evaluation_task_compare' task.id %}" class="btn-action btn-primary">
+                    <i class="bi bi-bar-chart"></i> Сравнить модели
+                </a>
+                {% endif %}
+                
+                <button class="btn-action btn-danger" onclick="deleteTask()">
+                    <i class="bi bi-trash"></i> Удалить
+                </button>
+            </div>
+            
+            <!-- Логи задачи -->
+            {% if task.logs %}
+            <div class="mt-4">
+                <h6 class="text-light mb-2">
+                    <i class="bi bi-journal-text me-2"></i>Логи выполнения
+                </h6>
+                <div class="logs-container" id="logs">
+                    {% for line in task.logs.splitlines %}
+                    <div class="log-line 
+                        {% if 'ERROR' in line %}error
+                        {% elif 'WARNING' in line %}warning
+                        {% endif %}">
+                        {{ line }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Результаты по моделям -->
+            {% if results_by_model %}
+            <div class="model-results">
+                <h5 class="text-light mb-3">
+                    <i class="bi bi-cpu me-2"></i>Результаты по моделям
+                </h5>
+                
+                {% for model_id, data in results_by_model.items %}
+                <div class="model-card">
+                    <div class="model-header" onclick="toggleModel(this)">
+                        <div>
+                            <span class="model-name">{{ data.model.display_name }}</span>
+                            <span class="badge bg-secondary ms-2">{{ data.model.model_type }}</span>
+                        </div>
+                        <div class="model-metrics">
+                            <span><i class="bi bi-check-circle"></i> {{ data.results|length }}/{{ task.dataset.total_questions }}</span>
+                            {% if task.summary_metrics and task.summary_metrics|get_item:model_id %}
+                            <span><i class="bi bi-star"></i> {{ task.summary_metrics|get_item:model_id|get_item:'avg_score'|default:'—' }}</span>
+                            {% endif %}
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="model-questions">
+                        {% for result in data.results %}
+                        <div class="question-item" id="question-{{ result.id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="question-text">
+                                    <strong>Вопрос {{ result.question_id }}:</strong> {{ result.question_text }}
+                                </div>
+                                <div class="rating-stars" data-result-id="{{ result.id }}">
+                                    {% for i in "12345"|make_list %}
+                                    <span class="rating-star {% if result.manual_rating >= i|add:0 %}active{% endif %}"
+                                          onclick="rateResponse({{ result.id }}, {{ i }}, event)"
+                                          data-rating="{{ i }}">★</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Блок рассуждений будет вставлен сюда JavaScript-ом, после чего переместится в начало -->
+                            <div class="question-response">{{ result.model_response|safe }}</div>
+                            
+                            <!-- Блок RAG источников (если есть) -->
+                            {% if result.metadata.rag_used and result.metadata.rag_sources %}
+                            <div class="rag-sources mt-2">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <button class="btn-action btn-outline-secondary btn-sm" type="button" aria-expanded="false"></i> Источники ({{ result.metadata.rag_sources|length }})</button>
+                                    <button class="btn-action btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#sources-{{ result.id }}" aria-expanded="false">
+                                        <i class="bi bi-chevron-down"></i> Показать
+                                    </button>
+                                </div>
+                                <div class="collapse" id="sources-{{ result.id }}">
+                                    {% for source in result.metadata.rag_sources %}
+                                    <div class="source-item mb-2 p-2 border rounded">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>{{ source.title }}</strong>
+                                            <span class="badge bg-success">релевантность: {{ source.relevance|floatformat:2 }}</span>
+                                        </div>
+                                        <div class="source-preview small text-muted mt-1">{{ source.preview }}</div>
+                                        <div class="mt-1">
+                                            {% if source.document_id %}
+                                            <button class="btn btn-xs btn-outline-info" onclick="previewDocument({{ source.document_id }}, '{{ source.title|escapejs }}', {{ source.chunk_id }})">
+                                                <i class="bi bi-eye"></i> Просмотр
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-end mt-2">
+                                <small class="text-muted me-3">
+                                    <i class="bi bi-clock"></i> {{ result.response_time|floatformat:2 }}с
+                                </small>
+                                <small class="text-muted">
+                                    <i class="bi bi-fonts"></i> {{ result.tokens_used }} токенов
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для комментария при оценке -->
+<div class="modal fade" id="ratingCommentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Комментарий к оценке</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea class="form-control" id="ratingComment" rows="3" 
+                          placeholder="Оставьте комментарий (необязательно)"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="submitRating()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для предпросмотра документа (если нет в base, создаём здесь) -->
+<div class="modal fade" id="documentPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewDocumentTitle">Документ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="previewContent">
+                <!-- Контент будет загружен через JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <a href="#" id="previewDocumentLink" class="btn btn-primary" target="_blank">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> Открыть документ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const taskId = {{ task.id }};
+    let currentResultId = null;
+    let currentRating = null;
+    let progressInterval = null;
+    
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    document.addEventListener('DOMContentLoaded', function() {
+        const status = "{{ task.status }}";
+        if (status === 'RUNNING' || status === 'PENDING') {
+            startProgressPolling();
+        }
+        // Обработка всех ответов
+        formatAllResponses();
+    });
+    
+    // ========== ОБРАБОТКА ВСЕХ ОТВЕТОВ ==========
+    function formatAllResponses() {
+        const responseElements = document.querySelectorAll('.question-response');
+        responseElements.forEach(el => {
+            let originalHtml = el.innerHTML;
+            
+            // 1. Извлечение блоков <think> с очисткой содержимого
+            const thinkRegex = /<think>([\s\S]*?)<\/think>/gi;
+            let matches = [...originalHtml.matchAll(thinkRegex)];
+            let processedHtml = originalHtml;
+            let thinkBlocksHtml = '';
+            
+            matches.forEach(match => {
+                let thinkContent = match[1];
+                // Очищаем содержимое think от лишних переносов и пустых строк
+                thinkContent = cleanWhitespace(thinkContent);
+                const escapedThink = escapeHtml(thinkContent);
+                thinkBlocksHtml += `
+                    <div class="think-block">
+                        <small><i class="bi bi-chat-quote"></i> Рассуждение модели:</small>
+                        <div class="think-content">${escapedThink}</div>
+                    </div>
+                `;
+                processedHtml = processedHtml.replace(match[0], '');
+            });
+            
+            // 2. Форматирование текста: ** и ###
+            processedHtml = formatText(processedHtml);
+            
+            // 3. Очистка от лишних пустых строк и пробелов (для основного текста)
+            processedHtml = cleanWhitespace(processedHtml);
+            
+            // 4. Сборка финального HTML
+            el.innerHTML = thinkBlocksHtml + processedHtml;
+        });
+    }
+    
+    // Форматирование: **жирный** и ### Заголовок
+    function formatText(html) {
+        // Жирный текст
+        let formatted = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Заголовки ###
+        formatted = formatted.replace(/^###\s+(.*?)$/gm, '<strong>$1</strong>');
+        return formatted;
+    }
+    
+    // Удаление пустых строк, лишних переносов и пробелов
+    function cleanWhitespace(html) {
+        // Временно заменяем HTML-теги на маркеры, чтобы не повредить структуру
+        const markers = [];
+        let markerIndex = 0;
+        const protectedHtml = html.replace(/<[^>]+>/g, (match) => {
+            markers.push(match);
+            return `__HTML_MARKER_${markerIndex++}__`;
+        });
+        
+        // Разбиваем на строки, удаляем пустые и обрезаем пробелы
+        let lines = protectedHtml.split('\n');
+        lines = lines.filter(line => line.trim() !== '');
+        // Собираем обратно с одинарным переводом строки
+        let cleaned = lines.join('\n');
+        
+        // Восстанавливаем HTML-теги
+        cleaned = cleaned.replace(/__HTML_MARKER_(\d+)__/g, (match, idx) => {
+            return markers[parseInt(idx)] || match;
+        });
+        
+        // Удаляем множественные пробелы, но сохраняем одинарные
+        cleaned = cleaned.replace(/[ \t]+/g, ' ');
+        
+        return cleaned;
+    }
+    
+    // Вспомогательная функция для экранирования HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // ========== УПРАВЛЕНИЕ ЗАДАЧЕЙ ==========
+    
+    function startProgressPolling() {
+        if (progressInterval) clearInterval(progressInterval);
+        
+        progressInterval = setInterval(() => {
+            fetch(`/api/evaluation/tasks/${taskId}/status/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.progress !== undefined) {
+                        document.getElementById('progressBar').style.width = data.progress + '%';
+                        document.getElementById('progressPercent').textContent = data.progress.toFixed(1);
+                    }
+                    if (data.current_step) {
+                        document.getElementById('currentStep').innerHTML = 
+                            '<i class="bi bi-info-circle me-1"></i> ' + data.current_step;
+                    }
+                    if (data.status) {
+                        const badge = document.getElementById('taskStatusBadge');
+                        const statusText = document.getElementById('taskStatusText');
+                        const statusIcon = document.getElementById('statusIcon');
+                        if (badge && statusText && statusIcon) {
+                            badge.className = 'status-badge status-' + data.status.toLowerCase();
+                            statusText.textContent = data.status_display || data.status;
+                            let iconClass = 'bi ';
+                            if (data.status === 'RUNNING') iconClass += 'bi-arrow-repeat spin';
+                            else if (data.status === 'PENDING') iconClass += 'bi-hourglass';
+                            else if (data.status === 'COMPLETED') iconClass += 'bi-check-circle';
+                            else if (data.status === 'FAILED') iconClass += 'bi-exclamation-circle';
+                            else iconClass += 'bi-question-circle';
+                            statusIcon.className = iconClass + ' me-1';
+                        }
+                    }
+                    if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                        setTimeout(() => location.reload(), 500);
+                    }
+                })
+                .catch(err => console.error('Polling error:', err));
+        }, 3000);
+    }
+    
+    // ========== ВОЗОБНОВЛЕНИЕ ИЗ ЧЕКПОИНТА ==========
+    function resumeTask() {
+        const currentStatus = document.getElementById('taskStatusText').textContent;
+        if (currentStatus.includes('RUNNING') || currentStatus.includes('COMPLETED')) {
+            showNotification('Задача уже выполняется или завершена', 'warning');
+            return;
+        }
+
+        const resumeBtn = document.getElementById('resumeBtn');
+        if (!resumeBtn) return;
+        
+        const originalText = resumeBtn.innerHTML;
+        resumeBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Возобновление...';
+        resumeBtn.disabled = true;
+        
+        fetch(`/evaluation/tasks/{{ task.id }}/restart/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'resume': 'true'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Задача возобновлена с чекпоинта', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Ошибка: ' + data.error, 'error');
+                resumeBtn.innerHTML = originalText;
+                resumeBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error resuming task:', error);
+            showNotification('Ошибка при возобновлении задачи', 'error');
+            resumeBtn.innerHTML = originalText;
+            resumeBtn.disabled = false;
+        });
+    }
+    
+    function restartTask(fullRestart = false) {
+        if (!confirm(fullRestart ? 
+            'Полный перезапуск удалит все текущие результаты. Продолжить?' : 
+            'Перезапустить задачу?')) return;
+        
+        const restartBtn = document.getElementById('restartBtn');
+        if (restartBtn) {
+            restartBtn.disabled = true;
+            restartBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Перезапуск...';
+        }
+        
+        fetch(`/evaluation/tasks/{{ task.id }}/restart/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'resume': 'false'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Задача перезапущена', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Ошибка: ' + data.error, 'error');
+                if (restartBtn) {
+                    restartBtn.disabled = false;
+                    restartBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Перезапустить';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error restarting task:', error);
+            showNotification('Ошибка при перезапуске задачи', 'error');
+            if (restartBtn) {
+                restartBtn.disabled = false;
+                restartBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Перезапустить';
+            }
+        });
+    }
+    
+    function cancelTask() {
+        if (!confirm('Отменить выполнение задачи?')) return;
+        
+        fetch(`/evaluation/tasks/{{ task.id }}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Задача отменена', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Ошибка: ' + data.error, 'error');
+            }
+        });
+    }
+    
+    function deleteTask() {
+        if (!confirm('Удалить задачу? Это действие нельзя отменить.')) return;
+        
+        fetch(`/evaluation/tasks/{{ task.id }}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Задача удалена', 'success');
+                setTimeout(() => {
+                    window.location.href = "{% url 'evaluation_task_list' %}";
+                }, 1500);
+            } else {
+                showNotification('Ошибка: ' + data.error, 'error');
+            }
+        });
+    }
+    
+    function exportResults() {
+        window.location.href = `/api/evaluation/tasks/{{ task.id }}/export/`;
+    }
+
+    function forceResetTask() {
+        if (!confirm('Задача зависла в статусе "Выполняется". Сбросить её в статус "Ошибка"? Это позволит перезапустить задачу заново.')) return;
+        
+        fetch(`/evaluation/tasks/{{ task.id }}/force-reset/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Задача сброшена. Теперь её можно перезапустить.', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Ошибка: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error resetting task:', error);
+            showNotification('Ошибка при сбросе задачи', 'error');
+        });
+    }
+    
+    // ========== ОЦЕНКА ОТВЕТОВ ==========
+    
+    function rateResponse(resultId, rating, event) {
+        event.stopPropagation();
+        currentResultId = resultId;
+        currentRating = rating;
+        
+        const modal = new bootstrap.Modal(document.getElementById('ratingCommentModal'));
+        modal.show();
+    }
+    
+    function submitRating() {
+        const comment = document.getElementById('ratingComment').value;
+        
+        fetch('/api/evaluation/rate/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                task_id: {{ task.id }},
+                result_id: currentResultId,
+                rating: currentRating,
+                comment: comment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Оценка сохранена', 'success');
+                const stars = document.querySelectorAll(`#question-${currentResultId} .rating-star`);
+                stars.forEach((star, index) => {
+                    if (index < currentRating) {
+                        star.classList.add('active');
+                    } else {
+                        star.classList.remove('active');
+                    }
+                });
+            } else {
+                showNotification('Ошибка: ' + data.error, 'error');
+            }
+            
+            bootstrap.Modal.getInstance(document.getElementById('ratingCommentModal')).hide();
+            document.getElementById('ratingComment').value = '';
+        });
+    }
+    
+    // ========== ПРЕДПРОСМОТР ДОКУМЕНТА ==========
+    
+    function previewDocument(documentId, title, chunkId = null) {
+        if (!documentId || documentId === 0) {
+            showNotification('ID документа не указан', 'warning');
+            return;
+        }
+        document.getElementById('previewDocumentTitle').textContent = title;
+        let url = `/api/documents/${documentId}/preview/`;
+        if (chunkId) url += `?chunk_id=${chunkId}`;
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                let content = '';
+                if (data.content) {
+                    content = `<pre class="text-white" style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(data.content)}</pre>`;
+                } else if (data.error) {
+                    content = `<div class="alert alert-warning">${escapeHtml(data.error)}</div>`;
+                } else {
+                    content = '<div class="text-muted">Содержимое документа недоступно</div>';
+                }
+                document.getElementById('previewContent').innerHTML = content;
+                document.getElementById('previewDocumentLink').href = `/documents/${documentId}/download/`;
+                new bootstrap.Modal(document.getElementById('documentPreviewModal')).show();
+            })
+            .catch(error => {
+                console.error('Error loading preview:', error);
+                showNotification('Не удалось загрузить предпросмотр документа', 'error');
+            });
+    }
+    
+    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+    
+    function toggleModel(header) {
+        const questions = header.nextElementSibling;
+        const icon = header.querySelector('.bi-chevron-down, .bi-chevron-up');
+        
+        if (questions.classList.contains('expanded')) {
+            questions.classList.remove('expanded');
+            icon.classList.remove('bi-chevron-up');
+            icon.classList.add('bi-chevron-down');
+        } else {
+            questions.classList.add('expanded');
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-up');
+        }
+    }
+    
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('[name="csrfmiddlewaretoken"]');
+        return csrfInput ? csrfInput.value : '';
+    }
+    
+    function showNotification(message, type = 'info') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+        } else {
+            alert(message);
+        }
+    }
+</script>
+{% endblock %}

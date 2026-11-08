@@ -1,0 +1,260 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block page_title %}Тестирование модели: {{ model.display_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .test-results {
+        background: rgba(30, 41, 59, 0.8);
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        border-left: 4px solid #3b82f6;
+    }
+    
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+    }
+    
+    .metric-card {
+        background: rgba(15, 23, 42, 0.7);
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #3b82f6;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        margin-top: 5px;
+    }
+    
+    .response-area {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        white-space: pre-wrap;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-cpu"></i> Тестирование модели</h2>
+            <p class="text-muted">{{ model.display_name }} ({{ model.get_model_type_display }})</p>
+        </div>
+        <div>
+            <a href="{% url 'model_detail' pk=model.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Назад
+            </a>
+            <a href="{% url 'model_config' pk=model.id %}" class="btn btn-outline-primary">
+                <i class="bi bi-gear"></i> Конфигурация
+            </a>
+        </div>
+    </div>
+    
+    <!-- Статус модели -->
+    <div class="alert alert-info">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-info-circle"></i>
+                <strong>Статус модели:</strong>
+                <span class="badge bg-{% if model.status == 'LOADED' %}success{% elif model.status == 'DOWNLOADED' %}warning{% else %}secondary{% endif %}">
+                    {{ model.get_status_display }}
+                </span>
+            </div>
+            <div>
+                {% if not model.is_loaded_in_memory %}
+                <a href="{% url 'model_config' pk=model.id %}" class="btn btn-sm btn-success">
+                    <i class="bi bi-download"></i> Загрузить модель
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Форма тестирования -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="bi bi-chat-text"></i> Тестовый промпт
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.prompt.id_for_label }}" class="form-label">Промпт</label>
+                            {{ form.prompt }}
+                            <div class="form-text">Введите текст для генерации ответа</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.system_prompt.id_for_label }}" class="form-label">Системный промпт (опционально)</label>
+                            {{ form.system_prompt }}
+                            <div class="form-text">Инструкции для модели о том, как себя вести</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="{{ form.max_tokens.id_for_label }}" class="form-label">Макс. токенов</label>
+                            {{ form.max_tokens }}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="{{ form.temperature.id_for_label }}" class="form-label">Температура</label>
+                            {{ form.temperature }}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="{{ form.top_p.id_for_label }}" class="form-label">Top P</label>
+                            {{ form.top_p }}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="{{ form.top_k.id_for_label }}" class="form-label">Top K</label>
+                            {{ form.top_k }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button type="submit" class="btn btn-primary" {% if not model.is_loaded_in_memory %}disabled{% endif %}>
+                            <i class="bi bi-play-circle"></i> Запустить тест
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <a href="{% url 'chat_view' %}?model_id={{ model.id }}" class="btn btn-success">
+                            <i class="bi bi-chat-dots"></i> Открыть в чате
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Результаты тестирования -->
+    {% if response %}
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <i class="bi bi-check-circle"></i> Результаты тестирования
+        </div>
+        <div class="card-body">
+            
+            <!-- Метрики -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value">{{ response_metadata.generation_time }} сек</div>
+                    <div class="metric-label">Время генерации</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-value">{{ response_metadata.tokens_generated }}</div>
+                    <div class="metric-label">Сгенерировано токенов</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-value">{{ response_metadata.tokens_per_second }}</div>
+                    <div class="metric-label">Токенов/сек (генерация)</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-value">{{ response_metadata.tokens_per_second_total }}</div>
+                    <div class="metric-label">Токенов/сек (всего)</div>
+                </div>
+            </div>
+            
+            <!-- Ответ модели -->
+            <div class="mb-4">
+                <h5><i class="bi bi-robot"></i> Ответ модели</h5>
+                <div class="response-area">
+                    {{ response }}
+                </div>
+            </div>
+            
+            <!-- Детальная информация -->
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="bi bi-card-text"></i> Исходный промпт</h6>
+                    <div class="alert alert-light">
+                        {{ prompt|truncatechars:300 }}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6><i class="bi bi-info-circle"></i> Информация о сессии</h6>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>ID сессии:</span>
+                            <span class="text-muted">{{ session.session_id }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Всего токенов:</span>
+                            <span class="text-muted">{{ response_metadata.total_tokens }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Параметры модели:</span>
+                            <span class="text-muted">{{ model.parameter_count|floatformat:0 }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Время:</span>
+                            <span class="text-muted">{{ session.created_at|date:"H:i:s" }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function resetForm() {
+        document.querySelector('form').reset();
+    }
+    
+    // Автофокус на поле промпта
+    document.addEventListener('DOMContentLoaded', function() {
+        const promptField = document.getElementById('id_prompt');
+        if (promptField) {
+            promptField.focus();
+        }
+    });
+</script>
+{% endblock %}

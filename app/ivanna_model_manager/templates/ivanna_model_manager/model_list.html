@@ -1,0 +1,271 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Список моделей - Ivanna Lab{% endblock %}
+{% block page_title %}Список моделей{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Статистика -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px;">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-cpu"></i></div>
+                <div class="stat-title">Всего моделей</div>
+            </div>
+            <div class="stat-value">{{ total_models }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                <div class="stat-title">Загружено в память</div>
+            </div>
+            <div class="stat-value">{{ loaded_models }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-arrow-down-up"></i></div>
+                <div class="stat-title">Квантизировано</div>
+            </div>
+            <div class="stat-value">{{ quantized_models }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon"><i class="bi bi-hdd"></i></div>
+                <div class="stat-title">Общий размер</div>
+            </div>
+            <div class="stat-value">{{ total_size_gb }} GB</div>
+        </div>
+    </div>
+
+    <!-- Заголовок и действия -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-cpu me-2" style="color: var(--primary-color);"></i>
+                Список моделей
+            </h2>
+            <p class="text-muted mb-0">Управление загруженными и доступными моделями</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'model_local_create' %}" class="btn btn-primary">
+                </i> Добавить модель
+            </a>
+            <a href="{% url 'model_create' %}" class="btn btn-primary">
+                </i> Загрузить с Hugging Face
+            </a>
+            <a href="{% url 'experiment_list' %}" class="btn btn-primary">
+                <i class="bi bi-flask me-1"></i> Эксперименты
+            </a>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filter-section" style="margin-bottom: 28px;">
+        <form method="get">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Тип модели</label>
+                    <select name="model_type" class="form-select">
+                        <option value="">Все типы</option>
+                        {% for value, label in model_types %}
+                        <option value="{{ value }}" {% if current_filters.model_type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Статус</label>
+                    <select name="status" class="form-select">
+                        <option value="">Все статусы</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Эксперимент</label>
+                    <select name="experiment_id" class="form-select">
+                        <option value="">Все эксперименты</option>
+                        {% for exp in experiments %}
+                        <option value="{{ exp.id }}" {% if current_filters.experiment_id == exp.id|stringformat:"s" %}selected{% endif %}>{{ exp.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Сортировка</label>
+                    <select name="sort_by" class="form-select">
+                        <option value="-created_at" {% if current_filters.sort_by == '-created_at' %}selected{% endif %}>Сначала новые</option>
+                        <option value="created_at" {% if current_filters.sort_by == 'created_at' %}selected{% endif %}>Сначала старые</option>
+                        <option value="name" {% if current_filters.sort_by == 'name' %}selected{% endif %}>По имени А-Я</option>
+                        <option value="-name" {% if current_filters.sort_by == '-name' %}selected{% endif %}>По имени Я-А</option>
+                        <option value="parameter_count" {% if current_filters.sort_by == 'parameter_count' %}selected{% endif %}>Меньше параметров</option>
+                        <option value="-parameter_count" {% if current_filters.sort_by == '-parameter_count' %}selected{% endif %}>Больше параметров</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label small text-muted">Поиск</label>
+                    <input type="text" name="q" class="form-control" placeholder="Поиск по имени, описанию..." value="{{ current_filters.q }}">
+                </div>
+                <div class="col-md-4 d-flex gap-2 align-items-end">
+                    <button type="submit" class="btn btn-filter flex-grow-1">
+                        <i class="bi bi-funnel me-1"></i> Применить
+                    </button>
+                    <a href="{% url 'model_list' %}" class="btn btn-filter flex-grow-1">
+                        <i class="bi bi-x-circle me-1"></i> Сбросить
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Карточки моделей -->
+    <div class="row g-4">
+        {% for model in models %}
+        <div class="col-md-6 col-xl-4">
+            <div class="model-card">
+                <div class="model-header">
+                    <div class="model-name">
+                        <i class="bi bi-cpu" style="color: var(--primary-color);"></i>
+                        {{ model.display_name|truncatechars:30 }}
+                    </div>
+                    <span class="model-badge">{{ model.get_model_type_display }}</span>
+                </div>
+                <div class="model-body">
+                    <div class="model-meta">
+                        <div class="model-meta-item">
+                            <span class="model-meta-label"><i class="bi bi-hash"></i> Параметры:</span>
+                            <span class="model-meta-value">{{ model.parameter_count|floatformat:0 }}</span>
+                        </div>
+                        <div class="model-meta-item">
+                            <span class="model-meta-label"><i class="bi bi-hdd"></i> Размер:</span>
+                            <span class="model-meta-value">{{ model.size_gb }} GB</span>
+                        </div>
+                        <div class="model-meta-item">
+                            <span class="model-meta-label"><i class="bi bi-memory"></i> Контекст:</span>
+                            <span class="model-meta-value">{{ model.context_length }} токенов</span>
+                        </div>
+                    </div>
+
+                    <!-- Бейджи: статус, безопасность, квантизация -->
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge 
+                            {% if model.status == 'LOADED' %}bg-success
+                            {% elif model.status == 'ERROR' %}bg-danger
+                            {% elif model.status == 'DOWNLOADING' %}bg-warning
+                            {% else %}bg-secondary{% endif %}">
+                            <i class="bi 
+                                {% if model.status == 'LOADED' %}bi-check-circle
+                                {% elif model.status == 'ERROR' %}bi-exclamation-triangle
+                                {% elif model.status == 'DOWNLOADING' %}bi-cloud-download
+                                {% else %}bi-circle{% endif %} me-1"></i>
+                            {{ model.get_status_display }}
+                        </span>
+                        {% if model.is_safe %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-shield-check me-1"></i> Безопасна
+                        </span>
+                        {% endif %}
+                        {% if model.is_quantized %}
+                        <span class="badge bg-info">
+                            <i class="bi bi-arrow-down-up me-1"></i> {{ model.get_quantization_display|default:"Квантизирована" }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if model.tags %}
+                    <div class="model-tags">
+                        {% for tag in model.tags|slice:":3" %}
+                        <span class="badge bg-secondary">{{ tag }}</span>
+                        {% endfor %}
+                        {% if model.tags|length > 3 %}
+                        <span class="badge bg-secondary">+{{ model.tags|length|add:"-3" }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if model.experiment %}
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-flask me-1" style="color: var(--primary-color);"></i>
+                        {{ model.experiment.name }}
+                    </div>
+                    {% endif %}
+
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-calendar3"></i> {{ model.created_at|date:"d.m.Y H:i" }}
+                    </div>
+                </div>
+                <div class="model-footer">
+                    <a href="{% url 'model_detail' model.pk %}" class="action-link">
+                        <i class="bi bi-info-circle"></i> Детали
+                    </a>
+                    <a href="{% url 'model_edit' model.pk %}" class="action-link">
+                        <i class="bi bi-pencil"></i> Изменить
+                    </a>
+                    <a href="{% url 'model_test' model.pk %}" class="action-link">
+                        <i class="bi bi-play-circle"></i> Тест
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-cpu"></i>
+                </div>
+                <h3>Модели не найдены</h3>
+                <p>Попробуйте изменить параметры фильтрации или создайте новую модель</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="{% url 'model_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i> Создать модель
+                    </a>
+                    <a href="{% url 'model_create' %}" class="btn btn-primary">
+                        <i class="bi bi-cloud-upload me-1"></i> Загрузить модель
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if is_paginated %}
+    <nav aria-label="Навигация по страницам" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">
+                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

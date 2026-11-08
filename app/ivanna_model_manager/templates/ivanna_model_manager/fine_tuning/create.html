@@ -1,0 +1,523 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Создание задачи fine-tuning{% endblock %}
+{% block page_title %}Создание задачи fine-tuning{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ... существующие стили ... */
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear-wide-connected me-2"></i>Создание новой задачи fine-tuning
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="createFineTuningForm">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Ошибка!</strong> Пожалуйста, исправьте ошибки ниже.
+                            <ul class="mb-0 mt-2">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                    <li>{{ field }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Основная информация -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="id_name" class="form-label"><i class="bi bi-card-heading me-1"></i>Название задачи</label>
+                                    <input type="text" name="name" class="form-control" id="id_name" value="{{ form.name.value|default:'' }}" required>
+                                    <div class="form-text">Например: "Дообучение Qwen на юридических документах"</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="id_base_model" class="form-label"><i class="bi bi-cpu me-1"></i>Базовая модель</label>
+                                    <select name="base_model" class="form-select" id="id_base_model" required>
+                                        <option value="">Выберите модель...</option>
+                                        {% for model in available_models %}
+                                        <option value="{{ model.id }}" {% if form.base_model.value == model.id %}selected{% endif %}>
+                                            {{ model.display_name }} ({{ model.size_gb }} GB, {{ model.parameter_count|floatformat:0 }} params)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Загруженная модель для дообучения</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Квантизация -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="id_quantization" class="form-label"><i class="bi bi-arrow-down-up me-1"></i>Квантизация</label>
+                                    <select name="quantization" class="form-select" id="id_quantization" required>
+                                        {% for value, label in form.quantization.field.choices %}
+                                        <option value="{{ value }}" {% if form.quantization.value == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Тип квантизации для обучения (будет применён к модели)</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label"><i class="bi bi-text-paragraph me-1"></i>Описание (необязательно)</label>
+                            <textarea name="description" class="form-control" id="id_description" rows="3">{{ form.description.value|default:'' }}</textarea>
+                        </div>
+                        
+                        <!-- Выбор метода обучения -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Метод обучения</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for value, label in form.method.field.choices %}
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card bg-dark border method-card {% if form.method.value == value %}selected{% endif %}" data-method="{{ value }}" id="method-card-{{ value }}">
+                                            <div class="card-body text-center p-3">
+                                                {% if value == 'document' %}
+                                                <i class="bi bi-file-text fs-1 mb-2" style="color: var(--primary-color);"></i>
+                                                <h6 class="mb-2">Обучение на документах</h6>
+                                                <small class="text-muted">Погружение в доменную терминологию</small>
+                                                {% elif value == 'instruction' %}
+                                                <i class="bi bi-chat-text fs-1 mb-2" style="color: var(--success-color);"></i>
+                                                <h6 class="mb-2">Обучение на инструкциях</h6>
+                                                <small class="text-muted">Формирование желаемого поведения</small>
+                                                {% elif value == 'raft' %}
+                                                <i class="bi bi-stars fs-1 mb-2" style="color: var(--accent-color);"></i>
+                                                <h6 class="mb-2">RAFT</h6>
+                                                <small class="text-muted">Retrieval-Augmented Fine-Tuning</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" name="method" id="id_method" value="{{ form.method.value|default:'document' }}">
+                            </div>
+                        </div>
+                        
+                        <!-- Источники данных -->
+                        <div class="card mb-4" id="dataSourcesCard">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0"><i class="bi bi-database me-2"></i>Источники данных</h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Коллекции документов (для document и raft) -->
+                                <div id="documentCollectionsSection" class="mb-4" style="display: none;">
+                                    <h6 class="small text-muted mb-2">Коллекции документов:</h6>
+                                    {% if available_collections %}
+                                    <div class="row">
+                                        {% for collection in available_collections %}
+                                        <div class="col-md-4 col-sm-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input collection-checkbox" type="checkbox" name="document_collections" value="{{ collection.id }}" id="collection_{{ collection.id }}" {% if collection.id in form.document_collections.value %}checked{% endif %}>
+                                                <label class="form-check-label" for="collection_{{ collection.id }}">
+                                                    {{ collection.name }}
+                                                    <small class="text-muted d-block">{{ collection.total_documents }} док., {% if collection.total_vectors %}{{ collection.total_vectors }} векторов{% endif %}</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Нет доступных коллекций.</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Датасеты инструкций (три типа) -->
+                                <div id="instructionDatasetsSection" style="display: none;">
+                                    <!-- Датасеты дистилляции -->
+                                    <div class="dataset-group">
+                                        <h6 class="small text-muted mb-2">📊 Датасеты дистилляции:</h6>
+                                        {% if distillation_datasets %}
+                                        <div class="row">
+                                            {% for ds in distillation_datasets %}
+                                            <div class="col-md-4 col-sm-6 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input distillation-dataset-checkbox" type="checkbox" name="distillation_datasets" value="{{ ds.id }}" id="distillation_{{ ds.id }}">
+                                                    <label class="form-check-label" for="distillation_{{ ds.id }}">
+                                                        {{ ds.name }}
+                                                        <small class="text-muted d-block">{{ ds.items|length }} записей</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <div class="text-muted small">Нет датасетов дистилляции</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Ручные датасеты -->
+                                    <div class="dataset-group">
+                                        <h6 class="small text-muted mb-2">✍️ Ручные датасеты:</h6>
+                                        {% if manual_datasets %}
+                                        <div class="row">
+                                            {% for ds in manual_datasets %}
+                                            <div class="col-md-4 col-sm-6 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input manual-dataset-checkbox" type="checkbox" name="manual_datasets" value="{{ ds.id }}" id="manual_{{ ds.id }}">
+                                                    <label class="form-check-label" for="manual_{{ ds.id }}">
+                                                        {{ ds.name }}
+                                                        <small class="text-muted d-block">{{ ds.instructions.count }} инструкций</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <div class="text-muted small">Нет ручных датасетов</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Датасеты Hugging Face -->
+                                    <div class="dataset-group">
+                                        <h6 class="small text-muted mb-2">🤗 Датасеты Hugging Face:</h6>
+                                        {% if hf_datasets %}
+                                        <div class="row">
+                                            {% for ds in hf_datasets %}
+                                            <div class="col-md-4 col-sm-6 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input hf-dataset-checkbox" type="checkbox" name="hf_datasets" value="{{ ds.id }}" id="hf_{{ ds.id }}">
+                                                    <label class="form-check-label" for="hf_{{ ds.id }}">
+                                                        {{ ds.name|default:ds.repo_id }}
+                                                        <small class="text-muted d-block">{{ ds.total_entries }} записей</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <div class="text-muted small">Нет импортированных датасетов Hugging Face</div>
+                                        <div class="mt-2">
+                                            <a href="{% url 'hf_dataset_list' %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-cloud-download"></i> Импортировать датасет
+                                            </a>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Параметры LoRA -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0"><i class="bi bi-sliders2 me-2"></i>Параметры LoRA</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_lora_r" class="form-label">R (ранг)</label>
+                                        <input type="number" name="lora_r" class="form-control" id="id_lora_r" value="{{ form.lora_r.value|default:'16' }}" min="1" max="128">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_lora_alpha" class="form-label">Alpha</label>
+                                        <input type="number" name="lora_alpha" class="form-control" id="id_lora_alpha" value="{{ form.lora_alpha.value|default:'32' }}" min="1" max="256">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_lora_dropout" class="form-label">Dropout</label>
+                                        <input type="number" name="lora_dropout" class="form-control" id="id_lora_dropout" value="{{ form.lora_dropout.value|default:'0.05' }}" step="0.01" min="0" max="0.5">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Гиперпараметры обучения -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Гиперпараметры обучения</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_learning_rate" class="form-label">Learning rate</label>
+                                        <input type="number" name="learning_rate" class="form-control" id="id_learning_rate" value="{{ form.learning_rate.value|default:'5e-5' }}" step="1e-6" min="1e-7" max="1e-3">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_batch_size" class="form-label">Batch size</label>
+                                        <input type="number" name="batch_size" class="form-control" id="id_batch_size" value="{{ form.batch_size.value|default:'4' }}" min="1" max="32">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_gradient_accumulation_steps" class="form-label">Gradient accumulation</label>
+                                        <input type="number" name="gradient_accumulation_steps" class="form-control" id="id_gradient_accumulation_steps" value="{{ form.gradient_accumulation_steps.value|default:'4' }}" min="1" max="32">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_num_epochs" class="form-label">Epochs</label>
+                                        <input type="number" name="num_epochs" class="form-control" id="id_num_epochs" value="{{ form.num_epochs.value|default:'3' }}" min="1" max="20">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_max_seq_length" class="form-label">Max sequence length</label>
+                                        <input type="number" name="max_seq_length" class="form-control" id="id_max_seq_length" value="{{ form.max_seq_length.value|default:'2048' }}" min="512" max="8192" step="512">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Параметры RAFT (показываются только для RAFT метода) -->
+                        <div class="card mb-4" id="raftParamsCard" style="display: none;">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0"><i class="bi bi-stars me-2"></i>Параметры RAFT</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_distractors_per_example" class="form-label">Дистракторов на пример</label>
+                                        <input type="number" name="distractors_per_example" class="form-control" id="id_distractors_per_example" value="{{ form.distractors_per_example.value|default:'3' }}" min="1" max="10">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_oracle_ratio" class="form-label">Доля oracle примеров</label>
+                                        <input type="number" name="oracle_ratio" class="form-control" id="id_oracle_ratio" value="{{ form.oracle_ratio.value|default:'0.3' }}" step="0.05" min="0" max="1">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_distractor_ratio" class="form-label">Доля с дистракторами</label>
+                                        <input type="number" name="distractor_ratio" class="form-control" id="id_distractor_ratio" value="{{ form.distractor_ratio.value|default:'0.5' }}" step="0.05" min="0" max="1">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_no_context_ratio" class="form-label">Доля без контекста</label>
+                                        <input type="number" name="no_context_ratio" class="form-control" id="id_no_context_ratio" value="{{ form.no_context_ratio.value|default:'0.2' }}" step="0.05" min="0" max="1">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_kl_lambda" class="form-label">KL Lambda</label>
+                                        <input type="number" name="kl_lambda" class="form-control" id="id_kl_lambda" value="{{ form.kl_lambda.value|default:'0.1' }}" step="0.01" min="0" max="0.5">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="id_general_instructions_ratio" class="form-label">Доля общих инструкций</label>
+                                        <input type="number" name="general_instructions_ratio" class="form-control" id="id_general_instructions_ratio" value="{{ form.general_instructions_ratio.value|default:'0.2' }}" step="0.01" min="0" max="0.5">
+                                    </div>
+                                </div>
+                                <div class="form-check mt-3">
+                                    <input class="form-check-input" type="checkbox" name="use_kl_regularization" id="id_use_kl_regularization" {% if form.use_kl_regularization.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_use_kl_regularization"><strong>Использовать KL-регуляризацию против забывания</strong></label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Предпросмотр задачи -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0"><i class="bi bi-eye me-2"></i>Предпросмотр задачи</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 mb-3"><div class="card bg-dark border h-100"><div class="card-body text-center"><h5 id="previewMethod">—</h5><small class="text-muted">Метод</small></div></div></div>
+                                    <div class="col-md-3 mb-3"><div class="card bg-dark border h-100"><div class="card-body text-center"><h5 id="previewCollections">0</h5><small class="text-muted">Коллекций</small></div></div></div>
+                                    <div class="col-md-3 mb-3"><div class="card bg-dark border h-100"><div class="card-body text-center"><h5 id="previewDatasets">0</h5><small class="text-muted">Датасетов</small></div></div></div>
+                                    <div class="col-md-3 mb-3"><div class="card bg-dark border h-100"><div class="card-body text-center"><h5 id="previewTime">—</h5><small class="text-muted">Время</small></div></div></div>
+                                </div>
+                                <div class="alert alert-info" id="previewAlert"><i class="bi bi-info-circle me-2"></i><span id="previewMessage">Заполните основные параметры для предпросмотра</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'fine_tuning_dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Назад</a>
+                            <div>
+                                <button type="button" class="btn btn-outline-primary me-2" onclick="previewTask()"><i class="bi bi-eye me-1"></i>Предпросмотр</button>
+                                <button type="submit" class="btn btn-primary" id="submitBtn"><i class="bi bi-play-circle me-1"></i>Запустить обучение</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initMethodCards();
+    updateMethodSections();
+    
+    const fields = ['id_base_model', 'id_quantization', 'id_lora_r', 'id_lora_alpha', 'id_num_epochs'];
+    fields.forEach(id => document.getElementById(id)?.addEventListener('change', updatePreview));
+    document.querySelectorAll('.collection-checkbox, .distillation-dataset-checkbox, .manual-dataset-checkbox, .hf-dataset-checkbox').forEach(cb => cb.addEventListener('change', updatePreview));
+    
+    updatePreview();
+    
+    const createForm = document.getElementById('createFineTuningForm');
+    if (createForm) {
+        createForm.addEventListener('submit', function(e) {
+            const method = document.getElementById('id_method').value;
+            const model = document.getElementById('id_base_model').value;
+            if (!model) { e.preventDefault(); showToast('error', 'Ошибка', 'Выберите базовую модель'); return; }
+            if ((method === 'document' || method === 'raft') && document.querySelectorAll('.collection-checkbox:checked').length === 0) {
+                e.preventDefault(); showToast('error', 'Ошибка', 'Для выбранного метода необходима хотя бы одна коллекция документов'); return;
+            }
+            if ((method === 'instruction' || method === 'raft') && 
+                document.querySelectorAll('.distillation-dataset-checkbox:checked').length === 0 &&
+                document.querySelectorAll('.manual-dataset-checkbox:checked').length === 0 &&
+                document.querySelectorAll('.hf-dataset-checkbox:checked').length === 0) {
+                e.preventDefault(); showToast('error', 'Ошибка', 'Для выбранного метода необходим хотя бы один датасет инструкций'); return;
+            }
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true; submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Создание задачи...';
+            showLoading('Создание задачи fine-tuning...');
+        });
+    }
+});
+
+function initMethodCards() {
+    const methodInput = document.getElementById('id_method');
+    const cards = document.querySelectorAll('.method-card');
+    cards.forEach(card => {
+        card.addEventListener('click', function() {
+            const method = this.dataset.method;
+            cards.forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            methodInput.value = method;
+            updateMethodSections();
+            updatePreview();
+        });
+    });
+    updateMethodSelection(methodInput.value);
+}
+
+function updateMethodSelection(method) {
+    document.querySelectorAll('.method-card').forEach(card => {
+        if (card.dataset.method === method) card.classList.add('selected');
+        else card.classList.remove('selected');
+    });
+}
+
+function updateMethodSections() {
+    const method = document.getElementById('id_method').value;
+    document.getElementById('documentCollectionsSection').style.display = (method === 'document' || method === 'raft') ? 'block' : 'none';
+    document.getElementById('instructionDatasetsSection').style.display = (method === 'instruction' || method === 'raft') ? 'block' : 'none';
+    document.getElementById('raftParamsCard').style.display = method === 'raft' ? 'block' : 'none';
+}
+
+function updatePreview() {
+    const method = document.getElementById('id_method').value;
+    const collections = document.querySelectorAll('.collection-checkbox:checked').length;
+    const datasets = document.querySelectorAll('.distillation-dataset-checkbox:checked, .manual-dataset-checkbox:checked, .hf-dataset-checkbox:checked').length;
+    const modelSelect = document.getElementById('id_base_model');
+    const modelName = modelSelect.options[modelSelect.selectedIndex]?.text.split('(')[0].trim() || '—';
+    const quantSelect = document.getElementById('id_quantization');
+    const quantText = quantSelect.options[quantSelect.selectedIndex]?.text || 'int4';
+    const loraR = document.getElementById('id_lora_r').value;
+    const loraAlpha = document.getElementById('id_lora_alpha').value;
+    const epochs = document.getElementById('id_num_epochs').value;
+    
+    let methodDisplay = method === 'document' ? '📄 Документы' : (method === 'instruction' ? '📋 Инструкции' : (method === 'raft' ? '🎯 RAFT' : '—'));
+    document.getElementById('previewMethod').textContent = methodDisplay;
+    document.getElementById('previewCollections').textContent = collections;
+    document.getElementById('previewDatasets').textContent = datasets;
+    
+    let timeEstimate = '—';
+    if (modelName !== '—' && (collections > 0 || datasets > 0)) {
+        const modelFactor = modelName.includes('7B') ? 3 : 1.5;
+        const methodFactor = method === 'raft' ? 2 : 1;
+        const dataFactor = Math.max(1, (collections + datasets));
+        timeEstimate = Math.round(30 * modelFactor * methodFactor * dataFactor / 3) + ' мин';
+    }
+    document.getElementById('previewTime').textContent = timeEstimate;
+    
+    const messageEl = document.getElementById('previewMessage');
+    const alertEl = document.getElementById('previewAlert');
+    if (!modelSelect.value) {
+        messageEl.textContent = 'Выберите базовую модель для начала';
+        alertEl.className = 'alert alert-warning';
+    } else if ((method === 'document' || method === 'raft') && collections === 0) {
+        messageEl.textContent = '⚠️ Для выбранного метода необходима хотя бы одна коллекция документов';
+        alertEl.className = 'alert alert-warning';
+    } else if ((method === 'instruction' || method === 'raft') && datasets === 0) {
+        messageEl.textContent = '⚠️ Для выбранного метода необходим хотя бы один датасет инструкций';
+        alertEl.className = 'alert alert-warning';
+    } else {
+        messageEl.textContent = `✅ Задача готова к запуску. Модель: ${modelName}, Квантизация: ${quantText}, LoRA: r=${loraR}, α=${loraAlpha}, эпох: ${epochs}`;
+        alertEl.className = 'alert alert-info';
+    }
+}
+
+function previewTask() {
+    const method = document.getElementById('id_method').value;
+    const modelSelect = document.getElementById('id_base_model');
+    const modelName = modelSelect.options[modelSelect.selectedIndex]?.text || 'Не выбрана';
+    const quantSelect = document.getElementById('id_quantization');
+    const quantText = quantSelect.options[quantSelect.selectedIndex]?.text || 'int4';
+    const collections = document.querySelectorAll('.collection-checkbox:checked').length;
+    const distillation = document.querySelectorAll('.distillation-dataset-checkbox:checked').length;
+    const manual = document.querySelectorAll('.manual-dataset-checkbox:checked').length;
+    const hf = document.querySelectorAll('.hf-dataset-checkbox:checked').length;
+    const loraR = document.getElementById('id_lora_r').value;
+    const loraAlpha = document.getElementById('id_lora_alpha').value;
+    const epochs = document.getElementById('id_num_epochs').value;
+    const batch = document.getElementById('id_batch_size').value;
+    const lr = document.getElementById('id_learning_rate').value;
+    
+    let methodDisplay = method === 'document' ? 'Обучение на документах' : (method === 'instruction' ? 'Обучение на инструкциях' : (method === 'raft' ? 'RAFT' : '—'));
+    let dataInfo = '';
+    if (method === 'document') dataInfo = `<li>Коллекций документов: <strong>${collections}</strong></li>`;
+    else if (method === 'instruction') dataInfo = `<li>Датасетов инструкций: <strong>${distillation + manual + hf}</strong> (дистилляции: ${distillation}, ручных: ${manual}, HF: ${hf})</li>`;
+    else if (method === 'raft') dataInfo = `<li>Коллекций документов: <strong>${collections}</strong></li><li>Датасетов инструкций: <strong>${distillation + manual + hf}</strong> (дистилляции: ${distillation}, ручных: ${manual}, HF: ${hf})</li>`;
+    
+    const modalContent = `
+        <div class="mb-3"><h6>Детали задачи fine-tuning:</h6><ul class="mb-0"><li>Метод: <strong>${methodDisplay}</strong></li><li>Базовая модель: <strong>${modelName}</strong></li><li>Квантизация: <strong>${quantText}</strong></li>${dataInfo}<li>LoRA параметры: <strong>r=${loraR}, α=${loraAlpha}</strong></li><li>Гиперпараметры: <span class="badge bg-dark">lr: ${lr}</span> <span class="badge bg-dark">batch: ${batch}</span> <span class="badge bg-dark">epochs: ${epochs}</span></li></ul></div>
+        <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Обучение будет выполнено в фоновом режиме. Это может занять от 30 минут до нескольких часов. Вы можете отслеживать прогресс на странице задачи.</div>
+    `;
+    showCustomModal('Предпросмотр задачи fine-tuning', modalContent);
+}
+
+function showCustomModal(title, content) {
+    const modalId = 'customModal_' + Date.now();
+    const modalHtml = `<div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content bg-dark"><div class="modal-header border-bottom"><h5 class="modal-title">${title}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">${content}</div><div class="modal-footer border-top"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button></div></div></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalElement = document.getElementById(modalId);
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    modalElement.addEventListener('hidden.bs.modal', () => modalElement.remove());
+}
+
+function showToast(type, title, message) {
+    if (typeof window.showGlobalToast === 'function') {
+        window.showGlobalToast(message, type);
+        return;
+    }
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toastEl = document.createElement('div');
+        const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info';
+        toastEl.className = `toast align-items-center text-bg-${bgClass} border-0 position-fixed top-0 end-0 m-3`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.style.zIndex = '9999';
+        toastEl.innerHTML = `<div class="d-flex"><div class="toast-body"><strong>${title}:</strong> ${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+        document.body.appendChild(toastEl);
+        const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    } else {
+        alert(`${title}: ${message}`);
+    }
+}
+
+function showLoading(message) {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loadingOverlay';
+    loadingDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999';
+    loadingDiv.innerHTML = `<div class="spinner-border text-primary" role="status"><span class="visually-hidden">${message}</span></div>`;
+    document.body.appendChild(loadingDiv);
+}
+function hideLoading() { const loadingDiv = document.getElementById('loadingOverlay'); if (loadingDiv) loadingDiv.remove(); }
+</script>
+{% endblock %}

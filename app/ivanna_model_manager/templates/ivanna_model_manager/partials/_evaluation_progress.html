@@ -1,0 +1,301 @@
+<div class="card" id="evaluationProgressCard">
+    <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="bi bi-activity me-2"></i>Прогресс выполнения
+        </h6>
+        <span class="badge bg-warning" id="progressStatus">RUNNING</span>
+    </div>
+    <div class="card-body">
+        <!-- Индикатор прогресса -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between small mb-1">
+                <span>Общий прогресс</span>
+                <span id="progressPercentage">0%</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     id="progressBar" role="progressbar" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <!-- Детали выполнения -->
+        <div class="row small text-muted">
+            <div class="col-6">
+                <div class="mb-2">
+                    <i class="bi bi-cpu me-1"></i>
+                    <span id="completedModels">0</span>/<span id="totalModels">0</span> моделей
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-question-circle me-1"></i>
+                    <span id="completedQuestions">0</span>/<span id="totalQuestions">0</span> вопросов
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="mb-2">
+                    <i class="bi bi-clock me-1"></i>
+                    <span id="elapsedTime">0:00</span>
+                </div>
+                <div class="mb-2">
+                    <i class="bi bi-lightning me-1"></i>
+                    <span id="estimatedTime">—</span> осталось
+                </div>
+            </div>
+        </div>
+        
+        <!-- Текущий шаг -->
+        <div class="mt-3">
+            <h6 class="small text-muted mb-1">Текущий шаг:</h6>
+            <div class="p-2 bg-dark rounded small" id="currentStep">
+                Инициализация...
+            </div>
+        </div>
+        
+        <!-- Прогресс по моделям -->
+        <div class="mt-3" id="modelsProgress" style="display: none;">
+            <h6 class="small text-muted mb-2">Прогресс по моделям:</h6>
+            <div id="modelsProgressList">
+                <!-- Прогресс по каждой модели будет добавляться динамически -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Этот скрипт должен быть включен в страницу, где используется компонент
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof taskId !== 'undefined') {
+        startProgressUpdater(taskId);
+    }
+});
+
+function startProgressUpdater(taskId) {
+    // Первое обновление сразу
+    updateProgress(taskId);
+    
+    // Затем каждые 5 секунд
+    const intervalId = setInterval(() => {
+        updateProgress(taskId, intervalId);
+    }, 5000);
+    
+    // Сохраняем ID интервала для очистки
+    window.progressIntervalId = intervalId;
+}
+
+function updateProgress(taskId, intervalId = null) {
+    fetch(`/api/evaluation/tasks/${taskId}/status/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateProgressUI(data);
+                
+                // Если задача завершена или провалилась, останавливаем обновление
+                if (data.status === 'COMPLETED' || data.status === 'FAILED' || data.status === 'CANCELLED') {
+                    if (intervalId) {
+                        clearInterval(intervalId);
+                    }
+                    if (window.progressIntervalId) {
+                        clearInterval(window.progressIntervalId);
+                    }
+                    
+                    // Обновляем статус
+                    const statusBadge = document.getElementById('progressStatus');
+                    if (statusBadge) {
+                        let badgeClass = 'badge bg-';
+                        let badgeText = '';
+                        
+                        switch(data.status) {
+                            case 'COMPLETED':
+                                badgeClass += 'success';
+                                badgeText = 'ЗАВЕРШЕНО';
+                                break;
+                            case 'FAILED':
+                                badgeClass += 'danger';
+                                badgeText = 'ОШИБКА';
+                                break;
+                            case 'CANCELLED':
+                                badgeClass += 'secondary';
+                                badgeText = 'ОТМЕНЕНО';
+                                break;
+                            default:
+                                badgeClass += 'warning';
+                                badgeText = data.status;
+                        }
+                        
+                        statusBadge.className = badgeClass;
+                        statusBadge.textContent = badgeText;
+                    }
+                    
+                    // Убираем анимацию с прогресс-бара
+                    const progressBar = document.getElementById('progressBar');
+                    if (progressBar) {
+                        progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+                    }
+                    
+                    // Показываем сообщение
+                    if (data.status === 'COMPLETED') {
+                        showToast('success', 'Завершено', 'Оценка моделей завершена');
+                    } else if (data.status === 'FAILED') {
+                        showToast('error', 'Ошибка', 'Оценка завершилась с ошибкой');
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error updating progress:', error);
+            // В случае ошибки попробуем снова через 10 секунд
+            if (intervalId) {
+                setTimeout(() => updateProgress(taskId, intervalId), 10000);
+            }
+        });
+}
+
+function updateProgressUI(data) {
+    // Общий прогресс
+    const progressPercentage = document.getElementById('progressPercentage');
+    const progressBar = document.getElementById('progressBar');
+    
+    if (progressPercentage && progressBar) {
+        progressPercentage.textContent = `${data.progress || 0}%`;
+        progressBar.style.width = `${data.progress || 0}%`;
+    }
+    
+    // Статус
+    const progressStatus = document.getElementById('progressStatus');
+    if (progressStatus) {
+        let badgeClass = 'badge ';
+        switch(data.status) {
+            case 'RUNNING':
+                badgeClass += 'bg-success';
+                break;
+            case 'PENDING':
+                badgeClass += 'bg-secondary';
+                break;
+            case 'FAILED':
+                badgeClass += 'bg-danger';
+                break;
+            case 'COMPLETED':
+                badgeClass += 'bg-success';
+                break;
+            default:
+                badgeClass += 'bg-warning';
+        }
+        progressStatus.className = badgeClass;
+        progressStatus.textContent = data.status || 'UNKNOWN';
+    }
+    
+    // Детали выполнения
+    updateElementText('totalModels', data.total_models || 0);
+    updateElementText('totalQuestions', data.total_questions || 0);
+    
+    // Рассчитываем выполненные модели и вопросы
+    const completedModels = data.completed_models || Math.floor((data.progress || 0) / (100 / (data.total_models || 1)));
+    const completedQuestions = data.completed_questions || Math.floor((data.progress || 0) / (100 / (data.total_questions || 1)));
+    
+    updateElementText('completedModels', completedModels);
+    updateElementText('completedQuestions', completedQuestions);
+    
+    // Время
+    updateElementText('elapsedTime', formatTime(data.elapsed_time || 0));
+    updateElementText('estimatedTime', formatTime(data.estimated_time || 0));
+    
+    // Текущий шаг
+    updateElementText('currentStep', data.current_step || 'Неизвестный шаг');
+}
+
+function updateElementText(elementId, text) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = text;
+    }
+}
+
+function formatTime(seconds) {
+    if (!seconds || seconds < 0) return '—';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    }
+}
+
+function showToast(type, title, message) {
+    // Проверяем, есть ли функция showToast, если нет - создаем простую
+    if (typeof window.showToast === 'function') {
+        window.showToast(type, title, message);
+    } else {
+        // Создаем простой toast
+        const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+        
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+            <div class="toast align-items-center text-bg-${type} border-0" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong>${title}</strong>: ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 5000
+        });
+        toast.show();
+    }
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Функция для отображения прогресса по моделям
+function showModelsProgress(models) {
+    const container = document.getElementById('modelsProgress');
+    const listContainer = document.getElementById('modelsProgressList');
+    
+    if (container && listContainer && models && models.length > 0) {
+        container.style.display = 'block';
+        
+        let html = '';
+        models.forEach(model => {
+            html += `
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between small">
+                        <span>${model.name}</span>
+                        <span>${model.progress || 0}%</span>
+                    </div>
+                    <div class="progress" style="height: 5px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${model.progress || 0}%"></div>
+                    </div>
+                    <div class="small text-muted mt-1">
+                        ${model.completed_questions || 0}/${model.total_questions || 0} вопросов
+                    </div>
+                </div>
+            `;
+        });
+        
+        listContainer.innerHTML = html;
+    }
+}
+
+// Очистка при закрытии страницы
+window.addEventListener('beforeunload', function() {
+    if (window.progressIntervalId) {
+        clearInterval(window.progressIntervalId);
+    }
+});
+</script>

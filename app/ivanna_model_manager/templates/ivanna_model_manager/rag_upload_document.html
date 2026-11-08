@@ -1,0 +1,970 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Загрузка документов - RAG | Ivanna Lab{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-cloud-upload me-2" style="color: var(--primary-color);"></i> Загрузка документов
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* =============================================
+       ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ТОЛЬКО ДЛЯ ЭТОЙ СТРАНИЦЫ
+       ============================================= */
+
+    /* Область перетаскивания файлов */
+    .dropzone {
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 40px 20px;
+        text-align: center;
+        transition: all 0.3s;
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        margin-bottom: 20px;
+    }
+
+    .dropzone:hover {
+        border-color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.05);
+    }
+
+    .dropzone.dragover {
+        border-color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.1);
+        transform: scale(1.01);
+    }
+
+    .dropzone i {
+        font-size: 48px;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        opacity: 0.8;
+    }
+
+    .dropzone h5 {
+        color: white;
+        margin-bottom: 10px;
+    }
+
+    .dropzone p {
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 15px;
+    }
+
+    .dropzone .btn-browse {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 10px 25px;
+        border-radius: 30px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .dropzone .btn-browse:hover {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(var(--primary-rgb), 0.3);
+    }
+
+    /* Список выбранных файлов */
+    .file-list {
+        margin-top: 20px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    .file-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.2s;
+    }
+
+    .file-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--primary-color);
+    }
+
+    .file-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        margin-right: 15px;
+        font-size: 20px;
+    }
+
+    .file-icon.pdf { color: #f40f02; }
+    .file-icon.docx { color: #2b5797; }
+    .file-icon.txt { color: #cccccc; }
+    .file-icon.html { color: #e44d26; }
+    .file-icon.md { color: #238636; }
+    .file-icon.csv { color: #217346; }
+    .file-icon.xlsx { color: #217346; }
+
+    .file-info {
+        flex: 1;
+    }
+
+    .file-name {
+        font-weight: 500;
+        color: white;
+        margin-bottom: 3px;
+        word-break: break-word;
+    }
+
+    .file-meta {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.5);
+        display: flex;
+        gap: 15px;
+    }
+
+    .file-remove {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: rgba(255, 255, 255, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+
+    .file-remove:hover {
+        background: rgba(220, 53, 69, 0.8);
+        color: white;
+        transform: scale(1.1);
+    }
+
+    /* Прогресс-бар */
+    .upload-progress {
+        margin-top: 20px;
+        display: none;
+    }
+
+    .progress {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        text-align: right;
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 5px;
+    }
+
+    /* Информационная карточка */
+    .info-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 20px;
+        height: 100%;
+    }
+
+    .info-card h6 {
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .info-card .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .info-card .stat-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .info-card .badge-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .info-card .badge {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+
+    /* Прокручиваемый список коллекций */
+    .collections-scroll {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    .collections-scroll::-webkit-scrollbar {
+        width: 4px;
+    }
+    .collections-scroll::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .collections-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0"> <!-- Используем всю ширину без дополнительных отступов -->
+    <div class="row g-4"> <!-- g-4 добавляет отступы между колонками -->
+        <div class="col-lg-8">
+            <!-- Карточка с формой загрузки -->
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="uploadTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if not show_multiple %}active{% endif %}" 
+                                    id="single-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#single" type="button" role="tab"
+                                    aria-controls="single" aria-selected="{% if not show_multiple %}true{% else %}false{% endif %}">
+                                <i class="bi bi-file-earmark me-1"></i> Один документ
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if show_multiple %}active{% endif %}" 
+                                    id="multiple-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#multiple" type="button" role="tab"
+                                    aria-controls="multiple" aria-selected="{% if show_multiple %}true{% else %}false{% endif %}">
+                                <i class="bi bi-files me-1"></i> Несколько документов
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="uploadTabsContent">
+                        <!-- ОДИН ДОКУМЕНТ -->
+                        <div class="tab-pane fade {% if not show_multiple %}show active{% endif %}" 
+                             id="single" role="tabpanel" aria-labelledby="single-tab">
+                            <form method="post" enctype="multipart/form-data" id="singleUploadForm">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Коллекция *</label>
+                                        <select name="collection" class="form-select" required>
+                                            <option value="">Выберите коллекцию...</option>
+                                            {% for collection in collections_list %}
+                                            <option value="{{ collection.id }}" 
+                                                {% if request.GET.collection == collection.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ collection.name }}
+                                                {% if not collection.is_public %} (личная){% endif %}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Категория (необязательно)</label>
+                                        <input type="text" name="category" class="form-control" 
+                                               placeholder="например: договоры">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Теги (через запятую)</label>
+                                    <input type="text" name="tags" class="form-control" 
+                                           placeholder="юридические, важные, 2025">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Название документа</label>
+                                    <input type="text" name="title" class="form-control" id="singleTitle"
+                                           placeholder="Если не указано, будет использовано имя файла">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Описание</label>
+                                    <textarea name="description" class="form-control" rows="2" 
+                                              placeholder="Краткое описание документа"></textarea>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Размер чанка (символов)</label>
+                                        <input type="number" name="chunk_size" class="form-control" 
+                                               value="1000" min="100" max="10000" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Перекрытие чанков</label>
+                                        <input type="number" name="chunk_overlap" class="form-control" 
+                                               value="200" min="0" max="2000" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="auto_process" class="form-check-input" 
+                                               id="singleAutoProcess" checked>
+                                        <label class="form-check-label" for="singleAutoProcess">
+                                            Автоматически начать обработку после загрузки
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Область загрузки файла (один) -->
+                                <div class="dropzone" id="singleDropzone">
+                                    <i class="bi bi-cloud-arrow-up"></i>
+                                    <h5>Перетащите файл сюда</h5>
+                                    <p>или</p>
+                                    <button type="button" class="btn-browse" id="singleBrowseBtn">
+                                        <i class="bi bi-folder2-open me-1"></i> Выбрать файл
+                                    </button>
+                                    <input type="file" name="file" id="singleFileInput" 
+                                           accept=".pdf,.docx,.doc,.txt,.html,.htm,.md" 
+                                           style="display: none;">
+                                </div>
+
+                                <!-- Выбранный файл (будет показан через JS) -->
+                                <div id="singleFileList" class="file-list" style="display: none;"></div>
+
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button type="reset" class="btn btn-outline-secondary">Очистить</button>
+                                    <button type="submit" class="btn btn-primary" id="singleSubmitBtn">
+                                        <i class="bi bi-upload me-1"></i> Загрузить
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- МНОЖЕСТВЕННАЯ ЗАГРУЗКА -->
+                        <div class="tab-pane fade {% if show_multiple %}show active{% endif %}" 
+                             id="multiple" role="tabpanel" aria-labelledby="multiple-tab">
+                            <form method="post" enctype="multipart/form-data" id="multipleUploadForm">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Коллекция *</label>
+                                        <select name="collection" class="form-select" required>
+                                            <option value="">Выберите коллекцию...</option>
+                                            {% for collection in collections_list %}
+                                            <option value="{{ collection.id }}" 
+                                                {% if request.GET.collection == collection.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ collection.name }}
+                                                {% if not collection.is_public %} (личная){% endif %}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Категория (необязательно)</label>
+                                        <input type="text" name="category" class="form-control" 
+                                               placeholder="например: договоры">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Теги (через запятую)</label>
+                                    <input type="text" name="tags" class="form-control" 
+                                           placeholder="юридические, важные, 2025">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Префикс названия</label>
+                                    <input type="text" name="title_prefix" class="form-control" id="multiPrefix"
+                                           placeholder="Будет добавлен к каждому документу">
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Размер чанка (символов)</label>
+                                        <input type="number" name="chunk_size" class="form-control" 
+                                               value="1000" min="100" max="10000" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Перекрытие чанков</label>
+                                        <input type="number" name="chunk_overlap" class="form-control" 
+                                               value="200" min="0" max="2000" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="auto_process" class="form-check-input" 
+                                               id="multiAutoProcess" checked>
+                                        <label class="form-check-label" for="multiAutoProcess">
+                                            Автоматически начать обработку после загрузки
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Область загрузки файлов (множественная) -->
+                                <div class="dropzone" id="multipleDropzone">
+                                    <i class="bi bi-cloud-arrow-up"></i>
+                                    <h5>Перетащите файлы сюда</h5>
+                                    <p>или</p>
+                                    <button type="button" class="btn-browse" id="multipleBrowseBtn">
+                                        <i class="bi bi-folder2-open me-1"></i> Выбрать файлы
+                                    </button>
+                                    <input type="file" name="files" id="multipleFileInput" 
+                                           multiple accept=".pdf,.docx,.doc,.txt,.html,.htm,.md,.csv,.xlsx,.xls" 
+                                           style="display: none;">
+                                </div>
+
+                                <!-- Список выбранных файлов -->
+                                <div id="multipleFileList" class="file-list" style="display: none;"></div>
+
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button type="reset" class="btn btn-outline-secondary">Очистить</button>
+                                    <button type="submit" class="btn btn-primary" id="multipleSubmitBtn">
+                                        <i class="bi bi-upload me-1"></i> Загрузить
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Прогресс загрузки (общий) -->
+                    <div class="upload-progress" id="uploadProgress">
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 d-flex flex-column">
+            <!-- Информационная карточка -->
+            <div class="info-card mb-4">
+                <h6><i class="bi bi-info-circle me-2"></i> Информация о загрузке</h6>
+                <div class="stat-item">
+                    <span>Максимальный размер файла</span>
+                    <strong>{{ upload_stats.max_file_size }}</strong>
+                </div>
+                <div class="stat-item">
+                    <span>Максимальное количество файлов</span>
+                    <strong>{{ upload_stats.max_files }}</strong>
+                </div>
+                <div class="stat-item">
+                    <span>Доступные форматы</span>
+                </div>
+                <div class="badge-container">
+                    {% for fmt in upload_stats.allowed_formats|split:", " %}
+                    <span class="badge">{{ fmt }}</span>
+                    {% endfor %}
+                </div>
+                <hr class="bg-secondary">
+                <div class="stat-item">
+                    <span>Рекомендации</span>
+                </div>
+                <ul class="mt-2 mb-0 ps-3" style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                    <li>PDF — лучшее качество текста</li>
+                    <li>DOCX/DOC — поддерживается извлечение</li>
+                    <li>Текстовые файлы — самый быстрый вариант</li>
+                </ul>
+            </div>
+
+            <!-- Ваши коллекции -->
+            <div class="info-card">
+                <h6><i class="bi bi-folder me-2"></i> Ваши коллекции</h6>
+                {% if collections_list %}
+                    <div class="collections-scroll">
+                        {% for collection in collections_list %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>
+                                <i class="bi bi-folder2-open me-1" style="color: var(--primary-color);"></i>
+                                {{ collection.name }}
+                                {% if not collection.is_public %}
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">личная</span>
+                                {% endif %}
+                            </span>
+                            <span class="text-muted small">{{ collection.documents.count }} док.</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">У вас ещё нет коллекций.</p>
+                    <a href="{% url 'rag_collection_create' %}" class="btn btn-sm btn-primary mt-2">
+                        <i class="bi bi-plus me-1"></i> Создать коллекцию
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// =============================================
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ (безопасное использование Bootstrap)
+// =============================================
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(type, title, message) {
+    const icons = {
+        success: 'bi-check-circle-fill text-success',
+        error: 'bi-exclamation-circle-fill text-danger',
+        warning: 'bi-exclamation-triangle-fill text-warning',
+        info: 'bi-info-circle-fill text-info'
+    };
+
+    const toastId = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi ${icons[type] || icons.info} me-2"></i>
+                    <strong>${title}</strong><br>${message}
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+
+    const container = document.getElementById('toastContainer');
+    if (container) {
+        container.insertAdjacentHTML('beforeend', toastHtml);
+    } else {
+        // Создаём временный контейнер, если его нет (на случай, если base.html не содержит)
+        const newContainer = document.createElement('div');
+        newContainer.id = 'toastContainer';
+        newContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(newContainer);
+        newContainer.insertAdjacentHTML('beforeend', toastHtml);
+    }
+
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+    toast.show();
+
+    toastElement.addEventListener('hidden.bs.toast', function () {
+        toastElement.remove();
+    });
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getFileIconClass(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const map = {
+        'pdf': 'bi-file-pdf pdf',
+        'docx': 'bi-file-word docx',
+        'doc': 'bi-file-word docx',
+        'txt': 'bi-file-text txt',
+        'html': 'bi-file-code html',
+        'htm': 'bi-file-code html',
+        'md': 'bi-markdown md',
+        'csv': 'bi-file-spreadsheet csv',
+        'xlsx': 'bi-file-excel xlsx',
+        'xls': 'bi-file-excel xlsx'
+    };
+    return map[ext] || 'bi-file-earmark';
+}
+
+// =============================================
+// ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+// =============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Элементы для одиночной загрузки
+    const singleForm = document.getElementById('singleUploadForm');
+    const singleDropzone = document.getElementById('singleDropzone');
+    const singleBrowseBtn = document.getElementById('singleBrowseBtn');
+    const singleFileInput = document.getElementById('singleFileInput');
+    const singleFileList = document.getElementById('singleFileList');
+    const singleTitle = document.getElementById('singleTitle');
+    const singleSubmitBtn = document.getElementById('singleSubmitBtn');
+
+    // Элементы для множественной загрузки
+    const multiForm = document.getElementById('multipleUploadForm');
+    const multiDropzone = document.getElementById('multipleDropzone');
+    const multiBrowseBtn = document.getElementById('multipleBrowseBtn');
+    const multiFileInput = document.getElementById('multipleFileInput');
+    const multiFileList = document.getElementById('multipleFileList');
+    const multiPrefix = document.getElementById('multiPrefix');
+    const multiSubmitBtn = document.getElementById('multipleSubmitBtn');
+
+    // Общие элементы
+    const progressContainer = document.getElementById('uploadProgress');
+    const progressBar = document.querySelector('#uploadProgress .progress-bar');
+    const progressText = document.getElementById('progressText');
+
+    function resetProgress() {
+        if (progressContainer) progressContainer.style.display = 'none';
+        if (progressBar) progressBar.style.width = '0%';
+        if (progressText) progressText.textContent = '0%';
+    }
+
+    function updateProgress(percent) {
+        if (progressContainer) progressContainer.style.display = 'block';
+        if (progressBar) progressBar.style.width = percent + '%';
+        if (progressText) progressText.textContent = percent + '%';
+    }
+
+    // ========== ОДИНОЧНАЯ ЗАГРУЗКА ==========
+    if (singleBrowseBtn && singleDropzone && singleFileInput) {
+        singleBrowseBtn.addEventListener('click', () => singleFileInput.click());
+        singleDropzone.addEventListener('click', () => singleFileInput.click());
+
+        singleDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            singleDropzone.classList.add('dragover');
+        });
+        singleDropzone.addEventListener('dragleave', () => {
+            singleDropzone.classList.remove('dragover');
+        });
+        singleDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            singleDropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                singleFileInput.files = e.dataTransfer.files;
+                updateSingleFileList();
+            }
+        });
+
+        singleFileInput.addEventListener('change', updateSingleFileList);
+    }
+
+    function updateSingleFileList() {
+        if (!singleFileInput || !singleFileList) return;
+        const files = singleFileInput.files;
+        if (files.length === 0) {
+            singleFileList.style.display = 'none';
+            singleFileList.innerHTML = '';
+            return;
+        }
+
+        const file = files[0];
+        const iconClass = getFileIconClass(file.name);
+        const size = formatFileSize(file.size);
+
+        singleFileList.innerHTML = `
+            <div class="file-item" data-file-name="${file.name}">
+                <div class="file-icon ${iconClass.split(' ')[1]}">
+                    <i class="bi ${iconClass.split(' ')[0]}"></i>
+                </div>
+                <div class="file-info">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-meta">
+                        <span><i class="bi bi-hdd"></i> ${size}</span>
+                    </div>
+                </div>
+                <button type="button" class="file-remove" onclick="removeSingleFile()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        `;
+        singleFileList.style.display = 'block';
+
+        if (singleTitle && !singleTitle.value) {
+            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+            singleTitle.value = nameWithoutExt;
+        }
+    }
+
+    window.removeSingleFile = function() {
+        if (singleFileInput) singleFileInput.value = '';
+        if (singleFileList) {
+            singleFileList.style.display = 'none';
+            singleFileList.innerHTML = '';
+        }
+    };
+
+    if (singleForm) {
+        singleForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!singleFileInput || singleFileInput.files.length === 0) {
+                showToast('warning', 'Внимание', 'Выберите файл для загрузки');
+                return;
+            }
+
+            const formData = new FormData(singleForm);
+            singleSubmitBtn.disabled = true;
+            singleSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Загрузка...';
+            resetProgress();
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '{% url "rag_upload_documents" %}', true);
+            xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    updateProgress(Math.round((e.loaded / e.total) * 100));
+                }
+            });
+
+            xhr.addEventListener('load', function() {
+                singleSubmitBtn.disabled = false;
+                singleSubmitBtn.innerHTML = '<i class="bi bi-upload me-1"></i> Загрузить';
+
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            showToast('success', 'Успешно', response.message);
+                            singleForm.reset();
+                            if (singleFileList) {
+                                singleFileList.style.display = 'none';
+                                singleFileList.innerHTML = '';
+                            }
+                            resetProgress();
+                            if (response.redirect_url) {
+                                setTimeout(() => {
+                                    window.location.href = response.redirect_url;
+                                }, 1500);
+                            }
+                        } else {
+                            showToast('error', 'Ошибка', response.error || 'Неизвестная ошибка');
+                            resetProgress();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Некорректный ответ сервера');
+                        resetProgress();
+                    }
+                } else {
+                    let errorMsg = 'Ошибка сервера: ' + xhr.status;
+                    try {
+                        const err = JSON.parse(xhr.responseText);
+                        if (err.error) errorMsg = err.error;
+                    } catch (e) {}
+                    showToast('error', 'Ошибка', errorMsg);
+                    resetProgress();
+                }
+            });
+
+            xhr.addEventListener('error', function() {
+                singleSubmitBtn.disabled = false;
+                singleSubmitBtn.innerHTML = '<i class="bi bi-upload me-1"></i> Загрузить';
+                showToast('error', 'Ошибка сети', 'Не удалось отправить запрос');
+                resetProgress();
+            });
+
+            xhr.send(formData);
+        });
+    }
+
+    // ========== МНОЖЕСТВЕННАЯ ЗАГРУЗКА ==========
+    if (multiBrowseBtn && multiDropzone && multiFileInput) {
+        multiBrowseBtn.addEventListener('click', () => multiFileInput.click());
+        multiDropzone.addEventListener('click', () => multiFileInput.click());
+
+        multiDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            multiDropzone.classList.add('dragover');
+        });
+        multiDropzone.addEventListener('dragleave', () => {
+            multiDropzone.classList.remove('dragover');
+        });
+        multiDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            multiDropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                multiFileInput.files = e.dataTransfer.files;
+                updateMultiFileList();
+            }
+        });
+
+        multiFileInput.addEventListener('change', updateMultiFileList);
+    }
+
+    function updateMultiFileList() {
+        if (!multiFileInput || !multiFileList) return;
+        const files = multiFileInput.files;
+        if (files.length === 0) {
+            multiFileList.style.display = 'none';
+            multiFileList.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const iconClass = getFileIconClass(file.name);
+            const size = formatFileSize(file.size);
+            html += `
+                <div class="file-item" data-index="${i}">
+                    <div class="file-icon ${iconClass.split(' ')[1]}">
+                        <i class="bi ${iconClass.split(' ')[0]}"></i>
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">
+                            <span><i class="bi bi-hdd"></i> ${size}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="file-remove" onclick="removeMultiFile(${i})">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            `;
+        }
+        multiFileList.innerHTML = html;
+        multiFileList.style.display = 'block';
+    }
+
+    window.removeMultiFile = function(index) {
+        if (!multiFileInput) return;
+        const dt = new DataTransfer();
+        const files = multiFileInput.files;
+        for (let i = 0; i < files.length; i++) {
+            if (i !== index) {
+                dt.items.add(files[i]);
+            }
+        }
+        multiFileInput.files = dt.files;
+        updateMultiFileList();
+    };
+
+    if (multiForm) {
+        multiForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!multiFileInput || multiFileInput.files.length === 0) {
+                showToast('warning', 'Внимание', 'Выберите файлы для загрузки');
+                return;
+            }
+
+            const formData = new FormData(multiForm);
+            multiSubmitBtn.disabled = true;
+            multiSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Загрузка...';
+            resetProgress();
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '{% url "rag_upload_documents" %}', true);
+            xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    updateProgress(Math.round((e.loaded / e.total) * 100));
+                }
+            });
+
+            xhr.addEventListener('load', function() {
+                multiSubmitBtn.disabled = false;
+                multiSubmitBtn.innerHTML = '<i class="bi bi-upload me-1"></i> Загрузить';
+
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            showToast('success', 'Успешно', response.message);
+                            multiForm.reset();
+                            if (multiFileList) {
+                                multiFileList.style.display = 'none';
+                                multiFileList.innerHTML = '';
+                            }
+                            resetProgress();
+                            if (response.redirect_url) {
+                                setTimeout(() => {
+                                    window.location.href = response.redirect_url;
+                                }, 1500);
+                            }
+                        } else {
+                            showToast('error', 'Ошибка', response.error || 'Неизвестная ошибка');
+                            resetProgress();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Некорректный ответ сервера');
+                        resetProgress();
+                    }
+                } else {
+                    let errorMsg = 'Ошибка сервера: ' + xhr.status;
+                    try {
+                        const err = JSON.parse(xhr.responseText);
+                        if (err.error) errorMsg = err.error;
+                    } catch (e) {}
+                    showToast('error', 'Ошибка', errorMsg);
+                    resetProgress();
+                }
+            });
+
+            xhr.addEventListener('error', function() {
+                multiSubmitBtn.disabled = false;
+                multiSubmitBtn.innerHTML = '<i class="bi bi-upload me-1"></i> Загрузить';
+                showToast('error', 'Ошибка сети', 'Не удалось отправить запрос');
+                resetProgress();
+            });
+
+            xhr.send(formData);
+        });
+    }
+
+    // Переключение табов: сброс формы и списка файлов
+    const singleTab = document.getElementById('single-tab');
+    const multipleTab = document.getElementById('multiple-tab');
+
+    if (singleTab) {
+        singleTab.addEventListener('shown.bs.tab', function() {
+            if (multiFileInput) multiFileInput.value = '';
+            if (multiFileList) {
+                multiFileList.style.display = 'none';
+                multiFileList.innerHTML = '';
+            }
+            if (multiForm) multiForm.reset();
+            resetProgress();
+        });
+    }
+
+    if (multipleTab) {
+        multipleTab.addEventListener('shown.bs.tab', function() {
+            if (singleFileInput) singleFileInput.value = '';
+            if (singleFileList) {
+                singleFileList.style.display = 'none';
+                singleFileList.innerHTML = '';
+            }
+            if (singleForm) singleForm.reset();
+            resetProgress();
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,474 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Fine-Tuning - дашборд{% endblock %}
+
+{% block page_title %}Fine-Tuning моделей{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, rgba(30, 30, 30, 0.9), rgba(40, 40, 40, 0.9));
+        border: 1px solid #444;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        border-color: var(--primary-color);
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        color: #aaa;
+        font-weight: 500;
+    }
+    
+    .filter-bar {
+        background: rgba(30, 30, 30, 0.8);
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .filter-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .filter-select {
+        background: rgba(20, 20, 20, 0.9);
+        border: 1px solid #555;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+    
+    .filter-select:hover {
+        border-color: var(--primary-color);
+    }
+    
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+    
+    .search-input {
+        background: rgba(20, 20, 20, 0.9);
+        border: 1px solid #555;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        min-width: 250px;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+    
+    .btn-create {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+    
+    .btn-create:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 70, 193, 0.4);
+        color: white;
+    }
+    
+    .jobs-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: rgba(30, 30, 30, 0.8);
+        border: 1px solid #444;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .jobs-table th {
+        background: rgba(40, 40, 40, 0.9);
+        color: #ddd;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 2px solid #555;
+    }
+    
+    .jobs-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #444;
+        color: #eee;
+    }
+    
+    .jobs-table tr:hover {
+        background: rgba(50, 50, 50, 0.8);
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-pending {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-preparing {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-training {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-completed {
+        background: rgba(139, 92, 246, 0.15);
+        color: #8b5cf6;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+    
+    .status-failed {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .status-cancelled {
+        background: rgba(107, 114, 128, 0.15);
+        color: #6b7280;
+        border: 1px solid rgba(107, 114, 128, 0.3);
+    }
+    
+    .method-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        background: rgba(107, 70, 193, 0.15);
+        color: var(--primary-color);
+        border: 1px solid rgba(107, 70, 193, 0.3);
+    }
+    
+    .progress-cell {
+        min-width: 150px;
+    }
+    
+    .progress-bar-container {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+    
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-icon {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #555;
+        color: #ddd;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .btn-icon:hover {
+        background: rgba(107, 70, 193, 0.15);
+        border-color: var(--primary-color);
+        color: white;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: rgba(30, 30, 30, 0.5);
+        border-radius: 12px;
+        border: 2px dashed #444;
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.7;
+        color: #666;
+    }
+    
+    .empty-state h3 {
+        color: #ddd;
+        margin-bottom: 10px;
+    }
+    
+    .empty-state p {
+        color: #aaa;
+        margin-bottom: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .jobs-table {
+            display: block;
+            overflow-x: auto;
+        }
+        
+        .stats-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Статистика -->
+    <div class="stats-cards">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_jobs }}</div>
+            <div class="stat-label">Всего задач</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ running_jobs }}</div>
+            <div class="stat-label">Выполняется</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ completed_jobs }}</div>
+            <div class="stat-label">Завершено</div>
+        </div>
+    </div>
+    
+    <!-- Фильтры и кнопка создания -->
+    <div class="filter-bar">
+        <div class="filter-group">
+            <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+                <option value="">Все статусы</option>
+                <option value="PENDING">В ожидании</option>
+                <option value="PREPARING">Подготовка</option>
+                <option value="TRAINING">Обучение</option>
+                <option value="COMPLETED">Завершено</option>
+                <option value="FAILED">Ошибка</option>
+                <option value="CANCELLED">Отменено</option>
+            </select>
+            
+            <select class="filter-select" id="methodFilter" onchange="applyFilters()">
+                <option value="">Все методы</option>
+                <option value="document">Обучение на документах</option>
+                <option value="instruction">Обучение на инструкциях</option>
+                <option value="raft">RAFT</option>
+            </select>
+        </div>
+        
+        <div>
+            <input type="text" class="search-input" id="searchInput" 
+                   placeholder="Поиск по названию..." onkeyup="applyFilters()">
+        </div>
+        
+        <a href="{% url 'fine_tuning_create' %}" class="btn-create">
+            <i class="bi bi-plus-lg"></i> Новая задача
+        </a>
+    </div>
+    
+    <!-- Таблица задач -->
+    {% if jobs %}
+    <table class="jobs-table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Метод</th>
+                <th>Базовая модель</th>
+                <th>Статус</th>
+                <th>Прогресс</th>
+                <th>Создана</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody id="jobsTableBody">
+            {% for job in jobs %}
+            <tr class="job-row" data-status="{{ job.status }}" data-method="{{ job.method }}" 
+                data-name="{{ job.name|lower }}">
+                <td>
+                    <strong>{{ job.name }}</strong>
+                    {% if job.description %}
+                    <br><small class="text-muted">{{ job.description|truncatechars:50 }}</small>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="method-badge">
+                        {% if job.method == 'document' %}📄 Документы
+                        {% elif job.method == 'instruction' %}📋 Инструкции
+                        {% elif job.method == 'raft' %}🎯 RAFT
+                        {% endif %}
+                    </span>
+                </td>
+                <td>{{ job.base_model.display_name|truncatechars:30 }}</td>
+                <td>
+                    <span class="status-badge status-{{ job.status|lower }}">
+                        {{ job.get_status_display }}
+                    </span>
+                </td>
+                <td class="progress-cell">
+                    {{ job.progress|floatformat:1 }}%
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: {{ job.progress }}%"></div>
+                    </div>
+                </td>
+                <td>
+                    {{ job.created_at|date:"d.m.Y" }}
+                    <br><small class="text-muted">{{ job.created_by }}</small>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{% url 'fine_tuning_detail' job.id %}" class="btn-icon" title="Просмотр">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        {% if job.status == 'COMPLETED' and job.output_model %}
+                        <a href="{% url 'model_detail' job.output_model.id %}" class="btn-icon" title="Модель">
+                            <i class="bi bi-cpu"></i>
+                        </a>
+                        {% endif %}
+                        {% if job.status == 'RUNNING' %}
+                        <button class="btn-icon" onclick="cancelJob({{ job.id }})" title="Отменить">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="bi bi-cpu"></i>
+        </div>
+        <h3>Нет задач fine-tuning</h3>
+        <p>Создайте первую задачу для дообучения модели</p>
+        <a href="{% url 'fine_tuning_create' %}" class="btn-create">
+            <i class="bi bi-plus-lg"></i> Создать задачу
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function applyFilters() {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const methodFilter = document.getElementById('methodFilter').value;
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        
+        const rows = document.querySelectorAll('.job-row');
+        
+        rows.forEach(row => {
+            const status = row.dataset.status;
+            const method = row.dataset.method;
+            const name = row.dataset.name;
+            
+            const statusMatch = !statusFilter || status === statusFilter;
+            const methodMatch = !methodFilter || method === methodFilter;
+            const searchMatch = !searchText || name.includes(searchText);
+            
+            if (statusMatch && methodMatch && searchMatch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    function cancelJob(jobId) {
+        if (!confirm('Отменить выполнение задачи?')) return;
+        
+        fetch(`/api/fine-tuning-jobs/${jobId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Задача отменена', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Ошибка: ' + data.error, 'error');
+            }
+        });
+    }
+    
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('[name="csrfmiddlewaretoken"]');
+        return csrfInput ? csrfInput.value : '';
+    }
+</script>
+{% endblock %}

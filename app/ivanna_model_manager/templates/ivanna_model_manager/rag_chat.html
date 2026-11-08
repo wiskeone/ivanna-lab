@@ -1,0 +1,2768 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Чат с AI моделью{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* =============================================
+       ОСНОВНОЙ КОНТЕЙНЕР ЧАТА
+       ============================================= */
+    .chat-container {
+        background: transparent;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        padding: 0;
+    }
+
+    /* Компактный заголовок чата */
+    .chat-header-compact {
+        padding: 15px 20px;
+        background: rgba(26, 32, 44, 0.8);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        flex-shrink: 0;
+        margin-bottom: 20px;
+        border-radius: 8px;
+    }
+
+    .chat-title-compact {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .chat-title-compact i {
+        font-size: 1.2rem;
+        color: var(--primary-color);
+        flex-shrink: 0;
+    }
+
+    .chat-title-compact h2 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-subtitle-compact {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 2px;
+    }
+
+    .chat-actions-compact {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .chat-actions-compact .btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        transition: all 0.2s ease;
+    }
+
+    .chat-actions-compact .btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+    }
+
+    /* =============================================
+       RAG ПАНЕЛЬ
+       ============================================= */
+    .rag-panel {
+        background: rgba(26, 32, 44, 0.6);
+        border: 1px solid rgba(107, 70, 193, 0.3);
+        border-radius: 10px;
+        margin: 0 20px 20px 20px;
+        padding: 15px;
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+        width: calc(100% - 40px);
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .rag-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .rag-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .rag-title i {
+        font-size: 1rem;
+    }
+
+    .rag-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .rag-toggle .form-check-input {
+        width: 40px;
+        height: 20px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+    }
+
+    .rag-toggle .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .rag-collections {
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 5px;
+        margin-bottom: 10px;
+    }
+
+    .rag-collection-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.2s ease;
+    }
+
+    .rag-collection-item:hover {
+        background: rgba(107, 70, 193, 0.1);
+        border-color: rgba(107, 70, 193, 0.2);
+    }
+
+    .rag-collection-item.selected {
+        background: rgba(107, 70, 193, 0.15);
+        border-color: var(--primary-color);
+    }
+
+    .rag-collection-check {
+        margin-right: 12px;
+    }
+
+    .rag-collection-info {
+        flex: 1;
+    }
+
+    .rag-collection-name {
+        font-weight: 600;
+        color: white;
+        font-size: 0.9rem;
+        margin-bottom: 3px;
+    }
+
+    .rag-collection-meta {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        display: flex;
+        gap: 12px;
+    }
+
+    .rag-collection-badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        background: rgba(107, 70, 193, 0.15);
+        color: var(--primary-color);
+    }
+
+    .rag-index-badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+    }
+
+    .rag-index-ready {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+
+    .rag-index-not-ready {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+
+    .rag-search-input {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .rag-search-input input {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        padding: 8px 12px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+    }
+
+    .rag-search-input input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .rag-search-input button {
+        padding: 8px 16px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .rag-search-input button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 70, 193, 0.3);
+    }
+
+    /* Результаты поиска RAG */
+    .rag-results-panel {
+        background: rgba(26, 32, 44, 0.6);
+        border-left: 3px solid var(--primary-color);
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .rag-results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        color: var(--primary-color);
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .rag-results-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .rag-result-item {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .rag-result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .rag-result-title {
+        font-weight: 600;
+        color: white;
+        font-size: 0.9rem;
+    }
+
+    .rag-result-relevance {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+        background: rgba(32, 201, 151, 0.15);
+        color: #20c997;
+        border-radius: 12px;
+    }
+
+    .rag-result-content {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        max-height: 100px;
+        overflow-y: hidden;
+        position: relative;
+    }
+
+    .rag-result-content.expanded {
+        max-height: none;
+    }
+
+    .rag-result-expand {
+        font-size: 0.75rem;
+        color: var(--primary-color);
+        cursor: pointer;
+        margin-top: 5px;
+        display: inline-block;
+    }
+
+    .rag-result-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .rag-result-actions .btn-sm {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+    }
+
+    .rag-result-actions .btn-sm:hover {
+        background: rgba(107, 70, 193, 0.15);
+        border-color: rgba(107, 70, 193, 0.3);
+    }
+
+    /* Контейнер сообщений */
+    .messages-container {
+        flex: 1;
+        overflow-y: auto;
+        background: transparent;
+        padding: 20px;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .messages-scroll-area {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        max-width: 900px;
+        margin: 0 auto;
+        width: 100%;
+        flex: 1;
+    }
+
+    /* Стили сообщений */
+    .message-item {
+        margin-bottom: 15px;
+        padding: 16px 20px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        animation: fadeIn 0.3s ease;
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-user {
+        background: linear-gradient(135deg, rgba(107, 70, 193, 0.15), rgba(107, 70, 193, 0.1));
+        border-left: 3px solid var(--primary-color);
+        margin-left: 10%;
+    }
+
+    .message-assistant {
+        background: linear-gradient(135deg, rgba(32, 201, 151, 0.15), rgba(32, 201, 151, 0.1));
+        border-left: 3px solid var(--accent-color);
+        margin-right: 10%;
+    }
+
+    .message-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .message-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    .message-user .message-avatar {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+    }
+
+    .message-assistant .message-avatar {
+        background: linear-gradient(135deg, var(--accent-color), #20a779);
+        color: white;
+    }
+
+    .message-sender {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+    }
+
+    .message-timestamp {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    .message-content {
+        color: var(--text-primary);
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 0.95rem;
+    }
+
+    .message-content pre {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 6px;
+        padding: 12px;
+        margin: 10px 0;
+        overflow-x: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+    }
+
+    .message-content code {
+        font-family: 'Courier New', monospace;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+
+    /* Сообщения с RAG контекстом */
+    .message-rag-context {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        background: rgba(107, 70, 193, 0.15);
+        border-radius: 12px;
+        color: var(--primary-color);
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 8px;
+    }
+
+    .message-assistant .rag-sources {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.75rem;
+    }
+
+    .rag-source-item {
+        display: inline-block;
+        padding: 2px 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        margin-right: 6px;
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+    }
+
+    /* Пустое состояние */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+        background: transparent;
+        margin: auto;
+        max-width: 600px;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.7;
+        color: var(--primary-color);
+    }
+
+    .empty-state h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .empty-state p {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        margin: 0 auto 24px;
+        line-height: 1.6;
+    }
+
+    .empty-state-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .empty-state-actions .btn {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+        border-radius: 8px;
+    }
+
+    /* Поле ввода */
+    .input-container {
+        padding: 20px;
+        background: transparent;
+        flex-shrink: 0;
+        margin-top: 20px;
+        max-width: 900px;
+        margin: 20px auto 0;
+        width: 100%;
+    }
+
+    .input-actions-top {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 12px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .input-actions-top .btn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        transition: all 0.2s ease;
+    }
+
+    .input-actions-top .btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+    }
+
+    .message-input-wrapper {
+        position: relative;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .message-input-wrapper:focus-within {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(107, 70, 193, 0.5);
+        box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.1);
+    }
+
+    .chat-textarea {
+        width: 100%;
+        min-height: 80px;
+        max-height: 200px;
+        padding: 15px 20px;
+        padding-right: 140px;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        resize: none;
+        outline: none;
+        font-family: inherit;
+    }
+
+    .chat-textarea::placeholder {
+        color: var(--text-secondary);
+    }
+
+    .input-actions {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .rag-active-indicator {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: rgba(107, 70, 193, 0.2);
+        border-radius: 20px;
+        color: var(--primary-color);
+        font-size: 0.75rem;
+    }
+
+    .send-button {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border: none;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 16px;
+    }
+
+    .send-button:hover:not(:disabled) {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(107, 70, 193, 0.4);
+    }
+
+    .send-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .input-hint {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-align: center;
+        margin-top: 10px;
+        display: flex;
+        justify-content: space-between;
+        padding: 0 5px;
+    }
+
+    /* Индикатор набора */
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        margin: 20px auto;
+        max-width: 900px;
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .typing-dots {
+        display: flex;
+        gap: 6px;
+    }
+
+    .typing-dot {
+        width: 10px;
+        height: 10px;
+        background: var(--text-secondary);
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+        0%, 60%, 100% {
+            transform: translateY(0);
+            opacity: 0.3;
+        }
+        30% {
+            transform: translateY(-6px);
+            opacity: 1;
+        }
+    }
+
+    /* Кнопки открытия (плавающие) */
+    .open-models-btn, .open-rag-btn {
+        position: fixed;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border: none;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(107, 70, 193, 0.4);
+        transition: all 0.3s ease;
+        font-size: 1.2rem;
+        z-index: 1000;
+    }
+
+    .open-models-btn {
+        bottom: 80px;
+        right: 20px;
+    }
+
+    .open-rag-btn {
+        bottom: 150px;
+        right: 20px;
+        background: linear-gradient(135deg, #20c997, #0ca678);
+    }
+
+    .open-models-btn:hover, .open-rag-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 25px rgba(107, 70, 193, 0.6);
+    }
+
+    .open-rag-btn:hover {
+        background: linear-gradient(135deg, #20d9a0, #0cb888);
+    }
+
+    /* Модальные окна */
+    .models-modal .modal-content,
+    .rag-modal .modal-content,
+    .settings-modal .modal-content,
+    .preview-modal .modal-content {
+        background: rgba(26, 32, 44, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+    }
+
+    .models-modal .modal-header,
+    .rag-modal .modal-header,
+    .settings-modal .modal-header,
+    .preview-modal .modal-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 16px 20px;
+    }
+
+    .models-modal .modal-body,
+    .rag-modal .modal-body,
+    .settings-modal .modal-body,
+    .preview-modal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 20px;
+    }
+
+    .models-modal .modal-footer,
+    .rag-modal .modal-footer,
+    .settings-modal .modal-footer,
+    .preview-modal .modal-footer {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 16px 20px;
+    }
+
+    /* Карточки моделей */
+    .model-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.2s ease;
+    }
+
+    .model-card:hover {
+        background: rgba(107, 70, 193, 0.1);
+        border-color: rgba(107, 70, 193, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .model-card.active {
+        background: rgba(107, 70, 193, 0.15);
+        border-color: var(--primary-color);
+    }
+
+    .model-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .model-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .model-details {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .model-status {
+        font-size: 0.75rem;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+
+    .status-loaded {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+
+    .status-not-loaded {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+
+    .status-warning {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+    }
+
+    .model-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .model-actions .btn {
+        padding: 6px 14px;
+        font-size: 0.85rem;
+        border-radius: 6px;
+    }
+
+    /* Карточки коллекций */
+    .collection-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .collection-card:hover {
+        background: rgba(107, 70, 193, 0.1);
+        border-color: rgba(107, 70, 193, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .collection-card.active {
+        background: rgba(107, 70, 193, 0.15);
+        border-color: var(--primary-color);
+    }
+
+    .collection-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+
+    .collection-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 1rem;
+    }
+
+    .collection-stats {
+        display: flex;
+        gap: 12px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 5px;
+    }
+
+    .collection-badge {
+        padding: 3px 8px;
+        background: rgba(107, 70, 193, 0.15);
+        border-radius: 12px;
+        color: var(--primary-color);
+        font-size: 0.75rem;
+    }
+
+    /* Индикатор загрузки модели */
+    .model-loading-progress {
+        margin-top: 10px;
+        padding: 10px;
+        background: rgba(107, 70, 193, 0.1);
+        border-radius: 8px;
+    }
+
+    .progress {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+
+    /* Улучшенная полоса прокрутки */
+    .messages-container::-webkit-scrollbar,
+    .rag-collections::-webkit-scrollbar,
+    .rag-results-list::-webkit-scrollbar,
+    .models-modal .modal-body::-webkit-scrollbar,
+    .rag-modal .modal-body::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .messages-container::-webkit-scrollbar-track,
+    .rag-collections::-webkit-scrollbar-track,
+    .rag-results-list::-webkit-scrollbar-track,
+    .models-modal .modal-body::-webkit-scrollbar-track,
+    .rag-modal .modal-body::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+    }
+
+    .messages-container::-webkit-scrollbar-thumb,
+    .rag-collections::-webkit-scrollbar-thumb,
+    .rag-results-list::-webkit-scrollbar-thumb,
+    .models-modal .modal-body::-webkit-scrollbar-thumb,
+    .rag-modal .modal-body::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+    }
+
+    .messages-container::-webkit-scrollbar-thumb:hover,
+    .rag-collections::-webkit-scrollbar-thumb:hover,
+    .rag-results-list::-webkit-scrollbar-thumb:hover,
+    .models-modal .modal-body::-webkit-scrollbar-thumb:hover,
+    .rag-modal .modal-body::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .chat-header-compact {
+            padding: 12px 15px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .chat-title-compact {
+            width: 100%;
+        }
+
+        .chat-actions-compact {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .message-user {
+            margin-left: 5%;
+        }
+
+        .message-assistant {
+            margin-right: 5%;
+        }
+
+        .open-models-btn, .open-rag-btn {
+            width: 48px;
+            height: 48px;
+            font-size: 1rem;
+        }
+
+        .open-models-btn { bottom: 90px; right: 15px; }
+        .open-rag-btn { bottom: 150px; right: 15px; }
+
+        .input-actions-top {
+            justify-content: center;
+        }
+
+        .rag-panel {
+            margin: 0 15px 15px 15px;
+            width: calc(100% - 30px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- CSRF токен для AJAX запросов -->
+{% csrf_token %}
+
+<div class="chat-container">
+    <!-- Компактный заголовок чата -->
+    <div class="chat-header-compact">
+        <div class="chat-title-compact">
+            <i class="bi {% if session_data and session_data.model_id %}bi-robot{% else %}bi-chat{% endif %}"></i>
+            <div style="flex: 1; min-width: 0;">
+                <h2 id="currentModelName">
+                    {% if chat_session and chat_session.checkpoint %}
+                        {{ chat_session.checkpoint.display_name|default:"AI Модель" }}
+                    {% elif session_data %}
+                        Новая сессия
+                    {% else %}
+                        Выберите модель
+                    {% endif %}
+                </h2>
+                <div class="chat-subtitle-compact">
+                    <span id="sessionStats">
+                        {% if session_data %}
+                            {{ messages|length }} сообщений • 
+                            {% if chat_session %}{{ chat_session.total_tokens|default:0 }} токенов{% endif %}
+                        {% else %}
+                            Создайте новую сессию
+                        {% endif %}
+                    </span>
+                    <span id="modelStatusBadge" style="display: none; margin-left: 10px;" class="badge bg-warning">
+                        <i class="bi bi-arrow-repeat spin me-1"></i> Загрузка...
+                    </span>
+                    <span id="ragStatusBadge" style="display: none; margin-left: 10px;" class="badge bg-primary">
+                        <i class="bi bi-database me-1"></i> RAG
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-actions-compact">
+            <a href="{% url 'chat_view' %}?force_new=true" class="btn">
+                <i class="bi bi-plus-lg me-1"></i> Новая сессия
+            </a>
+            <button class="btn" data-bs-toggle="modal" data-bs-target="#modelsModal">
+                <i class="bi bi-cpu me-1"></i> Модели
+            </button>
+            <button class="btn" onclick="toggleRagPanel()" id="ragToggleBtn">
+                <i class="bi bi-database me-1"></i> RAG
+            </button>
+            <a href="{% url 'chat_sessions_management' %}" class="btn">
+                <i class="bi bi-clock-history me-1"></i> Сессии
+            </a>
+        </div>
+    </div>
+
+    <!-- Индикатор загрузки модели (появляется при загрузке) -->
+    <div id="modelLoadingIndicator" class="rag-panel" style="display: none; background: rgba(245, 158, 11, 0.1); border-color: #f59e0b;">
+        <div class="d-flex align-items-center">
+            <div class="spinner-border text-warning me-3" style="width: 1.5rem; height: 1.5rem;"></div>
+            <div style="flex: 1;">
+                <div class="fw-bold text-warning mb-1" id="loadingMessage">Загрузка модели...</div>
+                <div class="progress" style="height: 6px;">
+                    <div id="loadingProgressBar" class="progress-bar" style="width: 0%;"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-1">
+                    <span class="small text-muted" id="loadingDetails">Инициализация...</span>
+                    <span class="small text-muted" id="loadingPercent">0%</span>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-warning ms-3" onclick="cancelModelLoading()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- RAG Панель (скрыта по умолчанию) -->
+    <div id="ragPanel" class="rag-panel" style="display: none;">
+        <div class="rag-header">
+            <div class="rag-title">
+                <i class="bi bi-database"></i>
+                <span>Поиск по документам (RAG)</span>
+            </div>
+            <div class="rag-toggle">
+                <span class="text-muted small me-2">Автоматический поиск</span>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="ragAutoSearchToggle" checked>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Выбор коллекций -->
+        <div style="margin-bottom: 12px;">
+            <label class="text-muted small mb-2">
+                <i class="bi bi-collection me-1"></i> Выберите коллекции документов:
+            </label>
+            <div id="collectionsList" class="rag-collections">
+                <!-- Коллекции будут загружены через JS -->
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                    <span class="text-muted small">Загрузка коллекций...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Быстрый поиск -->
+        <div style="margin-bottom: 12px;">
+            <label class="text-muted small mb-2">
+                <i class="bi bi-search me-1"></i> Быстрый поиск:
+            </label>
+            <div class="rag-search-input">
+                <input type="text" id="ragQuickSearch" placeholder="Введите запрос для поиска в документах...">
+                <button onclick="performRagSearch()">
+                    <i class="bi bi-search"></i> Найти
+                </button>
+            </div>
+        </div>
+        
+        <!-- Результаты поиска (будут показаны после поиска) -->
+        <div id="ragSearchResults" style="display: none;"></div>
+    </div>
+
+    <!-- Контейнер сообщений -->
+    <div class="messages-container" id="messagesContainer">
+        <div class="messages-scroll-area" id="messagesScroll">
+            {% if messages %}
+                {% for msg in messages %}
+                <div class="message-item {% if msg.role == 'user' %}message-user{% else %}message-assistant{% endif %}">
+                    <div class="message-header">
+                        <div class="message-avatar">
+                            <i class="bi {% if msg.role == 'user' %}bi-person{% else %}bi-robot{% endif %}"></i>
+                        </div>
+                        <div class="message-sender">
+                            {% if msg.role == 'user' %}Вы{% else %}Ассистент{% endif %}
+                        </div>
+                        <div class="message-timestamp">
+                            {{ msg.timestamp|slice:":16" }}
+                        </div>
+                    </div>
+                    <div class="message-content">{{ msg.content|linebreaks }}</div>
+                    
+                    {% if msg.role == 'assistant' and msg.metadata.rag_used %}
+                    <div class="rag-sources">
+                        <div class="message-rag-context">
+                            <i class="bi bi-database"></i> 
+                            Ответ основан на {{ msg.metadata.rag_sources|length }} документах
+                        </div>
+                        {% for source in msg.metadata.rag_sources %}
+                        <span class="rag-source-item" title="Релевантность: {{ source.relevance|floatformat:2 }}">
+                            <i class="bi bi-file-text me-1"></i>{{ source.title|truncatechars:30 }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <!-- Пустое состояние -->
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-robot"></i>
+                </div>
+                <h3 id="emptyStateTitle">
+                    {% if chat_session and chat_session.checkpoint %}
+                        Чат с {{ chat_session.checkpoint.display_name }}
+                    {% else %}
+                        Добро пожаловать в чат с AI
+                    {% endif %}
+                </h3>
+                <p id="emptyStateMessage">
+                    {% if chat_session and chat_session.checkpoint %}
+                        Задайте вопрос, попросите что-то написать или обсудить.
+                        Включите RAG режим для поиска по вашим документам.
+                    {% else %}
+                        Выберите модель в меню "Модели" и начните диалог.
+                    {% endif %}
+                </p>
+                
+                {% if chat_session and chat_session.checkpoint %}
+                <div class="empty-state-actions">
+                    <button class="btn btn-outline-primary" onclick="insertSample('Расскажи о своих возможностях')">
+                        <i class="bi bi-info-circle me-1"></i> О модели
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="insertSample('Напиши программу на Python для сортировки списка')">
+                        <i class="bi bi-code-slash me-1"></i> Пример кода
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="toggleRagPanel()">
+                        <i class="bi bi-database me-1"></i> Поиск по документам
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Индикатор набора -->
+            <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                <span>Модель набирает ответ...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Поле ввода -->
+    <div class="input-container">
+        <!-- Кнопки действий над полем ввода -->
+        <div class="input-actions-top">
+            <button class="btn" onclick="showSettingsModal()" title="Настройки">
+                <i class="bi bi-sliders"></i> Настройки
+            </button>
+            <button class="btn" onclick="clearChatHistory()" title="Очистить чат">
+                <i class="bi bi-trash"></i> Очистить
+            </button>
+            <button class="btn" onclick="exportChat()" title="Экспорт чата">
+                <i class="bi bi-download"></i> Экспорт
+            </button>
+            <button class="btn btn-warning" id="forceLoadModelBtn" onclick="loadModelAndWait(CURRENT_MODEL_ID, CURRENT_MODEL_NAME)" style="display: none;">
+                <i class="bi bi-database me-1"></i> Загрузить локально
+            </button>
+        </div>
+        
+        <!-- Поле ввода -->
+        {% if session_data %}
+        <div class="message-input-wrapper">
+            <textarea id="messageInput" 
+                      class="chat-textarea" 
+                      placeholder="Введите сообщение..." 
+                      rows="1"
+                      oninput="autoResize(this); updateCharCount();"></textarea>
+            <div class="input-actions">
+                <span id="ragActiveIndicator" class="rag-active-indicator" style="display: none;">
+                    <i class="bi bi-database"></i> RAG
+                </span>
+                <span id="modelLoadingIndicatorSmall" style="display: none;" class="text-warning me-2">
+                    <i class="bi bi-arrow-repeat spin"></i>
+                </span>
+                <button class="btn btn-outline-light btn-sm" onclick="insertSamplePrompt()" title="Вставить пример">
+                    <i class="bi bi-magic"></i>
+                </button>
+                <button class="send-button" id="sendButton" onclick="sendMessage()" title="Отправить (Enter)">
+                    <i class="bi bi-send"></i>
+                </button>
+            </div>
+        </div>
+        <div class="input-hint">
+            <span>Shift+Enter для новой строки • Enter для отправки</span>
+            <span id="charCount">0/4000</span>
+        </div>
+        {% else %}
+        <div class="alert alert-info bg-transparent border-info text-center">
+            <i class="bi bi-info-circle me-2"></i>
+            Нажмите на кнопку "Модели" и выберите модель для начала диалога
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Кнопка открытия RAG панели (плавающая) -->
+<button class="open-rag-btn" onclick="toggleRagPanel()" title="Поиск по документам">
+    <i class="bi bi-database"></i>
+</button>
+
+<!-- Кнопка открытия моделей (плавающая) -->
+<button class="open-models-btn" data-bs-toggle="modal" data-bs-target="#modelsModal" title="Выбор модели">
+    <i class="bi bi-cpu"></i>
+</button>
+
+<!-- Модальное окно моделей -->
+<div class="modal fade models-modal" id="modelsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-cpu me-2"></i>
+                    Доступные модели
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="models-list" id="modelsList">
+                    <!-- Модели будут загружены через JS -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary mb-3"></div>
+                        <p class="text-muted">Загрузка моделей...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-primary" onclick="refreshModels()">
+                    <i class="bi bi-arrow-repeat me-1"></i> Обновить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно RAG коллекций -->
+<div class="modal fade rag-modal" id="ragCollectionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-collection me-2"></i>
+                    Коллекции документов
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="collectionSearchInput" 
+                           placeholder="Поиск коллекций..." onkeyup="filterCollections()">
+                </div>
+                <div id="collectionsFullList" class="collections-list">
+                    <!-- Коллекции будут загружены через JS -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <a href="{% url 'rag_collection_create' %}" class="btn btn-primary" target="_blank">
+                    <i class="bi bi-plus-lg me-1"></i> Новая коллекция
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно предпросмотра документа -->
+<div class="modal fade preview-modal" id="documentPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-text me-2"></i>
+                    <span id="previewDocumentTitle">Документ</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent" class="preview-content">
+                    <!-- Контент будет загружен через JS -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <a href="#" id="previewDocumentLink" class="btn btn-primary" target="_blank">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> Открыть документ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно настроек -->
+<div class="modal fade settings-modal" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-sliders me-2"></i>
+                    Настройки генерации
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Температура</span>
+                        <span id="tempValueDisplay" class="text-primary fw-bold">0.7</span>
+                    </label>
+                    <input type="range" class="form-range" id="temperature" min="0.1" max="1.5" step="0.1" value="0.7">
+                    <div class="d-flex justify-content-between text-secondary" style="font-size: 12px;">
+                        <span>Точный</span>
+                        <span>Баланс</span>
+                        <span>Творческий</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Макс. токенов</span>
+                        <span id="tokensValueDisplay" class="text-primary fw-bold">512</span>
+                    </label>
+                    <input type="range" class="form-range" id="maxTokens" min="100" max="2048" step="100" value="512">
+                    <div class="d-flex justify-content-between text-secondary" style="font-size: 12px;">
+                        <span>Коротко</span>
+                        <span>Стандарт</span>
+                        <span>Подробно</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Топ-P</span>
+                        <span id="topPValueDisplay" class="text-primary fw-bold">0.9</span>
+                    </label>
+                    <input type="range" class="form-range" id="topP" min="0.1" max="1.0" step="0.1" value="0.9">
+                    <div class="d-flex justify-content-between text-secondary" style="font-size: 12px;">
+                        <span>Фокус</span>
+                        <span>Баланс</span>
+                        <span>Разнообразие</span>
+                    </div>
+                </div>
+                
+                <!-- RAG настройки -->
+                <div class="mt-4 pt-3 border-top border-secondary">
+                    <h6 class="fw-bold text-primary mb-3">
+                        <i class="bi bi-database me-2"></i>RAG настройки
+                    </h6>
+                    
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between">
+                            <span>Количество результатов</span>
+                            <span id="ragTopKValue" class="text-info fw-bold">5</span>
+                        </label>
+                        <input type="range" class="form-range" id="ragTopK" min="1" max="20" step="1" value="5">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between">
+                            <span>Семантический вес</span>
+                            <span id="semanticWeightValue" class="text-info fw-bold">0.70</span>
+                        </label>
+                        <input type="range" class="form-range" id="semanticWeight" min="0" max="1" step="0.05" value="0.7">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between">
+                            <span>Вес ключевых слов</span>
+                            <span id="keywordWeightValue" class="text-info fw-bold">0.20</span>
+                        </label>
+                        <input type="range" class="form-range" id="keywordWeight" min="0" max="1" step="0.05" value="0.2">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between">
+                            <span>Вес свежести</span>
+                            <span id="freshnessWeightValue" class="text-info fw-bold">0.10</span>
+                        </label>
+                        <input type="range" class="form-range" id="freshnessWeight" min="0" max="1" step="0.05" value="0.1">
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="useReranking" checked>
+                        <label class="form-check-label" for="useReranking">
+                            Использовать реранжирование
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// =============================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// =============================================
+const SESSION_ID = "{{ session_data.session_id|default:'' }}";
+const CURRENT_MODEL_ID = "{{ chat_session.checkpoint.id|default:'' }}";
+const CURRENT_MODEL_NAME = "{{ chat_session.checkpoint.display_name|default:'' }}";
+
+let isGenerating = false;
+let isRagEnabled = false;
+let selectedCollections = [];
+let ragSearchResults = [];
+let modelLoadingInterval = null;
+let modelLoadAttempts = 0;
+let pendingMessage = '';          // сообщение, которое нужно отправить после загрузки
+let downloadInterval = null;       // интервал для отслеживания скачивания
+
+// =============================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// =============================================
+
+function getCSRFToken() {
+    const csrfInput = document.querySelector('[name="csrfmiddlewaretoken"]');
+    return csrfInput ? csrfInput.value : '';
+}
+
+function showNotification(message, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        const container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '1060';
+        document.body.appendChild(container);
+    }
+
+    const toastId = 'toast-' + Date.now();
+    const icons = {
+        success: 'bi-check-circle',
+        error: 'bi-exclamation-circle',
+        warning: 'bi-exclamation-triangle',
+        info: 'bi-info-circle'
+    };
+
+    const toastHtml = `
+        <div class="toast" id="${toastId}" role="alert">
+            <div class="toast-header glass-effect">
+                <i class="bi ${icons[type]} text-${type} me-2"></i>
+                <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">${message}</div>
+        </div>
+    `;
+
+    document.getElementById('toastContainer').insertAdjacentHTML('beforeend', toastHtml);
+
+    const toastEl = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+    toast.show();
+
+    toastEl.addEventListener('hidden.bs.toast', function() {
+        toastEl.remove();
+    });
+}
+
+function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    const maxHeight = 200;
+    const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = newHeight + 'px';
+}
+
+function updateCharCount() {
+    const input = document.getElementById('messageInput');
+    const counter = document.getElementById('charCount');
+    if (!input || !counter) return;
+
+    const length = input.value.length;
+    const maxLength = 4000;
+    counter.textContent = `${length}/${maxLength}`;
+
+    if (length > maxLength * 0.9) {
+        counter.style.color = '#ef4444';
+    } else if (length > maxLength * 0.7) {
+        counter.style.color = '#f59e0b';
+    } else {
+        counter.style.color = 'var(--text-secondary)';
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatNumber(num) {
+    if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+    if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+    return num.toString();
+}
+
+// =============================================
+// УПРАВЛЕНИЕ ЗАГРУЗКОЙ МОДЕЛИ
+// =============================================
+
+function showModelLoading(message = 'Загрузка модели...', progress = 0) {
+    const indicator = document.getElementById('modelLoadingIndicator');
+    const loadingMessage = document.getElementById('loadingMessage');
+    const loadingProgressBar = document.getElementById('loadingProgressBar');
+    const loadingPercent = document.getElementById('loadingPercent');
+    const modelStatusBadge = document.getElementById('modelStatusBadge');
+    const modelLoadingIndicatorSmall = document.getElementById('modelLoadingIndicatorSmall');
+
+    if (indicator) {
+        indicator.style.display = 'block';
+        loadingMessage.textContent = message;
+        loadingProgressBar.style.width = progress + '%';
+        loadingPercent.textContent = progress + '%';
+    }
+
+    if (modelStatusBadge) {
+        modelStatusBadge.style.display = 'inline';
+        modelStatusBadge.innerHTML = `<i class="bi bi-arrow-repeat spin me-1"></i> ${message}`;
+    }
+
+    if (modelLoadingIndicatorSmall) {
+        modelLoadingIndicatorSmall.style.display = 'inline';
+    }
+}
+
+function hideModelLoading() {
+    const indicator = document.getElementById('modelLoadingIndicator');
+    const modelStatusBadge = document.getElementById('modelStatusBadge');
+    const modelLoadingIndicatorSmall = document.getElementById('modelLoadingIndicatorSmall');
+
+    if (indicator) indicator.style.display = 'none';
+    if (modelStatusBadge) modelStatusBadge.style.display = 'none';
+    if (modelLoadingIndicatorSmall) modelLoadingIndicatorSmall.style.display = 'none';
+
+    if (modelLoadingInterval) {
+        clearInterval(modelLoadingInterval);
+        modelLoadingInterval = null;
+    }
+    if (downloadInterval) {
+        clearInterval(downloadInterval);
+        downloadInterval = null;
+    }
+}
+
+function updateLoadingProgress(progress, message) {
+    const loadingProgressBar = document.getElementById('loadingProgressBar');
+    const loadingPercent = document.getElementById('loadingPercent');
+    const loadingMessage = document.getElementById('loadingMessage');
+
+    if (loadingProgressBar) loadingProgressBar.style.width = progress + '%';
+    if (loadingPercent) loadingPercent.textContent = progress + '%';
+    if (loadingMessage) loadingMessage.textContent = message;
+}
+
+function cancelModelLoading() {
+    hideModelLoading();
+    showNotification('Загрузка модели отменена', 'info');
+}
+
+// =============================================
+// ПРОВЕРКА СТАТУСА МОДЕЛИ
+// =============================================
+
+function checkModelStatus() {
+    if (!CURRENT_MODEL_ID) return;
+
+    fetch(`/api/models/${CURRENT_MODEL_ID}/status/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                const isLoaded = data.is_loaded_in_memory;
+                const hasLocal = data.has_local_copy;
+                const status = data.status;
+
+                if (isLoaded) {
+                    hideModelLoading();
+                    document.getElementById('sendButton').disabled = false;
+                } else if (status === 'DOWNLOADING' || status === 'LOADING') {
+                    showModelLoading(data.progress_info?.message || 'Загрузка...',
+                                    data.progress_info?.percentage || 30);
+                } else if (hasLocal) {
+                    if (!modelLoadingInterval) {
+                        showNotification('Модель не загружена. Начинаем загрузку...', 'info');
+                        forceLocalLoad(CURRENT_MODEL_ID, CURRENT_MODEL_NAME);
+                    }
+                } else {
+                    document.getElementById('sendButton').disabled = true;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error checking model status:', error);
+        });
+}
+
+// =============================================
+// ЗАГРУЗКА МОДЕЛИ ЧЕРЕЗ CELERY (если модель на диске)
+// =============================================
+function loadModelAndWait(modelId, modelName, onSuccess = null) {
+    modelLoadAttempts = 0;
+    showModelLoading('Запуск загрузки модели...', 10);
+
+    fetch(`/api/models/${modelId}/load/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({
+            quantization: 'float16',
+            device_map: 'auto'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.task_id || (data.message && data.message.includes('started'))) {
+            showModelLoading('Модель загружается...', 30);
+
+            modelLoadingInterval = setInterval(() => {
+                modelLoadAttempts++;
+
+                fetch(`/api/models/${modelId}/status/`)
+                    .then(res => res.json())
+                    .then(statusData => {
+                        if (statusData.is_loaded_in_memory) {
+                            clearInterval(modelLoadingInterval);
+                            modelLoadingInterval = null;
+                            hideModelLoading();
+                            showNotification('Модель успешно загружена!', 'success');
+                            document.getElementById('sendButton').disabled = false;
+                            document.querySelector('.chat-title-compact h2').textContent = modelName;
+                            if (onSuccess) onSuccess();
+                        } else if (statusData.progress_info) {
+                            const progress = statusData.progress_info.percentage || 50;
+                            const statusMessage = statusData.progress_info.message || 'Загрузка...';
+                            updateLoadingProgress(progress, statusMessage);
+                        }
+
+                        if (modelLoadAttempts > 40) {
+                            clearInterval(modelLoadingInterval);
+                            modelLoadingInterval = null;
+                            showNotification('Превышено время ожидания загрузки модели', 'error');
+                            hideModelLoading();
+                        }
+                    });
+            }, 3000);
+        } else {
+            showNotification(`Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'error');
+            hideModelLoading();
+        }
+    })
+    .catch(error => {
+        showNotification(`Ошибка: ${error.message}`, 'error');
+        hideModelLoading();
+    });
+}
+
+// =============================================
+// ПРИНУДИТЕЛЬНАЯ ЛОКАЛЬНАЯ ЗАГРУЗКА (НОВЫЙ ЭНДПОИНТ)
+// =============================================
+function forceLocalLoad(modelId, modelName, onSuccess = null) {
+    showModelLoading('Локальная загрузка модели...', 10);
+
+    fetch(`/api/models/${modelId}/force-local-load/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            hideModelLoading();
+            showNotification(data.message || 'Модель загружена локально!', 'success');
+            document.querySelector('.chat-title-compact h2').textContent = modelName;
+            document.getElementById('sendButton').disabled = false;
+            refreshModels(); // обновить список моделей
+            if (onSuccess) onSuccess();
+        } else {
+            showNotification(`Ошибка: ${data.error || 'Не удалось загрузить модель'}`, 'error');
+            hideModelLoading();
+        }
+    })
+    .catch(error => {
+        showNotification(`Ошибка: ${error.message}`, 'error');
+        hideModelLoading();
+    });
+}
+
+// =============================================
+// СКАЧИВАНИЕ МОДЕЛИ (ЕСЛИ ЕЩЁ НЕ НА ДИСКЕ)
+// =============================================
+function downloadModel(modelId, modelName, onSuccess = null) {
+    if (!confirm(`Скачать модель "${modelName}" с Hugging Face? Это может занять несколько минут.`)) return;
+
+    showModelLoading('Начало скачивания модели...', 10);
+
+    fetch(`/api/models/${modelId}/download/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.task_id) {
+            showModelLoading('Скачивание модели...', 30);
+            downloadInterval = setInterval(() => {
+                fetch(`/api/models/${modelId}/status/`)
+                    .then(res => res.json())
+                    .then(statusData => {
+                        if (statusData.has_local_copy) {
+                            clearInterval(downloadInterval);
+                            downloadInterval = null;
+                            hideModelLoading();
+                            showNotification(`Модель "${modelName}" скачана!`, 'success');
+                            refreshModels();
+                            if (onSuccess) onSuccess();
+                        } else if (statusData.status === 'DOWNLOADING') {
+                            const progress = statusData.progress_info?.percentage || 30;
+                            updateLoadingProgress(progress, 'Скачивание...');
+                        }
+                    });
+            }, 3000);
+        } else {
+            showNotification(`Ошибка: ${data.error || 'Не удалось начать скачивание'}`, 'error');
+            hideModelLoading();
+        }
+    })
+    .catch(error => {
+        showNotification(`Ошибка: ${error.message}`, 'error');
+        hideModelLoading();
+    });
+}
+
+// =============================================
+// RAG ФУНКЦИИ
+// =============================================
+
+function toggleRagPanel() {
+    const panel = document.getElementById('ragPanel');
+    const btn = document.getElementById('ragToggleBtn');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        btn.classList.add('btn-primary');
+        btn.classList.remove('btn');
+        loadCollections();
+    } else {
+        panel.style.display = 'none';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn');
+    }
+}
+
+function loadCollections() {
+    const container = document.getElementById('collectionsList');
+    fetch('/api/rag/collections/')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Collections data:', data);
+            if (Array.isArray(data)) {
+                renderCollections(data);
+                renderFullCollections(data);
+            } else {
+                container.innerHTML = `<div class="text-center py-4"><i class="bi bi-collection fa-2x text-muted mb-2"></i><p class="text-muted small">Не удалось загрузить коллекции</p></div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading collections:', error);
+            container.innerHTML = `<div class="text-center py-4"><i class="bi bi-exclamation-triangle text-warning mb-2"></i><p class="text-muted small">Ошибка загрузки коллекций</p></div>`;
+        });
+}
+
+function renderCollections(collections) {
+    const container = document.getElementById('collectionsList');
+    if (!collections || collections.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-collection fa-2x text-muted mb-2"></i>
+                <p class="text-muted small">У вас нет доступных коллекций</p>
+                <a href="{% url 'rag_collection_create' %}" class="btn btn-sm btn-primary mt-2" target="_blank">
+                    <i class="bi bi-plus-lg me-1"></i> Создать коллекцию
+                </a>
+            </div>
+        `;
+        return;
+    }
+    let html = '';
+    collections.forEach(collection => {
+        const isSelected = selectedCollections.includes(collection.id);
+        const isReady = collection.vector_index_created && collection.total_vectors > 0;
+        const embeddingProgress = collection.total_chunks
+            ? Math.round((collection.total_vectors / collection.total_chunks) * 100)
+            : 0;
+
+        html += `
+            <div class="rag-collection-item ${isSelected ? 'selected' : ''}"
+                 onclick="toggleCollection(${collection.id})">
+                <div class="rag-collection-check">
+                    <input type="checkbox" class="form-check-input"
+                           ${isSelected ? 'checked' : ''}
+                           onchange="toggleCollection(${collection.id})">
+                </div>
+                <div class="rag-collection-info">
+                    <div class="rag-collection-name">
+                        ${escapeHtml(collection.name)}
+                    </div>
+                    <div class="rag-collection-meta">
+                        <span>📄 ${collection.total_documents || 0} док.</span>
+                        <span>🔍 ${collection.total_chunks || 0} чанков</span>
+                        <span class="rag-collection-badge">
+                            ${embeddingProgress}% эмбеддингов
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    ${isReady
+                        ? '<span class="rag-index-badge rag-index-ready"><i class="bi bi-check-circle"></i> Готов</span>'
+                        : '<span class="rag-index-badge rag-index-not-ready"><i class="bi bi-exclamation-triangle"></i> Индекс</span>'
+                    }
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function renderFullCollections(collections) {
+    const container = document.getElementById('collectionsFullList');
+    if (!collections || collections.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="bi bi-collection fa-3x text-muted mb-3"></i>
+                <p class="text-muted">У вас нет доступных коллекций</p>
+                <a href="{% url 'rag_collection_create' %}" class="btn btn-primary mt-2" target="_blank">
+                    <i class="bi bi-plus-lg me-1"></i> Создать коллекцию
+                </a>
+            </div>
+        `;
+        return;
+    }
+    let html = '';
+    collections.forEach(collection => {
+        const isSelected = selectedCollections.includes(collection.id);
+        const ownerText = collection.is_owner ? 'Моя' : 'Публичная';
+        html += `
+            <div class="collection-card ${isSelected ? 'active' : ''}"
+                 onclick="selectCollectionFull(${collection.id}, '${escapeHtml(collection.name)}')">
+                <div class="collection-header">
+                    <div>
+                        <div class="collection-name">${escapeHtml(collection.name)}</div>
+                        <div class="collection-stats">
+                            <span><i class="bi bi-file-text me-1"></i> ${collection.total_documents || 0} док.</span>
+                            <span><i class="bi bi-grid-3x3 me-1"></i> ${collection.total_chunks || 0} чанков</span>
+                            <span><i class="bi bi-vector me-1"></i> ${collection.total_vectors || 0} векторов</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="collection-badge"><i class="bi ${collection.is_owner ? 'bi-lock' : 'bi-globe'} me-1"></i> ${ownerText}</span>
+                    </div>
+                </div>
+                ${collection.description ? `
+                    <div class="text-muted small mt-1">
+                        ${escapeHtml(collection.description).substring(0, 100)}${collection.description.length > 100 ? '...' : ''}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function toggleCollection(collectionId) {
+    const index = selectedCollections.indexOf(collectionId);
+    if (index === -1) {
+        selectedCollections.push(collectionId);
+    } else {
+        selectedCollections.splice(index, 1);
+    }
+    loadCollections();
+    updateRagConfig();
+}
+
+function selectCollectionFull(collectionId, collectionName) {
+    toggleCollection(collectionId);
+    const isSelected = selectedCollections.includes(collectionId);
+    showNotification(
+        isSelected ? `Коллекция "${collectionName}" выбрана` : `Коллекция "${collectionName}" отменена`,
+        'success'
+    );
+}
+
+function filterCollections() {
+    const searchText = document.getElementById('collectionSearchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.collection-card');
+    cards.forEach(card => {
+        const name = card.querySelector('.collection-name')?.textContent.toLowerCase() || '';
+        if (name.includes(searchText) || searchText === '') {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function performRagSearch() {
+    const query = document.getElementById('ragQuickSearch').value.trim();
+    if (!query) {
+        showNotification('Введите запрос для поиска', 'warning');
+        return;
+    }
+    if (selectedCollections.length === 0) {
+        showNotification('Выберите хотя бы одну коллекцию', 'warning');
+        return;
+    }
+    const resultsContainer = document.getElementById('ragSearchResults');
+    resultsContainer.innerHTML = `
+        <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+            <span class="text-muted small">Поиск в ${selectedCollections.length} коллекциях...</span>
+        </div>
+    `;
+    resultsContainer.style.display = 'block';
+    fetch('/api/rag/search/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({
+            query: query,
+            collection_id: selectedCollections.length === 1 ? selectedCollections[0] : null,
+            top_k: 5,
+            search_type: 'hybrid'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayRagSearchResults(data, query);
+        } else {
+            resultsContainer.innerHTML = `
+                <div class="alert alert-warning py-2 mb-0">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    ${data.error || 'Ошибка поиска'}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Search error:', error);
+        resultsContainer.innerHTML = `
+            <div class="alert alert-danger py-2 mb-0">
+                <i class="bi bi-exclamation-circle me-1"></i>
+                Ошибка при выполнении поиска
+            </div>
+        `;
+    });
+}
+
+function displayRagSearchResults(data, query) {
+    const container = document.getElementById('ragSearchResults');
+    const results = data.results || [];
+    let html = `
+        <div class="rag-results-header">
+            <span><i class="bi bi-search me-1"></i> Результаты поиска: "${escapeHtml(query)}"</span>
+            <span class="badge bg-primary">${results.length} найдено</span>
+        </div>
+    `;
+    if (results.length === 0) {
+        html += `<div class="text-center py-3"><p class="text-muted small mb-0">Ничего не найдено</p></div>`;
+        container.innerHTML = html;
+        return;
+    }
+    html += '<div class="rag-results-list">';
+    results.forEach((result, index) => {
+        const relevancePercent = (result.relevance_score * 100).toFixed(1);
+        const preview = result.content || '';
+        html += `
+            <div class="rag-result-item">
+                <div class="rag-result-header">
+                    <span class="rag-result-title">
+                        <i class="bi bi-file-text me-1"></i>${escapeHtml(result.document_title || 'Без названия')}
+                    </span>
+                    <span class="rag-result-relevance">${relevancePercent}%</span>
+                </div>
+                <div class="rag-result-content" id="ragContent-${index}">
+                    ${escapeHtml(preview).substring(0, 200)}${preview.length > 200 ? '...' : ''}
+                </div>
+                ${preview.length > 200 ? `
+                    <a class="rag-result-expand" onclick="expandRagResult(${index})">
+                        <i class="bi bi-chevron-down me-1"></i>Развернуть
+                    </a>
+                ` : ''}
+                <div class="rag-result-actions">
+                    <button class="btn-sm" onclick="useInChat(${result.chunk_id}, '${escapeHtml(query)}')">
+                        <i class="bi bi-chat me-1"></i> Использовать
+                    </button>
+                    <button class="btn-sm" onclick="previewDocument(${result.document_id}, '${escapeHtml(result.document_title)}', ${result.chunk_id})">
+                        <i class="bi bi-eye me-1"></i> Предпросмотр
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function expandRagResult(index) {
+    const element = document.getElementById(`ragContent-${index}`);
+    if (element) {
+        element.classList.toggle('expanded');
+        const link = element.nextElementSibling;
+        if (link) {
+            link.innerHTML = element.classList.contains('expanded')
+                ? '<i class="bi bi-chevron-up me-1"></i>Свернуть'
+                : '<i class="bi bi-chevron-down me-1"></i>Развернуть';
+        }
+    }
+}
+
+function updateRagConfig() {
+    const ragTopK = document.getElementById('ragTopK')?.value || 5;
+    const semanticWeight = document.getElementById('semanticWeight')?.value || 0.7;
+    const keywordWeight = document.getElementById('keywordWeight')?.value || 0.2;
+    const freshnessWeight = document.getElementById('freshnessWeight')?.value || 0.1;
+    const useReranking = document.getElementById('useReranking')?.checked || true;
+
+    localStorage.setItem('rag_config', JSON.stringify({
+        selected_collections: selectedCollections,
+        top_k: parseInt(ragTopK),
+        semantic_weight: parseFloat(semanticWeight),
+        keyword_weight: parseFloat(keywordWeight),
+        freshness_weight: parseFloat(freshnessWeight),
+        use_reranking: useReranking,
+        enabled: selectedCollections.length > 0
+    }));
+
+    isRagEnabled = selectedCollections.length > 0 && document.getElementById('ragAutoSearchToggle')?.checked;
+    updateRagUI();
+}
+
+function updateRagUI() {
+    const indicator = document.getElementById('ragActiveIndicator');
+    const statusBadge = document.getElementById('ragStatusBadge');
+    const autoToggle = document.getElementById('ragAutoSearchToggle');
+    const autoEnabled = autoToggle ? autoToggle.checked : true;
+    isRagEnabled = selectedCollections.length > 0 && autoEnabled;
+    if (isRagEnabled) {
+        if (indicator) indicator.style.display = 'flex';
+        if (statusBadge) statusBadge.style.display = 'inline';
+    } else {
+        if (indicator) indicator.style.display = 'none';
+        if (statusBadge) statusBadge.style.display = 'none';
+    }
+}
+
+// =============================================
+// ЗАГРУЗКА МОДЕЛЕЙ
+// =============================================
+
+function loadModels() {
+    const container = document.getElementById('modelsList');
+    fetch('/api/models/')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Models data:', data);
+            if (Array.isArray(data)) {
+                renderModels(data);
+            } else {
+                container.innerHTML = `<div class="text-center py-4"><i class="bi bi-exclamation-triangle text-warning fa-2x mb-3"></i><p class="text-muted">Не удалось загрузить модели</p></div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading models:', error);
+            container.innerHTML = `<div class="text-center py-4"><i class="bi bi-exclamation-circle text-danger fa-2x mb-3"></i><p class="text-muted">Ошибка загрузки моделей</p></div>`;
+        });
+}
+
+function renderModels(models) {
+    const container = document.getElementById('modelsList');
+    if (!models || models.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="bi bi-cpu fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Нет доступных моделей</p>
+                <p class="text-muted small">Перейдите в раздел "Модели" для загрузки</p>
+            </div>
+        `;
+        return;
+    }
+    let html = '';
+    models.forEach(model => {
+        const isActive = model.id == CURRENT_MODEL_ID;
+        let statusText = '', statusClass = '', actionButtons = '';
+        if (model.is_loaded_in_memory) {
+            statusText = '✅ Загружена';
+            statusClass = 'status-loaded';
+            actionButtons = `
+                <button class="btn btn-primary btn-sm" onclick="selectModel(${model.id}, '${escapeHtml(model.display_name || model.name)}')">
+                    <i class="bi bi-chat me-1"></i> Выбрать для чата
+                </button>
+            `;
+        } else if (model.local_path) {
+            statusText = '📥 На диске';
+            statusClass = 'status-not-loaded';
+            actionButtons = `
+                <button class="btn btn-outline-light btn-sm" onclick="forceLocalLoad(${model.id}, '${escapeHtml(model.display_name || model.name)}', function() { showNotification('Модель загружена', 'success'); refreshModels(); })">
+                    <i class="bi bi-cloud-download me-1"></i> Загрузить локально
+                </button>
+            `;
+        } else if (model.huggingface_id) {
+            statusText = '❌ Не скачана';
+            statusClass = 'status-not-loaded';
+            actionButtons = `
+                <button class="btn btn-outline-light btn-sm" onclick="downloadModel(${model.id}, '${escapeHtml(model.display_name || model.name)}')">
+                    <i class="bi bi-cloud-download me-1"></i> Скачать
+                </button>
+            `;
+        } else {
+            statusText = '❓ Неизвестно';
+            statusClass = 'status-not-loaded';
+        }
+        html += `
+            <div class="model-card ${isActive ? 'active' : ''}">
+                <div class="model-header">
+                    <div>
+                        <div class="model-name">${escapeHtml(model.display_name || model.name || 'Без названия')}</div>
+                        <div class="model-details">
+                            <span>📊 ${model.parameter_count ? formatNumber(model.parameter_count) : '?'} парам.</span>
+                            <span>•</span>
+                            <span class="model-status ${statusClass}">${statusText}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="model-details">
+                    <small>💻 ${model.is_loaded_in_memory ? 'Загружена' : 'Не загружена'}</small>
+                    ${model.quantization ? `<small class="ms-2">🔧 ${model.quantization}</small>` : ''}
+                </div>
+                <div class="model-actions">${actionButtons}</div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// =============================================
+// ВЫБОР МОДЕЛИ
+// =============================================
+
+function selectModel(modelId, modelName) {
+    if (!SESSION_ID) {
+        showNotification('Сначала создайте сессию', 'warning');
+        return;
+    }
+    fetch(`/api/chat-sessions/${SESSION_ID}/change_model/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: `model_id=${modelId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Модель изменена на ${modelName}`, 'success');
+            document.querySelector('.chat-title-compact h2').textContent = modelName;
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modelsModal'));
+            if (modal) modal.hide();
+            setTimeout(() => checkModelStatus(), 500);
+        } else {
+            showNotification(`Ошибка: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error selecting model:', error);
+        showNotification(`Ошибка: ${error.message}`, 'error');
+    });
+}
+
+function refreshModels() {
+    loadModels();
+    showNotification('Список моделей обновлен', 'success');
+}
+
+// =============================================
+// ОСНОВНЫЕ ФУНКЦИИ ЧАТА
+// =============================================
+
+function actuallySendMessage(message) {
+    const generationConfig = getCurrentSettings();
+    let requestBody = {
+        prompt: message,
+        ...generationConfig
+    };
+    if (isRagEnabled && selectedCollections.length > 0) {
+        requestBody.use_rag = true;
+        requestBody.collection_ids = selectedCollections;
+    }
+    return fetch(`/api/chat-sessions/${SESSION_ID}/send_message/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify(requestBody)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || 'Ошибка генерации'); });
+        }
+        return response.json();
+    });
+}
+
+function sendMessage() {
+    if (isGenerating) {
+        showNotification('Пожалуйста, дождитесь завершения генерации', 'warning');
+        return;
+    }
+    const input = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    if (!input || !sendButton || !SESSION_ID) return;
+
+    const message = input.value.trim();
+    if (!message) return;
+    if (!CURRENT_MODEL_ID) {
+        showNotification('Сначала выберите модель', 'warning');
+        return;
+    }
+
+    pendingMessage = message;
+    addMessage('user', message);
+    input.value = '';
+    updateCharCount();
+    autoResize(input);
+
+    showTypingIndicator();
+    sendButton.disabled = true;
+    isGenerating = true;
+
+    actuallySendMessage(message)
+        .then(data => {
+            if (data.success) {
+                addMessage('assistant', data.response, data.rag_sources);
+                if (data.tokens) updateSessionStats(data.tokens.total);
+            } else {
+                if (data.need_local_load) {
+                    fetch(`/api/models/${CURRENT_MODEL_ID}/status/`)
+                        .then(res => res.json())
+                        .then(statusData => {
+                            if (statusData.has_local_copy) {
+                                showNotification('Модель необходимо загрузить локально. Загружаем...', 'info');
+                                forceLocalLoad(CURRENT_MODEL_ID, CURRENT_MODEL_NAME, function() {
+                                    actuallySendMessage(pendingMessage)
+                                        .then(data2 => {
+                                            if (data2.success) {
+                                                addMessage('assistant', data2.response, data2.rag_sources);
+                                                if (data2.tokens) updateSessionStats(data2.tokens.total);
+                                            } else {
+                                                addMessage('assistant', `Ошибка: ${data2.error || 'Неизвестная ошибка'}`);
+                                            }
+                                        })
+                                        .catch(error2 => {
+                                            addMessage('assistant', `Ошибка: ${error2.message}`);
+                                        })
+                                        .finally(() => {
+                                            hideTypingIndicator();
+                                            sendButton.disabled = false;
+                                            isGenerating = false;
+                                            input.focus();
+                                        });
+                                });
+                            } else {
+                                showNotification('Модель необходимо скачать. Начинаем скачивание...', 'info');
+                                downloadModel(CURRENT_MODEL_ID, CURRENT_MODEL_NAME, function() {
+                                    forceLocalLoad(CURRENT_MODEL_ID, CURRENT_MODEL_NAME, function() {
+                                        actuallySendMessage(pendingMessage);
+                                    });
+                                });
+                            }
+                        });
+                } else {
+                    addMessage('assistant', `Ошибка: ${data.error || 'Неизвестная ошибка'}`);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Send message error:', error);
+            addMessage('assistant', `Ошибка: ${error.message}`);
+        })
+        .finally(() => {
+            hideTypingIndicator();
+            sendButton.disabled = false;
+            isGenerating = false;
+            input.focus();
+        });
+}
+
+function addMessage(role, content, ragSources = null) {
+    const messagesScroll = document.getElementById('messagesScroll');
+    if (!messagesScroll) return;
+    const emptyState = messagesScroll.querySelector('.empty-state');
+    if (emptyState) emptyState.style.display = 'none';
+
+    const isUser = role === 'user';
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    let sourcesHtml = '';
+    if (!isUser && ragSources && ragSources.length > 0) {
+        sourcesHtml = `
+            <div class="rag-sources">
+                <div class="message-rag-context">
+                    <i class="bi bi-database"></i>
+                    Ответ основан на ${ragSources.length} документах
+                </div>
+                ${ragSources.map(source => `
+                    <span class="rag-source-item" title="Релевантность: ${(source.relevance * 100).toFixed(1)}%">
+                        <i class="bi bi-file-text me-1"></i>${escapeHtml(source.title).substring(0, 30)}${source.title.length > 30 ? '...' : ''}
+                    </span>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    const messageHTML = `
+        <div class="message-item ${isUser ? 'message-user' : 'message-assistant'}">
+            <div class="message-header">
+                <div class="message-avatar">
+                    <i class="bi ${isUser ? 'bi-person' : 'bi-robot'}"></i>
+                </div>
+                <div class="message-sender">${isUser ? 'Вы' : 'Ассистент'}</div>
+                <div class="message-timestamp">${timestamp}</div>
+            </div>
+            <div class="message-content">${escapeHtml(content).replace(/\n/g, '<br>')}</div>
+            ${sourcesHtml}
+        </div>
+    `;
+
+    messagesScroll.insertAdjacentHTML('beforeend', messageHTML);
+    scrollToBottom();
+}
+
+function scrollToBottom() {
+    const container = document.getElementById('messagesContainer');
+    if (container) container.scrollTop = container.scrollHeight;
+}
+
+function showTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) {
+        indicator.style.display = 'flex';
+        scrollToBottom();
+    }
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.style.display = 'none';
+}
+
+// =============================================
+// НАСТРОЙКИ
+// =============================================
+
+function getCurrentSettings() {
+    return {
+        temperature: parseFloat(document.getElementById('temperature')?.value || 0.7),
+        max_tokens: parseInt(document.getElementById('maxTokens')?.value || 512),
+        top_p: parseFloat(document.getElementById('topP')?.value || 0.9),
+        top_k: 50,
+        repetition_penalty: 1.0
+    };
+}
+
+function showSettingsModal() {
+    loadSettings();
+    const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+    modal.show();
+}
+
+function loadSettings() {
+    const saved = localStorage.getItem('chat_settings');
+    if (saved) {
+        try {
+            const settings = JSON.parse(saved);
+            if (settings.temperature) {
+                document.getElementById('temperature').value = settings.temperature;
+                document.getElementById('tempValueDisplay').textContent = settings.temperature;
+            }
+            if (settings.max_tokens) {
+                document.getElementById('maxTokens').value = settings.max_tokens;
+                document.getElementById('tokensValueDisplay').textContent = settings.max_tokens;
+            }
+            if (settings.top_p) {
+                document.getElementById('topP').value = settings.top_p;
+                document.getElementById('topPValueDisplay').textContent = settings.top_p;
+            }
+            if (settings.rag_top_k) {
+                document.getElementById('ragTopK').value = settings.rag_top_k;
+                document.getElementById('ragTopKValue').textContent = settings.rag_top_k;
+            }
+            if (settings.semantic_weight) {
+                document.getElementById('semanticWeight').value = settings.semantic_weight;
+                document.getElementById('semanticWeightValue').textContent = settings.semantic_weight.toFixed(2);
+            }
+            if (settings.keyword_weight) {
+                document.getElementById('keywordWeight').value = settings.keyword_weight;
+                document.getElementById('keywordWeightValue').textContent = settings.keyword_weight.toFixed(2);
+            }
+            if (settings.freshness_weight) {
+                document.getElementById('freshnessWeight').value = settings.freshness_weight;
+                document.getElementById('freshnessWeightValue').textContent = settings.freshness_weight.toFixed(2);
+            }
+            if (settings.use_reranking !== undefined) {
+                document.getElementById('useReranking').checked = settings.use_reranking;
+            }
+        } catch (e) {
+            console.error('Error loading settings:', e);
+        }
+    }
+}
+
+function saveSettings() {
+    const settings = {
+        temperature: parseFloat(document.getElementById('temperature').value),
+        max_tokens: parseInt(document.getElementById('maxTokens').value),
+        top_p: parseFloat(document.getElementById('topP').value),
+        rag_top_k: parseInt(document.getElementById('ragTopK').value),
+        semantic_weight: parseFloat(document.getElementById('semanticWeight').value),
+        keyword_weight: parseFloat(document.getElementById('keywordWeight').value),
+        freshness_weight: parseFloat(document.getElementById('freshnessWeight').value),
+        use_reranking: document.getElementById('useReranking').checked
+    };
+    localStorage.setItem('chat_settings', JSON.stringify(settings));
+    if (selectedCollections.length > 0) updateRagConfig();
+    showNotification('Настройки сохранены', 'success');
+}
+
+function initSliders() {
+    const tempSlider = document.getElementById('temperature');
+    if (tempSlider) tempSlider.addEventListener('input', function() {
+        document.getElementById('tempValueDisplay').textContent = this.value;
+    });
+    const tokensSlider = document.getElementById('maxTokens');
+    if (tokensSlider) tokensSlider.addEventListener('input', function() {
+        document.getElementById('tokensValueDisplay').textContent = this.value;
+    });
+    const topPSlider = document.getElementById('topP');
+    if (topPSlider) topPSlider.addEventListener('input', function() {
+        document.getElementById('topPValueDisplay').textContent = this.value;
+    });
+    const ragTopK = document.getElementById('ragTopK');
+    if (ragTopK) ragTopK.addEventListener('input', function() {
+        document.getElementById('ragTopKValue').textContent = this.value;
+    });
+    const semanticWeight = document.getElementById('semanticWeight');
+    if (semanticWeight) semanticWeight.addEventListener('input', function() {
+        document.getElementById('semanticWeightValue').textContent = parseFloat(this.value).toFixed(2);
+    });
+    const keywordWeight = document.getElementById('keywordWeight');
+    if (keywordWeight) keywordWeight.addEventListener('input', function() {
+        document.getElementById('keywordWeightValue').textContent = parseFloat(this.value).toFixed(2);
+    });
+    const freshnessWeight = document.getElementById('freshnessWeight');
+    if (freshnessWeight) freshnessWeight.addEventListener('input', function() {
+        document.getElementById('freshnessWeightValue').textContent = parseFloat(this.value).toFixed(2);
+    });
+}
+
+// =============================================
+// ДЕЙСТВИЯ С ЧАТОМ
+// =============================================
+
+function clearChatHistory() {
+    if (!SESSION_ID || !confirm('Очистить историю чата? Это действие нельзя отменить.')) return;
+    fetch(`/api/chat-sessions/${SESSION_ID}/clear/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('История очищена', 'success');
+            location.reload();
+        } else {
+            showNotification(`Ошибка: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => showNotification(`Ошибка: ${error.message}`, 'error'));
+}
+
+function exportChat() {
+    if (!SESSION_ID) return;
+    fetch(`/api/chat-sessions/${SESSION_ID}/export/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() },
+        body: new URLSearchParams({ download: 'true' })
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chat_${SESSION_ID}_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        showNotification('Чат экспортирован', 'success');
+    })
+    .catch(error => showNotification(`Ошибка экспорта: ${error.message}`, 'error'));
+}
+
+function updateSessionStats(additionalTokens = 0) {
+    const subtitle = document.querySelector('.chat-subtitle-compact');
+    if (subtitle) {
+        const currentText = subtitle.textContent;
+        const match = currentText.match(/(\d+) сообщений • (\d+) токенов/);
+        if (match) {
+            const messages = parseInt(match[1]) + 1;
+            const tokens = parseInt(match[2]) + additionalTokens;
+            subtitle.textContent = `${messages} сообщений • ${tokens} токенов`;
+        } else {
+            const messages = document.querySelectorAll('.message-item').length / 2;
+            subtitle.textContent = `${messages} сообщений • ${additionalTokens} токенов`;
+        }
+    }
+}
+
+// =============================================
+// ПРИМЕРЫ И ВСТАВКИ
+// =============================================
+
+function insertSample(sample) {
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.value = sample;
+        input.focus();
+        autoResize(input);
+        updateCharCount();
+    }
+}
+function insertSamplePrompt() {
+    const samples = [
+        "Расскажи о себе и своих возможностях",
+        "Напиши программу на Python для анализа текста",
+        "Объясни, как работают нейронные сети",
+        "Что такое трансформеры в машинном обучении?",
+        "Напиши короткий рассказ о космосе"
+    ];
+    insertSample(samples[Math.floor(Math.random() * samples.length)]);
+}
+
+// =============================================
+// ПРЕДПРОСМОТР ДОКУМЕНТОВ
+// =============================================
+
+function previewDocument(documentId, title, chunkId = null) {
+    document.getElementById('previewDocumentTitle').textContent = title;
+    let url = `/api/rag/documents/${documentId}/`;
+    if (chunkId) url += `?chunk_id=${chunkId}`;
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            let content = '';
+            if (data.raw_content) {
+                content = `<pre class="text-white" style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(data.raw_content)}</pre>`;
+            } else if (data.error) {
+                content = `<div class="alert alert-warning">${escapeHtml(data.error)}</div>`;
+            } else {
+                content = '<div class="text-muted">Содержимое документа недоступно</div>';
+            }
+            document.getElementById('previewContent').innerHTML = content;
+            document.getElementById('previewDocumentLink').href = `/documents/${documentId}/download/`;
+            new bootstrap.Modal(document.getElementById('documentPreviewModal')).show();
+        })
+        .catch(error => {
+            console.error('Error loading preview:', error);
+            showNotification('Не удалось загрузить предпросмотр документа', 'error');
+        });
+}
+
+function useInChat(chunkId, query) {
+    localStorage.setItem('rag_context', JSON.stringify({
+        chunk_id: chunkId,
+        query: query,
+        timestamp: new Date().toISOString(),
+        collection_id: selectedCollections[0] || null
+    }));
+    showNotification('Чанк сохранен для использования в RAG чате', 'success');
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.value = `На основе документа: ${query}`;
+        input.focus();
+        autoResize(input);
+        updateCharCount();
+    }
+}
+
+// =============================================
+// ИНИЦИАЛИЗАЦИЯ
+// =============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    initSliders();
+    loadSettings();
+    loadModels();
+
+    if (SESSION_ID && CURRENT_MODEL_ID) {
+        checkModelStatus();
+        const savedRag = localStorage.getItem('rag_config');
+        if (savedRag) {
+            try {
+                const ragConfig = JSON.parse(savedRag);
+                selectedCollections = ragConfig.selected_collections || [];
+                if (selectedCollections.length > 0) {
+                    isRagEnabled = ragConfig.enabled && document.getElementById('ragAutoSearchToggle')?.checked;
+                    updateRagUI();
+                }
+            } catch (e) {
+                console.error('Error loading RAG config:', e);
+            }
+        }
+    }
+
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+
+    const autoToggle = document.getElementById('ragAutoSearchToggle');
+    if (autoToggle) {
+        autoToggle.addEventListener('change', updateRagUI);
+    }
+
+    if (SESSION_ID && CURRENT_MODEL_ID) {
+        setInterval(checkModelStatus, 10000);
+    }
+});
+
+window.addEventListener('beforeunload', function() {
+    if (SESSION_ID) {
+        const ragConfig = {
+            selected_collections: selectedCollections,
+            top_k: document.getElementById('ragTopK')?.value || 5,
+            semantic_weight: document.getElementById('semanticWeight')?.value || 0.7,
+            keyword_weight: document.getElementById('keywordWeight')?.value || 0.2,
+            freshness_weight: document.getElementById('freshnessWeight')?.value || 0.1,
+            use_reranking: document.getElementById('useReranking')?.checked || true,
+            enabled: selectedCollections.length > 0
+        };
+        localStorage.setItem('rag_config', JSON.stringify(ragConfig));
+    }
+});
+</script>
+{% endblock %}

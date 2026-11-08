@@ -1,0 +1,174 @@
+{% extends 'ivanna_model_manager/base.html' %}
+
+{% block title %}Создать сравнение - Ivanna Lab{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-clipboard-data"></i> Создание сравнения моделей
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Название сравнения *</label>
+                            <input type="text" name="name" class="form-control" 
+                                   placeholder="Например: Сравнение Qwen3-8B до и после обучения" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea name="description" class="form-control" rows="3"
+                                      placeholder="Опишите цель сравнения..."></textarea>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Промпты для сравнения *</label>
+                            <div id="prompts-container">
+                                <div class="input-group mb-2">
+                                    <textarea class="form-control prompt-text" 
+                                              placeholder="Введите промпт для сравнения..."
+                                              rows="2"></textarea>
+                                    <button type="button" class="btn btn-outline-danger remove-prompt">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" id="add-prompt" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-plus"></i> Добавить промпт
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Модели для сравнения *</label>
+                            <div class="row">
+                                {% for model in available_models %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="model_ids" value="{{ model.id }}" 
+                                               id="model{{ model.id }}">
+                                        <label class="form-check-label" for="model{{ model.id }}">
+                                            {{ model.display_name }} ({{ model.get_model_type_display }})
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ model.parameter_count|floatformat:0 }} параметров • 
+                                                {{ model.context_length }} токенов
+                                            </small>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> Нет загруженных моделей
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Создать сравнение
+                            </button>
+                            <a href="{% url 'comparison_list' %}" class="btn btn-outline-secondary">
+                                Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const promptsContainer = document.getElementById('prompts-container');
+    const addPromptBtn = document.getElementById('add-prompt');
+    
+    // Добавление нового промпта
+    addPromptBtn.addEventListener('click', function() {
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'input-group mb-2';
+        promptDiv.innerHTML = `
+            <textarea class="form-control prompt-text" 
+                      placeholder="Введите промпт для сравнения..."
+                      rows="2"></textarea>
+            <button type="button" class="btn btn-outline-danger remove-prompt">
+                <i class="bi bi-trash"></i>
+            </button>
+        `;
+        
+        promptsContainer.appendChild(promptDiv);
+        
+        // Добавляем обработчик удаления
+        promptDiv.querySelector('.remove-prompt').addEventListener('click', function() {
+            if (promptsContainer.children.length > 1) {
+                promptDiv.remove();
+            } else {
+                alert('Должен быть хотя бы один промпт');
+            }
+        });
+    });
+    
+    // Обработчик удаления для существующих промптов
+    document.querySelectorAll('.remove-prompt').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (promptsContainer.children.length > 1) {
+                this.closest('.input-group').remove();
+            } else {
+                alert('Должен быть хотя бы один промпт');
+            }
+        });
+    });
+    
+    // Обработка формы
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Собираем промпты
+        const prompts = [];
+        document.querySelectorAll('.prompt-text').forEach((textarea, index) => {
+            const text = textarea.value.trim();
+            if (text) {
+                prompts.push({
+                    id: index + 1,
+                    text: text
+                });
+            }
+        });
+        
+        // Проверяем промпты
+        if (prompts.length === 0) {
+            alert('Добавьте хотя бы один промпт');
+            return;
+        }
+        
+        // Проверяем выбранные модели
+        const selectedModels = document.querySelectorAll('input[name="model_ids"]:checked');
+        if (selectedModels.length === 0) {
+            alert('Выберите хотя бы одну модель');
+            return;
+        }
+        
+        // Создаем скрытые поля для промптов
+        const promptsInput = document.createElement('input');
+        promptsInput.type = 'hidden';
+        promptsInput.name = 'prompts_json';
+        promptsInput.value = JSON.stringify(prompts);
+        this.appendChild(promptsInput);
+        
+        // Отправляем форму
+        this.submit();
+    });
+});
+</script>
+{% endblock %}

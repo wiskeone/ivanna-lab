@@ -1,0 +1,1184 @@
+{% extends 'ivanna_model_manager/base.html' %}
+
+{% block title %}{{ title }} - Ivanna Lab{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        min-height: 250px;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    .gpu-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .cpu-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+    
+    .memory-card {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+    
+    .disk-card {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        color: white;
+    }
+    
+    .network-card {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+    }
+    
+    .live-badge {
+        animation: livePulse 2s infinite;
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    @keyframes livePulse {
+        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .progress {
+        height: 10px;
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .progress-bar {
+        border-radius: 5px;
+    }
+    
+    .gpu-device-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+    }
+    
+    /* Новые стили для таблицы загрузок */
+    .download-status {
+        font-size: 0.8rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+    
+    .status-downloading {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+    
+    .status-pending {
+        background-color: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+        border: 1px solid rgba(108, 117, 125, 0.3);
+    }
+    
+    .status-completed {
+        background-color: rgba(25, 135, 84, 0.2);
+        color: #198754;
+        border: 1px solid rgba(25, 135, 84, 0.3);
+    }
+    
+    .status-failed {
+        background-color: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-microchip me-2"></i>{{ title }}</h1>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-danger live-badge me-2">
+                <i class="fas fa-circle me-1" style="font-size: 0.6rem;"></i>LIVE
+            </span>
+            <small class="text-muted" id="last-updated">
+                <i class="fas fa-clock me-1"></i>{{ current_time|date:"H:i:s" }} | 
+                <i class="fas fa-user me-1"></i>{{ user.username }}
+            </small>
+        </div>
+    </div>
+    
+    {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Ошибка:</strong> {{ error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    
+    <!-- Базовая информация о системе -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card metric-card gpu-card">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-microchip me-2"></i>GPU Система</h5>
+                        {% if gpu_info.available %}
+                            <span class="badge bg-success status-badge">
+                                <i class="fas fa-check-circle me-1"></i>Активно
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary status-badge">
+                                <i class="fas fa-times-circle me-1"></i>Недоступно
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if gpu_info.available %}
+                        <div class="row mb-3">
+                            <div class="col-4 text-center">
+                                <div class="metric-value">{{ gpu_info.count }}</div>
+                                <div class="metric-label">Устройств</div>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="metric-value">{{ gpu_info.cuda_version|default:"-" }}</div>
+                                <div class="metric-label">CUDA</div>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="metric-value">{% if gpu_info.device_names %}✓{% else %}✗{% endif %}</div>
+                                <div class="metric-label">Обнаружено</div>
+                            </div>
+                        </div>
+                        
+                        {% if gpu_info.device_names %}
+                            <div class="mt-3">
+                                <small class="opacity-75"><i class="fas fa-list me-1"></i>Доступные GPU:</small>
+                                <div class="mt-2">
+                                    {% for device in gpu_info.device_names %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-gpu me-2" style="font-size: 0.8rem;"></i>
+                                        <small>{{ device|truncatechars:30 }}</small>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-microchip-slash fa-3x mb-3 opacity-50"></i>
+                            <p class="mb-2">GPU не обнаружено</p>
+                            <small class="opacity-75">Используется CPU для вычислений</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card metric-card cpu-card">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Статистика моделей</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="bg-dark rounded p-3">
+                                <div class="metric-value text-primary">{{ total_models }}</div>
+                                <div class="metric-label">Всего</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="bg-dark rounded p-3">
+                                <div class="metric-value text-success">{{ loaded_models }}</div>
+                                <div class="metric-label">В памяти</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="bg-dark rounded p-3">
+                                <div class="metric-value text-warning">{{ downloading_models }}</div>
+                                <div class="metric-label">Загружаются</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="bg-dark rounded p-3">
+                                <div class="metric-value text-info">{{ active_downloads_count }}</div>
+                                <div class="metric-label">Активные сессии</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if active_downloads_count > 0 %}
+                    <div class="mt-3">
+                        <small class="opacity-75"><i class="fas fa-sync-alt me-1"></i>Активные сессии:</small>
+                        <div class="mt-2">
+                            {% for download in active_downloads %}
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-truncate" style="max-width: 70%;">
+                                    <i class="fas fa-robot me-1"></i>
+                                    {{ download.checkpoint.display_name|default:download.checkpoint.name|truncatechars:20 }}
+                                </small>
+                                <small class="badge bg-warning">
+                                    <i class="fas fa-sync-alt fa-spin me-1"></i>
+                                    {{ download.get_status_display }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Live метрики -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card metric-card memory-card">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-memory me-2"></i>Оперативная память</h5>
+                    <small class="opacity-75">LIVE</small>
+                </div>
+                <div class="card-body">
+                    <div id="memory-status" class="text-center">
+                        <div class="spinner-border text-light" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-3 mb-0">Загрузка метрик памяти...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card metric-card disk-card">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-hard-drive me-2"></i>Дисковое пространство</h5>
+                    <small class="opacity-75">LIVE</small>
+                </div>
+                <div class="card-body">
+                    <div id="disk-status" class="text-center">
+                        <div class="spinner-border text-light" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-3 mb-0">Загрузка метрик диска...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- GPU Live метрики -->
+    <div class="card metric-card gpu-card mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>GPU в реальном времени</h5>
+            <small class="opacity-75">LIVE</small>
+        </div>
+        <div class="card-body">
+            <div id="gpu-live-status">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-light" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <p class="mt-3 mb-0">Получение данных GPU...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Активные задачи загрузки (только если они есть) -->
+    <div class="card mb-4 border-0 shadow-sm" id="downloads-container">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-download me-2"></i>Активные задачи загрузки моделей</h5>
+            <span class="badge bg-info" id="downloads-count">0</span>
+        </div>
+        <div class="card-body">
+            <div id="downloads-content">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <p class="mt-3 mb-0">Загрузка информации о задачах...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Управление -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Управление системой</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'model_list' %}" class="btn btn-primary">
+                    <i class="fas fa-list me-2"></i>Все модели
+                </a>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-tachometer-alt me-2"></i>Панель управления
+                </a>
+                <button id="refresh-metrics" class="btn btn-success">
+                    <i class="fas fa-sync-alt me-2"></i>Обновить метрики
+                </button>
+                <button id="auto-refresh-toggle" class="btn btn-outline-secondary">
+                    <i class="fas fa-play me-2"></i>Автообновление
+                </button>
+                <a href="{% url 'system_metrics_view' %}" class="btn btn-outline-info">
+                    <i class="fas fa-chart-bar me-2"></i>Подробные метрики
+                </a>
+            </div>
+            
+            <div class="mt-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="alert alert-info mb-0">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Информация о системе</h6>
+                                    <p class="mb-0 small">Метрики обновляются автоматически каждые 5 секунд. Для получения точных данных о GPU требуется наличие драйверов NVIDIA.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-light mb-0">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-microchip fa-2x me-3 text-primary"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Состояние системы</h6>
+                                    <p class="mb-0 small">
+                                        <span id="system-status">Проверка...</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Конфигурация
+const config = {
+    autoRefresh: true,
+    refreshInterval: 5000,
+    updateCount: 0
+};
+
+// Функция для получения данных о задачах загрузки
+async function fetchDownloadsData() {
+    try {
+        const response = await fetch('/api/model_download_progress/');
+        
+        if (!response.ok) {
+            return {
+                active_downloads: [],
+                recent_completed: [],
+                pending_models: []
+            };
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Ошибка при получении данных о загрузках:', error);
+        return {
+            active_downloads: [],
+            recent_completed: [],
+            pending_models: []
+        };
+    }
+}
+
+// Обновление информации о загрузках
+async function updateDownloads() {
+    try {
+        const data = await fetchDownloadsData();
+        
+        // Фильтруем только задачи загрузки
+        let downloads = data.active_downloads || [];
+        
+        // Фильтруем дубликаты и не задачи загрузки
+        const uniqueDownloads = [];
+        const seenIds = new Set();
+        
+        downloads.forEach(download => {
+            // Пропускаем не задачи загрузки
+            if (!download.is_download_job && !download.task_id && !download.hf_id) {
+                return;
+            }
+            
+            // Определяем уникальный идентификатор
+            const uniqueId = download.model_id || download.id || download.hf_id;
+            
+            // Если это новая уникальная задача
+            if (uniqueId && !seenIds.has(uniqueId)) {
+                seenIds.add(uniqueId);
+                uniqueDownloads.push(download);
+            }
+        });
+        
+        downloads = uniqueDownloads;
+        
+        // Обновляем счетчик
+        const countElement = document.getElementById('downloads-count');
+        if (countElement) {
+            countElement.textContent = downloads.length;
+        }
+        
+        const contentElement = document.getElementById('downloads-content');
+        const containerElement = document.getElementById('downloads-container');
+        
+        if (!contentElement || !containerElement) {
+            return;
+        }
+        
+        if (downloads.length === 0) {
+            containerElement.style.display = 'none';
+        } else {
+            containerElement.style.display = 'block';
+            contentElement.innerHTML = renderDownloadsTable(downloads);
+        }
+    } catch (error) {
+        console.error('Ошибка при обновлении информации о загрузках:', error);
+        const contentElement = document.getElementById('downloads-content');
+        if (contentElement) {
+            contentElement.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Не удалось загрузить информацию о задачах
+                </div>
+            `;
+        }
+    }
+}
+
+// Рендеринг таблицы загрузок
+function renderDownloadsTable(downloads) {
+    if (!downloads || downloads.length === 0) {
+        return `
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h5 class="mb-2">Нет активных задач загрузки</h5>
+                <p class="text-muted mb-0">Все задачи завершены или нет активных загрузок</p>
+            </div>
+        `;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th width="35%">Модель</th>
+                        <th width="15%">Тип</th>
+                        <th width="15%">Статус</th>
+                        <th width="20%">Прогресс</th>
+                        <th width="15%">Размер</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    downloads.forEach(download => {
+        // Проверяем, что это задача загрузки, а не сессия
+        if (!download.is_download_job && !download.task_id) {
+            return; // Пропускаем не задачи загрузки
+        }
+        
+        const modelName = download.model_name || 'Неизвестная модель';
+        const status = download.status || 'PENDING';
+        const hfId = download.hf_id || 'Локальная модель';
+        const progress = download.progress || 0;
+        const modelType = download.model_type || 'Unknown';
+        const sizeGb = download.total_size_mb ? (download.total_size_mb / 1024).toFixed(2) + ' GB' : 
+                      download.size_gb ? download.size_gb + ' GB' : 'Неизвестно';
+        
+        const statusClass = getStatusClass(status);
+        const statusText = getStatusText(status);
+        
+        // Определяем класс для прогресс-бара
+        let progressClass = 'bg-info';
+        if (progress >= 100) progressClass = 'bg-success';
+        else if (progress > 70) progressClass = 'bg-primary';
+        else if (progress > 30) progressClass = 'bg-warning';
+        
+        html += `
+            <tr class="align-middle">
+                <td>
+                    ${download.model_id ? `
+                    <a href="/model/${download.model_id}/" 
+                       class="text-decoration-none d-flex align-items-center">
+                    ` : '<div class="d-flex align-items-center">'}
+                        <div class="bg-primary rounded-circle p-2 me-3">
+                            <i class="fas fa-download text-white" style="font-size: 0.8rem;"></i>
+                        </div>
+                        <div>
+                            <div class="fw-medium" title="${modelName}">${truncateText(modelName, 20)}</div>
+                            <small class="text-muted" title="${hfId}">${truncateText(hfId, 20)}</small>
+                        </div>
+                    ${download.model_id ? '</a>' : '</div>'}
+                </td>
+                <td>
+                    <small class="badge bg-secondary">${modelType}</small>
+                </td>
+                <td>
+                    <span class="badge ${statusClass}">
+                        ${statusText}
+                    </span>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1 me-2">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar ${progressClass}" 
+                                     role="progressbar" 
+                                     style="width: ${progress}%" 
+                                     aria-valuenow="${progress}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-nowrap">${progress.toFixed(1)}%</small>
+                    </div>
+                </td>
+                <td>
+                    <small class="text-muted">${sizeGb}</small>
+                </td>
+            </tr>
+        `;
+    });
+    
+    // Если после фильтрации не осталось задач
+    if (html.includes('<tr class="align-middle">')) {
+        html += `
+                </tbody>
+            </table>
+        </div>
+        `;
+    } else {
+        html = `
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h5 class="mb-2">Нет активных задач загрузки моделей</h5>
+                <p class="text-muted mb-0">Все задачи загрузки завершены</p>
+            </div>
+        `;
+    }
+    
+    return html;
+}
+
+// Вспомогательные функции
+function getStatusClass(status) {
+    switch(status.toUpperCase()) {
+        case 'PENDING': return 'bg-secondary';
+        case 'DOWNLOADING': return 'bg-warning';
+        case 'COMPLETED': return 'bg-success';
+        case 'FAILED': return 'bg-danger';
+        case 'CANCELLED': return 'bg-dark';
+        default: return 'bg-secondary';
+    }
+}
+
+function getStatusText(status) {
+    switch(status.toUpperCase()) {
+        case 'PENDING': return '<i class="fas fa-clock me-1"></i>Ожидание';
+        case 'DOWNLOADING': return '<i class="fas fa-sync-alt fa-spin me-1"></i>Загрузка';
+        case 'COMPLETED': return '<i class="fas fa-check me-1"></i>Завершено';
+        case 'FAILED': return '<i class="fas fa-times me-1"></i>Ошибка';
+        case 'CANCELLED': return '<i class="fas fa-ban me-1"></i>Отменено';
+        default: return status;
+    }
+}
+
+function truncateText(text, maxLength) {
+    if (!text || typeof text !== 'string') return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+}
+
+function formatDateTime(dateTimeString) {
+    if (!dateTimeString || dateTimeString === '-') return '-';
+    try {
+        const date = new Date(dateTimeString);
+        if (isNaN(date.getTime())) return dateTimeString;
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    } catch (e) {
+        return dateTimeString;
+    }
+}
+
+// Основная функция обновления метрик
+async function updateAllMetrics() {
+    try {
+        const now = new Date();
+        const lastUpdatedElement = document.getElementById('last-updated');
+        if (lastUpdatedElement) {
+            lastUpdatedElement.innerHTML = 
+                `<i class="fas fa-clock me-1"></i>${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})} | ` +
+                `<i class="fas fa-user me-1"></i>{{ user.username }}`;
+        }
+        
+        // 1. Получаем GPU статус через API
+        try {
+            const gpuResponse = await fetch('/api/gpu-status/');
+            
+            if (gpuResponse.ok) {
+                const gpuData = await gpuResponse.json();
+                renderGPULiveStatus(gpuData);
+            } else {
+                renderGPUError();
+            }
+        } catch (gpuError) {
+            console.error('Ошибка при получении GPU статуса:', gpuError);
+            renderGPUError();
+        }
+        
+        // 2. Получаем системные метрики через API
+        try {
+            const metricsResponse = await fetch('/api/system-metrics/');
+            
+            if (metricsResponse.ok) {
+                const metrics = await metricsResponse.json();
+                if (metrics.error) {
+                    renderBasicSystemMetrics();
+                } else {
+                    renderMemoryStatus(metrics.memory);
+                    renderDiskStatus(metrics.disk);
+                    updateSystemStatus(metrics);
+                }
+            } else {
+                renderBasicSystemMetrics();
+            }
+        } catch (metricsError) {
+            console.error('Ошибка при получении системных метрик:', metricsError);
+            renderBasicSystemMetrics();
+        }
+        
+        // 3. Обновляем информацию о задачах загрузки
+        await updateDownloads();
+        
+        // 4. Визуальная обратная связь
+        config.updateCount++;
+        const btn = document.getElementById('refresh-metrics');
+        if (btn) {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check me-2"></i>Обновлено!';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-success');
+            }, 1500);
+        }
+        
+    } catch (error) {
+        console.error('Критическая ошибка обновления метрик:', error);
+        showError('Ошибка загрузки метрик: ' + error.message);
+        renderBasicSystemMetrics();
+    }
+}
+
+// Рендеринг GPU статуса
+function renderGPULiveStatus(data) {
+    const gpuElement = document.getElementById('gpu-live-status');
+    if (!gpuElement) return;
+    
+    let html = '';
+    
+    if (data.cuda_available && data.gpu_count > 0 && data.gpus && data.gpus.length > 0) {
+        html += '<div class="row">';
+        
+        data.gpus.forEach((gpu, index) => {
+            const usedPercent = gpu.total_memory > 0 ? (gpu.used_memory / gpu.total_memory) * 100 : 0;
+            const nvidiaInfo = data.nvidia_smi && data.nvidia_smi[index] ? data.nvidia_smi[index] : {};
+            const temp = nvidiaInfo.temperature || '-';
+            const gpuUtil = nvidiaInfo.gpu_utilization || '0';
+            const memoryUtil = nvidiaInfo.memory_utilization || '0';
+            
+            // Определяем цвет для статуса
+            let statusColor = 'success';
+            if (usedPercent > 80) statusColor = 'danger';
+            else if (usedPercent > 60) statusColor = 'warning';
+            
+            html += `
+            <div class="col-md-${data.gpus.length > 1 ? '6' : '12'} mb-3">
+                <div class="gpu-device-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0">
+                            <i class="fas fa-gpu me-2"></i>${gpu.name || `GPU ${gpu.id || index}`}
+                        </h6>
+                        <span class="badge bg-${statusColor}">
+                            ${usedPercent.toFixed(1)}%
+                        </span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="opacity-75 d-block mb-1">Использование памяти</small>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-${statusColor}" 
+                                 style="width: ${usedPercent}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="opacity-75">
+                                ${(gpu.used_memory_gb || 0).toFixed(1)} GB / ${(gpu.total_memory_gb || 0).toFixed(1)} GB
+                            </small>
+                            <small class="opacity-75">${(gpu.free_memory_gb || 0).toFixed(1)} GB свободно</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="bg-dark rounded p-2">
+                                <small class="opacity-75 d-block">Температура</small>
+                                <strong class="${temp > 80 ? 'text-danger' : temp > 70 ? 'text-warning' : 'text-success'}">
+                                    ${temp}°C
+                                </strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="bg-dark rounded p-2">
+                                <small class="opacity-75 d-block">Загрузка GPU</small>
+                                <strong class="${gpuUtil > 80 ? 'text-danger' : gpuUtil > 60 ? 'text-warning' : 'text-success'}">
+                                    ${gpuUtil}%
+                                </strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="bg-dark rounded p-2">
+                                <small class="opacity-75 d-block">Память</small>
+                                <strong class="${memoryUtil > 80 ? 'text-danger' : memoryUtil > 60 ? 'text-warning' : 'text-success'}">
+                                    ${memoryUtil}%
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        });
+        
+        html += '</div>';
+        
+        if (data.cuda_version || data.torch_version) {
+            html += `
+            <div class="mt-3 pt-3 border-top border-secondary">
+                <div class="row text-center">
+                    ${data.cuda_version ? `
+                    <div class="col-6">
+                        <small class="opacity-75">
+                            <i class="fas fa-code-branch me-1"></i>
+                            CUDA: ${data.cuda_version}
+                        </small>
+                    </div>
+                    ` : ''}
+                    ${data.torch_version ? `
+                    <div class="col-6">
+                        <small class="opacity-75">
+                            <i class="fas fa-brain me-1"></i>
+                            PyTorch: ${data.torch_version}
+                        </small>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            `;
+        }
+        
+    } else if (data.cuda_available) {
+        html = `
+        <div class="text-center py-4">
+            <i class="fas fa-microchip fa-3x mb-3 text-info"></i>
+            <h5 class="mb-2">CUDA доступен</h5>
+            <p class="mb-0 opacity-75">Устройства GPU не обнаружены</p>
+        </div>
+        `;
+    } else {
+        html = `
+        <div class="text-center py-4">
+            <i class="fas fa-microchip-slash fa-3x mb-3 text-warning"></i>
+            <h5 class="mb-2">GPU недоступен</h5>
+            <p class="mb-0 opacity-75">Используется CPU для вычислений</p>
+        </div>
+        `;
+    }
+    
+    gpuElement.innerHTML = html;
+}
+
+function renderGPUError() {
+    const gpuElement = document.getElementById('gpu-live-status');
+    if (gpuElement) {
+        gpuElement.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-triangle fa-3x mb-3 text-warning"></i>
+                <h5 class="mb-2">Ошибка загрузки GPU данных</h5>
+                <p class="mb-0 opacity-75">Не удалось получить информацию о GPU</p>
+            </div>
+        `;
+    }
+}
+
+// Рендеринг статуса памяти
+function renderMemoryStatus(memory) {
+    const memoryElement = document.getElementById('memory-status');
+    if (!memoryElement) return;
+    
+    const usedPercent = memory.percent || 0;
+    const progressClass = usedPercent > 80 ? 'bg-danger' : usedPercent > 60 ? 'bg-warning' : 'bg-success';
+    const statusIcon = usedPercent > 80 ? 'fa-exclamation-triangle' : usedPercent > 60 ? 'fa-info-circle' : 'fa-check-circle';
+    const statusColor = usedPercent > 80 ? 'text-danger' : usedPercent > 60 ? 'text-warning' : 'text-success';
+    
+    memoryElement.innerHTML = `
+        <div class="row align-items-center">
+            <div class="col-md-5 text-center mb-3 mb-md-0">
+                <div class="metric-value ${statusColor}">${usedPercent.toFixed(1)}%</div>
+                <div class="metric-label">
+                    <i class="fas ${statusIcon} me-1"></i>Использовано
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="opacity-75">Использование ОЗУ</small>
+                        <small class="opacity-75">${usedPercent.toFixed(1)}%</small>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar ${progressClass}" style="width: ${usedPercent}%"></div>
+                    </div>
+                </div>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="bg-dark rounded p-2">
+                            <small class="opacity-75 d-block">Всего</small>
+                            <strong>${memory.total_gb ? memory.total_gb.toFixed(1) : '0.0'} GB</strong>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-dark rounded p-2">
+                            <small class="opacity-75 d-block">Использовано</small>
+                            <strong class="${usedPercent > 60 ? 'text-warning' : 'text-info'}">
+                                ${memory.used_gb ? memory.used_gb.toFixed(1) : '0.0'} GB
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-dark rounded p-2">
+                            <small class="opacity-75 d-block">Свободно</small>
+                            <strong class="text-success">
+                                ${memory.free_gb ? memory.free_gb.toFixed(1) : '0.0'} GB
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Рендеринг статуса диска
+function renderDiskStatus(disk) {
+    const diskElement = document.getElementById('disk-status');
+    if (!diskElement) return;
+    
+    const usedPercent = disk.percent || 0;
+    const progressClass = usedPercent > 90 ? 'bg-danger' : usedPercent > 80 ? 'bg-warning' : 'bg-success';
+    const statusIcon = usedPercent > 90 ? 'fa-exclamation-triangle' : usedPercent > 80 ? 'fa-info-circle' : 'fa-check-circle';
+    const statusColor = usedPercent > 90 ? 'text-danger' : usedPercent > 80 ? 'text-warning' : 'text-success';
+    
+    diskElement.innerHTML = `
+        <div class="row align-items-center">
+            <div class="col-md-5 text-center mb-3 mb-md-0">
+                <div class="metric-value ${statusColor}">${usedPercent.toFixed(1)}%</div>
+                <div class="metric-label">
+                    <i class="fas ${statusIcon} me-1"></i>Заполнено
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="opacity-75">Дисковое пространство</small>
+                        <small class="opacity-75">${usedPercent.toFixed(1)}%</small>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar ${progressClass}" style="width: ${usedPercent}%"></div>
+                    </div>
+                </div>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="bg-dark rounded p-2">
+                            <small class="opacity-75 d-block">Всего</small>
+                            <strong>${disk.total_gb ? disk.total_gb.toFixed(1) : '0.0'} GB</strong>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-dark rounded p-2">
+                            <small class="opacity-75 d-block">Использовано</small>
+                            <strong class="${usedPercent > 80 ? 'text-warning' : 'text-info'}">
+                                ${disk.used_gb ? disk.used_gb.toFixed(1) : '0.0'} GB
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-dark rounded p-2">
+                            <small class="opacity-75 d-block">Свободно</small>
+                            <strong class="text-success">
+                                ${disk.free_gb ? disk.free_gb.toFixed(1) : '0.0'} GB
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Базовые системные метрики (при ошибке)
+function renderBasicSystemMetrics() {
+    const memoryElement = document.getElementById('memory-status');
+    const diskElement = document.getElementById('disk-status');
+    const systemStatusElement = document.getElementById('system-status');
+    
+    const spinnerHtml = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-3 mb-0">Загрузка метрик...</p>
+            <small class="text-muted">Попробуйте обновить страницу</small>
+        </div>
+    `;
+    
+    if (memoryElement) memoryElement.innerHTML = spinnerHtml;
+    if (diskElement) diskElement.innerHTML = spinnerHtml;
+    if (systemStatusElement) {
+        systemStatusElement.innerHTML = '<span class="text-warning">⏳ Загрузка метрик...</span>';
+    }
+}
+
+// Обновление статуса системы
+function updateSystemStatus(metrics) {
+    const systemStatusElement = document.getElementById('system-status');
+    if (!systemStatusElement) return;
+    
+    const cpuLoad = metrics.cpu?.percent || 0;
+    const memLoad = metrics.memory?.percent || 0;
+    const diskLoad = metrics.disk?.percent || 0;
+    
+    let statusText = '';
+    let statusClass = 'text-success';
+    let statusIcon = '🟢';
+    
+    if (cpuLoad > 90 || memLoad > 90 || diskLoad > 95) {
+        statusText = 'Высокая нагрузка';
+        statusClass = 'text-danger';
+        statusIcon = '🔴';
+    } else if (cpuLoad > 70 || memLoad > 80 || diskLoad > 85) {
+        statusText = 'Средняя нагрузка';
+        statusClass = 'text-warning';
+        statusIcon = '🟡';
+    } else {
+        statusText = 'Нормальная нагрузка';
+        statusClass = 'text-success';
+        statusIcon = '🟢';
+    }
+    
+    const details = [];
+    if (cpuLoad > 0) details.push(`CPU: ${cpuLoad.toFixed(1)}%`);
+    if (memLoad > 0) details.push(`RAM: ${memLoad.toFixed(1)}%`);
+    if (diskLoad > 0) details.push(`Disk: ${diskLoad.toFixed(1)}%`);
+    
+    const detailsText = details.length > 0 ? ` | ${details.join(' | ')}` : '';
+    
+    systemStatusElement.innerHTML = 
+        `<span class="${statusClass}">${statusIcon} ${statusText}${detailsText}</span>`;
+}
+
+// Показ ошибок
+function showError(message) {
+    const existingAlerts = document.querySelectorAll('.alert.alert-danger');
+    existingAlerts.forEach(alert => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    });
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+            <div>
+                <h6 class="alert-heading mb-1">Ошибка загрузки метрик</h6>
+                <p class="mb-0">${message}</p>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    if (container) {
+        const firstElement = container.children[0];
+        if (firstElement) {
+            container.insertBefore(alertDiv, firstElement.nextSibling);
+        }
+    }
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            const fadeOut = alertDiv.animate(
+                [{ opacity: 1 }, { opacity: 0 }],
+                { duration: 500 }
+            );
+            
+            fadeOut.onfinish = () => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            };
+        }
+    }, 10000);
+}
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Инициализация страницы GPU статуса...');
+    
+    let refreshInterval = null;
+    
+    // Функция для настройки автообновления
+    function setupAutoRefresh() {
+        if (config.autoRefresh) {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            refreshInterval = setInterval(() => {
+                console.log('Автообновление метрик...');
+                updateAllMetrics();
+            }, config.refreshInterval);
+            
+            console.log(`Автообновление включено (интервал: ${config.refreshInterval/1000} сек)`);
+        } else if (refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+            console.log('Автообновление выключено');
+        }
+    }
+    
+    // Первое обновление
+    console.log('Запуск первоначальной загрузки метрик...');
+    updateAllMetrics();
+    
+    // Настройка автообновления
+    setupAutoRefresh();
+    
+    // Кнопка ручного обновления
+    const refreshBtn = document.getElementById('refresh-metrics');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            console.log('Ручное обновление метрик...');
+            
+            this.disabled = true;
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-sync-alt fa-spin me-2"></i>Обновление...';
+            
+            updateAllMetrics().finally(() => {
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 1000);
+            });
+        });
+    }
+    
+    // Переключатель автообновления
+    const autoRefreshBtn = document.getElementById('auto-refresh-toggle');
+    if (autoRefreshBtn) {
+        autoRefreshBtn.addEventListener('click', function() {
+            config.autoRefresh = !config.autoRefresh;
+            
+            if (config.autoRefresh) {
+                this.innerHTML = '<i class="fas fa-pause me-2"></i>Пауза автообновления';
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-warning');
+            } else {
+                this.innerHTML = '<i class="fas fa-play me-2"></i>Возобновить автообновление';
+                this.classList.remove('btn-warning');
+                this.classList.add('btn-outline-secondary');
+            }
+            
+            setupAutoRefresh();
+        });
+        
+        // Показать текущее состояние автообновления
+        if (config.autoRefresh) {
+            autoRefreshBtn.innerHTML = '<i class="fas fa-pause me-2"></i>Пауза автообновления';
+            autoRefreshBtn.classList.remove('btn-outline-secondary');
+            autoRefreshBtn.classList.add('btn-warning');
+        }
+    }
+    
+    // Обработка закрытия вкладки
+    window.addEventListener('beforeunload', function() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+            console.log('Автообновление остановлено (закрытие вкладки)');
+        }
+    });
+    
+    // Проверка видимости вкладки для оптимизации
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            console.log('Вкладка скрыта, временно приостанавливаем автообновление');
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        } else if (config.autoRefresh) {
+            console.log('Вкладка активна, возобновляем автообновление');
+            setupAutoRefresh();
+        }
+    });
+});
+</script>
+{% endblock %}

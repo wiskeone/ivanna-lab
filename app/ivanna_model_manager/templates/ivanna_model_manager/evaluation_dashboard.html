@@ -1,0 +1,352 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}Система оценки моделей{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>
+                    <i class="bi bi-clipboard-check me-2"></i>Система оценки моделей
+                </h2>
+                <div>
+                    <a href="{% url 'evaluation_task_create' %}" class="btn btn-primary me-2">
+                        <i class="bi bi-plus-circle me-1"></i>Новая задача
+                    </a>
+                    <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-secondary">
+                        <i class="bi bi-upload me-1"></i>Загрузить датасет
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card bg-primary text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">Всего датасетов</h6>
+                                    <h2 class="display-6">{{ total_datasets }}</h2>
+                                </div>
+                                <i class="bi bi-database display-6 opacity-50"></i>
+                            </div>
+                            <small>Вопросов: {{ total_questions|default:"0" }}</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card bg-success text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">Задач оценки</h6>
+                                    <h2 class="display-6">{{ total_tasks }}</h2>
+                                </div>
+                                <i class="bi bi-clipboard-data display-6 opacity-50"></i>
+                            </div>
+                            <small>Завершено: {{ completed_tasks }}</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card bg-warning text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">Активные задачи</h6>
+                                    <h2 class="display-6">{{ active_tasks }}</h2>
+                                </div>
+                                <i class="bi bi-activity display-6 opacity-50"></i>
+                            </div>
+                            <small>Выполняются сейчас</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card bg-info text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">Загруженных моделей</h6>
+                                    <h2 class="display-6">{{ available_models.count }}</h2>
+                                </div>
+                                <i class="bi bi-cpu display-6 opacity-50"></i>
+                            </div>
+                            <small>Доступно для оценки</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Быстрые действия -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-transparent border-bottom">
+                            <h5 class="mb-0">
+                                <i class="bi bi-lightning-fill me-2 text-warning"></i>Быстрые действия
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                        <i class="bi bi-file-earmark-arrow-up display-4 mb-2"></i>
+                                        <span>Загрузить датасет</span>
+                                        <small class="text-muted mt-1">TXT, CSV, JSON</small>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                        <i class="bi bi-pencil-square display-4 mb-2"></i>
+                                        <span>Создать вручную</span>
+                                        <small class="text-muted mt-1">Ручной ввод вопросов</small>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'evaluation_task_create' %}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                        <i class="bi bi-play-circle display-4 mb-2"></i>
+                                        <span>Запустить оценку</span>
+                                        <small class="text-muted mt-1">Тестирование моделей</small>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Последние задачи -->
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clock-history me-2"></i>Последние задачи оценки
+                            </h5>
+                            <a href="{% url 'evaluation_task_list' %}" class="btn btn-sm btn-outline-primary">
+                                Все задачи <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_tasks %}
+                            <div class="list-group list-group-flush">
+                                {% for task in recent_tasks %}
+                                <a href="{% url 'evaluation_task_detail' task.id %}" 
+                                   class="list-group-item list-group-item-action border-0 py-3">
+                                    <div class="d-flex w-100 justify-content-between align-items-center">
+                                        <div class="me-3">
+                                            <h6 class="mb-1">{{ task.name }}</h6>
+                                            <small class="text-muted">
+                                                <i class="bi bi-database me-1"></i>{{ task.dataset.name }}
+                                            </small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge {% if task.status == 'COMPLETED' %}bg-success
+                                                             {% elif task.status == 'RUNNING' %}bg-warning
+                                                             {% elif task.status == 'FAILED' %}bg-danger
+                                                             {% else %}bg-secondary{% endif %}">
+                                                {{ task.get_status_display }}
+                                            </span>
+                                            {% if task.status == 'RUNNING' %}
+                                            <div class="progress mt-1" style="height: 4px; width: 80px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: {{ task.progress }}%"></div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar me-1"></i>{{ task.created_at|date:"d.m.Y H:i" }}
+                                            {% if task.total_models %}
+                                            <i class="bi bi-cpu ms-3 me-1"></i>{{ task.total_models }} моделей
+                                            {% endif %}
+                                            {% if task.total_questions %}
+                                            <i class="bi bi-question-circle ms-3 me-1"></i>{{ task.total_questions }} вопросов
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-clipboard-x display-4 text-muted mb-3"></i>
+                                <p class="text-muted">Нет задач оценки</p>
+                                <a href="{% url 'evaluation_task_create' %}" class="btn btn-primary">
+                                    Создать первую задачу
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Последние датасеты -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-folder me-2"></i>Последние датасеты
+                            </h5>
+                            <a href="{% url 'evaluation_dataset_list' %}" class="btn btn-sm btn-outline-primary">
+                                Все датасеты <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_datasets %}
+                            <div class="list-group list-group-flush">
+                                {% for dataset in recent_datasets %}
+                                <a href="{% url 'evaluation_dataset_detail' dataset.id %}" 
+                                   class="list-group-item list-group-item-action border-0 py-3">
+                                    <div class="d-flex w-100 justify-content-between align-items-center">
+                                        <div class="me-3">
+                                            <h6 class="mb-1">{{ dataset.name }}</h6>
+                                            {% if dataset.description %}
+                                            <p class="mb-1 text-muted small">{{ dataset.description|truncatechars:100 }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <span class="badge bg-primary">
+                                            {{ dataset.total_questions }} вопросов
+                                        </span>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar me-1"></i>{{ dataset.created_at|date:"d.m.Y H:i" }}
+                                            {% if dataset.tags %}
+                                            <i class="bi bi-tags ms-3 me-1"></i>
+                                            {% for tag in dataset.tags|slice:":3" %}
+                                            <span class="badge bg-light text-dark">{{ tag }}</span>
+                                            {% endfor %}
+                                            {% if dataset.tags|length > 3 %}
+                                            <span class="badge bg-light text-dark">+{{ dataset.tags|length|add:"-3" }}</span>
+                                            {% endif %}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-database-slash display-4 text-muted mb-3"></i>
+                                <p class="text-muted">Нет датасетов</p>
+                                <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-primary me-2">
+                                    Загрузить датасет
+                                </a>
+                                <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-secondary">
+                                    Создать вручную
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Доступные модели -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-transparent border-bottom">
+                            <h5 class="mb-0">
+                                <i class="bi bi-cpu me-2"></i>Доступные модели для оценки
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if available_models %}
+                            <div class="row">
+                                {% for model in available_models %}
+                                <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                                    <div class="card h-100 border">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="me-2">
+                                                    {% if model.model_type == 'QWEN' %}
+                                                    <span class="badge model-qwen">QWEN</span>
+                                                    {% elif model.model_type == 'LLAMA' %}
+                                                    <span class="badge model-llama">LLAMA</span>
+                                                    {% elif model.model_type == 'MISTRAL' %}
+                                                    <span class="badge model-mistral">MISTRAL</span>
+                                                    {% elif model.model_type == 'GEMMA' %}
+                                                    <span class="badge model-gemma">GEMMA</span>
+                                                    {% else %}
+                                                    <span class="badge model-custom">CUSTOM</span>
+                                                    {% endif %}
+                                                </div>
+                                                <span class="badge bg-success status-badge">LOADED</span>
+                                            </div>
+                                            <h6 class="card-title mb-1">{{ model.display_name|truncatechars:20 }}</h6>
+                                            <p class="card-text small text-muted mb-2">
+                                                <i class="bi bi-calculator me-1"></i>
+                                                {% if model.parameter_count > 1000000000 %}
+                                                {{ model.parameter_count|floatformat:1 }}B
+                                                {% elif model.parameter_count > 1000000 %}
+                                                {{ model.parameter_count|floatformat:0|slice:":-6" }}M
+                                                {% else %}
+                                                {{ model.parameter_count|floatformat:0 }}
+                                                {% endif %} параметров
+                                            </p>
+                                            <div class="d-flex justify-content-between">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-clock me-1"></i>
+                                                    {{ model.size_gb }}GB
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer bg-transparent border-top">
+                                            <a href="{% url 'model_detail' model.id %}" 
+                                               class="btn btn-sm btn-outline-primary w-100">
+                                                <i class="bi bi-info-circle me-1"></i>Подробнее
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-cpu display-4 text-muted mb-3"></i>
+                                <p class="text-muted mb-3">Нет загруженных моделей</p>
+                                <p class="text-muted small">Для запуска оценки сначала загрузите модели в интерфейсе моделей</p>
+                                <a href="{% url 'model_list' %}" class="btn btn-primary">
+                                    <i class="bi bi-arrow-right me-1"></i>Перейти к моделям
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Автоматическое обновление прогресса для RUNNING задач
+    function updateRunningTasks() {
+        const runningTasks = document.querySelectorAll('.list-group-item');
+        runningTasks.forEach(taskItem => {
+            const badge = taskItem.querySelector('.badge');
+            if (badge && badge.textContent.includes('Выполняется')) {
+                // Здесь можно добавить AJAX обновление прогресса
+            }
+        });
+    }
+    
+    // Обновляем каждые 10 секунд
+    setInterval(updateRunningTasks, 10000);
+});
+</script>
+{% endblock %}

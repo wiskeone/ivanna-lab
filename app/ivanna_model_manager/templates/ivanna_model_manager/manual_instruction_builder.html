@@ -1,0 +1,509 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% block title %}{% if instruction_set %}Редактирование: {{ instruction_set.name }}{% else %}Создание ручного набора инструкций{% endif %}{% endblock %}
+{% block page_title %}{% if instruction_set %}Редактирование набора{% else %}Создание ручного набора инструкций{% endif %}{% endblock %}
+{% block extra_css %}
+<style>
+.instruction-card {
+    background: rgba(40,40,40,0.8);
+    border: 1px solid #444;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 15px;
+    transition: all 0.2s;
+}
+.instruction-card:hover {
+    border-color: var(--primary-color);
+}
+.chunk-preview {
+    max-height: 100px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+    background: rgba(0,0,0,0.2);
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+.chunk-selector-modal {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.chunk-item {
+    padding: 8px;
+    border-bottom: 1px solid #555;
+    cursor: pointer;
+}
+.chunk-item.selected {
+    background: rgba(107,70,193,0.3);
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <a href="{% url 'distillation_dataset_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад к датасетам
+                </a>
+                <div class="d-flex gap-2">
+                    {% if instruction_set %}
+                    <button class="btn btn-outline-danger" id="deleteSetBtn">
+                        <i class="bi bi-trash"></i> Удалить набор
+                    </button>
+                    {% endif %}
+                    <button class="btn btn-outline-primary" id="addInstructionBtn">
+                        <i class="bi bi-plus-circle"></i> Добавить инструкцию
+                    </button>
+                    <button class="btn btn-success" id="saveSetBtn">
+                        <i class="bi bi-save"></i> Сохранить набор
+                    </button>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">{% if instruction_set %}Редактирование набора{% else %}Создание ручного набора инструкций{% endif %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Название набора</label>
+                            <input type="text" id="setName" class="form-control" placeholder="Мой датасет" value="{{ instruction_set.name|default:'' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Описание</label>
+                            <input type="text" id="setDescription" class="form-control" placeholder="Описание набора" value="{{ instruction_set.description|default:'' }}">
+                        </div>
+                    </div>
+                    <div id="instructionsContainer">
+                        <!-- Динамически добавляемые инструкции -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно выбора чанков -->
+<div class="modal fade" id="chunkModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Выбор чанков</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Выберите коллекцию</label>
+                        <select id="chunkCollectionSelect" class="form-select">
+                            <option value="">--- Выберите коллекцию ---</option>
+                            {% for coll in collections %}
+                            <option value="{{ coll.id }}">{{ coll.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Выберите документ</label>
+                        <select id="chunkDocumentSelect" class="form-select" disabled>
+                            <option value="">Сначала выберите коллекцию</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <input type="text" id="chunkSearch" class="form-control" placeholder="Поиск по тексту чанков...">
+                </div>
+                <div id="chunksList" class="chunk-selector-modal">
+                    <div class="text-muted">Выберите документ для отображения чанков</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmChunksBtn">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let instructionCounter = 0;
+let currentInstructionIndex = null;
+let currentInstructionChunks = [];
+let existingInstructions = [];
+let isSaving = false;
+
+function showNotification(message, type = 'info') {
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+    } else {
+        alert(message);
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Добавление карточки инструкции (НОВЫЕ — НАВЕРХ)
+function addInstruction(question = '', answer = '', chunks = [], order = null) {
+    const container = document.getElementById('instructionsContainer');
+    const idx = (order !== null && order !== undefined) ? order : instructionCounter;
+    
+    const chunkPreviews = chunks.map(c => {
+        const content = c.content || '';
+        return content.length > 100 ? content.substring(0, 100) + '...' : content;
+    }).join('<br>');
+    
+    const cardHtml = `
+        <div class="instruction-card" data-idx="${idx}">
+            <div class="d-flex justify-content-between align-items-start">
+                <h6>Инструкция #${idx+1}</h6>
+                <button class="btn btn-sm btn-outline-danger delete-instruction-btn" data-idx="${idx}">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Вопрос</label>
+                <textarea class="form-control question-text" rows="2">${escapeHtml(question)}</textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Ответ</label>
+                <textarea class="form-control answer-text" rows="4">${escapeHtml(answer)}</textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Контекстные чанки</label>
+                <div class="chunk-preview" id="chunk-preview-${idx}">
+                    ${chunkPreviews || '<em class="text-muted">Нет выбранных чанков</em>'}
+                </div>
+                <button class="btn btn-sm btn-outline-secondary select-chunks-btn mt-1" data-idx="${idx}">
+                    <i class="bi bi-folder"></i> Выбрать чанки
+                </button>
+            </div>
+            <hr>
+        </div>
+    `;
+    
+    // НОВЫЕ инструкции добавляются НАВЕРХ
+    if (order === null || order === undefined) {
+        container.insertAdjacentHTML('afterbegin', cardHtml);
+        instructionCounter++;
+    } else {
+        container.insertAdjacentHTML('beforeend', cardHtml);
+    }
+    
+    window.chunksData = window.chunksData || {};
+    window.chunksData[idx] = chunks.map(c => ({ id: c.id, content: c.content }));
+}
+
+// Загрузка существующих инструкций
+try {
+    existingInstructions = {{ instructions_json|safe }};
+    if (Array.isArray(existingInstructions) && existingInstructions.length > 0) {
+        existingInstructions.sort((a, b) => a.order - b.order);
+        for (let i = 0; i < existingInstructions.length; i++) {
+            const instr = existingInstructions[i];
+            let chunks = instr.context_chunks || [];
+            if (chunks.length > 0 && typeof chunks[0] === 'number') {
+                chunks = chunks.map(id => ({ id: id, content: `Чанк ID ${id} (текст не сохранён)` }));
+            }
+            addInstruction(
+                instr.question,
+                instr.answer,
+                chunks,
+                instr.order
+            );
+        }
+        instructionCounter = existingInstructions.length;
+    }
+} catch(e) {
+    console.warn('Ошибка загрузки инструкций:', e);
+}
+
+// Удаление инструкции
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.delete-instruction-btn');
+    if (btn) {
+        const idx = btn.dataset.idx;
+        const card = document.querySelector(`.instruction-card[data-idx="${idx}"]`);
+        if (card) card.remove();
+    }
+});
+
+// Открытие модального окна выбора чанков
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.select-chunks-btn');
+    if (btn) {
+        currentInstructionIndex = btn.dataset.idx;
+        currentInstructionChunks = (window.chunksData[currentInstructionIndex] || []).map(c => ({ id: c.id, content: c.content }));
+        
+        const collectionSelect = document.getElementById('chunkCollectionSelect');
+        if (collectionSelect.value) {
+            triggerDocumentLoad();
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('chunkModal'));
+        modal.show();
+    }
+});
+
+// Загрузка документов при выборе коллекции
+document.getElementById('chunkCollectionSelect').addEventListener('change', function() {
+    const collectionId = this.value;
+    const docSelect = document.getElementById('chunkDocumentSelect');
+    if (!collectionId) {
+        docSelect.disabled = true;
+        docSelect.innerHTML = '<option value="">Сначала выберите коллекцию</option>';
+        document.getElementById('chunksList').innerHTML = '<div class="text-muted">Выберите документ для отображения чанков</div>';
+        return;
+    }
+    fetch(`/api/rag/collections/${collectionId}/documents/`)
+        .then(res => res.json())
+        .then(data => {
+            docSelect.disabled = false;
+            docSelect.innerHTML = '<option value="">--- Выберите документ ---</option>';
+            data.forEach(doc => {
+                docSelect.innerHTML += `<option value="${doc.id}">${escapeHtml(doc.title)}</option>`;
+            });
+        })
+        .catch(err => console.error(err));
+});
+
+function triggerDocumentLoad() {
+    const docSelect = document.getElementById('chunkDocumentSelect');
+    if (docSelect.value) {
+        const changeEvent = new Event('change');
+        docSelect.dispatchEvent(changeEvent);
+    }
+}
+
+document.getElementById('chunkDocumentSelect').addEventListener('change', function() {
+    const docId = this.value;
+    if (!docId) {
+        document.getElementById('chunksList').innerHTML = '<div class="text-muted">Выберите документ</div>';
+        return;
+    }
+    fetch(`/api/rag/documents/${docId}/chunks/`)
+        .then(res => res.json())
+        .then(data => renderChunksList(data))
+        .catch(err => console.error(err));
+});
+
+function renderChunksList(chunks) {
+    const container = document.getElementById('chunksList');
+    const searchInput = document.getElementById('chunkSearch').value.toLowerCase();
+    const filtered = chunks.filter(chunk => chunk.content.toLowerCase().includes(searchInput));
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="text-muted">Чанки не найдены</div>';
+        return;
+    }
+    
+    let html = '';
+    filtered.forEach(chunk => {
+        const isSelected = currentInstructionChunks.some(c => c.id === chunk.id);
+        html += `
+            <div class="chunk-item ${isSelected ? 'selected' : ''}" data-chunk-id="${chunk.id}" data-chunk-content="${escapeHtml(chunk.content)}">
+                <div class="small text-muted">Чанк #${chunk.chunk_index}</div>
+                <div>${escapeHtml(chunk.content.substring(0, 150))}${chunk.content.length > 150 ? '...' : ''}</div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    
+    document.querySelectorAll('.chunk-item').forEach(el => {
+        el.addEventListener('click', () => {
+            const chunkId = parseInt(el.dataset.chunkId);
+            const chunkContent = el.dataset.chunkContent;
+            const index = currentInstructionChunks.findIndex(c => c.id === chunkId);
+            if (index === -1) {
+                currentInstructionChunks.push({ id: chunkId, content: chunkContent });
+                el.classList.add('selected');
+            } else {
+                currentInstructionChunks.splice(index, 1);
+                el.classList.remove('selected');
+            }
+        });
+    });
+}
+
+document.getElementById('chunkSearch').addEventListener('input', () => {
+    const docId = document.getElementById('chunkDocumentSelect').value;
+    if (docId) {
+        fetch(`/api/rag/documents/${docId}/chunks/`)
+            .then(res => res.json())
+            .then(data => renderChunksList(data));
+    }
+});
+
+document.getElementById('confirmChunksBtn').addEventListener('click', () => {
+    window.chunksData[currentInstructionIndex] = currentInstructionChunks.map(c => ({ id: c.id, content: c.content }));
+    const previewDiv = document.querySelector(`#chunk-preview-${currentInstructionIndex}`);
+    if (previewDiv) {
+        const previews = currentInstructionChunks.map(c => (c.content || '').substring(0, 100)).join('<br>');
+        previewDiv.innerHTML = previews || '<em class="text-muted">Нет выбранных чанков</em>';
+    }
+    bootstrap.Modal.getInstance(document.getElementById('chunkModal')).hide();
+});
+
+// СОХРАНЕНИЕ НАБОРА (через sync_instructions)
+document.getElementById('saveSetBtn').addEventListener('click', async () => {
+    if (isSaving) {
+        return;
+    }
+    
+    isSaving = true;
+    const btn = document.getElementById('saveSetBtn');
+    const originalBtnContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Сохранение...';
+    
+    try {
+        const setName = document.getElementById('setName').value.trim();
+        const setDescription = document.getElementById('setDescription').value.trim();
+        
+        if (!setName) {
+            showNotification('Введите название набора', 'error');
+            isSaving = false;
+            btn.disabled = false;
+            btn.innerHTML = originalBtnContent;
+            return;
+        }
+        
+        const instructions = [];
+        let orderCounter = 0;
+        document.querySelectorAll('.instruction-card').forEach(card => {
+            const idx = card.dataset.idx;
+            const question = card.querySelector('.question-text').value;
+            const answer = card.querySelector('.answer-text').value;
+            const chunks = (window.chunksData[idx] || []).map(c => ({ id: c.id, content: c.content }));
+            instructions.push({
+                question: question,
+                answer: answer,
+                context_chunks: chunks,
+                order: orderCounter++
+            });
+        });
+        
+        if (instructions.length === 0) {
+            showNotification('Добавьте хотя бы одну инструкцию', 'error');
+            isSaving = false;
+            btn.disabled = false;
+            btn.innerHTML = originalBtnContent;
+            return;
+        }
+        
+        const setId = {{ instruction_set.id|default:'null' }};
+        
+        // 1. Сохраняем метаданные набора
+        const saveSetPromise = setId ?
+            fetch(`/api/manual-instruction-sets/${setId}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ name: setName, description: setDescription })
+            }) :
+            fetch('/api/manual-instruction-sets/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ name: setName, description: setDescription })
+            });
+        
+        const saveSetData = await saveSetPromise;
+        const setData = await saveSetData.json();
+        
+        if (!setData.id && !setId) {
+            throw new Error(setData.error || 'Не удалось сохранить набор');
+        }
+        
+        const finalSetId = setData.id || setId;
+        
+        // 2. Синхронизируем инструкции через новый эндпоинт
+        const syncResponse = await fetch(`/api/manual-instruction-sets/${finalSetId}/sync_instructions/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ instructions: instructions })
+        });
+        
+        const syncData = await syncResponse.json();
+        
+        if (!syncResponse.ok) {
+            throw new Error(syncData.error || 'Ошибка синхронизации инструкций');
+        }
+        
+        // ✅ Уведомление только после успешного сохранения
+        showNotification(`Набор "${setName}" сохранён (${syncData.created} инструкций)`, 'success');
+        
+        setTimeout(() => {
+            window.location.href = "{% url 'distillation_dataset_list' %}";
+        }, 1000);
+        
+    } catch (err) {
+        console.error('Ошибка сохранения:', err);
+        showNotification(err.message || 'Ошибка при сохранении', 'error');
+    } finally {
+        isSaving = false;
+        btn.disabled = false;
+        btn.innerHTML = originalBtnContent;
+    }
+});
+
+// Удаление набора
+const deleteBtn = document.getElementById('deleteSetBtn');
+if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => {
+        if (!confirm('Удалить набор? Все инструкции будут удалены безвозвратно.')) return;
+        const setId = {{ instruction_set.id|default:'null' }};
+        if (!setId) return;
+        fetch(`/api/manual-instruction-sets/${setId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(res => {
+            if (res.ok) {
+                showNotification('Набор удалён', 'success');
+                setTimeout(() => {
+                    window.location.href = "{% url 'distillation_dataset_list' %}";
+                }, 1000);
+            } else {
+                return res.json().then(data => { throw new Error(data.error); });
+            }
+        })
+        .catch(err => showNotification(err.message, 'error'));
+    });
+}
+
+document.getElementById('addInstructionBtn').addEventListener('click', () => {
+    addInstruction();
+});
+</script>
+{% endblock %}

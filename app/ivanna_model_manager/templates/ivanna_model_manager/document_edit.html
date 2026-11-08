@@ -1,0 +1,163 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Редактирование документа — {{ document.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Кнопка назад -->
+    <div class="mb-4">
+        <a href="{% if document.collection %}{% url 'rag_collection_detail' document.collection.id %}{% else %}{% url 'document_list' %}{% endif %}" class="action-link">
+            <i class="bi bi-arrow-left"></i> Назад к коллекции
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil-square me-2" style="color: var(--primary-color);"></i>
+                        Редактирование документа
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Основная форма -->
+                    <form method="post" id="editForm">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Название</label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                    <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Категория</label>
+                                    {{ form.category }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Описание</label>
+                            {{ form.description }}
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Теги (через запятую)</label>
+                                    {{ form.tags }}
+                                    <div class="form-text">Пример: legal, finance, report</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Коллекция</label>
+                                    {{ form.collection }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Оценка качества (0-1)</label>
+                                    {{ form.quality_score }}
+                                    <div class="form-text">Необязательно, от 0 до 1</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Размер чанка (символов)</label>
+                                    {{ form.chunk_size }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Перекрытие чанков</label>
+                                    {{ form.chunk_overlap }}
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center">
+                                <div class="form-check">
+                                    {{ form.regenerate_chunks }}
+                                    <label class="form-check-label small" for="{{ form.regenerate_chunks.id_for_label }}">
+                                        Пересоздать чанки (удалит существующие и создаст новые)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <a href="{% if document.collection %}{% url 'rag_collection_detail' document.collection.id %}{% else %}{% url 'document_list' %}{% endif %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i> Сохранить изменения
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Карточка замены файла -->
+            <div class="card mt-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-upload me-2" style="color: var(--primary-color);"></i>
+                        Заменить файл документа
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Текущий файл: <strong>{{ document.original_filename }}</strong> ({{ document.file_size_mb|floatformat:1 }} MB)
+                    </div>
+                    <form method="post" enctype="multipart/form-data" id="reloadForm" action="{% url 'document_reload' document.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Новый файл</label>
+                            <input type="file" class="form-control" name="file" accept=".pdf,.docx,.doc,.txt,.html,.htm,.md,.csv,.xlsx,.xls" required>
+                            <div class="form-text">Поддерживаемые форматы: PDF, DOCX, TXT, HTML, MD, CSV, Excel</div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-warning" onclick="return confirm('Заменить файл? Документ будет переобработан.')">
+                                <i class="bi bi-arrow-repeat me-1"></i> Заменить и переобработать
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('reloadForm')?.addEventListener('submit', function(e) {
+    const fileInput = this.querySelector('input[type="file"]');
+    if (fileInput && fileInput.files.length === 0) {
+        e.preventDefault();
+        alert('Выберите файл для замены');
+    }
+});
+</script>
+{% endblock %}

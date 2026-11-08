@@ -1,0 +1,321 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Создание задачи генерации ответов{% endblock %}
+{% block page_title %}Создание задачи генерации ответов{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-list-modal { max-height: 60vh; overflow-y: auto; }
+    .question-checkbox { margin-right: 12px; }
+    .question-item { padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: background 0.2s; }
+    .question-item:hover { background: rgba(107,70,193,0.1); }
+    .question-item.selected { background: rgba(107,70,193,0.2); border-left: 3px solid var(--primary-color); }
+    .param-slider { width: 100%; }
+    .param-value { font-family: monospace; font-weight: bold; color: var(--primary-color); min-width: 45px; display: inline-block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Создание задачи генерации ответов</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="answerJobForm">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Название *</label>
+                            <input type="text" name="name" class="form-control" id="id_name" value="{{ form.name.value|default:'' }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Описание</label>
+                            <textarea name="description" class="form-control" id="id_description" rows="3">{{ form.description.value|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_question_set" class="form-label">Набор вопросов</label>
+                            <select name="question_set" id="id_question_set" class="form-select">
+                                <option value="">--- Выберите набор (будут взяты все вопросы) ---</option>
+                                {% for qset in question_sets %}
+                                <option value="{{ qset.id }}" {% if form.question_set.value|stringformat:"s" == qset.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ qset.name }} ({{ qset.questions.count }} вопросов)
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Если выбран набор, все вопросы будут использованы автоматически. Для ручного выбора вопросов оставьте набор пустым и нажмите кнопку ниже.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary" id="selectQuestionsBtn" disabled>
+                                <i class="bi bi-check2-square me-1"></i>Выбрать вопросы вручную
+                            </button>
+                            <div class="form-text mt-2" id="selectedQuestionsCount">Выбрано 0 вопросов</div>
+                            <input type="hidden" name="question_ids_str" id="selected_question_ids" value="{{ form.question_ids.value|default:'' }}">
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Параметры генерации</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="max_tokens" class="form-label">Максимальное количество токенов</label>
+                                        <input type="number" name="max_tokens" class="form-control" id="max_tokens" value="1024" min="1" max="4096">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="temperature" class="form-label">Температура</label>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="range" name="temperature" id="temperature" class="param-slider" min="0" max="2" step="0.05" value="0.6">
+                                            <span id="temperature_val" class="param-value">0.60</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="top_p" class="form-label">Top P</label>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="range" name="top_p" id="top_p" class="param-slider" min="0" max="1" step="0.05" value="0.9">
+                                            <span id="top_p_val" class="param-value">0.90</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="top_k" class="form-label">Top K</label>
+                                        <input type="number" name="top_k" id="top_k" class="form-control" value="50" min="1" max="100">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="repetition_penalty" class="form-label">Repetition Penalty</label>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="range" name="repetition_penalty" id="repetition_penalty" class="param-slider" min="1" max="2" step="0.05" value="1.0">
+                                            <span id="repetition_penalty_val" class="param-value">1.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="prompt_template" class="form-label">Шаблон промпта (опционально)</label>
+                                    <textarea name="prompt_template" id="prompt_template" class="form-control" rows="4" placeholder="Ответь на вопрос, используя только информацию из контекста.\n\nКонтекст:\n{context}\n\nВопрос: {question}\n\nОтвет:"></textarea>
+                                    <div class="form-text">Используйте {context} и {question} как переменные.</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'distillation_answer_job_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-save me-1"></i>Создать задачу
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для выбора вопросов -->
+<div class="modal fade" id="questionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title">Выбор вопросов</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAllQuestions">
+                        <label class="form-check-label" for="selectAllQuestions">Выбрать все</label>
+                    </div>
+                    <div>
+                        <input type="text" id="searchQuestions" class="form-control form-control-sm" placeholder="Поиск по вопросам...">
+                    </div>
+                </div>
+                <div id="questionsListModal" class="question-list-modal">
+                    <div class="text-center text-muted">Загрузка вопросов...</div>
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmQuestionsBtn">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Глобальные переменные
+    let allQuestions = [];
+    let selectedQuestionIds = new Set();
+    let currentQuestionSetId = null;
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function updateSliderValue(sliderId, displayId) {
+        const slider = document.getElementById(sliderId);
+        const display = document.getElementById(displayId);
+        if (slider && display) {
+            const update = () => { display.innerText = parseFloat(slider.value).toFixed(2); };
+            update();
+            slider.addEventListener('input', update);
+        }
+    }
+    updateSliderValue('temperature', 'temperature_val');
+    updateSliderValue('top_p', 'top_p_val');
+    updateSliderValue('repetition_penalty', 'repetition_penalty_val');
+
+    function loadQuestionsForModal(questionSetId) {
+        if (!questionSetId) {
+            document.getElementById('questionsListModal').innerHTML = '<div class="text-center text-muted">Сначала выберите набор вопросов</div>';
+            return;
+        }
+        fetch(`/api/distillation/questionsets/${questionSetId}/questions/`)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                allQuestions = data.map(item => ({ id: item.id, text: item.question_text || item.text }));
+                const existingIds = document.getElementById('selected_question_ids').value;
+                if (existingIds) {
+                    selectedQuestionIds.clear();
+                    existingIds.split(',').forEach(id => selectedQuestionIds.add(parseInt(id)));
+                }
+                renderQuestionList(allQuestions);
+            })
+            .catch(err => {
+                console.error('Ошибка загрузки вопросов:', err);
+                document.getElementById('questionsListModal').innerHTML = '<div class="text-danger text-center">Ошибка загрузки вопросов</div>';
+            });
+    }
+
+    function renderQuestionList(questions) {
+        const container = document.getElementById('questionsListModal');
+        if (!questions.length) {
+            container.innerHTML = '<div class="text-center text-muted">В этом наборе нет вопросов</div>';
+            return;
+        }
+        let html = '';
+        questions.forEach(q => {
+            const isChecked = selectedQuestionIds.has(q.id);
+            html += `<div class="question-item" data-id="${q.id}" data-text="${escapeHtml(q.text)}">
+                        <input type="checkbox" class="question-checkbox" value="${q.id}" ${isChecked ? 'checked' : ''}>
+                        <span>${escapeHtml(q.text)}</span>
+                    </div>`;
+        });
+        container.innerHTML = html;
+
+        document.querySelectorAll('.question-item').forEach(item => {
+            const checkbox = item.querySelector('.question-checkbox');
+            item.addEventListener('click', (e) => {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    if (checkbox.checked) selectedQuestionIds.add(parseInt(checkbox.value));
+                    else selectedQuestionIds.delete(parseInt(checkbox.value));
+                    updateSelectedCount();
+                    item.classList.toggle('selected', checkbox.checked);
+                }
+            });
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                if (checkbox.checked) selectedQuestionIds.add(parseInt(checkbox.value));
+                else selectedQuestionIds.delete(parseInt(checkbox.value));
+                updateSelectedCount();
+                item.classList.toggle('selected', checkbox.checked);
+            });
+            item.classList.toggle('selected', checkbox.checked);
+        });
+
+        const selectAllCheckbox = document.getElementById('selectAllQuestions');
+        selectAllCheckbox.checked = selectedQuestionIds.size === questions.length;
+        selectAllCheckbox.onchange = (e) => {
+            const isChecked = e.target.checked;
+            document.querySelectorAll('.question-checkbox').forEach(cb => {
+                cb.checked = isChecked;
+                const id = parseInt(cb.value);
+                if (isChecked) selectedQuestionIds.add(id);
+                else selectedQuestionIds.delete(id);
+                const parent = cb.closest('.question-item');
+                if (parent) parent.classList.toggle('selected', isChecked);
+            });
+            updateSelectedCount();
+        };
+    }
+
+    function updateSelectedCount() {
+        const count = selectedQuestionIds.size;
+        document.getElementById('selectedQuestionsCount').innerText = `Выбрано ${count} вопросов`;
+        document.getElementById('selected_question_ids').value = Array.from(selectedQuestionIds).join(',');
+    }
+
+    let searchTimeout;
+    const searchInput = document.getElementById('searchQuestions');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = e.target.value.toLowerCase();
+                const filtered = allQuestions.filter(q => q.text.toLowerCase().includes(query));
+                renderQuestionList(filtered);
+            }, 300);
+        });
+    }
+
+    const selectBtn = document.getElementById('selectQuestionsBtn');
+    if (selectBtn) {
+        selectBtn.addEventListener('click', () => {
+            const questionSetId = document.getElementById('id_question_set').value;
+            if (!questionSetId) {
+                alert('Сначала выберите набор вопросов');
+                return;
+            }
+            currentQuestionSetId = questionSetId;
+            loadQuestionsForModal(questionSetId);
+            const modal = new bootstrap.Modal(document.getElementById('questionsModal'));
+            modal.show();
+        });
+    }
+
+    const confirmBtn = document.getElementById('confirmQuestionsBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+            updateSelectedCount();
+            bootstrap.Modal.getInstance(document.getElementById('questionsModal')).hide();
+        });
+    }
+
+    const questionSetSelect = document.getElementById('id_question_set');
+    if (questionSetSelect) {
+        questionSetSelect.addEventListener('change', (e) => {
+            if (e.target.value) {
+                selectedQuestionIds.clear();
+                document.getElementById('selected_question_ids').value = '';
+                document.getElementById('selectedQuestionsCount').innerText = 'Выбрано 0 вопросов';
+                selectBtn.disabled = false;
+            } else {
+                selectBtn.disabled = true;
+            }
+        });
+        if (questionSetSelect.value) selectBtn.disabled = false;
+        else selectBtn.disabled = true;
+    }
+</script>
+{% endblock %}

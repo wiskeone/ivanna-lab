@@ -1,0 +1,241 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Редактирование {{ model.name }} - Ivanna Lab{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'model_list' %}">Модели</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'model_detail' model.id %}">{{ model.name }}</a></li>
+                    <li class="breadcrumb-item active">Редактирование</li>
+                </ol>
+            </nav>
+            
+            <h1 class="h3 mb-0">
+                <i class="bi bi-gear"></i> Редактирование конфигурации
+                <small class="text-muted">{{ model.name }}</small>
+            </h1>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Конфигурация загрузки модели</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="configForm">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Исправьте ошибки в форме
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Имя модели в системе</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-danger small">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Конфигурация загрузки (JSON)</label>
+                            {{ form.loader_config }}
+                            <div class="form-text">
+                                Конфигурация в формате JSON. Будьте осторожны при редактировании.
+                            </div>
+                            {% if form.loader_config.errors %}
+                            <div class="text-danger small">{{ form.loader_config.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            После изменения конфигурации потребуется перезагрузить модель.
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Сохранить изменения
+                            </button>
+                            <a href="{% url 'model_detail' model.id %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Отмена
+                            </a>
+                            {% if model.status == 'LOADED' %}
+                            <button type="button" class="btn btn-warning" onclick="reloadModel()">
+                                <i class="bi bi-arrow-clockwise"></i> Перезагрузить модель
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Справка по конфигурации</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Основные параметры:</h6>
+                    <ul class="small">
+                        <li><code>trust_remote_code</code>: true для Qwen, false для других</li>
+                        <li><code>quantization</code>: "4bit" или "float16"</li>
+                        <li><code>device_map</code>: "auto" для автоматического распределения</li>
+                    </ul>
+                    
+                    <h6>Пример для Qwen:</h6>
+                    <pre class="code-block small">{
+  "trust_remote_code": true,
+  "quantization": "4bit",
+  "device_map": "auto",
+  "model_kwargs": {
+    "torch_dtype": "float16"
+  }
+}</pre>
+                    
+                    <h6>Пример для Llama:</h6>
+                    <pre class="code-block small">{
+  "trust_remote_code": false,
+  "quantization": "4bit",
+  "device_map": "auto",
+  "model_kwargs": {
+    "torch_dtype": "float16"
+  }
+}</pre>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Действия</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-info" onclick="validateConfig()">
+                            <i class="bi bi-check-circle"></i> Проверить JSON
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="formatConfig()">
+                            <i class="bi bi-code-slash"></i> Форматировать JSON
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="resetConfig()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Сбросить к значениям по умолчанию
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Форматирование JSON
+    function formatConfig() {
+        const textarea = document.getElementById('{{ form.loader_config.auto_id }}');
+        try {
+            const obj = JSON.parse(textarea.value);
+            textarea.value = JSON.stringify(obj, null, 2);
+            showToast('success', 'Успех', 'JSON отформатирован');
+        } catch (error) {
+            showToast('error', 'Ошибка', 'Неверный формат JSON: ' + error.message);
+        }
+    }
+    
+    // Валидация JSON
+    function validateConfig() {
+        const textarea = document.getElementById('{{ form.loader_config.auto_id }}');
+        try {
+            JSON.parse(textarea.value);
+            showToast('success', 'Успех', 'JSON валиден');
+        } catch (error) {
+            showToast('error', 'Ошибка', 'Ошибка в JSON: ' + error.message);
+        }
+    }
+    
+    // Сброс к значениям по умолчанию
+    function resetConfig() {
+        const textarea = document.getElementById('{{ form.loader_config.auto_id }}');
+        const modelType = '{{ model.model_type }}';
+        
+        const defaults = {
+            'QWEN': {
+                "trust_remote_code": true,
+                "quantization": "4bit",
+                "device_map": "auto",
+                "model_kwargs": {
+                    "torch_dtype": "float16"
+                }
+            },
+            'LLAMA': {
+                "trust_remote_code": false,
+                "quantization": "4bit",
+                "device_map": "auto",
+                "model_kwargs": {
+                    "torch_dtype": "float16"
+                }
+            },
+            'MISTRAL': {
+                "trust_remote_code": false,
+                "quantization": "4bit",
+                "device_map": "auto",
+                "model_kwargs": {
+                    "torch_dtype": "float16"
+                }
+            }
+        };
+        
+        const defaultConfig = defaults[modelType] || defaults['QWEN'];
+        textarea.value = JSON.stringify(defaultConfig, null, 2);
+        showToast('info', 'Сброс', 'Конфигурация сброшена к значениям по умолчанию');
+    }
+    
+    // Перезагрузка модели
+    async function reloadModel() {
+        if (!confirm('Перезагрузить модель? Это займет некоторое время.')) {
+            return;
+        }
+        
+        showLoading('configForm', 'Перезагрузка модели...');
+        
+        try {
+            const response = await fetch(`/api/models/{{ model.id }}/reload/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showToast('success', 'Успех', 'Модель поставлена в очередь на перезагрузку');
+                setTimeout(() => location.reload(), 3000);
+            } else {
+                showToast('error', 'Ошибка', result.error || 'Неизвестная ошибка');
+            }
+        } catch (error) {
+            console.error('Ошибка перезагрузки:', error);
+            showToast('error', 'Ошибка', 'Не удалось перезагрузить модель');
+        } finally {
+            hideLoading('configForm');
+        }
+    }
+    
+    // Автоформатирование при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+        formatConfig();
+    });
+</script>
+{% endblock %}

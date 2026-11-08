@@ -1,0 +1,840 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Задача: {{ job.name }}{% endblock %}
+{% block page_title %}Задача генерации ответов: {{ job.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.answer-card {
+    background: rgba(40,40,40,0.8);
+    border: 1px solid #444;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    padding: 20px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.answer-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 20px rgba(107,70,193,0.2);
+}
+
+/* Ответ с раскрытием */
+.answer-content {
+    max-height: 150px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    position: relative;
+    background: rgba(0,0,0,0.2);
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 3px solid var(--primary-color);
+}
+.answer-content.expanded {
+    max-height: 3000px;
+}
+.answer-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(transparent, rgba(40,40,40,1));
+    pointer-events: none;
+}
+.answer-content.expanded::after {
+    display: none;
+}
+
+/* Статусы */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.status-answered {
+    background: rgba(40,167,69,0.3);
+    color: #28a745;
+}
+.status-pending {
+    background: rgba(255,193,7,0.3);
+    color: #ffc107;
+}
+
+/* История версий */
+.answer-history {
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+    display: none;
+}
+.answer-history.show {
+    display: block;
+}
+.answer-version {
+    padding: 10px;
+    border-bottom: 1px solid #555;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.answer-version:last-child {
+    border-bottom: none;
+}
+.answer-version:hover {
+    background: rgba(107,70,193,0.2);
+}
+.answer-version.active {
+    background: rgba(107,70,193,0.4);
+}
+.version-label {
+    font-size: 0.75rem;
+    color: #aaa;
+}
+
+/* Вопрос */
+.question-text {
+    background: rgba(107,70,193,0.1);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 3px solid #6b46c1;
+}
+
+/* Бейджи */
+.badge-counter {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+}
+.version-badge {
+    background: rgba(107,70,193,0.3);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    margin-left: 8px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Верхняя панель -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{% url 'distillation_answer_job_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>К списку задач
+        </a>
+        <div>
+            <span class="badge {% if job.status == 'COMPLETED' %}bg-success{% elif job.status == 'RUNNING' %}bg-primary{% elif job.status == 'FAILED' %}bg-danger{% else %}bg-secondary{% endif %}">
+                {{ job.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Информация о задаче -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4 class="card-title mb-2">{{ job.name }}</h4>
+            <p class="text-muted mb-3">{{ job.description|default:"Нет описания" }}</p>
+            
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="small text-muted">Прогресс</div>
+                    <div class="fw-medium">{{ job.progress|floatformat:1 }}%</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted">Вопросов обработано</div>
+                    <div class="fw-medium">{{ answered_count }}/{{ total_questions }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted">Набор вопросов</div>
+                    <div class="fw-medium">{{ job.question_set.name|default:"—" }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted">Создана</div>
+                    <div class="fw-medium">{{ job.created_at|date:"d.m.Y H:i" }}</div>
+                </div>
+            </div>
+
+            <!-- Прогресс бар -->
+            <div class="progress mt-3" style="height: 8px;">
+                <div class="progress-bar {% if job.status == 'COMPLETED' %}bg-success{% elif job.status == 'FAILED' %}bg-danger{% else %}bg-primary{% endif %}" 
+                     role="progressbar" 
+                     style="width: {{ job.progress }}%;"
+                     aria-valuenow="{{ job.progress }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            </div>
+
+            <!-- Чекпоинт -->
+            {% if job.checkpoint_data and job.status != 'RUNNING' %}
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Чекпоинт доступен!</strong>
+                Задача прервана после обработки 
+                {{ job.checkpoint_data.last_processed_question_index|add:1 }} из {{ job.checkpoint_data.total_questions }} вопросов.
+                <form method="post" action="{% url 'distillation_resume_answer_generation' job.id %}" class="d-inline ms-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise"></i> Возобновить
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Логи -->
+    {% if job.logs %}
+    <div class="card mb-4">
+        <div class="card-header bg-transparent border-bottom">
+            <h5 class="mb-0">Логи выполнения</h5>
+        </div>
+        <div class="card-body">
+            <div class="bg-dark rounded p-3" style="max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
+                {% for line in job.logs.splitlines %}
+                <div class="text-muted">{{ line }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Вопросы и ответы -->
+    <div class="card">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Вопросы и ответы</h5>
+            <button class="btn btn-sm btn-outline-primary" id="expandAllBtn">
+                <i class="bi bi-arrows-expand"></i> Развернуть все
+            </button>
+        </div>
+        <div class="card-body">
+            {% for pair in qa_pairs %}
+            <div class="answer-card" data-question-id="{{ pair.question.id }}" data-answer-id="{{ pair.answer.id|default:'' }}">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <span class="badge bg-secondary me-2">ID: {{ pair.question.id }}</span>
+                        <span class="status-badge {% if pair.answer %}status-answered{% else %}status-pending{% endif %}" id="status-badge-{{ pair.question.id }}">
+                            {% if pair.answer %}Ответ получен{% else %}Ожидает ответа{% endif %}
+                        </span>
+                        <span class="version-badge" id="version-badge-{{ pair.question.id }}">
+                            <i class="bi bi-layers"></i> <span id="version-count-{{ pair.question.id }}">{{ pair.all_answers|length }}</span> версий
+                        </span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary regenerate-btn" 
+                            data-question-id="{{ pair.question.id }}"
+                            data-answer-id="{{ pair.answer.id|default:'' }}">
+                        <i class="bi bi-arrow-clockwise"></i> Переписать ответ
+                    </button>
+                </div>
+
+                <!-- Вопрос -->
+                <div class="question-text">
+                    <label class="form-label small text-muted mb-2">Вопрос</label>
+                    <div>{{ pair.question.question_text }}</div>
+                </div>
+
+                <!-- Ответ -->
+                <div>
+                    <label class="form-label small text-muted">Ответ</label>
+                    {% if pair.answer %}
+                    <div class="answer-content" id="answer-{{ pair.question.id }}">
+                        {{ pair.answer.answer_text|clean_text|linebreaksbr }}
+                    </div>
+                    
+                    <!-- История версий ответа -->
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-link text-muted history-toggle" data-question-id="{{ pair.question.id }}">
+                            <i class="bi bi-clock-history"></i> Показать историю версий (<span class="version-count">{{ pair.all_answers|length }}</span>)
+                        </button>
+                    </div>
+                    <div class="answer-history" id="history-{{ pair.question.id }}">
+                        <div class="small text-muted mb-2">
+                            <i class="bi bi-clock-history"></i> История версий
+                        </div>
+                        {% for ans in pair.all_answers %}
+                        <div class="answer-version" 
+                             data-question-id="{{ pair.question.id }}"
+                             data-answer-text="{{ ans.answer_text|escapejs }}"
+                             data-version-time="{{ ans.created_at|date:'d.m.Y H:i' }}"
+                             data-version-index="{{ forloop.counter0 }}">
+                            <div class="d-flex justify-content-between">
+                                <span class="version-label">
+                                    Версия от {{ ans.created_at|date:"d.m.Y H:i" }}
+                                </span>
+                                {% if ans.id == pair.answer.id %}
+                                <span class="badge bg-success current-version-badge">Текущая</span>
+                                {% endif %}
+                            </div>
+                            <div class="small text-muted mt-1">
+                                {{ ans.answer_text|clean_text|truncatechars:150 }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% else %}
+                    <div class="p-3 bg-dark rounded text-muted">
+                        <em>Ответ ещё не сгенерирован</em>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-inbox fs-1"></i>
+                <p class="mt-3">Нет вопросов для отображения</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Генерация ответов (массовая) -->
+    <div class="card mt-4">
+        <div class="card-header bg-transparent border-bottom">
+            <h5 class="mb-0">Генерация ответов</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'distillation_start_answer_generation' job.id %}" id="startGenerationForm">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Модель-учитель *</label>
+                        <select name="teacher_model_id" class="form-select" id="massTeacherModelSelect" required>
+                            <option value="">Выберите модель</option>
+                            {% for model in available_models %}
+                            <option value="{{ model.id }}">{{ model.display_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Квантизация</label>
+                        <select name="quantization" class="form-select">
+                            <option value="int4">INT4</option>
+                            <option value="int8">INT8</option>
+                            <option value="fp16">FP16</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Максимум токенов</label>
+                        <input type="number" name="max_tokens" class="form-control" value="1024" min="256" max="4096">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100" id="startGenerationBtn">
+                            <i class="bi bi-play-fill"></i> Запустить
+                        </button>
+                    </div>
+                </div>
+                
+                {% if job.status != 'RUNNING' %}
+                <div class="mt-3">
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#restartJobModal">
+                        <i class="bi bi-arrow-clockwise"></i> Перезапустить задачу
+                    </button>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно: Переписать ответ (ОДИН вопрос) -->
+<div class="modal fade" id="regenerateAnswerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Переписать ответ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="regenerateQuestionId">
+                
+                <div class="mb-3">
+                    <label class="form-label">Модель-учитель *</label>
+                    <select id="regenerateTeacherModel" class="form-select">
+                        <option value="">Выберите модель</option>
+                        {% for model in available_models %}
+                        <option value="{{ model.id }}">{{ model.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Квантизация</label>
+                        <select id="regenerateQuantization" class="form-select">
+                            <option value="int4">INT4</option>
+                            <option value="int8">INT8</option>
+                            <option value="fp16">FP16</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Максимум токенов</label>
+                        <input type="number" id="regenerateMaxTokens" class="form-control" value="1024" min="256" max="4096">
+                    </div>
+                </div>
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Температура</label>
+                        <input type="number" id="regenerateTemperature" class="form-control" value="0.7" step="0.1" min="0" max="2">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Top P</label>
+                        <input type="number" id="regenerateTopP" class="form-control" value="0.9" step="0.1" min="0" max="1">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Шаблон промпта (опционально)</label>
+                    <textarea id="regeneratePromptTemplate" class="form-control" rows="3" placeholder="Оставьте пустым для использования шаблона по умолчанию"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmRegenerateBtn">
+                    <i class="bi bi-play-fill"></i> Генерировать
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно: Перезапуск задачи -->
+<div class="modal fade" id="restartJobModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Перезапуск задачи</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Внимание!</strong> Все существующие ответы будут удалены.
+                </div>
+                <p>Вы уверены, что хотите перезапустить задачу? Это действие нельзя отменить.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="post" action="{% url 'distillation_restart_answer_job' job.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-arrow-clockwise"></i> Перезапустить
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Индикатор генерации -->
+<div class="modal fade" id="generatingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <h5>Генерация ответа...</h5>
+                <p class="text-muted">Это может занять несколько секунд</p>
+                <button class="btn btn-outline-secondary mt-3" data-bs-dismiss="modal">
+                    Закрыть окно (генерация продолжится в фоне)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Оверлей загрузки -->
+<div class="loading-overlay" id="loadingOverlay" style="display: none;">
+    <div class="text-center">
+        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+        <div id="loadingText" class="text-white fs-5">Загрузка...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ============================================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================================
+let activeRegenerationTasks = {}; // { questionId: { taskId, interval } }
+
+// ============================================================================
+// УТИЛИТЫ
+// ============================================================================
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(message, type = 'info') {
+    if (typeof window.showGlobalToast === 'function') {
+        window.showGlobalToast(message, type);
+        return;
+    }
+    
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toastEl = document.createElement('div');
+        const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info';
+        toastEl.className = `toast align-items-center text-bg-${bgClass} border-0 position-fixed top-0 end-0 m-3`;
+        toastEl.style.zIndex = '9999';
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(toastEl);
+        const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    } else {
+        alert(message);
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function cleanText(text) {
+    if (!text) return '';
+    const lines = text.split('\n');
+    const cleaned = [];
+    let lastEmpty = false;
+    for (let line of lines) {
+        line = line.trimEnd();
+        if (line === '') {
+            if (!lastEmpty) {
+                cleaned.push('');
+                lastEmpty = true;
+            }
+        } else {
+            cleaned.push(line);
+            lastEmpty = false;
+        }
+    }
+    return cleaned.join('\n').trim();
+}
+
+// ============================================================================
+// РАСКРЫТИЕ ОТВЕТА ПО КЛИКУ НА ВСЮ КАРТОЧКУ
+// ============================================================================
+function setupExpandListeners() {
+    document.querySelectorAll('.answer-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Не обрабатываем клики по кнопкам и ссылкам внутри
+            if (e.target.closest('.btn') || e.target.closest('a') || e.target.closest('.answer-version') || e.target.closest('.history-toggle')) {
+                return;
+            }
+            const content = this.querySelector('.answer-content');
+            if (!content) return;
+            content.classList.toggle('expanded');
+        });
+    });
+}
+
+// ============================================================================
+// ИСТОРИЯ ВЕРСИЙ
+// ============================================================================
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.history-toggle');
+    if (btn) {
+        e.stopPropagation();
+        const questionId = btn.dataset.questionId;
+        const history = document.getElementById(`history-${questionId}`);
+        if (history) {
+            history.classList.toggle('show');
+            const icon = btn.querySelector('i');
+            if (history.classList.contains('show')) {
+                btn.innerHTML = `<i class="bi bi-clock-history"></i> Скрыть историю версий (<span class="version-count">${document.querySelectorAll(`#history-${questionId} .answer-version`).length}</span>)`;
+            } else {
+                btn.innerHTML = `<i class="bi bi-clock-history"></i> Показать историю версий (<span class="version-count">${document.querySelectorAll(`#history-${questionId} .answer-version`).length}</span>)`;
+            }
+        }
+    }
+    
+    const version = e.target.closest('.answer-version');
+    if (version) {
+        e.stopPropagation();
+        const questionId = version.dataset.questionId;
+        const answerText = version.dataset.answerText;
+        const versionTime = version.dataset.versionTime;
+        const content = document.getElementById(`answer-${questionId}`);
+        if (content) {
+            content.innerHTML = escapeHtml(cleanText(answerText)).replace(/\n/g, '<br>');
+            content.classList.add('expanded');
+        }
+        // Обновляем активную версию
+        const container = document.getElementById(`history-${questionId}`);
+        if (container) {
+            container.querySelectorAll('.answer-version').forEach(el => el.classList.remove('active'));
+            version.classList.add('active');
+        }
+        showToast(`Показана версия от ${versionTime}`, 'info');
+    }
+});
+
+// ============================================================================
+// ОБНОВЛЕНИЕ ОТВЕТА В DOM ПОСЛЕ УСПЕШНОЙ ГЕНЕРАЦИИ
+// ============================================================================
+function updateAnswerInDOM(questionId, newAnswerText, newAnswerId, newAnswerTime) {
+    const card = document.querySelector(`.answer-card[data-question-id="${questionId}"]`);
+    if (!card) return;
+    
+    // Обновляем содержимое ответа
+    const answerContent = document.getElementById(`answer-${questionId}`);
+    if (answerContent) {
+        answerContent.innerHTML = escapeHtml(cleanText(newAnswerText)).replace(/\n/g, '<br>');
+        answerContent.classList.add('expanded');
+    }
+    
+    // Обновляем статус
+    const statusBadge = document.getElementById(`status-badge-${questionId}`);
+    if (statusBadge) {
+        statusBadge.textContent = 'Ответ получен';
+        statusBadge.className = 'status-badge status-answered';
+    }
+    
+    // Обновляем историю версий
+    const historyContainer = document.getElementById(`history-${questionId}`);
+    const versionCountSpan = document.getElementById(`version-count-${questionId}`);
+    const versionBadgeSpan = document.querySelector(`#version-badge-${questionId} .version-count`);
+    const historyToggle = card.querySelector('.history-toggle');
+    
+    if (historyContainer) {
+        // Создаём новую запись в истории
+        const newVersionHtml = `
+            <div class="answer-version active" 
+                 data-question-id="${questionId}"
+                 data-answer-text="${escapeHtml(newAnswerText)}"
+                 data-version-time="${newAnswerTime}"
+                 data-version-index="0">
+                <div class="d-flex justify-content-between">
+                    <span class="version-label">
+                        Версия от ${newAnswerTime}
+                    </span>
+                    <span class="badge bg-success current-version-badge">Текущая</span>
+                </div>
+                <div class="small text-muted mt-1">
+                    ${escapeHtml(cleanText(newAnswerText).substring(0, 150))}
+                </div>
+            </div>
+        `;
+        // Убираем "Текущая" с предыдущих версий
+        historyContainer.querySelectorAll('.current-version-badge').forEach(b => b.remove());
+        // Вставляем новую версию в начало
+        historyContainer.insertAdjacentHTML('afterbegin', newVersionHtml);
+        // Обновляем счётчик
+        const newCount = historyContainer.querySelectorAll('.answer-version').length;
+        if (versionCountSpan) versionCountSpan.textContent = newCount;
+        if (versionBadgeSpan) versionBadgeSpan.textContent = newCount;
+        if (historyToggle) {
+            historyToggle.innerHTML = `<i class="bi bi-clock-history"></i> Показать историю версий (<span class="version-count">${newCount}</span>)`;
+        }
+    }
+    
+    // Обновляем data-answer-id на карточке
+    card.dataset.answerId = newAnswerId;
+    
+    // Показываем уведомление
+    showToast('Ответ успешно перезаписан!', 'success');
+}
+
+// ============================================================================
+// ОПРОС СТАТУСА ЗАДАЧИ ПЕРЕЗАПИСИ
+// ============================================================================
+function pollRegenerationTask(taskId, questionId) {
+    let attempts = 0;
+    const maxAttempts = 60;
+    const interval = setInterval(() => {
+        fetch(`/api/tasks/${taskId}/result/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.state === 'SUCCESS') {
+                    clearInterval(interval);
+                    delete activeRegenerationTasks[questionId];
+                    const result = data.result;
+                    if (result.success && result.answer_text) {
+                        const now = new Date();
+                        const formattedTime = now.toLocaleString('ru-RU');
+                        updateAnswerInDOM(questionId, result.answer_text, result.answer_id, formattedTime);
+                    } else {
+                        showToast('Ошибка при генерации ответа: ' + (result.error || 'неизвестная ошибка'), 'error');
+                    }
+                    // Закрываем модальное окно загрузки, если оно открыто
+                    const generatingModal = bootstrap.Modal.getInstance(document.getElementById('generatingModal'));
+                    if (generatingModal) generatingModal.hide();
+                } else if (data.state === 'FAILURE') {
+                    clearInterval(interval);
+                    delete activeRegenerationTasks[questionId];
+                    const error = data.result?.error || 'Ошибка генерации';
+                    showToast(error, 'error');
+                    const generatingModal = bootstrap.Modal.getInstance(document.getElementById('generatingModal'));
+                    if (generatingModal) generatingModal.hide();
+                } else if (++attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    delete activeRegenerationTasks[questionId];
+                    showToast('Превышено время ожидания генерации ответа', 'error');
+                    const generatingModal = bootstrap.Modal.getInstance(document.getElementById('generatingModal'));
+                    if (generatingModal) generatingModal.hide();
+                }
+            })
+            .catch(err => {
+                console.error('Polling error:', err);
+                if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    delete activeRegenerationTasks[questionId];
+                    showToast('Ошибка связи с сервером', 'error');
+                    const generatingModal = bootstrap.Modal.getInstance(document.getElementById('generatingModal'));
+                    if (generatingModal) generatingModal.hide();
+                }
+            });
+    }, 3000);
+}
+
+// ============================================================================
+// ПЕРЕПИСАТЬ ОТВЕТ (используем API)
+// ============================================================================
+function openRegenerateModal(questionId) {
+    document.getElementById('regenerateQuestionId').value = questionId;
+    // Подставляем активную модель из массовой формы (если есть)
+    const massModelSelect = document.getElementById('massTeacherModelSelect');
+    const modalModelSelect = document.getElementById('regenerateTeacherModel');
+    if (massModelSelect && massModelSelect.value && modalModelSelect) {
+        modalModelSelect.value = massModelSelect.value;
+    }
+    const modal = new bootstrap.Modal(document.getElementById('regenerateAnswerModal'));
+    modal.show();
+}
+
+document.querySelectorAll('.regenerate-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const questionId = this.dataset.questionId;
+        openRegenerateModal(parseInt(questionId));
+    });
+});
+
+document.getElementById('confirmRegenerateBtn')?.addEventListener('click', async function() {
+    const questionId = document.getElementById('regenerateQuestionId').value;
+    const teacherModelId = document.getElementById('regenerateTeacherModel').value;
+    const quantization = document.getElementById('regenerateQuantization').value;
+    const maxTokens = document.getElementById('regenerateMaxTokens').value;
+    const temperature = document.getElementById('regenerateTemperature').value;
+    const topP = document.getElementById('regenerateTopP').value;
+    const promptTemplate = document.getElementById('regeneratePromptTemplate').value;
+    
+    if (!teacherModelId) {
+        showToast('Выберите модель-учитель', 'error');
+        return;
+    }
+    
+    if (!questionId) {
+        showToast('Ошибка: не указан ID вопроса', 'error');
+        return;
+    }
+    
+    // Показываем индикатор генерации
+    const generatingModal = new bootstrap.Modal(document.getElementById('generatingModal'));
+    generatingModal.show();
+    
+    // Закрываем модальное окно настройки
+    bootstrap.Modal.getInstance(document.getElementById('regenerateAnswerModal'))?.hide();
+    
+    try {
+        const generationConfig = {
+            max_tokens: parseInt(maxTokens),
+            temperature: parseFloat(temperature),
+            top_p: parseFloat(topP)
+        };
+        if (promptTemplate && promptTemplate.trim()) {
+            generationConfig.prompt_template = promptTemplate.trim();
+        }
+        
+        const response = await fetch('/api/distillation/answerjobs/regenerate_answer/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                question_id: parseInt(questionId),
+                answer_job_id: {{ job.id }},
+                teacher_model_id: parseInt(teacherModelId),
+                quantization: quantization,
+                generation_config: generationConfig
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.task_id) {
+            // Запоминаем задачу
+            activeRegenerationTasks[questionId] = { taskId: result.task_id };
+            pollRegenerationTask(result.task_id, questionId);
+        } else {
+            throw new Error(result.error || 'Ошибка генерации');
+        }
+        
+    } catch (err) {
+        console.error(err);
+        showToast(err.message, 'error');
+        generatingModal.hide();
+    }
+});
+
+// ============================================================================
+// РАЗВЕРНУТЬ ВСЕ ОТВЕТЫ
+// ============================================================================
+document.getElementById('expandAllBtn')?.addEventListener('click', function() {
+    document.querySelectorAll('.answer-content').forEach(content => {
+        content.classList.add('expanded');
+    });
+});
+
+// ============================================================================
+// АВТООБНОВЛЕНИЕ СТАТУСА ЗАДАЧИ (если выполняется)
+// ============================================================================
+{% if job.status == 'RUNNING' %}
+setInterval(async () => {
+    try {
+        const response = await fetch('{% url "api_distillation_answer_job_status" job.id %}');
+        const data = await response.json();
+        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+            window.location.reload();
+        }
+    } catch (err) {
+        console.error('Error checking status:', err);
+    }
+}, 5000);
+{% endif %}
+
+// Инициализация раскрытия по клику
+document.addEventListener('DOMContentLoaded', () => {
+    setupExpandListeners();
+    
+    // Если есть активные задачи перезаписи (после обновления страницы) — они потеряны, но можно ничего не делать.
+    // При обновлении страницы они будут запущены заново.
+});
+</script>
+{% endblock %}

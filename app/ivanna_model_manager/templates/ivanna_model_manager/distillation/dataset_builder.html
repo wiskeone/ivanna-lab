@@ -1,0 +1,807 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load static %}
+
+{% block title %}Сборка итогового датасета{% endblock %}
+{% block page_title %}Сборка итогового датасета{% endblock %}
+
+{% block extra_css %}
+<style>
+.question-card {
+    background: rgba(40,40,40,0.8);
+    border: 1px solid #444;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    padding: 20px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.question-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 20px rgba(107,70,193,0.2);
+}
+.question-card.excluded {
+    opacity: 0.6;
+    background: rgba(0,0,0,0.2);
+}
+
+.answer-content {
+    max-height: 150px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    position: relative;
+    background: rgba(0,0,0,0.2);
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 3px solid var(--primary-color);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+.answer-content.expanded {
+    max-height: 5000px;
+}
+.answer-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(transparent, rgba(40,40,40,1));
+    pointer-events: none;
+}
+.answer-content.expanded::after {
+    display: none;
+}
+
+.version-badge {
+    background: rgba(107,70,193,0.3);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    margin-left: 8px;
+}
+.edited-badge {
+    background: #ffc107;
+    color: #1e1e1e;
+}
+.context-preview {
+    font-size: 0.85rem;
+    color: #aaa;
+    max-height: 80px;
+    overflow-y: auto;
+    background: rgba(107,70,193,0.1);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+.filter-section {
+    background: rgba(40,40,40,0.6);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+.loading-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.loading-overlay.active {
+    display: flex;
+}
+.modal-content {
+    background: #1e1e1e;
+    border: 1px solid #444;
+}
+
+/* Scroll-to-top button */
+.scroll-top-btn {
+    position: fixed;
+    right: 20px;
+    bottom: 50%;
+    transform: translateY(50%);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.3s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.scroll-top-btn:hover {
+    background: var(--accent-color);
+    transform: translateY(50%) scale(1.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Верхняя панель -->
+    <div class="d-flex justify-content-end align-items-center gap-2 mb-4">
+        <a href="{% url 'distillation_dataset_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Вернуться к списку
+        </a>
+        <button class="btn btn-success" id="saveDatasetBtn">
+            <i class="bi bi-save me-1"></i>Сохранить датасет
+        </button>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filter-section">
+        <h5 class="mb-3">Параметры сборки</h5>
+        <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+                <label class="form-label small text-muted">Набор вопросов <span class="text-danger">*</span></label>
+                <select id="questionSetSelect" class="form-select">
+                    <option value="">— Выберите набор вопросов —</option>
+                    {% for qset in question_sets %}
+                    <option value="{{ qset.id }}">{{ qset.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-6">
+                <label class="form-label small text-muted">Задачи генерации ответов</label>
+                <div class="dropdown w-100">
+                    <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" 
+                            type="button" id="answerJobsDropdown" data-bs-toggle="dropdown">
+                        <span id="answerJobsLabel">— Выберите задачи —</span>
+                    </button>
+                    <ul class="dropdown-menu w-100 p-2" style="max-height: 300px; overflow-y: auto;">
+                        {% for job in answer_jobs %}
+                        <li>
+                            <label class="dropdown-item d-flex align-items-center">
+                                <input class="form-check-input me-2 answer-job-checkbox" 
+                                       type="checkbox" value="{{ job.id }}" data-job-name="{{ job.name }}">
+                                <div>
+                                    <div class="small fw-medium">{{ job.name }}</div>
+                                    <div class="small text-muted">{{ job.planned_count }} вопросов, {{ job.processed_count }} ответов</div>
+                                </div>
+                            </label>
+                        </li>
+                        {% empty %}
+                        <li><span class="dropdown-item text-muted small">Нет доступных задач</span></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="form-text small">Выберите одну или несколько задач</div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-primary px-4" id="loadDataBtn">
+                <i class="bi bi-search me-1"></i>Загрузить данные
+            </button>
+        </div>
+    </div>
+
+    <!-- Кнопки управления вопросами -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary" id="selectAllBtn">
+                <i class="bi bi-check2-square me-1"></i>Выбрать все
+            </button>
+            <button class="btn btn-sm btn-outline-danger" id="excludeAllBtn">
+                <i class="bi bi-x-square me-1"></i>Исключить все
+            </button>
+        </div>
+        <span class="badge bg-secondary" id="questionsCount">0 вопросов</span>
+    </div>
+
+    <!-- Название и описание датасета -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label small text-muted">Название датасета <span class="text-danger">*</span></label>
+                    <input type="text" id="datasetName" class="form-control" placeholder="Введите название датасета">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small text-muted">Описание (необязательно)</label>
+                    <input type="text" id="datasetDescription" class="form-control" placeholder="Краткое описание">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список вопросов (карточки) -->
+    <div class="card">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Вопросы для включения в датасет</h5>
+        </div>
+        <div class="card-body">
+            <div id="questionsContainer">
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox fs-1 text-secondary"></i>
+                    <p class="mt-3">Выберите набор вопросов и задачи генерации ответов, затем нажмите «Загрузить данные»</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования ответа -->
+<div class="modal fade" id="editAnswerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать ответ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editQuestionId">
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Вопрос</label>
+                    <div id="editQuestionPreview" class="p-3 bg-dark rounded border border-secondary"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Ответ</label>
+                    <textarea id="editAnswerText" class="form-control" rows="12"></textarea>
+                    <div class="form-text small">Ответ будет сохранён только для этого датасета</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Контекстные чанки</label>
+                    <div id="editContextPreview" class="p-2 bg-dark rounded border border-secondary small"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveEditedAnswer">Сохранить изменения</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Кнопка прокрутки наверх -->
+<button class="scroll-top-btn" id="scrollTopBtn">
+    <i class="bi bi-arrow-up"></i>
+</button>
+
+<!-- Оверлей загрузки -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="text-center">
+        <div class="spinner-border text-primary mb-3"></div>
+        <div id="loadingText" class="text-white fs-5">Загрузка данных...</div>
+        <div class="text-muted small mt-2" id="loadingSubtext"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ============================================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================================
+let questionsData = [];
+let selectedAnswers = {};        // { question_id: answer_text }
+let excludedQuestions = new Set(); // ID вопросов, исключённых из датасета
+let editedAnswers = new Set();      // ID вопросов, ответ которых был отредактирован вручную
+let isSaving = false;
+let isDataLoaded = false;
+
+// ============================================================================
+// УТИЛИТЫ
+// ============================================================================
+
+function showToast(message, type = 'info') {
+    if (typeof window.showGlobalToast === 'function') {
+        window.showGlobalToast(message, type);
+        return;
+    }
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toastEl = document.createElement('div');
+        const bgClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info';
+        toastEl.className = `toast align-items-center text-bg-${bgClass} border-0 position-fixed top-0 end-0 m-3`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.style.zIndex = '9999';
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(toastEl);
+        const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+        return;
+    }
+    alert(message);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showLoading(text, subtext = '') {
+    document.getElementById('loadingText').textContent = text;
+    document.getElementById('loadingSubtext').textContent = subtext;
+    document.getElementById('loadingOverlay').classList.add('active');
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').classList.remove('active');
+}
+
+function updateAnswerJobsLabel() {
+    const checkboxes = document.querySelectorAll('.answer-job-checkbox:checked');
+    const label = document.getElementById('answerJobsLabel');
+    if (checkboxes.length === 0) {
+        label.textContent = '— Выберите задачи —';
+    } else if (checkboxes.length === 1) {
+        label.textContent = checkboxes[0].dataset.jobName;
+    } else {
+        label.textContent = `Выбрано задач: ${checkboxes.length}`;
+    }
+}
+
+function updateQuestionsCount() {
+    const total = questionsData.length;
+    const included = total - excludedQuestions.size;
+    document.getElementById('questionsCount').textContent = `${included} из ${total} вопросов`;
+}
+
+// ============================================================================
+// ЗАГРУЗКА ДАННЫХ
+// ============================================================================
+
+document.getElementById('loadDataBtn').addEventListener('click', async () => {
+    const questionSetId = document.getElementById('questionSetSelect').value;
+    const answerJobIds = Array.from(document.querySelectorAll('.answer-job-checkbox:checked')).map(cb => cb.value);
+    if (!questionSetId) {
+        showToast('Пожалуйста, выберите набор вопросов', 'error');
+        return;
+    }
+    if (answerJobIds.length === 0) {
+        showToast('Пожалуйста, выберите хотя бы одну задачу генерации ответов', 'error');
+        return;
+    }
+
+    showLoading('Загрузка вопросов и ответов...', 'Это может занять несколько секунд');
+
+    try {
+        const params = new URLSearchParams();
+        params.append('question_set', questionSetId);
+        answerJobIds.forEach(id => params.append('answer_jobs', id));
+
+        const response = await fetch(`/api/distillation/dataset-builder-data/?${params}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Ошибка загрузки данных');
+
+        questionsData = data.questions;
+        // Инициализация выбранных ответов: для каждого вопроса берём первый (самый свежий) ответ
+        selectedAnswers = {};
+        for (const q of questionsData) {
+            if (q.answers && q.answers.length > 0) {
+                // Берем первый ответ из массива (предполагается, что они уже отсортированы по дате убывания)
+                selectedAnswers[q.id] = q.answers[0].answer_text;
+            } else {
+                selectedAnswers[q.id] = '';
+            }
+        }
+        excludedQuestions.clear();
+        editedAnswers.clear();
+        renderQuestionsCards();
+
+        updateQuestionsCount();
+        isDataLoaded = true;
+        showToast(`Загружено ${questionsData.length} вопросов`, 'success');
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Не удалось загрузить данные', 'error');
+    } finally {
+        hideLoading();
+    }
+});
+
+document.querySelectorAll('.answer-job-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateAnswerJobsLabel);
+});
+
+// ============================================================================
+// РЕНДЕР КАРТОЧЕК
+// ============================================================================
+
+function renderQuestionsCards() {
+    const container = document.getElementById('questionsContainer');
+    if (!questionsData.length) {
+        container.innerHTML = `<div class="alert alert-info">Нет вопросов для отображения.</div>`;
+        return;
+    }
+
+    let html = '';
+    for (const q of questionsData) {
+        const qid = q.id;
+        const answers = q.answers || [];
+        const isExcluded = excludedQuestions.has(qid);
+        const isEdited = editedAnswers.has(qid);
+        const currentAnswer = selectedAnswers[qid] || (answers[0]?.answer_text || '');
+        const hasMultiple = answers.length > 1;
+
+        // Контекст
+        let contextHtml = '';
+        if (q.context_chunks && q.context_chunks.length) {
+            contextHtml = `
+                <div class="context-preview mt-2">
+                    ${q.context_chunks.map(c => {
+                        const text = typeof c === 'string' ? c : (c.content || '');
+                        return `<div class="small">${escapeHtml(text.substring(0, 100))}${text.length > 100 ? '…' : ''}</div>`;
+                    }).join('')}
+                </div>
+            `;
+        } else {
+            contextHtml = `<div class="text-muted small mt-2">Контекст не указан</div>`;
+        }
+
+        // Блок ответа
+        let answerHtml = '';
+        if (answers.length === 0) {
+            answerHtml = `<div class="text-muted small mt-2"><i class="bi bi-exclamation-circle"></i> Нет доступных ответов</div>`;
+        } else {
+            if (hasMultiple) {
+                let options = '';
+                answers.forEach((ans, idx) => {
+                    const selected = (selectedAnswers[qid] === ans.answer_text) ? 'selected' : '';
+                    const preview = ans.answer_text.substring(0, 60) + (ans.answer_text.length > 60 ? '…' : '');
+                    options += `
+                        <option value="${idx}" ${selected}
+                                data-answer="${encodeURIComponent(ans.answer_text)}"
+                                data-job="${escapeHtml(ans.job_name)}"
+                                data-created="${ans.created_at || ''}">
+                            ${escapeHtml(ans.job_name)} — ${ans.created_at ? new Date(ans.created_at).toLocaleString('ru-RU') : ''} — ${preview}
+                        </option>
+                    `;
+                });
+                answerHtml = `
+                    <select class="form-select form-select-sm answer-version-select mt-2" data-question-id="${qid}">
+                        ${options}
+                    </select>
+                `;
+            }
+            answerHtml += `
+                <div class="answer-content ${!hasMultiple ? 'mt-2' : ''}" id="answer-${qid}">${escapeHtml(currentAnswer)}</div>
+                <div class="small text-muted mt-1">
+                    ${hasMultiple ? '' : `<span class="version-badge ${isEdited ? 'edited-badge' : ''}">${isEdited ? 'Изменён' : escapeHtml(answers[0]?.job_name || '')}</span>`}
+                    ${hasMultiple ? `<span class="version-badge">${answers.length} версий</span>` : ''}
+                    ${!hasMultiple && answers[0]?.created_at ? ` <span>${new Date(answers[0].created_at).toLocaleString('ru-RU')}</span>` : ''}
+                </div>
+            `;
+        }
+
+        // Заголовок карточки
+        const headerHtml = `
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input exclude-checkbox" type="checkbox" data-question-id="${qid}" ${isExcluded ? 'checked' : ''}>
+                        <label class="form-check-label small text-muted">Исключить</label>
+                    </div>
+                    <span class="badge bg-secondary">ID: ${qid}</span>
+                    <span class="status-badge ${answers.length ? 'status-answered' : 'status-pending'}">
+                        ${answers.length ? 'Ответ получен' : 'Ожидает ответа'}
+                    </span>
+                </div>
+                <button class="btn btn-sm btn-outline-primary edit-answer-btn" data-question-id="${qid}" ${answers.length === 0 ? 'disabled' : ''}>
+                    <i class="bi bi-pencil"></i> Редактировать
+                </button>
+            </div>
+        `;
+
+        html += `
+            <div class="question-card ${isExcluded ? 'excluded' : ''}" data-question-id="${qid}">
+                ${headerHtml}
+                <div class="question-text">
+                    <label class="form-label small text-muted">Вопрос</label>
+                    <div>${escapeHtml(q.question_text)}</div>
+                </div>
+                ${answerHtml}
+                ${contextHtml}
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+    attachCardEvents();
+    attachExcludeEvents();
+    attachVersionSelectEvents();
+    attachEditEvents();
+}
+
+function attachCardEvents() {
+    document.querySelectorAll('.question-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Не срабатывать при клике на элементы управления
+            if (e.target.closest('.exclude-checkbox') ||
+                e.target.closest('.edit-answer-btn') ||
+                e.target.closest('.answer-version-select')) {
+                return;
+            }
+            const answerDiv = this.querySelector('.answer-content');
+            if (answerDiv) {
+                answerDiv.classList.toggle('expanded');
+            }
+        });
+    });
+}
+
+function attachExcludeEvents() {
+    document.querySelectorAll('.exclude-checkbox').forEach(cb => {
+        cb.addEventListener('change', function(e) {
+            e.stopPropagation();
+            const qid = parseInt(this.dataset.questionId);
+            const card = this.closest('.question-card');
+            if (this.checked) {
+                excludedQuestions.add(qid);
+                card.classList.add('excluded');
+            } else {
+                excludedQuestions.delete(qid);
+                card.classList.remove('excluded');
+            }
+            updateQuestionsCount();
+        });
+    });
+}
+
+function attachVersionSelectEvents() {
+    document.querySelectorAll('.answer-version-select').forEach(select => {
+        select.addEventListener('change', function(e) {
+            e.stopPropagation();
+            const qid = parseInt(this.dataset.questionId);
+            const selectedIdx = this.value;
+            const answerObj = questionsData.find(q => q.id === qid)?.answers?.[selectedIdx];
+            if (answerObj) {
+                const answerText = answerObj.answer_text;
+                selectedAnswers[qid] = answerText;
+                const answerDiv = document.getElementById(`answer-${qid}`);
+                if (answerDiv) {
+                    answerDiv.textContent = answerText;
+                    answerDiv.classList.remove('expanded');
+                }
+                // Убираем флаг редактирования
+                if (editedAnswers.has(qid)) {
+                    editedAnswers.delete(qid);
+                    const badge = this.closest('.question-card').querySelector('.version-badge');
+                    if (badge) {
+                        badge.textContent = answerObj.job_name;
+                        badge.classList.remove('edited-badge');
+                    }
+                }
+            }
+        });
+    });
+}
+
+function attachEditEvents() {
+    document.querySelectorAll('.edit-answer-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const qid = parseInt(this.dataset.questionId);
+            const question = questionsData.find(q => q.id === qid);
+            if (!question) return;
+            const currentAnswer = selectedAnswers[qid] || question.answers?.[0]?.answer_text || '';
+            document.getElementById('editQuestionId').value = qid;
+            document.getElementById('editQuestionPreview').textContent = question.question_text;
+            document.getElementById('editAnswerText').value = currentAnswer;
+            const contextDiv = document.getElementById('editContextPreview');
+            if (question.context_chunks && question.context_chunks.length) {
+                contextDiv.innerHTML = question.context_chunks.map(c => {
+                    const text = typeof c === 'string' ? c : (c.content || '');
+                    return `<div class="mb-1">• ${escapeHtml(text.substring(0, 200))}${text.length > 200 ? '…' : ''}</div>`;
+                }).join('');
+            } else {
+                contextDiv.innerHTML = '<em class="text-muted">Контекст не указан</em>';
+            }
+            const modal = new bootstrap.Modal(document.getElementById('editAnswerModal'));
+            modal.show();
+        });
+    });
+}
+
+// ============================================================================
+// УПРАВЛЕНИЕ ВСЕМИ ВОПРОСАМИ
+// ============================================================================
+
+document.getElementById('selectAllBtn').addEventListener('click', () => {
+    excludedQuestions.clear();
+    document.querySelectorAll('.exclude-checkbox').forEach(cb => {
+        cb.checked = false;
+        const card = cb.closest('.question-card');
+        if (card) card.classList.remove('excluded');
+    });
+    updateQuestionsCount();
+});
+
+document.getElementById('excludeAllBtn').addEventListener('click', () => {
+    document.querySelectorAll('.exclude-checkbox').forEach(cb => {
+        const qid = parseInt(cb.dataset.questionId);
+        excludedQuestions.add(qid);
+        cb.checked = true;
+        const card = cb.closest('.question-card');
+        if (card) card.classList.add('excluded');
+    });
+    updateQuestionsCount();
+});
+
+// ============================================================================
+// РЕДАКТИРОВАНИЕ ОТВЕТА
+// ============================================================================
+
+document.getElementById('saveEditedAnswer').addEventListener('click', function() {
+    const qid = parseInt(document.getElementById('editQuestionId').value);
+    const newAnswer = document.getElementById('editAnswerText').value.trim();
+    if (!newAnswer) {
+        showToast('Ответ не может быть пустым', 'error');
+        return;
+    }
+
+    // Обновляем в интерфейсе
+    const answerDiv = document.getElementById(`answer-${qid}`);
+    if (answerDiv) {
+        answerDiv.textContent = newAnswer;
+        answerDiv.classList.add('expanded');
+        const card = answerDiv.closest('.question-card');
+        // Обновляем бейдж
+        const badgeSpan = card.querySelector('.version-badge');
+        if (badgeSpan) {
+            badgeSpan.textContent = 'Изменён';
+            badgeSpan.classList.add('edited-badge');
+        }
+        // Если есть селект, обновляем выбранную опцию
+        const select = card.querySelector('.answer-version-select');
+        if (select) {
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption) {
+                selectedOption.dataset.answer = encodeURIComponent(newAnswer);
+                selectedOption.text = `${selectedOption.dataset.job || 'Пользователь'} — ${new Date().toLocaleString('ru-RU')} — ${newAnswer.substring(0, 40)}…`;
+            }
+        }
+    }
+
+    selectedAnswers[qid] = newAnswer;
+    editedAnswers.add(qid);
+    bootstrap.Modal.getInstance(document.getElementById('editAnswerModal')).hide();
+    showToast('Ответ успешно обновлён', 'success');
+});
+
+// ============================================================================
+// СОХРАНЕНИЕ ДАТАСЕТА
+// ============================================================================
+
+document.getElementById('saveDatasetBtn').addEventListener('click', async () => {
+    const datasetName = document.getElementById('datasetName').value.trim();
+    if (!datasetName) {
+        showToast('Пожалуйста, введите название датасета', 'error');
+        return;
+    }
+    if (!isDataLoaded || questionsData.length === 0) {
+        showToast('Сначала загрузите вопросы', 'error');
+        return;
+    }
+
+    const items = [];
+    for (const q of questionsData) {
+        if (excludedQuestions.has(q.id)) continue;
+        const answer = selectedAnswers[q.id];
+        if (answer && answer.trim()) {
+            items.push({
+                question_id: q.id,
+                question_text: q.question_text,
+                answer_text: answer.trim(),
+                context_chunks: q.context_chunks
+            });
+        }
+    }
+    if (items.length === 0) {
+        showToast('Нет вопросов с ответами для сохранения (или все исключены)', 'error');
+        return;
+    }
+
+    if (isSaving) {
+        showToast('Сохранение уже выполняется…', 'info');
+        return;
+    }
+    isSaving = true;
+    const btn = document.getElementById('saveDatasetBtn');
+    const originalHtml = btn.innerHTML;
+    showLoading('Сохранение датасета…', 'Пожалуйста, не закрывайте страницу');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Сохранение…';
+
+    try {
+        const response = await fetch('/api/distillation/datasets/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                name: datasetName,
+                description: document.getElementById('datasetDescription').value,
+                items: items
+            })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Ошибка при сохранении датасета');
+        showToast(`Датасет «${datasetName}» успешно сохранён!`, 'success');
+        setTimeout(() => {
+            window.location.href = `/distillation/datasets/${result.id}/`;
+        }, 1500);
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Не удалось сохранить датасет', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    } finally {
+        isSaving = false;
+        hideLoading();
+    }
+});
+
+// ============================================================================
+// КНОПКА ПРОКРУТКИ НАВЕРХ
+// ============================================================================
+const scrollTopBtn = document.getElementById('scrollTopBtn');
+window.addEventListener('scroll', () => {
+    if (window.scrollY > 300) {
+        scrollTopBtn.style.display = 'flex';
+    } else {
+        scrollTopBtn.style.display = 'none';
+    }
+});
+scrollTopBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ============================================================================
+// АВТОЗАГРУЗКА ИЗ URL
+// ============================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const qsetId = urlParams.get('question_set');
+    const jobIds = urlParams.get('answer_jobs');
+    if (qsetId) {
+        document.getElementById('questionSetSelect').value = qsetId;
+        if (jobIds) {
+            jobIds.split(',').forEach(id => {
+                const cb = document.querySelector(`.answer-job-checkbox[value="${id}"]`);
+                if (cb) {
+                    cb.checked = true;
+                    cb.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+        setTimeout(() => {
+            if (qsetId && document.querySelectorAll('.answer-job-checkbox:checked').length > 0) {
+                document.getElementById('loadDataBtn').click();
+            }
+        }, 500);
+    }
+});
+</script>
+{% endblock %}
