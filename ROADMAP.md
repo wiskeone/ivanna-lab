@@ -7,7 +7,7 @@ Working plan for future releases. Order is approximate — items move up if some
 - [x] **i18n** — templates + Python strings (RU source, EN translation, 🌐 switcher)
 - [x] **Test suite** — mergekit config builder (linear/TIES/DARE), validator, resource estimates (v4); trainers next
 - [x] **CI** — GitHub Actions: ruff, tests inside CPU image, compose config validation (v4)
-- [ ] **Prebuilt images** — GHCR: `docker compose pull`
+- [x] **Prebuilt images** — GHCR: `ghcr.io/wiskeone/ivanna-lab:latest` (docker-publish.yml, GITHUB_TOKEN)
 - [ ] **Log hygiene** — structured logging, request IDs for Celery tasks
 - [x] **HTTPS profile for nginx** — `nginx/nginx.ssl.conf.template` (v4)
 
@@ -33,7 +33,7 @@ Working plan for future releases. Order is approximate — items move up if some
 
 План приблизительный — приоритеты двигаются по запросам.
 
-**v4.x — качество и доверие:** ✅ тесты (mergekit-конфиг), ✅ CI, ✅ HTTPS-профиль. Осталось: трейнеры/RAG-тесты, GHCR-образы, структурные логи.
+**v4.x — качество и доверие:** ✅ тесты (mergekit-конфиг), ✅ CI, ✅ HTTPS-профиль, ✅ GHCR-образы. Осталось: трейнеры/RAG-тесты, структурные логи.
 
 **v5.0 — инференс и масштаб:** подключение vLLM как опционального OpenAI-совместимого бэкенда (заготовка `Dockerfile.vllm` уже есть), выбор устройства на воркера, пресеты генерации, пауза/резюме файнтюна, редактор датасетов.
 
