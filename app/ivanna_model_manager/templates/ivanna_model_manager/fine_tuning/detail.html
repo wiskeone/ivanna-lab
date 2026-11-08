@@ -346,6 +346,7 @@
                         {% elif job.status == 'PREPARING' %}bi-gear
                         {% elif job.status == 'COMPLETED' %}bi-check-circle
                         {% elif job.status == 'FAILED' %}bi-exclamation-circle
+                        {% elif job.status == 'PAUSED' %}bi-pause-circle
                         {% elif job.status == 'CANCELLED' %}bi-x-circle
                         {% endif %} me-2"></i>
                     <span id="jobStatusText">{{ job.get_status_display }}</span>
@@ -403,6 +404,19 @@
         </button>
         {% endif %}
         
+        {% if job.status == 'RUNNING' %}
+        <!-- v5.1: пауза — тренер остановится на ближайшем шаге, прогресс в чекпоинте -->
+        <button class="btn-action warning" onclick="pauseJob()" id="pauseBtn">
+            <i class="bi bi-pause-fill"></i> {% trans "Пауза" %}
+        </button>
+        {% endif %}
+
+        {% if job.status == 'PAUSED' %}
+        <button class="btn-action primary" onclick="resumeJob()">
+            <i class="bi bi-play-fill"></i> {% trans "Продолжить" %}
+        </button>
+        {% endif %}
+
         {% if job.status == 'PENDING' or job.status == 'PREPARING' or job.status == 'TRAINING' %}
         <button class="btn-action danger" onclick="cancelJob()">
             <i class="bi bi-x-circle"></i> {% trans "Отменить" %}
@@ -886,6 +900,25 @@
             headers: {
                 'X-CSRFToken': getCSRFToken()
             }
+
+    // v5.1: пауза/резюме
+    async function pauseJob(){
+        if(!confirm('{% trans "Приостановить обучение? Тренер остановится на ближайшем шаге, прогресс сохранится в чекпоинте." %}')) return;
+        try{
+            const r = await fetch(`/api/fine-tuning/{{ job.id }}/pause/`, {method:'POST', headers:{'X-CSRFToken':getCSRFToken()}});
+            const d = await r.json();
+            if(d.success){ showToast('{% trans "Пауза запрошена" %}','success'); setTimeout(()=>location.reload(), 3000); }
+            else showToast(d.error || '{% trans "Ошибка" %}', 'error');
+        }catch(e){ showToast(e.message, 'error'); }
+    }
+    async function resumeJob(){
+        try{
+            const r = await fetch(`/api/fine-tuning/{{ job.id }}/resume/`, {method:'POST', headers:{'X-CSRFToken':getCSRFToken()}});
+            const d = await r.json();
+            if(d.success){ showToast('{% trans "Возобновлено — задача в очереди" %}','success'); setTimeout(()=>location.reload(), 2000); }
+            else showToast(d.error || '{% trans "Ошибка" %}', 'error');
+        }catch(e){ showToast(e.message, 'error'); }
+    }
         })
         .then(response => response.json())
         .then(data => {

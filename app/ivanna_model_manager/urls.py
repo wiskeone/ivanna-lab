@@ -59,6 +59,9 @@ urlpatterns = [
     path('api/evaluation/rate/', api_views.rate_response_api, name='api_rate_response'),
     path('api/huggingface/', api_views.HuggingFaceAPI.as_view(), name='huggingface_api'),
     # v5.0: пресеты параметров генерации
+    # v5.1: пауза/резюме fine-tuning
+    path('api/fine-tuning/<int:job_id>/pause/', api_views.api_fine_tuning_pause, name='api_ft_pause'),
+    path('api/fine-tuning/<int:job_id>/resume/', api_views.api_fine_tuning_resume, name='api_ft_resume'),
     path('api/generation-presets/', api_views.api_generation_presets_list, name='api_generation_presets'),
     path('api/generation-presets/create/', api_views.api_generation_preset_create, name='api_generation_preset_create'),
     path('api/generation-presets/<int:preset_id>/delete/', api_views.api_generation_preset_delete, name='api_generation_preset_delete'),

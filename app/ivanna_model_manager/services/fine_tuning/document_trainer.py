@@ -16,7 +16,7 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from datasets import Dataset
 
 from ...models import FineTuningJob, DocumentChunk
-from .callbacks import ProgressCallback   # ваш существующий callback
+from .callbacks import ProgressCallback, PauseCallback, PauseRequested   # ваш существующий callback
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +271,7 @@ class DocumentTrainer:
                 train_dataset=split_dataset['train'],
                 eval_dataset=split_dataset['test'],
                 data_collator=data_collator,
-                callbacks=[progress_callback],
+                callbacks=[progress_callback, PauseCallback(self.job)],
             )
 
             checkpoint = None
@@ -292,6 +292,12 @@ class DocumentTrainer:
 
             self.job.add_log(f"✅ Training completed, model saved to {output_dir}")
             return output_model
+
+        except PauseRequested:
+            self.job.status = 'PAUSED'
+            self.job.save()
+            self.job.add_log("⏸ Обучение приостановлено пользователем — прогресс в чекпоинте")
+            return None
 
         except Exception as e:
             logger.error(f"Error in document training: {e}", exc_info=True)

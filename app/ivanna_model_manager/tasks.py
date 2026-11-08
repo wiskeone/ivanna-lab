@@ -1421,6 +1421,15 @@ def run_fine_tuning_task(self, job_id, restart=False):
             output_model.save()
             job.add_log(f"✅ Модель {output_model.display_name} сохранена и готова к использованию")
 
+        # v5.1: тренер мог вернуть None при паузе — статус уже PAUSED
+        if output_model is None:
+            job.refresh_from_db()
+            if job.status != 'PAUSED':
+                job.status = 'PAUSED'
+                job.save()
+            logger.info(f"⏸ Fine-tuning job {job_id} paused — resume продолжит с чекпоинта")
+            return {'success': True, 'status': 'PAUSED'}
+
         job.status = 'COMPLETED'
         job.save()
         return {'success': True, 'job_id': job_id, 'output_model_id': output_model.id}
@@ -1455,6 +1464,12 @@ def _run_training_on_device(job, device):
     else:
         raise ValueError(f"Unknown method: {job.method}")
     return trainer.train()
+
+
+@shared_task(queue='cpu_tasks')
+def resume_fine_tuning_task(job_id):
+    """v5.1: резюме файнтюна — повторный прогон подхватывает чекпоинт."""
+    return run_fine_tuning_task(job_id)
 
 
 @shared_task(queue='cpu_tasks')

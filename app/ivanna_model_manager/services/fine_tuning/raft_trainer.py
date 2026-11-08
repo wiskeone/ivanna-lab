@@ -16,7 +16,7 @@ from transformers import (
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from datasets import Dataset
 from ...models import FineTuningJob, DocumentCollection, EvaluationDataset, DocumentChunk
-from .callbacks import ProgressCallback
+from .callbacks import ProgressCallback, PauseCallback, PauseRequested
 
 logger = logging.getLogger(__name__)
 
@@ -410,7 +410,7 @@ class RAFTTrainer:
                 data_collator=data_collator,
                 base_model=self.base_model,
                 kl_lambda=self.job.kl_lambda if self.job.use_kl_regularization else 0.0,
-                callbacks=[progress_callback],
+                callbacks=[progress_callback, PauseCallback(self.job)],
             )
 
             checkpoint = None
@@ -431,6 +431,12 @@ class RAFTTrainer:
 
             self.job.add_log(f"✅ RAFT training completed. Model saved to {output_dir}")
             return output_model
+
+        except PauseRequested:
+            self.job.status = 'PAUSED'
+            self.job.save()
+            self.job.add_log("⏸ Обучение приостановлено — прогресс в чекпоинте")
+            return None
 
         except Exception as e:
             logger.error(f"Error in RAFT training: {e}", exc_info=True)

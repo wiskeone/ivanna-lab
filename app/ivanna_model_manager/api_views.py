@@ -3124,3 +3124,45 @@ def api_chat_apply_preset(request, session_id):
                                            _json.dumps(session, default=str))
     return JsonResponse({'success': True, 'generation_config': session['generation_config'],
                          'preset': preset.name})
+
+
+# ============================================================================
+# v5.1: Пауза/резюме fine-tuning
+# ============================================================================
+
+@login_required
+@require_http_methods(["POST"])
+def api_fine_tuning_pause(request, job_id):
+    """Запросить паузу: тренер остановится на ближайшем шаге, чекпоинт
+    сохранится, статус станет PAUSED."""
+    from .models import FineTuningJob
+    job = FineTuningJob.objects.filter(id=job_id).first()
+    if not job:
+        return JsonResponse({'success': False, 'error': 'Job not found'}, status=404)
+    if job.status != 'RUNNING':
+        return JsonResponse({'success': False,
+                             'error': f'Пауза доступна только для RUNNING (сейчас {job.status})'},
+                            status=400)
+    job.request_pause()
+    return JsonResponse({'success': True, 'status': job.status,
+                         'message': 'Пауза запрошена — тренер остановится на ближайшем шаге'})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_fine_tuning_resume(request, job_id):
+    """Резюме: сброс паузы и повторная постановка в очередь — тренер
+    подхватит последний чекпоинт."""
+    from .models import FineTuningJob
+    job = FineTuningJob.objects.filter(id=job_id).first()
+    if not job:
+        return JsonResponse({'success': False, 'error': 'Job not found'}, status=404)
+    if job.status != 'PAUSED':
+        return JsonResponse({'success': False,
+                             'error': f'Резюме доступно только для PAUSED (сейчас {job.status})'},
+                            status=400)
+    job.resume()
+    from .tasks import resume_fine_tuning_task
+    task = resume_fine_tuning_task.delay(job.id)
+    return JsonResponse({'success': True, 'task_id': task.id,
+                         'status': job.status})

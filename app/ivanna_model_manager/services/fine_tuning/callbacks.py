@@ -7,6 +7,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class PauseRequested(Exception):
+    """v5.1: брошен PauseCallback-ом, когда пользователь запросил паузу.
+
+    Ловится ВНЕ trainer.train(): чекпоинт к этому моменту уже сохранён
+    HF Trainer-ом (save_steps), resume подхватит его через
+    resume_from_checkpoint."""
+
+from ...models import TrainingMetric
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class ProgressCallback(TrainerCallback):
     """
     Callback для сохранения пошаговых метрик и гистограмм во время fine-tuning,
@@ -96,3 +109,30 @@ class ProgressCallback(TrainerCallback):
                 eval_loss=metrics['eval_loss'],
                 time_elapsed=time.time() - self.start_time,
             )
+
+class PauseCallback(TrainerCallback):
+    """
+    v5.1: пауза fine-tuning по флагу в БД.
+
+    Каждый шаг обновляет job из БД; если пользователь нажал «Пауза»
+    (pause_requested=True) — бросает PauseRequested. HF Trainer к этому
+    моменту уже сохранил чекпоинт (save_steps), поэтому резюм подхватит
+    прогресс через resume_from_checkpoint без потери шагов.
+    """
+
+    def __init__(self, job, check_every: int = 5):
+        self.job = job
+        self.check_every = max(1, check_every)
+        self._counter = 0
+
+    def on_step_end(self, args, state, control, **kwargs):
+        self._counter += 1
+        if self._counter % self.check_every:
+            return
+        # свежий флаг из БД (не из кэшированного объекта)
+        from ...models import FineTuningJob
+        if FineTuningJob.objects.filter(
+            pk=self.job.pk, pause_requested=True
+        ).exists():
+            control.should_training_stop = True
+            raise PauseRequested(f"Job {self.job.pk} paused at step {state.global_step}")

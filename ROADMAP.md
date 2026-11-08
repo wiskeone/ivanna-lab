@@ -15,7 +15,7 @@ Working plan for future releases. Order is approximate — items move up if some
 
 - [x] **vLLM wiring** — `services/vllm_client.py` (OpenAI-compatible), per-checkpoint `serving_backend` switch (transformers ↔ vLLM), optional `vllm` compose service with GPU profile, client unit tests (v5.0)
 - [ ] **Multi-GPU** — device selection per worker, big-model sharding notes
-- [ ] **Inference presets** — named generation-config profiles reusable across sessions and comparisons
+- [x] **Inference presets** — `GenerationPreset` model + CRUD API + 🌐-применение к сессии из настроек чата (v5.0); сравнения — следующая итерация
 - [ ] **Fine-tune queue improvements** — pause/resume, per-job GPU memory profiles
 - [ ] **Dataset editor** — inline row editing with validation for mid-size datasets
 
@@ -35,6 +35,6 @@ Working plan for future releases. Order is approximate — items move up if some
 
 **v4.x — качество и доверие:** ✅ тесты (mergekit-конфиг), ✅ CI, ✅ HTTPS-профиль, ✅ GHCR-образы. Осталось: трейнеры/RAG-тесты, структурные логи.
 
-**v5.0 — инференс и масштаб:** ✅ vLLM подключён (бэкенд на чекпоинте, compose-профиль). Осталось: выбор GPU на воркера, пресеты генерации, пауза/резюме файнтюна, редактор датасетов.
+**v5.0 — инференс и масштаб:** ✅ vLLM подключён, ✅ пресеты генерации (модель/API/UI/тесты 9). Осталось: выбор GPU на воркера, пауза/резюме файнтюна, редактор датасетов.
 
 **v5.x — экосистема:** хаб оценок с экспортом отчётов, авто-карточки моделей для Hugging Face, пуш GGUF обратно в Hub, однострочные доменные пайплайны (legal/code/medical) на базе дистилляции, API-ключи.

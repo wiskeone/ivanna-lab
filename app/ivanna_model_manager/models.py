@@ -3454,6 +3454,7 @@ class FineTuningJob(models.Model):
         ('EVALUATING', 'Оценка'),
         ('COMPLETED', 'Завершено'),
         ('FAILED', 'Ошибка'),
+        ('PAUSED', 'Приостановлено'),
         ('CANCELLED', 'Отменено'),
     ]
     
@@ -3579,6 +3580,12 @@ class FineTuningJob(models.Model):
         choices=STATUS_CHOICES,
         default='PENDING'
     )
+
+    # v5.1: пауза/резюме — флаг читается PauseCallback-ом на каждом шаге
+    pause_requested = models.BooleanField(
+        default=False,
+        help_text=_("Пользователь запросил паузу: тренер остановится на ближайшем шаге")
+    )
     progress = models.FloatField(default=0.0)
     current_step = models.CharField(max_length=255, blank=True)
     
@@ -3636,6 +3643,21 @@ class FineTuningJob(models.Model):
             self.current_step = step
         self.save(update_fields=['progress', 'current_step'])
     
+
+    # v5.1: пауза/резюме
+    def request_pause(self):
+        """Запросить паузу: тренер остановится на ближайшем шаге."""
+        self.pause_requested = True
+        self.save(update_fields=['pause_requested'])
+        self.add_log("⏸ Пауза запрошена — тренер остановится после текущего шага")
+
+    def resume(self):
+        """Резюме: сброс флага и возврат в очередь (чекпоинт подхватится)."""
+        self.pause_requested = False
+        self.status = 'PENDING'
+        self.save(update_fields=['pause_requested', 'status'])
+        self.add_log("▶ Возобновлено — продолжение с последнего чекпоинта")
+
     def add_log(self, message):
         """Добавить запись в лог"""
         timestamp = timezone.now().strftime('%Y-%m-%d %H:%M:%S')

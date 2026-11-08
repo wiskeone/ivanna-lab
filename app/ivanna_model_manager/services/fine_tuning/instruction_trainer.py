@@ -14,7 +14,7 @@ from transformers import (
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from datasets import Dataset
 from ...models import FineTuningJob, EvaluationDataset
-from .callbacks import ProgressCallback
+from .callbacks import ProgressCallback, PauseCallback, PauseRequested
 
 logger = logging.getLogger(__name__)
 
@@ -281,7 +281,7 @@ class InstructionTrainer:
                 train_dataset=train_dataset,
                 eval_dataset=split_dataset['test'],
                 data_collator=data_collator,
-                callbacks=[progress_callback],
+                callbacks=[progress_callback, PauseCallback(self.job)],  # v5.1: пауза на каждом 5-м шаге
             )
 
             checkpoint = None
@@ -302,6 +302,13 @@ class InstructionTrainer:
 
             self.job.add_log(f"✅ Instruction training completed. Model saved to {output_dir}")
             return output_model
+
+        except PauseRequested:
+            # v5.1: чекпоинт уже на диске (save_steps) — resume подхватит
+            self.job.status = 'PAUSED'
+            self.job.save()
+            self.job.add_log("⏸ Обучение приостановлено пользователем — прогресс в чекпоинте")
+            return None
 
         except Exception as e:
             logger.error(f"Error in instruction training: {e}", exc_info=True)
