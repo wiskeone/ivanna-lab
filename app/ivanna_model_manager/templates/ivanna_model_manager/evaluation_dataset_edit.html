@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Редактирование датасета{% endblock %}
@@ -15,15 +16,15 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <a href="{% url 'evaluation_dataset_detail' dataset.id %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Назад к датасету
+                <i class="bi bi-arrow-left"></i> {% trans "Назад к датасету" %}
             </a>
         </div>
         <div>
             <a href="{% url 'evaluation_dataset_export' dataset.id %}" class="btn btn-outline-primary me-2">
-                <i class="bi bi-download"></i> Экспорт JSONL
+                <i class="bi bi-download"></i> {% trans "Экспорт JSONL" %}
             </a>
             <button class="btn btn-outline-primary" id="importDatasetBtn">
-                <i class="bi bi-upload"></i> Импорт JSONL
+                <i class="bi bi-upload"></i> {% trans "Импорт JSONL" %}
             </button>
         </div>
     </div>
@@ -38,11 +39,11 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <span class="badge bg-info">Всего вопросов: {{ total_questions }}</span>
-                        <span class="badge bg-secondary ms-2" id="currentPageInfo">Страница 1</span>
+                        <span class="badge bg-secondary ms-2" id="currentPageInfo">{% trans "Страница 1" %}</span>
                     </div>
                     <div>
                         <button class="btn btn-sm btn-outline-success" id="addQuestionBtn">
-                            <i class="bi bi-plus-circle"></i> Добавить вопрос
+                            <i class="bi bi-plus-circle"></i> {% trans "Добавить вопрос" %}
                         </button>
                     </div>
                 </div>
@@ -57,7 +58,7 @@
                     </div>
                     <input type="hidden" name="questions_json" id="questionsJson">
                     <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                        <button type="submit" class="btn btn-primary">{% trans "Сохранить" %}</button>
                     </div>
                 </form>
             {% endif %}
@@ -70,37 +71,37 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Редактирование вопроса</h5>
+                <h5 class="modal-title">{% trans "Редактирование вопроса" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="editQuestionId">
                 <div class="mb-3">
-                    <label class="form-label">Вопрос</label>
+                    <label class="form-label">{% trans "Вопрос" %}</label>
                     <textarea id="editQuestionText" class="form-control" rows="3"></textarea>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Ответ</label>
+                    <label class="form-label">{% trans "Ответ" %}</label>
                     <textarea id="editAnswerText" class="form-control" rows="6"></textarea>
                 </div>
                 <div class="row">
                     <div class="col-md-6">
-                        <label class="form-label">Категория</label>
+                        <label class="form-label">{% trans "Категория" %}</label>
                         <input type="text" id="editCategory" class="form-control">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Сложность</label>
+                        <label class="form-label">{% trans "Сложность" %}</label>
                         <select id="editDifficulty" class="form-select">
-                            <option value="easy">Легкая</option>
-                            <option value="medium">Средняя</option>
-                            <option value="hard">Сложная</option>
+                            <option value="easy">{% trans "Легкая" %}</option>
+                            <option value="medium">{% trans "Средняя" %}</option>
+                            <option value="hard">{% trans "Сложная" %}</option>
                         </select>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="saveQuestionBtn">Сохранить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" id="saveQuestionBtn">{% trans "Сохранить" %}</button>
             </div>
         </div>
     </div>
@@ -111,36 +112,36 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Добавить вопрос</h5>
+                <h5 class="modal-title">{% trans "Добавить вопрос" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">Вопрос</label>
+                    <label class="form-label">{% trans "Вопрос" %}</label>
                     <textarea id="newQuestionText" class="form-control" rows="3"></textarea>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Ответ</label>
+                    <label class="form-label">{% trans "Ответ" %}</label>
                     <textarea id="newAnswerText" class="form-control" rows="6"></textarea>
                 </div>
                 <div class="row">
                     <div class="col-md-6">
-                        <label class="form-label">Категория</label>
+                        <label class="form-label">{% trans "Категория" %}</label>
                         <input type="text" id="newCategory" class="form-control">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Сложность</label>
+                        <label class="form-label">{% trans "Сложность" %}</label>
                         <select id="newDifficulty" class="form-select">
-                            <option value="easy">Легкая</option>
-                            <option value="medium">Средняя</option>
-                            <option value="hard">Сложная</option>
+                            <option value="easy">{% trans "Легкая" %}</option>
+                            <option value="medium">{% trans "Средняя" %}</option>
+                            <option value="hard">{% trans "Сложная" %}</option>
                         </select>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="confirmAddBtn">Добавить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" id="confirmAddBtn">{% trans "Добавить" %}</button>
             </div>
         </div>
     </div>
@@ -151,16 +152,16 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Импорт датасета</h5>
+                <h5 class="modal-title">{% trans "Импорт датасета" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="file" id="importFile" class="form-control" accept=".jsonl,.json">
-                <div class="form-text">Поддерживаются файлы JSONL с парами "instruction"/"output" или "text"/"answer"</div>
+                <div class="form-text">{% trans "Поддерживаются файлы JSONL с парами \"instruction\"/\"output\" или \"text\"/\"answer\"" %}</div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="confirmImportBtn">Загрузить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" id="confirmImportBtn">{% trans "Загрузить" %}</button>
             </div>
         </div>
     </div>
@@ -210,8 +211,8 @@ function renderQuestions(questions) {
                             </button>
                         </div>
                     </div>
-                    <p class="card-text"><strong>Вопрос:</strong> ${escapeHtml(q.text)}</p>
-                    <p class="card-text"><strong>Ответ:</strong> ${escapeHtml(q.answer).substring(0, 200)}${q.answer.length > 200 ? '…' : ''}</p>
+                    <p class="card-text"><strong>{% trans "Вопрос:" %}</strong> ${escapeHtml(q.text)}</p>
+                    <p class="card-text"><strong>{% trans "Ответ:" %}</strong> ${escapeHtml(q.answer).substring(0, 200)}${q.answer.length > 200 ? '…' : ''}</p>
                 </div>
             </div>
         `;

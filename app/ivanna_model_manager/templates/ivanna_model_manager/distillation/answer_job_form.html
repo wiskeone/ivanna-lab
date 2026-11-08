@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Создание задачи генерации ответов{% endblock %}
@@ -22,7 +23,7 @@
         <div class="col-lg-10">
             <div class="card">
                 <div class="card-header bg-transparent border-bottom">
-                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Создание задачи генерации ответов</h5>
+                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>{% trans "Создание задачи генерации ответов" %}</h5>
                 </div>
                 <div class="card-body">
                     <form method="post" id="answerJobForm">
@@ -35,48 +36,48 @@
                         {% endif %}
                         
                         <div class="mb-3">
-                            <label for="id_name" class="form-label">Название *</label>
+                            <label for="id_name" class="form-label">{% trans "Название *" %}</label>
                             <input type="text" name="name" class="form-control" id="id_name" value="{{ form.name.value|default:'' }}" required>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_description" class="form-label">Описание</label>
+                            <label for="id_description" class="form-label">{% trans "Описание" %}</label>
                             <textarea name="description" class="form-control" id="id_description" rows="3">{{ form.description.value|default:'' }}</textarea>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_question_set" class="form-label">Набор вопросов</label>
+                            <label for="id_question_set" class="form-label">{% trans "Набор вопросов" %}</label>
                             <select name="question_set" id="id_question_set" class="form-select">
-                                <option value="">--- Выберите набор (будут взяты все вопросы) ---</option>
+                                <option value="">{% trans "--- Выберите набор (будут взяты все вопросы) ---" %}</option>
                                 {% for qset in question_sets %}
                                 <option value="{{ qset.id }}" {% if form.question_set.value|stringformat:"s" == qset.id|stringformat:"s" %}selected{% endif %}>
                                     {{ qset.name }} ({{ qset.questions.count }} вопросов)
                                 </option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text">Если выбран набор, все вопросы будут использованы автоматически. Для ручного выбора вопросов оставьте набор пустым и нажмите кнопку ниже.</div>
+                            <div class="form-text">{% trans "Если выбран набор, все вопросы будут использованы автоматически. Для ручного выбора вопросов оставьте набор пустым и нажмите кнопку ниже." %}</div>
                         </div>
                         
                         <div class="mb-3">
                             <button type="button" class="btn btn-outline-primary" id="selectQuestionsBtn" disabled>
-                                <i class="bi bi-check2-square me-1"></i>Выбрать вопросы вручную
+                                <i class="bi bi-check2-square me-1"></i>{% trans "Выбрать вопросы вручную" %}
                             </button>
-                            <div class="form-text mt-2" id="selectedQuestionsCount">Выбрано 0 вопросов</div>
+                            <div class="form-text mt-2" id="selectedQuestionsCount">{% trans "Выбрано 0 вопросов" %}</div>
                             <input type="hidden" name="question_ids_str" id="selected_question_ids" value="{{ form.question_ids.value|default:'' }}">
                         </div>
                         
                         <div class="card mb-4">
                             <div class="card-header bg-transparent border-bottom">
-                                <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Параметры генерации</h6>
+                                <h6 class="mb-0"><i class="bi bi-gear me-2"></i>{% trans "Параметры генерации" %}</h6>
                             </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="max_tokens" class="form-label">Максимальное количество токенов</label>
+                                        <label for="max_tokens" class="form-label">{% trans "Максимальное количество токенов" %}</label>
                                         <input type="number" name="max_tokens" class="form-control" id="max_tokens" value="1024" min="1" max="4096">
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="temperature" class="form-label">Температура</label>
+                                        <label for="temperature" class="form-label">{% trans "Температура" %}</label>
                                         <div class="d-flex align-items-center gap-2">
                                             <input type="range" name="temperature" id="temperature" class="param-slider" min="0" max="2" step="0.05" value="0.6">
                                             <span id="temperature_val" class="param-value">0.60</span>
@@ -102,8 +103,8 @@
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="prompt_template" class="form-label">Шаблон промпта (опционально)</label>
-                                    <textarea name="prompt_template" id="prompt_template" class="form-control" rows="4" placeholder="Ответь на вопрос, используя только информацию из контекста.\n\nКонтекст:\n{context}\n\nВопрос: {question}\n\nОтвет:"></textarea>
+                                    <label for="prompt_template" class="form-label">{% trans "Шаблон промпта (опционально)" %}</label>
+                                    <textarea name="prompt_template" id="prompt_template" class="form-control" rows="4" placeholder="{% trans 'Ответь на вопрос, используя только информацию из контекста.\n\nКонтекст:\n{context}\n\nВопрос: {question}\n\nОтвет:' %}"></textarea>
                                     <div class="form-text">Используйте {context} и {question} как переменные.</div>
                                 </div>
                             </div>
@@ -111,10 +112,10 @@
                         
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'distillation_answer_job_list' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>Отмена
+                                <i class="bi bi-arrow-left me-1"></i>{% trans "Отмена" %}
                             </a>
                             <button type="submit" class="btn btn-primary" id="submitBtn">
-                                <i class="bi bi-save me-1"></i>Создать задачу
+                                <i class="bi bi-save me-1"></i>{% trans "Создать задачу" %}
                             </button>
                         </div>
                     </form>
@@ -129,26 +130,26 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
-                <h5 class="modal-title">Выбор вопросов</h5>
+                <h5 class="modal-title">{% trans "Выбор вопросов" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="selectAllQuestions">
-                        <label class="form-check-label" for="selectAllQuestions">Выбрать все</label>
+                        <label class="form-check-label" for="selectAllQuestions">{% trans "Выбрать все" %}</label>
                     </div>
                     <div>
-                        <input type="text" id="searchQuestions" class="form-control form-control-sm" placeholder="Поиск по вопросам...">
+                        <input type="text" id="searchQuestions" class="form-control form-control-sm" placeholder="{% trans 'Поиск по вопросам...' %}">
                     </div>
                 </div>
                 <div id="questionsListModal" class="question-list-modal">
-                    <div class="text-center text-muted">Загрузка вопросов...</div>
+                    <div class="text-center text-muted">{% trans "Загрузка вопросов..." %}</div>
                 </div>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="confirmQuestionsBtn">Применить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" id="confirmQuestionsBtn">{% trans "Применить" %}</button>
             </div>
         </div>
     </div>
@@ -184,7 +185,7 @@
 
     function loadQuestionsForModal(questionSetId) {
         if (!questionSetId) {
-            document.getElementById('questionsListModal').innerHTML = '<div class="text-center text-muted">Сначала выберите набор вопросов</div>';
+            document.getElementById('questionsListModal').innerHTML = '<div class="text-center text-muted">{% trans "Сначала выберите набор вопросов" %}</div>';
             return;
         }
         fetch(`/api/distillation/questionsets/${questionSetId}/questions/`)
@@ -203,14 +204,14 @@
             })
             .catch(err => {
                 console.error('Ошибка загрузки вопросов:', err);
-                document.getElementById('questionsListModal').innerHTML = '<div class="text-danger text-center">Ошибка загрузки вопросов</div>';
+                document.getElementById('questionsListModal').innerHTML = '<div class="text-danger text-center">{% trans "Ошибка загрузки вопросов" %}</div>';
             });
     }
 
     function renderQuestionList(questions) {
         const container = document.getElementById('questionsListModal');
         if (!questions.length) {
-            container.innerHTML = '<div class="text-center text-muted">В этом наборе нет вопросов</div>';
+            container.innerHTML = '<div class="text-center text-muted">{% trans "В этом наборе нет вопросов" %}</div>';
             return;
         }
         let html = '';

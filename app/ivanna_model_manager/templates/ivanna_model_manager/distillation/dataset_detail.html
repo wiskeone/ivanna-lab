@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -39,10 +40,10 @@
                 </div>
                 <div>
                     <a href="{% url 'distillation_dataset_list' %}" class="btn btn-outline-secondary me-2">
-                        <i class="bi bi-arrow-left"></i> К списку
+                        <i class="bi bi-arrow-left"></i> {% trans "К списку" %}
                     </a>
                     <a href="{% url 'distillation_dataset_export' dataset.id %}" class="btn btn-success">
-                        <i class="bi bi-download"></i> Экспорт JSONL
+                        <i class="bi bi-download"></i> {% trans "Экспорт JSONL" %}
                     </a>
                 </div>
             </div>
@@ -51,14 +52,14 @@
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Статистика</h6>
+                            <h6 class="card-subtitle mb-2 text-muted">{% trans "Статистика" %}</h6>
                             <div class="row">
                                 <div class="col-6">
-                                    <div class="text-muted small">Всего записей</div>
+                                    <div class="text-muted small">{% trans "Всего записей" %}</div>
                                     <div class="fw-bold">{{ dataset.items|length }}</div>
                                 </div>
                                 <div class="col-6">
-                                    <div class="text-muted small">Создан</div>
+                                    <div class="text-muted small">{% trans "Создан" %}</div>
                                     <div>{{ dataset.created_at|date:"d.m.Y H:i" }}</div>
                                 </div>
                             </div>
@@ -73,13 +74,13 @@
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Действия</h6>
+                            <h6 class="card-subtitle mb-2 text-muted">{% trans "Действия" %}</h6>
                             <div class="d-flex gap-2">
                                 <a href="{% url 'distillation_dataset_export' dataset.id %}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-download"></i> Скачать как JSONL
+                                    <i class="bi bi-download"></i> {% trans "Скачать как JSONL" %}
                                 </a>
                                 <button class="btn btn-sm btn-danger" onclick="deleteDataset()">
-                                    <i class="bi bi-trash"></i> Удалить
+                                    <i class="bi bi-trash"></i> {% trans "Удалить" %}
                                 </button>
                             </div>
                         </div>
@@ -89,22 +90,22 @@
 
             <div class="card mt-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Записи датасета</h5>
+                    <h5 class="mb-0">{% trans "Записи датасета" %}</h5>
                 </div>
                 <div class="card-body p-0">
                     {% for item in dataset.items %}
                     <div class="dataset-item">
                         <div class="dataset-question">
-                            <strong>Вопрос:</strong> {{ item.question_text }}
+                            <strong>{% trans "Вопрос:" %}</strong> {{ item.question_text }}
                         </div>
                         <div class="dataset-answer">
-                            <strong>Ответ:</strong> {{ item.answer_text|linebreaksbr }}
+                            <strong>{% trans "Ответ:" %}</strong> {{ item.answer_text|linebreaksbr }}
                         </div>
                         {% if item.context_chunks %}
                         <div class="mt-2">
                             <small class="text-muted">Контекст ({{ item.context_chunks|length }} чанков):</small>
                             <details class="mt-1">
-                                <summary class="small">Показать</summary>
+                                <summary class="small">{% trans "Показать" %}</summary>
                                 {% for chunk in item.context_chunks %}
                                 <div class="small bg-dark p-2 mb-1 rounded">{{ chunk|truncatechars:300 }}</div>
                                 {% endfor %}
@@ -116,7 +117,7 @@
                         </div>
                     </div>
                     {% empty %}
-                    <div class="text-center py-4">Датасет пуст</div>
+                    <div class="text-center py-4">{% trans "Датасет пуст" %}</div>
                     {% endfor %}
                 </div>
             </div>

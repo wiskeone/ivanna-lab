@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 
 {% block title %}Создание коллекции - RAG - Ivanna Lab{% endblock %}
 
@@ -9,18 +10,18 @@
             <div class="card">
                 <div class="card-header bg-success text-white">
                     <h4 class="mb-0">
-                        <i class="bi bi-folder-plus"></i> Создание новой коллекции документов
+                        <i class="bi bi-folder-plus"></i> {% trans "Создание новой коллекции документов" %}
                     </h4>
                 </div>
                 
                 <div class="card-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Что такое коллекция документов?</strong>
+                        <strong>{% trans "Что такое коллекция документов?" %}</strong>
                         <ul class="mb-0 mt-2">
-                            <li>Коллекция группирует связанные документы по теме, проекту или пользователю</li>
-                            <li>Вы можете создавать разные коллекции для разных типов документов</li>
-                            <li>Настройки коллекции определяют, как документы будут обрабатываться</li>
+                            <li>{% trans "Коллекция группирует связанные документы по теме, проекту или пользователю" %}</li>
+                            <li>{% trans "Вы можете создавать разные коллекции для разных типов документов" %}</li>
+                            <li>{% trans "Настройки коллекции определяют, как документы будут обрабатываться" %}</li>
                         </ul>
                     </div>
                     
@@ -32,25 +33,25 @@
                         <!-- Основная информация -->
                         <div class="mb-4">
                             <h5 class="border-bottom pb-2">
-                                <i class="bi bi-info-circle"></i> Основная информация
+                                <i class="bi bi-info-circle"></i> {% trans "Основная информация" %}
                             </h5>
                             
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Название коллекции *</label>
+                                <label class="form-label fw-bold">{% trans "Название коллекции *" %}</label>
                                 {{ form.name }}
                                 {% if form.name.errors %}
                                 <div class="text-danger small">{{ form.name.errors }}</div>
                                 {% endif %}
-                                <div class="form-text">Дайте коллекции понятное название</div>
+                                <div class="form-text">{% trans "Дайте коллекции понятное название" %}</div>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Описание</label>
+                                <label class="form-label fw-bold">{% trans "Описание" %}</label>
                                 {{ form.description }}
                                 {% if form.description.errors %}
                                 <div class="text-danger small">{{ form.description.errors }}</div>
                                 {% endif %}
-                                <div class="form-text">Опишите назначение и содержание коллекции</div>
+                                <div class="form-text">{% trans "Опишите назначение и содержание коллекции" %}</div>
                             </div>
                             
                             {% if request.user.is_staff %}
@@ -58,7 +59,7 @@
                                 <div class="form-check form-switch">
                                     {{ form.is_public }}
                                     <label class="form-check-label fw-bold" for="{{ form.is_public.id_for_label }}">
-                                        Публичная коллекция
+                                        {% trans "Публичная коллекция" %}
                                     </label>
                                     <div class="form-text">{{ form.is_public.help_text }}</div>
                                 </div>
@@ -69,22 +70,22 @@
                         <!-- Настройки обработки -->
                         <div class="mb-4">
                             <h5 class="border-bottom pb-2">
-                                <i class="bi bi-gear"></i> Настройки обработки документов
+                                <i class="bi bi-gear"></i> {% trans "Настройки обработки документов" %}
                             </h5>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Стратегия разделения *</label>
+                                    <label class="form-label fw-bold">{% trans "Стратегия разделения *" %}</label>
                                     {{ form.chunking_strategy }}
                                     {% if form.chunking_strategy.errors %}
                                     <div class="text-danger small">{{ form.chunking_strategy.errors }}</div>
                                     {% endif %}
                                     <div class="form-text">
                                         <small>
-                                            <strong>Рекурсивное</strong> - по структуре документа<br>
-                                            <strong>Семантическое</strong> - по смыслу<br>
-                                            <strong>Фиксированный</strong> - по размеру<br>
-                                            <strong>По параграфам</strong> - по абзацам
+                                            <strong>{% trans "Рекурсивное" %}</strong> {% trans "- по структуре документа" %}<br>
+                                            <strong>{% trans "Семантическое" %}</strong> {% trans "- по смыслу" %}<br>
+                                            <strong>{% trans "Фиксированный" %}</strong> {% trans "- по размеру" %}<br>
+                                            <strong>{% trans "По параграфам" %}</strong> {% trans "- по абзацам" %}
                                         </small>
                                     </div>
                                 </div>
@@ -93,16 +94,16 @@
                                     <div class="form-check form-switch">
                                         {{ form.auto_process }}
                                         <label class="form-check-label fw-bold" for="{{ form.auto_process.id_for_label }}">
-                                            Автоматическая обработка
+                                            {% trans "Автоматическая обработка" %}
                                         </label>
-                                        <div class="form-text">Автоматически обрабатывать новые документы</div>
+                                        <div class="form-text">{% trans "Автоматически обрабатывать новые документы" %}</div>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Размер чанка (символов) *</label>
+                                    <label class="form-label fw-bold">{% trans "Размер чанка (символов) *" %}</label>
                                     {{ form.chunk_size }}
                                     {% if form.chunk_size.errors %}
                                     <div class="text-danger small">{{ form.chunk_size.errors }}</div>
@@ -111,7 +112,7 @@
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Перекрытие чанков (символов) *</label>
+                                    <label class="form-label fw-bold">{% trans "Перекрытие чанков (символов) *" %}</label>
                                     {{ form.chunk_overlap }}
                                     {% if form.chunk_overlap.errors %}
                                     <div class="text-danger small">{{ form.chunk_overlap.errors }}</div>
@@ -124,12 +125,12 @@
                             <div class="card bg-light">
                                 <div class="card-body">
                                     <h6 class="card-title">
-                                        <i class="bi bi-eye"></i> Визуализация разделения на чанки
+                                        <i class="bi bi-eye"></i> {% trans "Визуализация разделения на чанки" %}
                                     </h6>
                                     <div class="mb-3">
                                         <div class="d-flex align-items-center mb-2">
-                                            <small>Размер чанка: <span id="chunk-size-display">1000</span> символов</small>
-                                            <small class="ms-auto">Перекрытие: <span id="chunk-overlap-display">200</span> символов</small>
+                                            <small>{% trans "Размер чанка:" %} <span id="chunk-size-display">1000</span> {% trans "символов" %}</small>
+                                            <small class="ms-auto">{% trans "Перекрытие:" %} <span id="chunk-overlap-display">200</span> {% trans "символов" %}</small>
                                         </div>
                                         <div class="chunk-visualization mb-3">
                                             <div class="document-bar" style="height: 20px; background: #e9ecef; position: relative;">
@@ -138,13 +139,13 @@
                                                 <div class="overlap" style="position: absolute; left: 40%; width: 10%; height: 100%; background: #198754; opacity: 0.5;"></div>
                                             </div>
                                             <div class="d-flex justify-content-between mt-1">
-                                                <small>Чанк 1</small>
-                                                <small>Перекрытие</small>
-                                                <small>Чанк 2</small>
+                                                <small>{% trans "Чанк 1" %}</small>
+                                                <small>{% trans "Перекрытие" %}</small>
+                                                <small>{% trans "Чанк 2" %}</small>
                                             </div>
                                         </div>
                                         <div class="form-text small">
-                                            <i class="bi bi-lightbulb"></i> Перекрытие помогает сохранить контекст между фрагментами текста
+                                            <i class="bi bi-lightbulb"></i> {% trans "Перекрытие помогает сохранить контекст между фрагментами текста" %}
                                         </div>
                                     </div>
                                 </div>
@@ -154,16 +155,16 @@
                         <!-- Кнопки -->
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{% url 'rag_collection_list' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> Отмена
+                                <i class="bi bi-arrow-left"></i> {% trans "Отмена" %}
                             </a>
                             
                             <div>
                                 <button type="submit" name="action" value="create" class="btn btn-success">
-                                    <i class="bi bi-check-circle"></i> Создать коллекцию
+                                    <i class="bi bi-check-circle"></i> {% trans "Создать коллекцию" %}
                                 </button>
                                 
                                 <button type="submit" name="action" value="create_and_add" class="btn btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Создать и добавить документы
+                                    <i class="bi bi-plus-circle"></i> {% trans "Создать и добавить документы" %}
                                 </button>
                             </div>
                         </div>
@@ -175,7 +176,7 @@
                         <div class="col-md-6">
                             <small class="text-muted">
                                 <i class="bi bi-shield-check"></i> 
-                                Ваши данные защищены
+                                {% trans "Ваши данные защищены" %}
                             </small>
                         </div>
                         <div class="col-md-6 text-end">
@@ -192,7 +193,7 @@
             <div class="card mt-4">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="bi bi-lightbulb"></i> Рекомендации по настройке
+                        <i class="bi bi-lightbulb"></i> {% trans "Рекомендации по настройке" %}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -201,14 +202,14 @@
                             <div class="card h-100">
                                 <div class="card-body">
                                     <h6 class="card-title text-primary">
-                                        <i class="bi bi-file-text"></i> Текстовые документы
+                                        <i class="bi bi-file-text"></i> {% trans "Текстовые документы" %}
                                     </h6>
                                     <p class="card-text small">
-                                        <strong>Рекомендуемые настройки:</strong>
+                                        <strong>{% trans "Рекомендуемые настройки:" %}</strong>
                                         <ul class="small mb-0">
-                                            <li>Стратегия: Рекурсивное</li>
-                                            <li>Размер чанка: 1000</li>
-                                            <li>Перекрытие: 200</li>
+                                            <li>{% trans "Стратегия: Рекурсивное" %}</li>
+                                            <li>{% trans "Размер чанка: 1000" %}</li>
+                                            <li>{% trans "Перекрытие: 200" %}</li>
                                         </ul>
                                     </p>
                                 </div>
@@ -219,14 +220,14 @@
                             <div class="card h-100">
                                 <div class="card-body">
                                     <h6 class="card-title text-primary">
-                                        <i class="bi bi-file-earmark-pdf"></i> PDF/Документы
+                                        <i class="bi bi-file-earmark-pdf"></i> {% trans "PDF/Документы" %}
                                     </h6>
                                     <p class="card-text small">
-                                        <strong>Рекомендуемые настройки:</strong>
+                                        <strong>{% trans "Рекомендуемые настройки:" %}</strong>
                                         <ul class="small mb-0">
-                                            <li>Стратегия: По параграфам</li>
-                                            <li>Размер чанка: 1500</li>
-                                            <li>Перекрытие: 300</li>
+                                            <li>{% trans "Стратегия: По параграфам" %}</li>
+                                            <li>{% trans "Размер чанка: 1500" %}</li>
+                                            <li>{% trans "Перекрытие: 300" %}</li>
                                         </ul>
                                     </p>
                                 </div>
@@ -237,14 +238,14 @@
                             <div class="card h-100">
                                 <div class="card-body">
                                     <h6 class="card-title text-primary">
-                                        <i class="bi bi-code-slash"></i> Код/Техническая документация
+                                        <i class="bi bi-code-slash"></i> {% trans "Код/Техническая документация" %}
                                     </h6>
                                     <p class="card-text small">
-                                        <strong>Рекомендуемые настройки:</strong>
+                                        <strong>{% trans "Рекомендуемые настройки:" %}</strong>
                                         <ul class="small mb-0">
-                                            <li>Стратегия: Фиксированный</li>
-                                            <li>Размер чанка: 2000</li>
-                                            <li>Перекрытие: 400</li>
+                                            <li>{% trans "Стратегия: Фиксированный" %}</li>
+                                            <li>{% trans "Размер чанка: 2000" %}</li>
+                                            <li>{% trans "Перекрытие: 400" %}</li>
                                         </ul>
                                     </p>
                                 </div>

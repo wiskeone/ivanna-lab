@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -706,14 +707,14 @@
                 <div class="chat-subtitle-compact">
                     <span id="sessionStats">
                         {% if session_data %}
-                            <span id="messageCount">{{ messages|length }}</span> сообщений •
+                            <span id="messageCount">{{ messages|length }}</span> {% trans "сообщений •" %}
                             <span id="tokenCount">{{ chat_session.total_tokens|default:0 }}</span> токенов
                         {% else %}
                             Создайте новую сессию
                         {% endif %}
                     </span>
                     <span id="modelStatusBadge" style="display: none;" class="info-badge">
-                        <i class="bi bi-arrow-repeat spin me-1"></i> Загрузка...
+                        <i class="bi bi-arrow-repeat spin me-1"></i> {% trans "Загрузка..." %}
                     </span>
                     <span id="ragStatusBadge" style="display: none;" class="info-badge">
                         <i class="bi bi-database me-1"></i> RAG
@@ -731,12 +732,12 @@
         <div class="d-flex align-items-center">
             <div class="spinner-border text-warning me-3" style="width: 1.5rem; height: 1.5rem;"></div>
             <div style="flex: 1;">
-                <div class="fw-bold text-warning mb-1" id="loadingMessage">Загрузка модели...</div>
+                <div class="fw-bold text-warning mb-1" id="loadingMessage">{% trans "Загрузка модели..." %}</div>
                 <div class="progress" style="height: 6px;">
                     <div id="loadingProgressBar" class="progress-bar" style="width: 0%;"></div>
                 </div>
                 <div class="d-flex justify-content-between mt-1">
-                    <span class="small text-muted" id="loadingDetails">Инициализация...</span>
+                    <span class="small text-muted" id="loadingDetails">{% trans "Инициализация..." %}</span>
                     <span class="small text-muted" id="loadingPercent">0%</span>
                 </div>
             </div>
@@ -815,13 +816,13 @@
                     {% if chat_session and chat_session.checkpoint %}
                     <div class="empty-state-actions">
                         <button class="btn btn-outline-primary" onclick="insertSample('Расскажи о себе и своих возможностях')">
-                            <i class="bi bi-info-circle me-1"></i> О модели
+                            <i class="bi bi-info-circle me-1"></i> {% trans "О модели" %}
                         </button>
                         <button class="btn btn-outline-primary" onclick="insertSample('Напиши программу на Python для сортировки списка')">
-                            <i class="bi bi-code-slash me-1"></i> Пример кода
+                            <i class="bi bi-code-slash me-1"></i> {% trans "Пример кода" %}
                         </button>
                         <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#ragModal">
-                            <i class="bi bi-database me-1"></i> Поиск по документам
+                            <i class="bi bi-database me-1"></i> {% trans "Поиск по документам" %}
                         </button>
                     </div>
                     {% endif %}
@@ -833,28 +834,28 @@
     <div class="input-container">
         <div class="input-actions-top">
             <a href="{% url 'chat_view' %}?force_new=true" class="btn">
-                <i class="bi bi-plus-lg me-1"></i> Новая сессия
+                <i class="bi bi-plus-lg me-1"></i> {% trans "Новая сессия" %}
             </a>
             <button class="btn" data-bs-toggle="modal" data-bs-target="#ragModal">
                 <i class="bi bi-database me-1"></i> RAG
             </button>
             <button class="btn" data-bs-toggle="modal" data-bs-target="#modelsModal">
-                <i class="bi bi-cpu me-1"></i> Модели
+                <i class="bi bi-cpu me-1"></i> {% trans "Модели" %}
             </button>
             <a href="{% url 'chat_sessions_management' %}" class="btn">
-                <i class="bi bi-clock-history me-1"></i> Сессии
+                <i class="bi bi-clock-history me-1"></i> {% trans "Сессии" %}
             </a>
             <button class="btn" onclick="showSettingsModal()">
-                <i class="bi bi-sliders"></i> Настройки
+                <i class="bi bi-sliders"></i> {% trans "Настройки" %}
             </button>
             <button class="btn" onclick="clearChatHistory()">
-                <i class="bi bi-trash"></i> Очистить
+                <i class="bi bi-trash"></i> {% trans "Очистить" %}
             </button>
             <button class="btn" onclick="exportChat()">
-                <i class="bi bi-download"></i> Экспорт
+                <i class="bi bi-download"></i> {% trans "Экспорт" %}
             </button>
             <button class="btn btn-warning" id="forceLoadModelBtn" onclick="showLoadModelModal()" style="display: none;">
-                <i class="bi bi-database me-1"></i> Загрузить модель
+                <i class="bi bi-database me-1"></i> {% trans "Загрузить модель" %}
             </button>
         </div>
 
@@ -862,7 +863,7 @@
         <div class="message-input-wrapper">
             <textarea id="messageInput"
                       class="chat-textarea"
-                      placeholder="Введите сообщение..."
+                      placeholder="{% trans 'Введите сообщение...' %}"
                       rows="1"
                       oninput="autoResize(this); updateCharCount();"></textarea>
             <div class="input-actions">
@@ -872,19 +873,19 @@
                 <span id="modelLoadingIndicatorSmall" style="display: none;" class="text-warning me-2">
                     <i class="bi bi-arrow-repeat spin"></i>
                 </span>
-                <button class="send-button" id="sendButton" onclick="sendMessage()" title="Отправить (Enter)">
-                    <i class="bi bi-send"></i> Отправить
+                <button class="send-button" id="sendButton" onclick="sendMessage()" title="{% trans 'Отправить (Enter)' %}">
+                    <i class="bi bi-send"></i> {% trans "Отправить" %}
                 </button>
             </div>
         </div>
         <div class="input-hint">
-            <span>Shift+Enter для новой строки • Enter для отправки</span>
+            <span>{% trans "Shift+Enter для новой строки • Enter для отправки" %}</span>
             <span id="charCount">0/4000</span>
         </div>
         {% else %}
         <div class="alert alert-info bg-transparent border-info text-center">
             <i class="bi bi-info-circle me-2"></i>
-            Нажмите на кнопку "Модели" и выберите модель для начала диалога
+            {% trans "Нажмите на кнопку \"Модели\" и выберите модель для начала диалога" %}
         </div>
         {% endif %}
     </div>
@@ -895,34 +896,34 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-database me-2"></i>Поиск по документам (RAG)</h5>
+                <h5 class="modal-title"><i class="bi bi-database me-2"></i>{% trans "Поиск по документам (RAG)" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-muted small">Автоматический поиск при отправке сообщения</span>
+                    <span class="text-muted small">{% trans "Автоматический поиск при отправке сообщения" %}</span>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="ragAutoSearchToggle" checked>
                     </div>
                 </div>
                 <div style="margin-bottom: 20px;">
-                    <label class="text-muted small mb-2 fw-bold"><i class="bi bi-collection me-1"></i> Выберите коллекции документов:</label>
+                    <label class="text-muted small mb-2 fw-bold"><i class="bi bi-collection me-1"></i> {% trans "Выберите коллекции документов:" %}</label>
                     <div id="collectionsList" class="collections-list" style="max-height: 300px; overflow-y: auto;">
-                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary me-2"></div><span class="text-muted small">Загрузка коллекций...</span></div>
+                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary me-2"></div><span class="text-muted small">{% trans "Загрузка коллекций..." %}</span></div>
                     </div>
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label class="text-muted small mb-2 fw-bold"><i class="bi bi-search me-1"></i> Быстрый поиск:</label>
+                    <label class="text-muted small mb-2 fw-bold"><i class="bi bi-search me-1"></i> {% trans "Быстрый поиск:" %}</label>
                     <div class="rag-search-input d-flex gap-2">
-                        <input type="text" class="form-control" id="ragQuickSearch" placeholder="Введите запрос для поиска в документах...">
+                        <input type="text" class="form-control" id="ragQuickSearch" placeholder="{% trans 'Введите запрос для поиска в документах...' %}">
                         <button class="btn btn-primary" onclick="performRagSearch()"><i class="bi bi-search"></i></button>
                     </div>
                 </div>
                 <div id="ragSearchResults" style="display: none;"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                <a href="{% url 'rag_collection_create' %}" class="btn btn-primary" target="_blank"><i class="bi bi-plus-lg me-1"></i> Новая коллекция</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
+                <a href="{% url 'rag_collection_create' %}" class="btn btn-primary" target="_blank"><i class="bi bi-plus-lg me-1"></i> {% trans "Новая коллекция" %}</a>
             </div>
         </div>
     </div>
@@ -932,20 +933,20 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-cpu me-2"></i>Доступные модели</h5>
+                <h5 class="modal-title"><i class="bi bi-cpu me-2"></i>{% trans "Доступные модели" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <input type="text" class="form-control" id="modelSearchInput" placeholder="Поиск моделей..." onkeyup="filterModels()">
+                    <input type="text" class="form-control" id="modelSearchInput" placeholder="{% trans 'Поиск моделей...' %}" onkeyup="filterModels()">
                 </div>
                 <div class="models-list" id="modelsList">
-                    <div class="text-center py-4"><div class="spinner-border text-primary mb-3"></div><p class="text-muted">Загрузка моделей...</p></div>
+                    <div class="text-center py-4"><div class="spinner-border text-primary mb-3"></div><p class="text-muted">{% trans "Загрузка моделей..." %}</p></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                <button type="button" class="btn btn-primary" onclick="refreshModels()"><i class="bi bi-arrow-repeat me-1"></i> Обновить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
+                <button type="button" class="btn btn-primary" onclick="refreshModels()"><i class="bi bi-arrow-repeat me-1"></i> {% trans "Обновить" %}</button>
             </div>
         </div>
     </div>
@@ -956,42 +957,42 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
-                <h5 class="modal-title"><i class="bi bi-arrow-down-up me-2"></i> Выберите тип квантизации</h5>
+                <h5 class="modal-title"><i class="bi bi-arrow-down-up me-2"></i> {% trans "Выберите тип квантизации" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="text-muted small mb-3">Квантизация уменьшает потребление памяти, но может незначительно снизить качество.</p>
+                <p class="text-muted small mb-3">{% trans "Квантизация уменьшает потребление памяти, но может незначительно снизить качество." %}</p>
                 <div class="list-group">
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="load_quantization" value="none" checked>
-                        <strong>Без квантизации</strong>
-                        <span class="d-block small text-muted">FP32 / FP16 (оригинальная точность)</span>
+                        <strong>{% trans "Без квантизации" %}</strong>
+                        <span class="d-block small text-muted">{% trans "FP32 / FP16 (оригинальная точность)" %}</span>
                     </label>
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="load_quantization" value="float16">
                         <strong>FP16</strong>
-                        <span class="d-block small text-muted">Полуточность, хороший баланс</span>
+                        <span class="d-block small text-muted">{% trans "Полуточность, хороший баланс" %}</span>
                     </label>
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="load_quantization" value="bfloat16">
                         <strong>BF16</strong>
-                        <span class="d-block small text-muted">Для архитектур с поддержкой bfloat16</span>
+                        <span class="d-block small text-muted">{% trans "Для архитектур с поддержкой bfloat16" %}</span>
                     </label>
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="load_quantization" value="int8">
                         <strong>8-bit (INT8)</strong>
-                        <span class="d-block small text-muted">Сильная экономия памяти, небольшое падение качества</span>
+                        <span class="d-block small text-muted">{% trans "Сильная экономия памяти, небольшое падение качества" %}</span>
                     </label>
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="load_quantization" value="int4">
                         <strong>4-bit (INT4)</strong>
-                        <span class="d-block small text-muted">Максимальная экономия, заметное падение качества</span>
+                        <span class="d-block small text-muted">{% trans "Максимальная экономия, заметное падение качества" %}</span>
                     </label>
                 </div>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="confirmLoadModelWithQuant()">Загрузить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" onclick="confirmLoadModelWithQuant()">{% trans "Загрузить" %}</button>
             </div>
         </div>
     </div>
@@ -1001,14 +1002,14 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-grid-3x3-gap-fill me-2"></i> Использованные документы</h5>
+                <h5 class="modal-title"><i class="bi bi-grid-3x3-gap-fill me-2"></i> {% trans "Использованные документы" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="chunksList" class="chunks-list"><div class="text-center py-4"><div class="spinner-border text-primary mb-3"></div><p class="text-muted">Загрузка информации о документах...</p></div></div>
+                <div id="chunksList" class="chunks-list"><div class="text-center py-4"><div class="spinner-border text-primary mb-3"></div><p class="text-muted">{% trans "Загрузка информации о документах..." %}</p></div></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
             </div>
         </div>
     </div>
@@ -1018,15 +1019,15 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-file-text me-2"></i> <span id="previewDocumentTitle">Документ</span></h5>
+                <h5 class="modal-title"><i class="bi bi-file-text me-2"></i> <span id="previewDocumentTitle">{% trans "Документ" %}</span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div id="previewContent" class="preview-content"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                <a href="#" id="previewDocumentLink" class="btn btn-primary" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> Открыть документ</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
+                <a href="#" id="previewDocumentLink" class="btn btn-primary" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> {% trans "Открыть документ" %}</a>
             </div>
         </div>
     </div>
@@ -1036,52 +1037,52 @@
     <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>Настройки генерации</h5>
+                <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>{% trans "Настройки генерации" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label d-flex justify-content-between"><span>Температура</span><span id="tempValueDisplay" class="fw-bold">0.7</span></label>
+                    <label class="form-label d-flex justify-content-between"><span>{% trans "Температура" %}</span><span id="tempValueDisplay" class="fw-bold">0.7</span></label>
                     <input type="range" class="form-range" id="temperature" min="0.1" max="1.5" step="0.1" value="0.7">
-                    <div class="d-flex justify-content-between text-secondary" style="font-size:12px;"><span>Точный</span><span>Баланс</span><span>Творческий</span></div>
+                    <div class="d-flex justify-content-between text-secondary" style="font-size:12px;"><span>{% trans "Точный" %}</span><span>{% trans "Баланс" %}</span><span>{% trans "Творческий" %}</span></div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label d-flex justify-content-between"><span>Макс. токенов</span><span id="tokensValueDisplay" class="fw-bold">512</span></label>
+                    <label class="form-label d-flex justify-content-between"><span>{% trans "Макс. токенов" %}</span><span id="tokensValueDisplay" class="fw-bold">512</span></label>
                     <input type="range" class="form-range" id="maxTokens" min="100" max="2048" step="100" value="512">
-                    <div class="d-flex justify-content-between text-secondary" style="font-size:12px;"><span>Коротко</span><span>Стандарт</span><span>Подробно</span></div>
+                    <div class="d-flex justify-content-between text-secondary" style="font-size:12px;"><span>{% trans "Коротко" %}</span><span>{% trans "Стандарт" %}</span><span>{% trans "Подробно" %}</span></div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label d-flex justify-content-between"><span>Топ-P</span><span id="topPValueDisplay" class="fw-bold">0.9</span></label>
+                    <label class="form-label d-flex justify-content-between"><span>{% trans "Топ-P" %}</span><span id="topPValueDisplay" class="fw-bold">0.9</span></label>
                     <input type="range" class="form-range" id="topP" min="0.1" max="1.0" step="0.1" value="0.9">
-                    <div class="d-flex justify-content-between text-secondary" style="font-size:12px;"><span>Фокус</span><span>Баланс</span><span>Разнообразие</span></div>
+                    <div class="d-flex justify-content-between text-secondary" style="font-size:12px;"><span>{% trans "Фокус" %}</span><span>{% trans "Баланс" %}</span><span>{% trans "Разнообразие" %}</span></div>
                 </div>
                 <div class="mt-4 pt-3 border-top border-secondary">
-                    <h6 class="fw-bold mb-3"><i class="bi bi-database me-2"></i>RAG настройки</h6>
+                    <h6 class="fw-bold mb-3"><i class="bi bi-database me-2"></i>{% trans "RAG настройки" %}</h6>
                     <div class="mb-3">
-                        <label class="form-label d-flex justify-content-between"><span>Количество результатов</span><span id="ragTopKValue" class="fw-bold">5</span></label>
+                        <label class="form-label d-flex justify-content-between"><span>{% trans "Количество результатов" %}</span><span id="ragTopKValue" class="fw-bold">5</span></label>
                         <input type="range" class="form-range" id="ragTopK" min="1" max="20" step="1" value="5">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label d-flex justify-content-between"><span>Семантический вес</span><span id="semanticWeightValue" class="fw-bold">0.70</span></label>
+                        <label class="form-label d-flex justify-content-between"><span>{% trans "Семантический вес" %}</span><span id="semanticWeightValue" class="fw-bold">0.70</span></label>
                         <input type="range" class="form-range" id="semanticWeight" min="0" max="1" step="0.05" value="0.7">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label d-flex justify-content-between"><span>Вес ключевых слов</span><span id="keywordWeightValue" class="fw-bold">0.20</span></label>
+                        <label class="form-label d-flex justify-content-between"><span>{% trans "Вес ключевых слов" %}</span><span id="keywordWeightValue" class="fw-bold">0.20</span></label>
                         <input type="range" class="form-range" id="keywordWeight" min="0" max="1" step="0.05" value="0.2">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label d-flex justify-content-between"><span>Вес свежести</span><span id="freshnessWeightValue" class="fw-bold">0.10</span></label>
+                        <label class="form-label d-flex justify-content-between"><span>{% trans "Вес свежести" %}</span><span id="freshnessWeightValue" class="fw-bold">0.10</span></label>
                         <input type="range" class="form-range" id="freshnessWeight" min="0" max="1" step="0.05" value="0.1">
                     </div>
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" id="useReranking" checked>
-                        <label class="form-check-label" for="useReranking">Использовать реранжирование</label>
+                        <label class="form-check-label" for="useReranking">{% trans "Использовать реранжирование" %}</label>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="saveSettings()">Сохранить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">{% trans "Сохранить" %}</button>
             </div>
         </div>
     </div>
@@ -1187,7 +1188,7 @@
         let blocks = '';
         matches.forEach(m => {
             const think = cleanThinkContent(m[1].trim());
-            blocks += `<div class="think-block"><small><i class="bi bi-chat-quote"></i> Рассуждение модели:</small><div class="think-content">${escapeHtml(think)}</div></div>`;
+            blocks += `<div class="think-block"><small><i class="bi bi-chat-quote"></i> {% trans "Рассуждение модели:" %}</small><div class="think-content">${escapeHtml(think)}</div></div>`;
             processed = processed.replace(m[0], '');
         });
         let formatted = processed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^###\s+(.*?)$/gm, '<strong>$1</strong>');
@@ -1243,7 +1244,7 @@
             return;
         }
         const container = document.getElementById('chunksList');
-        container.innerHTML = `<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2">Загрузка...</p></div>`;
+        container.innerHTML = `<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2">{% trans "Загрузка..." %}</p></div>`;
         new bootstrap.Modal(document.getElementById('chunksModal')).show();
 
         const sources = message.metadata.rag_sources;
@@ -1266,12 +1267,12 @@
         });
         const docCount = Object.keys(grouped).length;
         const chunkCount = chunksData.length;
-        let html = `<div class="message-chunk-group"><div class="message-chunk-header"><div class="message-chunk-avatar"><i class="bi bi-robot"></i></div><div><strong>Ответ ассистента</strong><div class="message-chunk-preview">${escapeHtml(preview)}</div></div><div class="message-chunk-count">${docCount} ${declOfNum(docCount, ['документ', 'документа', 'документов'])} (${chunkCount} ${declOfNum(chunkCount, ['чанк', 'чанка', 'чанков'])})</div></div>`;
+        let html = `<div class="message-chunk-group"><div class="message-chunk-header"><div class="message-chunk-avatar"><i class="bi bi-robot"></i></div><div><strong>{% trans "Ответ ассистента" %}</strong><div class="message-chunk-preview">${escapeHtml(preview)}</div></div><div class="message-chunk-count">${docCount} ${declOfNum(docCount, ['документ', 'документа', 'документов'])} (${chunkCount} ${declOfNum(chunkCount, ['чанк', 'чанка', 'чанков'])})</div></div>`;
         for (const docId in grouped) {
             const doc = grouped[docId];
             html += `<div class="document-group"><div class="document-header"><span class="document-title">${escapeHtml(doc.title)}</span><span class="chunk-count">${doc.chunks.length} ${declOfNum(doc.chunks.length, ['чанк', 'чанка', 'чанков'])}</span></div>`;
             doc.chunks.forEach((chunk, idx) => {
-                html += `<div class="chunk-card"><div class="chunk-header"><span class="chunk-title">Чанк ${idx+1}</span><span class="chunk-relevance">Релевантность: ${(chunk.relevance*100).toFixed(1)}%</span></div><div class="chunk-content-full">${escapeHtml(chunk.content)}</div><div class="chunk-actions"><a href="/documents/${doc.document_id}/download/" class="btn btn-sm btn-outline-primary" target="_blank"><i class="bi bi-file-text"></i> Открыть документ</a></div></div>`;
+                html += `<div class="chunk-card"><div class="chunk-header"><span class="chunk-title">Чанк ${idx+1}</span><span class="chunk-relevance">Релевантность: ${(chunk.relevance*100).toFixed(1)}%</span></div><div class="chunk-content-full">${escapeHtml(chunk.content)}</div><div class="chunk-actions"><a href="/documents/${doc.document_id}/download/" class="btn btn-sm btn-outline-primary" target="_blank"><i class="bi bi-file-text"></i> {% trans "Открыть документ" %}</a></div></div>`;
             });
             html += `</div>`;
         }
@@ -1291,7 +1292,7 @@
         let url = `/api/documents/${documentId}/preview/`;
         if (chunkId) url += `?chunk_id=${chunkId}`;
         fetch(url).then(r => r.json()).then(data => {
-            const content = data.content ? `<pre class="text-white" style="white-space: pre-wrap;">${escapeHtml(data.content)}</pre>` : '<div class="text-muted">Содержимое недоступно</div>';
+            const content = data.content ? `<pre class="text-white" style="white-space: pre-wrap;">${escapeHtml(data.content)}</pre>` : '<div class="text-muted">{% trans "Содержимое недоступно" %}</div>';
             document.getElementById('previewContent').innerHTML = content;
             document.getElementById('previewDocumentLink').href = `/documents/${documentId}/download/`;
             new bootstrap.Modal(document.getElementById('documentPreviewModal')).show();
@@ -1309,16 +1310,16 @@
                 renderCollections(cols);
                 updateRagUI();
             })
-            .catch(err=>{ console.error(err); document.getElementById('collectionsList').innerHTML='<div class="text-center py-4 text-danger">Ошибка</div>'; });
+            .catch(err=>{ console.error(err); document.getElementById('collectionsList').innerHTML='<div class="text-center py-4 text-danger">{% trans "Ошибка" %}</div>'; });
     }
 
     function renderCollections(cols){
         const ctn = document.getElementById('collectionsList');
-        if(!cols.length){ ctn.innerHTML='<div class="text-center py-4"><i class="bi bi-collection text-muted"></i><p>Нет коллекций</p><a href="/rag/collections/create/" class="btn btn-sm btn-primary" target="_blank">Создать</a></div>'; return; }
+        if(!cols.length){ ctn.innerHTML='<div class="text-center py-4"><i class="bi bi-collection text-muted"></i><p>{% trans "Нет коллекций" %}</p><a href="/rag/collections/create/" class="btn btn-sm btn-primary" target="_blank">{% trans "Создать" %}</a></div>'; return; }
         let html='';
         cols.forEach(c=>{
             const sel = selectedCollections.includes(c.id);
-            html+=`<div class="collection-card ${sel?'active':''}" onclick="toggleCollection(${c.id})"><div class="collection-header"><div><div class="collection-name">${escapeHtml(c.name)}${sel?'<span class="rag-collection-badge-selected ms-2">Выбрана</span>':''}</div><div class="collection-stats"><span><i class="bi bi-file-text"></i> ${c.doc_count||0} док.</span><span><i class="bi bi-grid-3x3"></i> ${c.chunk_count||0} чанков</span><span class="collection-badge">${c.embedding_progress}%</span></div></div>${c.vector_index_created?'<div><span class="badge bg-success"><i class="bi bi-check-circle"></i> Индекс готов</span></div>':''}</div>${c.description?`<div class="text-muted small mt-1">${escapeHtml(c.description.substring(0,100))}${c.description.length>100?'...':''}</div>`:''}</div>`;
+            html+=`<div class="collection-card ${sel?'active':''}" onclick="toggleCollection(${c.id})"><div class="collection-header"><div><div class="collection-name">${escapeHtml(c.name)}${sel?'<span class="rag-collection-badge-selected ms-2">{% trans "Выбрана" %}</span>':''}</div><div class="collection-stats"><span><i class="bi bi-file-text"></i> ${c.doc_count||0} док.</span><span><i class="bi bi-grid-3x3"></i> ${c.chunk_count||0} чанков</span><span class="collection-badge">${c.embedding_progress}%</span></div></div>${c.vector_index_created?'<div><span class="badge bg-success"><i class="bi bi-check-circle"></i> {% trans "Индекс готов" %}</span></div>':''}</div>${c.description?`<div class="text-muted small mt-1">${escapeHtml(c.description.substring(0,100))}${c.description.length>100?'...':''}</div>`:''}</div>`;
         });
         ctn.innerHTML = html;
     }
@@ -1337,7 +1338,7 @@
         if(!q){ showToast('Введите запрос','warning'); return; }
         if(!selectedCollections.length){ showToast('Выберите коллекцию','warning'); return; }
         const div = document.getElementById('ragSearchResults');
-        div.innerHTML='<div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div><span class="ms-2">Поиск...</span></div>';
+        div.innerHTML='<div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div><span class="ms-2">{% trans "Поиск..." %}</span></div>';
         div.style.display='block';
         fetch('/api/rag/search/',{
             method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRFToken()},
@@ -1345,17 +1346,17 @@
         }).then(r=>r.json()).then(data=>{
             if(data.success) displayRagSearchResults(data,q);
             else div.innerHTML=`<div class="alert alert-warning">${data.error||'Ошибка'}</div>`;
-        }).catch(err=>div.innerHTML='<div class="alert alert-danger">Ошибка сети</div>');
+        }).catch(err=>div.innerHTML='<div class="alert alert-danger">{% trans "Ошибка сети" %}</div>');
     }
 
     function displayRagSearchResults(data,q){
         const ctn = document.getElementById('ragSearchResults');
         const results = data.results||[];
         let html = `<div class="rag-results-header"><span><i class="bi bi-search"></i> "${escapeHtml(q)}"</span><span class="badge bg-primary">${results.length}</span></div>`;
-        if(!results.length){ html+='<div class="text-center py-3">Ничего не найдено</div>'; ctn.innerHTML=html; return; }
+        if(!results.length){ html+='<div class="text-center py-3">{% trans "Ничего не найдено" %}</div>'; ctn.innerHTML=html; return; }
         html+='<div class="rag-results-list">';
         results.forEach((r,i)=>{
-            html+=`<div class="rag-result-item"><div class="rag-result-header"><span class="rag-result-title"><i class="bi bi-file-text"></i> ${escapeHtml(r.document_title||'Без названия')}</span><span class="rag-result-relevance">${(r.relevance_score*100).toFixed(1)}%</span></div><div class="rag-result-content" id="ragContent-${i}">${escapeHtml(r.content.substring(0,200))}${r.content.length>200?'...':''}</div>${r.content.length>200?`<a class="rag-result-expand" onclick="expandRagResult(${i})"><i class="bi bi-chevron-down"></i> Развернуть</a>`:''}<div class="rag-result-actions"><button class="btn-sm" onclick="useInChat(${r.chunk_id},'${escapeHtml(q)}')"><i class="bi bi-chat"></i> Использовать</button><button class="btn-sm" onclick="previewDocument(${r.document_id},'${escapeHtml(r.document_title)}',${r.chunk_id})"><i class="bi bi-eye"></i> Предпросмотр</button></div></div>`;
+            html+=`<div class="rag-result-item"><div class="rag-result-header"><span class="rag-result-title"><i class="bi bi-file-text"></i> ${escapeHtml(r.document_title||'Без названия')}</span><span class="rag-result-relevance">${(r.relevance_score*100).toFixed(1)}%</span></div><div class="rag-result-content" id="ragContent-${i}">${escapeHtml(r.content.substring(0,200))}${r.content.length>200?'...':''}</div>${r.content.length>200?`<a class="rag-result-expand" onclick="expandRagResult(${i})"><i class="bi bi-chevron-down"></i> {% trans "Развернуть" %}</a>`:''}<div class="rag-result-actions"><button class="btn-sm" onclick="useInChat(${r.chunk_id},'${escapeHtml(q)}')"><i class="bi bi-chat"></i> {% trans "Использовать" %}</button><button class="btn-sm" onclick="previewDocument(${r.document_id},'${escapeHtml(r.document_title)}',${r.chunk_id})"><i class="bi bi-eye"></i> {% trans "Предпросмотр" %}</button></div></div>`;
         });
         html+='</div>';
         ctn.innerHTML=html;
@@ -1412,7 +1413,7 @@
     // =============================================
     function loadModels(){
         const container = document.getElementById('modelsList');
-        container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p>Загрузка...</p></div>';
+        container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p>{% trans "Загрузка..." %}</p></div>';
         fetch('/api/models/')
             .then(r=>r.json())
             .then(data=>{
@@ -1423,29 +1424,29 @@
                     renderModels(enriched);
                 });
             })
-            .catch(err=>{ console.error(err); container.innerHTML='<div class="text-center py-4 text-danger">Ошибка загрузки</div>'; });
+            .catch(err=>{ console.error(err); container.innerHTML='<div class="text-center py-4 text-danger">{% trans "Ошибка загрузки" %}</div>'; });
     }
 
     function renderModels(models){
         const container = document.getElementById('modelsList');
-        if(!models.length){ container.innerHTML='<div class="text-center py-5"><i class="bi bi-cpu fa-3x text-muted"></i><p>Нет моделей</p></div>'; return; }
+        if(!models.length){ container.innerHTML='<div class="text-center py-5"><i class="bi bi-cpu fa-3x text-muted"></i><p>{% trans "Нет моделей" %}</p></div>'; return; }
         let html='';
         models.forEach(m=>{
             const isActive = String(m.id) === String(CURRENT_MODEL_ID);
             let statusText='', statusClass='', actionBtn='';
             if(m.is_loaded_in_memory){
                 statusText='Загружена'; statusClass='status-loaded';
-                actionBtn = `<button class="btn btn-primary btn-sm" onclick="selectModel(${m.id},'${escapeHtml(m.display_name||m.name)}')"><i class="bi bi-chat"></i> Выбрать</button>`;
+                actionBtn = `<button class="btn btn-primary btn-sm" onclick="selectModel(${m.id},'${escapeHtml(m.display_name||m.name)}')"><i class="bi bi-chat"></i> {% trans "Выбрать" %}</button>`;
             } else if(m.has_local_copy){
                 statusText='На диске'; statusClass='status-not-loaded';
-                actionBtn = `<button class="btn btn-outline-light btn-sm" onclick="showLoadModelModalForModel(${m.id},'${escapeHtml(m.display_name||m.name)}')"><i class="bi bi-cloud-download"></i> Загрузить локально</button>`;
+                actionBtn = `<button class="btn btn-outline-light btn-sm" onclick="showLoadModelModalForModel(${m.id},'${escapeHtml(m.display_name||m.name)}')"><i class="bi bi-cloud-download"></i> {% trans "Загрузить локально" %}</button>`;
             } else if(m.huggingface_id){
                 statusText='Не скачана'; statusClass='status-not-loaded';
-                actionBtn = `<button class="btn btn-outline-light btn-sm" onclick="downloadModel(${m.id},'${escapeHtml(m.display_name||m.name)}')"><i class="bi bi-cloud-download"></i> Скачать</button>`;
+                actionBtn = `<button class="btn btn-outline-light btn-sm" onclick="downloadModel(${m.id},'${escapeHtml(m.display_name||m.name)}')"><i class="bi bi-cloud-download"></i> {% trans "Скачать" %}</button>`;
             } else {
                 statusText='Неизвестно'; statusClass='status-not-loaded';
             }
-            html+=`<div class="model-card ${isActive?'active':''}"><div class="model-header"><div><div class="model-name">${escapeHtml(m.display_name||m.name||'Без названия')}${isActive?'<span class="badge bg-success ms-2"><i class="bi bi-check-circle"></i> Активна</span>':''}</div><div class="model-details"><span><i class="bi bi-hash"></i> ${m.parameter_count?formatNumber(m.parameter_count):'?'} парам.</span><span class="model-status ${statusClass}">${statusText}</span></div></div></div><div class="model-details"><small><i class="bi bi-cpu"></i> ${m.is_loaded_in_memory?'Загружена':'Не загружена'}</small>${m.quantization?`<small class="ms-2"><i class="bi bi-tools"></i> ${m.quantization}</small>`:''}</div><div class="model-actions">${actionBtn}</div></div>`;
+            html+=`<div class="model-card ${isActive?'active':''}"><div class="model-header"><div><div class="model-name">${escapeHtml(m.display_name||m.name||'Без названия')}${isActive?'<span class="badge bg-success ms-2"><i class="bi bi-check-circle"></i> {% trans "Активна" %}</span>':''}</div><div class="model-details"><span><i class="bi bi-hash"></i> ${m.parameter_count?formatNumber(m.parameter_count):'?'} парам.</span><span class="model-status ${statusClass}">${statusText}</span></div></div></div><div class="model-details"><small><i class="bi bi-cpu"></i> ${m.is_loaded_in_memory?'Загружена':'Не загружена'}</small>${m.quantization?`<small class="ms-2"><i class="bi bi-tools"></i> ${m.quantization}</small>`:''}</div><div class="model-actions">${actionBtn}</div></div>`;
         });
         container.innerHTML = html;
     }
@@ -1540,7 +1541,7 @@
         if(!scroll) return;
         const empty = scroll.querySelector('.empty-state');
         if(empty) empty.style.display='none';
-        scroll.insertAdjacentHTML('beforeend',`<div class="message-item typing-message" id="typingMessage"><div class="message-header"><div class="message-avatar"><i class="bi bi-robot"></i></div><div class="message-sender">Ассистент</div><div class="message-timestamp">${new Date().toLocaleTimeString()}</div></div><div class="typing-content"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div><span>Печатает...</span></div></div>`);
+        scroll.insertAdjacentHTML('beforeend',`<div class="message-item typing-message" id="typingMessage"><div class="message-header"><div class="message-avatar"><i class="bi bi-robot"></i></div><div class="message-sender">{% trans "Ассистент" %}</div><div class="message-timestamp">${new Date().toLocaleTimeString()}</div></div><div class="typing-content"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div><span>{% trans "Печатает..." %}</span></div></div>`);
         scrollToBottom();
     }
 

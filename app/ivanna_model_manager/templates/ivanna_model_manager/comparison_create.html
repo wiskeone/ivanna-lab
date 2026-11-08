@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 
 {% block title %}Создать сравнение - Ivanna Lab{% endblock %}
 
@@ -9,7 +10,7 @@
             <div class="card">
                 <div class="card-header">
                     <h4 class="mb-0">
-                        <i class="bi bi-clipboard-data"></i> Создание сравнения моделей
+                        <i class="bi bi-clipboard-data"></i> {% trans "Создание сравнения моделей" %}
                     </h4>
                 </div>
                 <div class="card-body">
@@ -17,23 +18,23 @@
                         {% csrf_token %}
                         
                         <div class="mb-3">
-                            <label class="form-label">Название сравнения *</label>
+                            <label class="form-label">{% trans "Название сравнения *" %}</label>
                             <input type="text" name="name" class="form-control" 
-                                   placeholder="Например: Сравнение Qwen3-8B до и после обучения" required>
+                                   placeholder="{% trans 'Например: Сравнение Qwen3-8B до и после обучения' %}" required>
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Описание</label>
+                            <label class="form-label">{% trans "Описание" %}</label>
                             <textarea name="description" class="form-control" rows="3"
-                                      placeholder="Опишите цель сравнения..."></textarea>
+                                      placeholder="{% trans 'Опишите цель сравнения...' %}"></textarea>
                         </div>
                         
                         <div class="mb-4">
-                            <label class="form-label">Промпты для сравнения *</label>
+                            <label class="form-label">{% trans "Промпты для сравнения *" %}</label>
                             <div id="prompts-container">
                                 <div class="input-group mb-2">
                                     <textarea class="form-control prompt-text" 
-                                              placeholder="Введите промпт для сравнения..."
+                                              placeholder="{% trans 'Введите промпт для сравнения...' %}"
                                               rows="2"></textarea>
                                     <button type="button" class="btn btn-outline-danger remove-prompt">
                                         <i class="bi bi-trash"></i>
@@ -41,12 +42,12 @@
                                 </div>
                             </div>
                             <button type="button" id="add-prompt" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-plus"></i> Добавить промпт
+                                <i class="bi bi-plus"></i> {% trans "Добавить промпт" %}
                             </button>
                         </div>
                         
                         <div class="mb-4">
-                            <label class="form-label">Модели для сравнения *</label>
+                            <label class="form-label">{% trans "Модели для сравнения *" %}</label>
                             <div class="row">
                                 {% for model in available_models %}
                                 <div class="col-md-6 mb-2">
@@ -66,7 +67,7 @@
                                 </div>
                                 {% empty %}
                                 <div class="alert alert-warning">
-                                    <i class="bi bi-exclamation-triangle"></i> Нет загруженных моделей
+                                    <i class="bi bi-exclamation-triangle"></i> {% trans "Нет загруженных моделей" %}
                                 </div>
                                 {% endfor %}
                             </div>
@@ -74,10 +75,10 @@
                         
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-check-circle"></i> Создать сравнение
+                                <i class="bi bi-check-circle"></i> {% trans "Создать сравнение" %}
                             </button>
                             <a href="{% url 'comparison_list' %}" class="btn btn-outline-secondary">
-                                Отмена
+                                {% trans "Отмена" %}
                             </a>
                         </div>
                     </form>
@@ -100,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
         promptDiv.className = 'input-group mb-2';
         promptDiv.innerHTML = `
             <textarea class="form-control prompt-text" 
-                      placeholder="Введите промпт для сравнения..."
+                      placeholder="{% trans 'Введите промпт для сравнения...' %}"
                       rows="2"></textarea>
             <button type="button" class="btn btn-outline-danger remove-prompt">
                 <i class="bi bi-trash"></i>

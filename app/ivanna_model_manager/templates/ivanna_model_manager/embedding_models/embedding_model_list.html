@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Модели эмбеддингов — Ivanna Lab{% endblock %}
@@ -11,28 +12,28 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-vector-pen"></i></div>
-                <div class="stat-title">Всего моделей</div>
+                <div class="stat-title">{% trans "Всего моделей" %}</div>
             </div>
             <div class="stat-value">{{ total_models }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-                <div class="stat-title">Скачано</div>
+                <div class="stat-title">{% trans "Скачано" %}</div>
             </div>
             <div class="stat-value">{{ downloaded_models }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-cloud-download"></i></div>
-                <div class="stat-title">Загружается</div>
+                <div class="stat-title">{% trans "Загружается" %}</div>
             </div>
             <div class="stat-value">{{ downloading_models|default:"0" }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
-                <div class="stat-title">Ошибок</div>
+                <div class="stat-title">{% trans "Ошибок" %}</div>
             </div>
             <div class="stat-value">{{ failed_models|default:"0" }}</div>
         </div>
@@ -43,12 +44,12 @@
         <div>
             <h2 class="mb-1">
                 <i class="bi bi-vector-pen me-2" style="color: var(--primary-color);"></i>
-                Модели эмбеддингов
+                {% trans "Модели эмбеддингов" %}
             </h2>
-            <p class="text-muted mb-0">Управление моделями для создания векторных представлений текста</p>
+            <p class="text-muted mb-0">{% trans "Управление моделями для создания векторных представлений текста" %}</p>
         </div>
         <a href="{% url 'embedding_model_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Добавить модель
+            <i class="bi bi-plus-circle me-1"></i> {% trans "Добавить модель" %}
         </a>
     </div>
 
@@ -67,17 +68,17 @@
                 <div class="model-body">
                     <div class="model-meta">
                         <div class="model-meta-item">
-                            <span class="model-meta-label"><i class="bi bi-vector-pen"></i> Размерность:</span>
+                            <span class="model-meta-label"><i class="bi bi-vector-pen"></i> {% trans "Размерность:" %}</span>
                             <span class="model-meta-value">{{ model.embedding_dim }}d</span>
                         </div>
                         <div class="model-meta-item">
-                            <span class="model-meta-label"><i class="bi bi-text-paragraph"></i> Макс. токенов:</span>
+                            <span class="model-meta-label"><i class="bi bi-text-paragraph"></i> {% trans "Макс. токенов:" %}</span>
                             <span class="model-meta-value">{{ model.max_tokens }}</span>
                         </div>
                         {% if model.is_multilingual %}
                         <div class="model-meta-item">
-                            <span class="model-meta-label"><i class="bi bi-translate"></i> Мультиязычная:</span>
-                            <span class="model-meta-value">Да</span>
+                            <span class="model-meta-label"><i class="bi bi-translate"></i> {% trans "Мультиязычная:" %}</span>
+                            <span class="model-meta-value">{% trans "Да" %}</span>
                         </div>
                         {% endif %}
                     </div>
@@ -101,12 +102,12 @@
                         </span>
                         {% if model.is_default %}
                         <span class="embedding-status status-default ms-2">
-                            <i class="bi bi-star-fill"></i> По умолчанию
+                            <i class="bi bi-star-fill"></i> {% trans "По умолчанию" %}
                         </span>
                         {% endif %}
                         {% if not model.is_active %}
                         <span class="embedding-status status-inactive ms-2">
-                            <i class="bi bi-ban"></i> Неактивна
+                            <i class="bi bi-ban"></i> {% trans "Неактивна" %}
                         </span>
                         {% endif %}
                     </div>
@@ -129,11 +130,11 @@
                     <!-- Информация о модели (ID и лицензия) -->
                     <div class="stats-card mt-3">
                         <div class="model-meta-item mb-2">
-                            <span class="model-meta-label"><i class="bi bi-hash"></i> ID модели:</span>
+                            <span class="model-meta-label"><i class="bi bi-hash"></i> {% trans "ID модели:" %}</span>
                             <span class="model-meta-value">{{ model.model_id|truncatechars:30 }}</span>
                         </div>
                         <div class="model-meta-item">
-                            <span class="model-meta-label"><i class="bi bi-file-text"></i> Лицензия:</span>
+                            <span class="model-meta-label"><i class="bi bi-file-text"></i> {% trans "Лицензия:" %}</span>
                             <span class="model-meta-value">{{ model.license_type|default:"—" }}</span>
                         </div>
                     </div>
@@ -142,23 +143,23 @@
                     {% if not model.is_downloaded %}
                         {% if model.download_status == 'downloading' or model.download_status == 'failed' %}
                             <button type="button" class="action-link reset-btn" data-model-id="{{ model.id }}">
-                                <i class="bi bi-arrow-repeat"></i> Сбросить
+                                <i class="bi bi-arrow-repeat"></i> {% trans "Сбросить" %}
                             </button>
                         {% else %}
                             <button type="button" class="action-link download-btn" data-model-id="{{ model.id }}">
-                                <i class="bi bi-cloud-download"></i> Загрузить
+                                <i class="bi bi-cloud-download"></i> {% trans "Загрузить" %}
                             </button>
                         {% endif %}
                     {% endif %}
                     <a href="{% url 'embedding_model_detail' model.id %}" class="action-link">
-                        <i class="bi bi-info-circle"></i> Детали
+                        <i class="bi bi-info-circle"></i> {% trans "Детали" %}
                     </a>
                     <a href="{% url 'embedding_model_edit' model.id %}" class="action-link">
-                        <i class="bi bi-pencil"></i> Изменить
+                        <i class="bi bi-pencil"></i> {% trans "Изменить" %}
                     </a>
                     {% if not model.is_default %}
                     <button type="button" class="action-link danger delete-btn" data-model-id="{{ model.id }}" data-model-name="{{ model.display_name|default:model.name }}">
-                        <i class="bi bi-trash"></i> Удалить
+                        <i class="bi bi-trash"></i> {% trans "Удалить" %}
                     </button>
                     {% endif %}
                 </div>
@@ -170,10 +171,10 @@
                 <div class="empty-state-icon">
                     <i class="bi bi-vector-pen"></i>
                 </div>
-                <h3>Нет моделей эмбеддингов</h3>
-                <p>Добавьте первую модель, чтобы начать работу.</p>
+                <h3>{% trans "Нет моделей эмбеддингов" %}</h3>
+                <p>{% trans "Добавьте первую модель, чтобы начать работу." %}</p>
                 <a href="{% url 'embedding_model_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-1"></i> Добавить модель
+                    <i class="bi bi-plus-circle me-1"></i> {% trans "Добавить модель" %}
                 </a>
             </div>
         </div>
@@ -215,7 +216,7 @@
     <div id="liveToast" class="toast" role="alert">
         <div class="toast-header bg-dark text-white">
             <i class="bi bi-info-circle me-2"></i>
-            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <strong class="me-auto" id="toastTitle">{% trans "Уведомление" %}</strong>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body bg-dark text-white" id="toastMessage"></div>

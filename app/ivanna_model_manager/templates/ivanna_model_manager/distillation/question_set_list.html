@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -190,12 +191,12 @@
         <div>
             <h2 class="mb-1">
                 <i class="bi bi-question-diamond me-2" style="color: var(--primary-color);"></i>
-                Наборы вопросов
+                {% trans "Наборы вопросов" %}
             </h2>
-            <p class="text-muted mb-0">Создавайте наборы из документов и генерируйте вопросы для дистилляции</p>
+            <p class="text-muted mb-0">{% trans "Создавайте наборы из документов и генерируйте вопросы для дистилляции" %}</p>
         </div>
         <a href="{% url 'distillation_question_set_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Создать набор
+            <i class="bi bi-plus-circle me-1"></i> {% trans "Создать набор" %}
         </a>
     </div>
 
@@ -203,23 +204,23 @@
     <div class="filter-section">
         <form method="get" class="row g-3 align-items-end">
             <div class="col-md-4">
-                <label class="form-label small text-muted">Поиск</label>
-                <input type="text" name="q" class="form-control" value="{{ request.GET.q }}" placeholder="Название набора...">
+                <label class="form-label small text-muted">{% trans "Поиск" %}</label>
+                <input type="text" name="q" class="form-control" value="{{ request.GET.q }}" placeholder="{% trans 'Название набора...' %}">
             </div>
             <div class="col-md-3">
-                <label class="form-label small text-muted">Статус</label>
+                <label class="form-label small text-muted">{% trans "Статус" %}</label>
                 <select name="status" class="form-select">
-                    <option value="">Все</option>
-                    <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>В ожидании</option>
-                    <option value="RUNNING" {% if request.GET.status == 'RUNNING' %}selected{% endif %}>Выполняется</option>
-                    <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Завершено</option>
-                    <option value="FAILED" {% if request.GET.status == 'FAILED' %}selected{% endif %}>Ошибка</option>
+                    <option value="">{% trans "Все" %}</option>
+                    <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>{% trans "В ожидании" %}</option>
+                    <option value="RUNNING" {% if request.GET.status == 'RUNNING' %}selected{% endif %}>{% trans "Выполняется" %}</option>
+                    <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>{% trans "Завершено" %}</option>
+                    <option value="FAILED" {% if request.GET.status == 'FAILED' %}selected{% endif %}>{% trans "Ошибка" %}</option>
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label small text-muted">Коллекция</label>
+                <label class="form-label small text-muted">{% trans "Коллекция" %}</label>
                 <select name="collection" class="form-select">
-                    <option value="">Все</option>
+                    <option value="">{% trans "Все" %}</option>
                     {% for coll in collections %}
                     <option value="{{ coll.id }}" {% if request.GET.collection == coll.id|stringformat:"s" %}selected{% endif %}>{{ coll.name }}</option>
                     {% endfor %}
@@ -227,7 +228,7 @@
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-filter w-100">
-                    <i class="bi bi-funnel me-1"></i> Применить
+                    <i class="bi bi-funnel me-1"></i> {% trans "Применить" %}
                 </button>
             </div>
         </form>
@@ -258,19 +259,19 @@
                     {% endif %}
 
                     <div class="stat-grid">
-                        <div class="stat-item" title="Группы чанков">
+                        <div class="stat-item" title="{% trans 'Группы чанков' %}">
                             <i class="bi bi-grid-3x3-gap-fill"></i>
-                            <span>{{ qset.groups.count }}</span> групп
+                            <span>{{ qset.groups.count }}</span> {% trans "групп" %}
                         </div>
-                        <div class="stat-item" title="Всего вопросов">
+                        <div class="stat-item" title="{% trans 'Всего вопросов' %}">
                             <i class="bi bi-question-circle-fill"></i>
-                            <span>{{ qset.questions.count }}</span> вопросов
+                            <span>{{ qset.questions.count }}</span> {% trans "вопросов" %}
                         </div>
                     </div>
 
                     {% if qset.collection %}
                     <div class="embedding-info">
-                        <div class="label">📄 Коллекция</div>
+                        <div class="label">{% trans "📄 Коллекция" %}</div>
                         <div class="value mb-2">{{ qset.collection.name }}</div>
                         <div class="stat-grid" style="margin-bottom: 0; gap: 8px;">
                             <div class="stat-item" style="background: rgba(0,0,0,0.2);">
@@ -282,13 +283,13 @@
                         </div>
                         {% if qset.collection.embedding_model %}
                         <div class="mt-2">
-                            <div class="label">🧠 Модель эмбеддингов</div>
+                            <div class="label">{% trans "🧠 Модель эмбеддингов" %}</div>
                             <div class="value small">{{ qset.collection.embedding_model.display_name|default:qset.collection.embedding_model.name }}</div>
                             <div class="small text-muted">размерность: {{ qset.collection.embedding_model.embedding_dim }}d</div>
                         </div>
                         {% else %}
                         <div class="small text-warning mt-1">
-                            <i class="bi bi-exclamation-triangle"></i> Модель эмбеддингов не выбрана
+                            <i class="bi bi-exclamation-triangle"></i> {% trans "Модель эмбеддингов не выбрана" %}
                         </div>
                         {% endif %}
                     </div>
@@ -300,7 +301,7 @@
                         <i class="bi bi-calendar"></i> {{ qset.created_at|date:"d.m.Y" }}
                     </span>
                     <button class="delete-set-btn" data-id="{{ qset.id }}" data-name="{{ qset.name|escapejs }}">
-                        <i class="bi bi-trash me-1"></i> Удалить
+                        <i class="bi bi-trash me-1"></i> {% trans "Удалить" %}
                     </button>
                 </div>
             </div>
@@ -364,10 +365,10 @@
         <div class="empty-state-icon">
             <i class="bi bi-folder-x"></i>
         </div>
-        <h3>Нет наборов вопросов</h3>
-        <p>Создайте первый набор для генерации вопросов из документов вашей коллекции.</p>
+        <h3>{% trans "Нет наборов вопросов" %}</h3>
+        <p>{% trans "Создайте первый набор для генерации вопросов из документов вашей коллекции." %}</p>
         <a href="{% url 'distillation_question_set_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Создать набор
+            <i class="bi bi-plus-circle me-1"></i> {% trans "Создать набор" %}
         </a>
     </div>
     {% endif %}
@@ -380,18 +381,18 @@
             <div class="modal-header border-bottom">
                 <h5 class="modal-title text-danger">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    Удаление набора
+                    {% trans "Удаление набора" %}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Вы уверены, что хотите удалить набор <strong id="deleteSetName"></strong>?</p>
-                <p class="text-muted small mb-0">Все группы, вопросы и связанные данные будут удалены без возможности восстановления.</p>
+                <p>{% trans "Вы уверены, что хотите удалить набор" %} <strong id="deleteSetName"></strong>?</p>
+                <p class="text-muted small mb-0">{% trans "Все группы, вопросы и связанные данные будут удалены без возможности восстановления." %}</p>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                    <i class="bi bi-trash me-1"></i> Удалить
+                    <i class="bi bi-trash me-1"></i> {% trans "Удалить" %}
                 </button>
             </div>
         </div>

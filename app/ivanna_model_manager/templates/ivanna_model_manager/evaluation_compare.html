@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -13,16 +14,16 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2>
-                        <i class="bi bi-bar-chart me-2"></i>Сравнение моделей
+                        <i class="bi bi-bar-chart me-2"></i>{% trans "Сравнение моделей" %}
                     </h2>
                     <p class="text-muted mb-0">{{ task.name }} – {{ task.dataset.name }}</p>
                 </div>
                 <div class="btn-group">
                     <a href="{% url 'evaluation_task_detail' task.id %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Назад
+                        <i class="bi bi-arrow-left me-1"></i>{% trans "Назад" %}
                     </a>
                     <button class="btn btn-primary" onclick="exportComparison()" {% if no_data %}disabled{% endif %}>
-                        <i class="bi bi-download me-1"></i>Экспорт
+                        <i class="bi bi-download me-1"></i>{% trans "Экспорт" %}
                     </button>
                 </div>
             </div>
@@ -30,10 +31,10 @@
             {% if no_data %}
             <div class="text-center py-5">
                 <i class="bi bi-question-circle display-4 text-muted mb-3"></i>
-                <h5 class="text-muted mb-3">Нет данных для сравнения</h5>
-                <p class="text-muted">Задача не содержит результатов или не завершена</p>
+                <h5 class="text-muted mb-3">{% trans "Нет данных для сравнения" %}</h5>
+                <p class="text-muted">{% trans "Задача не содержит результатов или не завершена" %}</p>
                 <a href="{% url 'evaluation_task_detail' task.id %}" class="btn btn-primary">
-                    <i class="bi bi-arrow-left me-1"></i>Вернуться к задаче
+                    <i class="bi bi-arrow-left me-1"></i>{% trans "Вернуться к задаче" %}
                 </a>
             </div>
             {% else %}
@@ -41,7 +42,7 @@
             <!-- Легенда моделей -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <h6 class="mb-3">Модели в сравнении:</h6>
+                    <h6 class="mb-3">{% trans "Модели в сравнении:" %}</h6>
                     <div class="row">
                         {% for model in models %}
                         <div class="col-md-3 col-sm-6 mb-2">
@@ -74,7 +75,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="mb-0">
-                        <i class="bi bi-graph-up me-2"></i>Сводная статистика
+                        <i class="bi bi-graph-up me-2"></i>{% trans "Сводная статистика" %}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -82,16 +83,16 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Метрика</th>
+                                    <th>{% trans "Метрика" %}</th>
                                     {% for model in models %}
                                     <th class="text-center">{{ model.display_name|truncatechars:15 }}</th>
                                     {% endfor %}
-                                    <th>Лучший</th>
+                                    <th>{% trans "Лучший" %}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td class="fw-bold">Среднее время ответа (с)</td>
+                                    <td class="fw-bold">{% trans "Среднее время ответа (с)" %}</td>
                                     {% for time in summary_stats.avg_time %}
                                     <td class="text-center">{{ time|floatformat:2 }}</td>
                                     {% endfor %}
@@ -102,7 +103,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold">Среднее число токенов</td>
+                                    <td class="fw-bold">{% trans "Среднее число токенов" %}</td>
                                     {% for tokens in summary_stats.avg_tokens %}
                                     <td class="text-center">{{ tokens|floatformat:0 }}</td>
                                     {% endfor %}
@@ -124,17 +125,17 @@
                 <div class="card-header bg-transparent border-bottom">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
-                            <i class="bi bi-list-check me-2"></i>Сравнение ответов по вопросам
+                            <i class="bi bi-list-check me-2"></i>{% trans "Сравнение ответов по вопросам" %}
                         </h5>
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-secondary" onclick="showAllQuestions()">
-                                Все вопросы
+                                {% trans "Все вопросы" %}
                             </button>
                             <button class="btn btn-outline-secondary" onclick="filterByRating(4)">
-                                Только лучшие
+                                {% trans "Только лучшие" %}
                             </button>
                             <button class="btn btn-outline-secondary" onclick="filterUnrated()">
-                                Без оценок
+                                {% trans "Без оценок" %}
                             </button>
                         </div>
                     </div>
@@ -146,13 +147,13 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">
                                     <span class="badge bg-secondary me-2">#{{ question.id }}</span>
-                                    Вопрос
+                                    {% trans "Вопрос" %}
                                 </h6>
                                 <div class="rating-summary">
                                     {% with q_ratings=question_ratings|dict_get:question.id %}
                                     {% if q_ratings and q_ratings.avg %}
                                     <small class="text-muted">
-                                        Средняя оценка: <span class="fw-bold">{{ q_ratings.avg|floatformat:1 }} ⭐</span>
+                                        {% trans "Средняя оценка:" %} <span class="fw-bold">{{ q_ratings.avg|floatformat:1 }} ⭐</span>
                                     </small>
                                     {% endif %}
                                     {% endwith %}
@@ -162,14 +163,14 @@
                         <div class="card-body">
                             <!-- Текст вопроса -->
                             <div class="mb-4">
-                                <h6>Текст вопроса:</h6>
+                                <h6>{% trans "Текст вопроса:" %}</h6>
                                 <div class="p-3 bg-dark rounded">
                                     {{ question.text|linebreaks }}
                                 </div>
                             </div>
 
                             <!-- Ответы моделей -->
-                            <h6 class="mb-3">Ответы моделей:</h6>
+                            <h6 class="mb-3">{% trans "Ответы моделей:" %}</h6>
                             <div class="row">
                                 {% for response in question.model_responses %}
                                     {% cycle model_color silent %}
@@ -193,14 +194,14 @@
                                                             {% else %}
                                                                 <button class="btn btn-sm btn-outline-secondary" 
                                                                         onclick="rateResponse({{ task.id }}, {{ response.model.id }}, {{ question.id }}, this)">
-                                                                    <i class="bi bi-star"></i> Оценить
+                                                                    <i class="bi bi-star"></i> {% trans "Оценить" %}
                                                                 </button>
                                                             {% endif %}
                                                         {% endwith %}
                                                     {% else %}
                                                         <button class="btn btn-sm btn-outline-secondary" 
                                                                 onclick="rateResponse({{ task.id }}, {{ response.model.id }}, {{ question.id }}, this)">
-                                                            <i class="bi bi-star"></i> Оценить
+                                                            <i class="bi bi-star"></i> {% trans "Оценить" %}
                                                         </button>
                                                     {% endif %}
                                                 {% endwith %}
@@ -212,7 +213,7 @@
                                                 {{ response.response|linebreaks }}
                                                 {% else %}
                                                 <div class="text-danger">
-                                                    <i class="bi bi-exclamation-triangle"></i> Ответ не сгенерирован
+                                                    <i class="bi bi-exclamation-triangle"></i> {% trans "Ответ не сгенерирован" %}
                                                 </div>
                                                 {% endif %}
                                             </div>
@@ -241,7 +242,7 @@
                     {% empty %}
                     <div class="text-center py-5">
                         <i class="bi bi-inboxes display-4 text-muted mb-3"></i>
-                        <p class="text-muted">Нет вопросов для отображения</p>
+                        <p class="text-muted">{% trans "Нет вопросов для отображения" %}</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -256,7 +257,7 @@
     <div class="modal-dialog modal-sm">
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
-                <h5 class="modal-title">Оценка ответа</h5>
+                <h5 class="modal-title">{% trans "Оценка ответа" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -274,7 +275,7 @@
                     </div>
                     <div class="mb-3">
                         <textarea class="form-control" id="ratingComment" 
-                                  placeholder="Комментарий (необязательно)" rows="3"></textarea>
+                                  placeholder="{% trans 'Комментарий (необязательно)' %}" rows="3"></textarea>
                     </div>
                 </div>
                 <input type="hidden" id="ratingTaskId">
@@ -282,8 +283,8 @@
                 <input type="hidden" id="ratingQuestionId">
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="submitRating()">Сохранить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" onclick="submitRating()">{% trans "Сохранить" %}</button>
             </div>
         </div>
     </div>

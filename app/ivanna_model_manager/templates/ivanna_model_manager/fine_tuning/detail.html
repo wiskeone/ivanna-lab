@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -330,7 +331,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="text-light">{{ job.name }}</h3>
         <a href="{% url 'fine_tuning_dashboard' %}" class="btn-action">
-            <i class="bi bi-arrow-left"></i> Назад
+            <i class="bi bi-arrow-left"></i> {% trans "Назад" %}
         </a>
     </div>
     
@@ -370,20 +371,20 @@
         
         <div class="job-meta">
             <div class="meta-item">
-                <div class="meta-label">Базовая модель</div>
+                <div class="meta-label">{% trans "Базовая модель" %}</div>
                 <div class="meta-value">{{ job.base_model.display_name }}</div>
             </div>
             <div class="meta-item">
-                <div class="meta-label">LoRA параметры</div>
+                <div class="meta-label">{% trans "LoRA параметры" %}</div>
                 <div class="meta-value">r={{ job.lora_r }}, α={{ job.lora_alpha }}, dropout={{ job.lora_dropout }}</div>
             </div>
             <div class="meta-item">
-                <div class="meta-label">Гиперпараметры</div>
+                <div class="meta-label">{% trans "Гиперпараметры" %}</div>
                 <div class="meta-value">lr={{ job.learning_rate }}, batch={{ job.batch_size }}, epochs={{ job.num_epochs }}</div>
             </div>
             {% if job.output_model %}
             <div class="meta-item">
-                <div class="meta-label">Результирующая модель</div>
+                <div class="meta-label">{% trans "Результирующая модель" %}</div>
                 <div class="meta-value">
                     <a href="{% url 'model_detail' job.output_model.id %}" class="text-info">
                         {{ job.output_model.display_name }}
@@ -398,43 +399,43 @@
     <div class="action-buttons">
         {% if job.status == 'PENDING' %}
         <button class="btn-action primary" onclick="startJob()">
-            <i class="bi bi-play-fill"></i> Запустить
+            <i class="bi bi-play-fill"></i> {% trans "Запустить" %}
         </button>
         {% endif %}
         
         {% if job.status == 'PENDING' or job.status == 'PREPARING' or job.status == 'TRAINING' %}
         <button class="btn-action danger" onclick="cancelJob()">
-            <i class="bi bi-x-circle"></i> Отменить
+            <i class="bi bi-x-circle"></i> {% trans "Отменить" %}
         </button>
         {% endif %}
         
         {% if job.status == 'COMPLETED' and job.output_model %}
         <a href="{% url 'model_detail' job.output_model.id %}" class="btn-action primary">
-            <i class="bi bi-cpu"></i> Перейти к модели
+            <i class="bi bi-cpu"></i> {% trans "Перейти к модели" %}
         </a>
         {% endif %}
         
         {% if job.status == 'COMPLETED' %}
         <button class="btn-action" onclick="exportCheckpoints()">
-            <i class="bi bi-download"></i> Экспорт чекпоинтов
+            <i class="bi bi-download"></i> {% trans "Экспорт чекпоинтов" %}
         </button>
         {% endif %}
         
         {% if job.status == 'FAILED' or job.status == 'CANCELLED' %}
         <button class="btn-action primary" onclick="restartJob()">
-            <i class="bi bi-arrow-repeat"></i> Перезапустить
+            <i class="bi bi-arrow-repeat"></i> {% trans "Перезапустить" %}
         </button>
         {% endif %}
         
         <button class="btn-action danger" onclick="deleteJob()">
-            <i class="bi bi-trash"></i> Удалить
+            <i class="bi bi-trash"></i> {% trans "Удалить" %}
         </button>
     </div>
     
     <!-- Прогресс -->
     <div class="progress-container">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="text-light">Прогресс обучения</span>
+            <span class="text-light">{% trans "Прогресс обучения" %}</span>
             <span class="text-muted" id="progressPercent">{{ job.progress|floatformat:1 }}%</span>
         </div>
         <div class="progress">
@@ -451,12 +452,12 @@
     <div class="card mb-4">
         <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
-                <i class="bi bi-graph-up me-2"></i>Метрики обучения
+                <i class="bi bi-graph-up me-2"></i>{% trans "Метрики обучения" %}
             </h5>
             <div class="axis-selector">
-                <span class="axis-btn active" data-axis="step" onclick="setXAxis('step')">По шагам</span>
-                <span class="axis-btn" data-axis="epoch" onclick="setXAxis('epoch')">По эпохам</span>
-                <span class="axis-btn" data-axis="time" onclick="setXAxis('time')">По времени</span>
+                <span class="axis-btn active" data-axis="step" onclick="setXAxis('step')">{% trans "По шагам" %}</span>
+                <span class="axis-btn" data-axis="epoch" onclick="setXAxis('epoch')">{% trans "По эпохам" %}</span>
+                <span class="axis-btn" data-axis="time" onclick="setXAxis('time')">{% trans "По времени" %}</span>
             </div>
         </div>
         <div class="card-body">
@@ -493,7 +494,7 @@
             <div class="card-header" data-bs-toggle="collapse" data-bs-target="#logCollapse" aria-expanded="true">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <i class="bi bi-journal-text me-2"></i>Логи выполнения
+                        <i class="bi bi-journal-text me-2"></i>{% trans "Логи выполнения" %}
                         <span class="log-status ms-2" id="logStatus">
                             {% if job.status == 'TRAINING' %} (обучение...)
                             {% elif job.status == 'COMPLETED' %} (завершено)
@@ -518,7 +519,7 @@
                             {% endwith %}
                         {% empty %}
                         <div class="log-line">
-                            <span class="log-message">Логи пока пусты...</span>
+                            <span class="log-message">{% trans "Логи пока пусты..." %}</span>
                         </div>
                         {% endfor %}
                     </div>
@@ -531,7 +532,7 @@
     {% if checkpoints %}
     <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
         <h5 class="text-light">
-            <i class="bi bi-save me-2"></i>Чекпоинты
+            <i class="bi bi-save me-2"></i>{% trans "Чекпоинты" %}
         </h5>
     </div>
     <div class="checkpoints-list">
@@ -559,7 +560,7 @@
     {% if evaluations %}
     <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
         <h5 class="text-light">
-            <i class="bi bi-clipboard-check me-2"></i>Результаты оценки
+            <i class="bi bi-clipboard-check me-2"></i>{% trans "Результаты оценки" %}
         </h5>
     </div>
     
@@ -584,7 +585,7 @@
             
             {% if eval.detailed_results %}
             <div class="mt-3">
-                <strong class="text-light">Примеры ответов:</strong>
+                <strong class="text-light">{% trans "Примеры ответов:" %}</strong>
                 <div class="mt-2">
                     {% for example in eval.detailed_results|slice:":3" %}
                     <div class="bg-dark p-2 rounded mb-2">
@@ -802,7 +803,7 @@
                 html += `<div class="log-line"><span class="log-message">${escapeHtml(line)}</span></div>`;
             }
         });
-        logsContainer.innerHTML = html || '<div class="log-line"><span class="log-message">Логи пусты...</span></div>';
+        logsContainer.innerHTML = html || '<div class="log-line"><span class="log-message">{% trans "Логи пусты..." %}</span></div>';
         logsContainer.scrollTop = logsContainer.scrollHeight;
     }
 

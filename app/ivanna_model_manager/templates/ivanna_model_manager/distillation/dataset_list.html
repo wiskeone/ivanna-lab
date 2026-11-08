@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -11,16 +12,16 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2><i class="bi bi-database me-2"></i>Датасеты дистилляции</h2>
-                    <p class="text-muted mb-0">Собранные датасеты для дообучения моделей</p>
+                    <h2><i class="bi bi-database me-2"></i>{% trans "Датасеты дистилляции" %}</h2>
+                    <p class="text-muted mb-0">{% trans "Собранные датасеты для дообучения моделей" %}</p>
                 </div>
                 <div class="dropdown">
                     <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-plus-circle me-1"></i>Создать датасет
+                        <i class="bi bi-plus-circle me-1"></i>{% trans "Создать датасет" %}
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'distillation_dataset_builder' %}">Из вопросов и ответов</a></li>
-                        <li><a class="dropdown-item" href="{% url 'manual_instruction_builder' %}">Вручную</a></li>
+                        <li><a class="dropdown-item" href="{% url 'distillation_dataset_builder' %}">{% trans "Из вопросов и ответов" %}</a></li>
+                        <li><a class="dropdown-item" href="{% url 'manual_instruction_builder' %}">{% trans "Вручную" %}</a></li>
                     </ul>
                 </div>
             </div>
@@ -32,18 +33,18 @@
                         <div class="col-md-6">
                             <div class="input-group">
                                 <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search"></i></span>
-                                <input type="text" class="form-control border-start-0" name="q" value="{{ request.GET.q }}" placeholder="Поиск по названию...">
+                                <input type="text" class="form-control border-start-0" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'Поиск по названию...' %}">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <select name="sort" class="form-select">
-                                <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>По дате (новые)</option>
-                                <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>По дате (старые)</option>
-                                <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>По названию</option>
+                                <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>{% trans "По дате (новые)" %}</option>
+                                <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>{% trans "По дате (старые)" %}</option>
+                                <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>{% trans "По названию" %}</option>
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">Применить</button>
+                            <button type="submit" class="btn btn-primary w-100">{% trans "Применить" %}</button>
                         </div>
                     </form>
                 </div>
@@ -75,11 +76,11 @@
                         <div class="card-footer bg-transparent border-top">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <a href="{{ dataset.url_detail }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Просмотр</a>
-                                    <a href="{{ dataset.url_export }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download"></i> Экспорт JSONL</a>
+                                    <a href="{{ dataset.url_detail }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> {% trans "Просмотр" %}</a>
+                                    <a href="{{ dataset.url_export }}" class="btn btn-sm btn-outline-success"><i class="bi bi-download"></i> {% trans "Экспорт JSONL" %}</a>
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger delete-dataset-btn" data-id="{{ dataset.id }}" data-type="{{ dataset.type }}" data-name="{{ dataset.name|escapejs }}">
-                                    <i class="bi bi-trash"></i> Удалить
+                                    <i class="bi bi-trash"></i> {% trans "Удалить" %}
                                 </button>
                             </div>
                         </div>
@@ -114,11 +115,11 @@
             {% else %}
             <div class="text-center py-5">
                 <i class="bi bi-database-x display-4 text-muted mb-3"></i>
-                <h5 class="text-muted mb-3">Нет датасетов</h5>
-                <p class="text-muted mb-4">Создайте первый датасет</p>
+                <h5 class="text-muted mb-3">{% trans "Нет датасетов" %}</h5>
+                <p class="text-muted mb-4">{% trans "Создайте первый датасет" %}</p>
                 <div class="btn-group">
-                    <a href="{% url 'distillation_dataset_builder' %}" class="btn btn-primary">Из вопросов и ответов</a>
-                    <a href="{% url 'manual_instruction_builder' %}" class="btn btn-primary">Вручную</a>
+                    <a href="{% url 'distillation_dataset_builder' %}" class="btn btn-primary">{% trans "Из вопросов и ответов" %}</a>
+                    <a href="{% url 'manual_instruction_builder' %}" class="btn btn-primary">{% trans "Вручную" %}</a>
                 </div>
             </div>
             {% endif %}

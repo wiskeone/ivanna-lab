@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Слияние моделей{% endblock %}
@@ -52,7 +53,7 @@
             <div class="card">
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="mb-0">
-                        <i class="bi bi-diagram-3 me-2"></i>Слияние моделей
+                        <i class="bi bi-diagram-3 me-2"></i>{% trans "Слияние моделей" %}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -61,7 +62,7 @@
                         
                         <!-- Выбор базовой модели -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Базовая модель</label>
+                            <label class="form-label fw-bold">{% trans "Базовая модель" %}</label>
                             <div class="row">
                                 {% for model in base_models %}
                                 <div class="col-md-6">
@@ -79,14 +80,14 @@
                                     </div>
                                 </div>
                                 {% empty %}
-                                <div class="col-12 text-muted">Нет доступных моделей для слияния</div>
+                                <div class="col-12 text-muted">{% trans "Нет доступных моделей для слияния" %}</div>
                                 {% endfor %}
                             </div>
                         </div>
 
                         <!-- Выбор модели для слияния -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Модель для слияния</label>
+                            <label class="form-label fw-bold">{% trans "Модель для слияния" %}</label>
                             <div class="row">
                                 {% for model in merge_models %}
                                 <div class="col-md-6">
@@ -104,14 +105,14 @@
                                     </div>
                                 </div>
                                 {% empty %}
-                                <div class="col-12 text-muted">Нет подходящих моделей для слияния</div>
+                                <div class="col-12 text-muted">{% trans "Нет подходящих моделей для слияния" %}</div>
                                 {% endfor %}
                             </div>
                         </div>
 
                         <!-- Метод слияния -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Метод слияния</label>
+                            <label class="form-label fw-bold">{% trans "Метод слияния" %}</label>
                             <div class="d-flex flex-wrap gap-2">
                                 {% for method_code, method_name in merge_methods %}
                                 <div class="method-badge" data-method="{{ method_code }}">
@@ -121,47 +122,47 @@
                             </div>
                             <input type="hidden" name="merge_method" id="merge_method" value="ties">
                             <div class="form-text mt-2" id="methodDescription">
-                                TIES (Task Arithmetic) — хорошо сбалансирован для большинства задач.
+                                {% trans "TIES (Task Arithmetic) — хорошо сбалансирован для большинства задач." %}
                             </div>
                         </div>
 
                         <!-- Коэффициент слияния (для linear/slerp) -->
                         <div class="mb-4" id="ratioBlock">
-                            <label class="form-label fw-bold">Коэффициент слияния</label>
+                            <label class="form-label fw-bold">{% trans "Коэффициент слияния" %}</label>
                             <div class="d-flex align-items-center gap-3">
-                                <span>Базовая модель</span>
+                                <span>{% trans "Базовая модель" %}</span>
                                 <input type="range" name="merge_ratio" id="merge_ratio" min="0" max="1" step="0.05" value="0.5" class="param-slider flex-grow-1">
-                                <span>Сливаемая модель</span>
+                                <span>{% trans "Сливаемая модель" %}</span>
                             </div>
                             <div class="text-center mt-2" id="ratioValue">50% : 50%</div>
-                            <div class="form-text">Доля сливаемой модели в результате (0 = только базовая, 1 = только сливаемая).</div>
+                            <div class="form-text">{% trans "Доля сливаемой модели в результате (0 = только базовая, 1 = только сливаемая)." %}</div>
                         </div>
 
                         <!-- Плотность (для TIES/DARE) -->
                         <div class="mb-4" id="densityBlock" style="display: none;">
-                            <label class="form-label fw-bold">Плотность (density)</label>
+                            <label class="form-label fw-bold">{% trans "Плотность (density)" %}</label>
                             <input type="range" name="density" id="density" min="0" max="1" step="0.05" value="0.7" class="param-slider w-100">
                             <div class="text-center mt-2" id="densityValue">0.7</div>
-                            <div class="form-text">Доля параметров, которые будут изменены (0 = без изменений, 1 = все). Рекомендуется 0.5–0.8.</div>
+                            <div class="form-text">{% trans "Доля параметров, которые будут изменены (0 = без изменений, 1 = все). Рекомендуется 0.5–0.8." %}</div>
                         </div>
 
                         <!-- Предварительный расчёт ресурсов -->
                         <div class="card mb-4">
                             <div class="card-header bg-transparent border-bottom">
-                                <h6 class="mb-0"><i class="bi bi-hdd-stack me-2"></i>Оценка ресурсов</h6>
+                                <h6 class="mb-0"><i class="bi bi-hdd-stack me-2"></i>{% trans "Оценка ресурсов" %}</h6>
                             </div>
                             <div class="card-body" id="resourceEstimate">
                                 <div class="row text-center">
                                     <div class="col-md-4">
-                                        <div class="text-muted small">Требуется памяти</div>
+                                        <div class="text-muted small">{% trans "Требуется памяти" %}</div>
                                         <div class="fw-bold" id="estMemory">—</div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="text-muted small">Требуется диска</div>
+                                        <div class="text-muted small">{% trans "Требуется диска" %}</div>
                                         <div class="fw-bold" id="estDisk">—</div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="text-muted small">Примерное время</div>
+                                        <div class="text-muted small">{% trans "Примерное время" %}</div>
                                         <div class="fw-bold" id="estTime">—</div>
                                     </div>
                                 </div>
@@ -171,10 +172,10 @@
                         <!-- Кнопки -->
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'model_list' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>Отмена
+                                <i class="bi bi-arrow-left me-1"></i>{% trans "Отмена" %}
                             </a>
                             <button type="submit" class="btn btn-primary" id="submitBtn">
-                                <i class="bi bi-diagram-3 me-1"></i>Запустить слияние
+                                <i class="bi bi-diagram-3 me-1"></i>{% trans "Запустить слияние" %}
                             </button>
                         </div>
                     </form>

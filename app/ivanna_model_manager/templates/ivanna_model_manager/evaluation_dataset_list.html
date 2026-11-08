@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Датасеты для оценки{% endblock %}
@@ -11,16 +12,16 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
                     <h2>
-                        <i class="bi bi-database me-2"></i>Датасеты
+                        <i class="bi bi-database me-2"></i>{% trans "Датасеты" %}
                     </h2>
-                    <p class="text-muted mb-0">Коллекции вопросов для оценки моделей</p>
+                    <p class="text-muted mb-0">{% trans "Коллекции вопросов для оценки моделей" %}</p>
                 </div>
                 <div>
                     <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-secondary me-2">
-                        <i class="bi bi-plus-circle me-1"></i>Создать
+                        <i class="bi bi-plus-circle me-1"></i>{% trans "Создать" %}
                     </a>
                     <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-primary">
-                        <i class="bi bi-upload me-1"></i>Загрузить
+                        <i class="bi bi-upload me-1"></i>{% trans "Загрузить" %}
                     </a>
                 </div>
             </div>
@@ -33,7 +34,7 @@
                             <form method="get" class="d-flex">
                                 <input type="text" name="q" 
                                        class="form-control me-2" 
-                                       placeholder="Поиск по названию..."
+                                       placeholder="{% trans 'Поиск по названию...' %}"
                                        value="{{ request.GET.q }}">
                                 <button type="submit" class="btn btn-outline-primary">
                                     <i class="bi bi-search"></i>
@@ -51,7 +52,7 @@
                                         {% else %}Все теги{% endif %}
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}">Все теги</a></li>
+                                        <li><a class="dropdown-item" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}">{% trans "Все теги" %}</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         {% for tag in all_tags %}
                                         <li>
@@ -78,12 +79,12 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Название</th>
-                                    <th>Вопросов</th>
-                                    <th>Теги</th>
-                                    <th>Источник</th>
-                                    <th>Создан</th>
-                                    <th>Действия</th>
+                                    <th>{% trans "Название" %}</th>
+                                    <th>{% trans "Вопросов" %}</th>
+                                    <th>{% trans "Теги" %}</th>
+                                    <th>{% trans "Источник" %}</th>
+                                    <th>{% trans "Создан" %}</th>
+                                    <th>{% trans "Действия" %}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -115,9 +116,9 @@
                                     </td>
                                     <td>
                                         {% if dataset.source_type == 'FILE' %}
-                                        <span class="badge bg-info">Файл</span>
+                                        <span class="badge bg-info">{% trans "Файл" %}</span>
                                         {% elif dataset.source_type == 'MANUAL' %}
-                                        <span class="badge bg-secondary">Ручной</span>
+                                        <span class="badge bg-secondary">{% trans "Ручной" %}</span>
                                         {% else %}
                                         <span class="badge bg-warning">API</span>
                                         {% endif %}
@@ -131,15 +132,15 @@
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
                                             <a href="{% url 'evaluation_dataset_detail' dataset.id %}" 
-                                               class="btn btn-outline-primary" title="Просмотр">
+                                               class="btn btn-outline-primary" title="{% trans 'Просмотр' %}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             <a href="{% url 'evaluation_dataset_edit' dataset.id %}" 
-                                               class="btn btn-outline-secondary" title="Редактировать">
+                                               class="btn btn-outline-secondary" title="{% trans 'Редактировать' %}">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <button type="button" class="btn btn-outline-success" 
-                                                    onclick="useDatasetForEvaluation({{ dataset.id }})" title="Использовать для оценки">
+                                                    onclick="useDatasetForEvaluation({{ dataset.id }})" title="{% trans 'Использовать для оценки' %}">
                                                 <i class="bi bi-play"></i>
                                             </button>
                                         </div>
@@ -200,14 +201,14 @@
                     {% else %}
                     <div class="text-center py-5">
                         <i class="bi bi-database-slash display-4 text-muted mb-3"></i>
-                        <h5 class="text-muted mb-3">Нет датасетов</h5>
-                        <p class="text-muted mb-4">Создайте или загрузите датасет для начала оценки моделей</p>
+                        <h5 class="text-muted mb-3">{% trans "Нет датасетов" %}</h5>
+                        <p class="text-muted mb-4">{% trans "Создайте или загрузите датасет для начала оценки моделей" %}</p>
                         <div class="d-flex justify-content-center gap-3">
                             <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-primary">
-                                <i class="bi bi-upload me-1"></i>Загрузить датасет
+                                <i class="bi bi-upload me-1"></i>{% trans "Загрузить датасет" %}
                             </a>
                             <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-secondary">
-                                <i class="bi bi-plus-circle me-1"></i>Создать вручную
+                                <i class="bi bi-plus-circle me-1"></i>{% trans "Создать вручную" %}
                             </a>
                         </div>
                     </div>

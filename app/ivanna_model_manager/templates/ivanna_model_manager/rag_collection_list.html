@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -253,19 +254,19 @@
         <div class="col-md-4">
             <div class="stat-card">
                 <div class="stat-number">{{ total_collections }}</div>
-                <div class="stat-label">Всего коллекций</div>
+                <div class="stat-label">{% trans "Всего коллекций" %}</div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="stat-card">
                 <div class="stat-number">{{ total_documents }}</div>
-                <div class="stat-label">Документов</div>
+                <div class="stat-label">{% trans "Документов" %}</div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="stat-card">
                 <div class="stat-number">{{ indexed_count }}</div>
-                <div class="stat-label">Индексов FAISS</div>
+                <div class="stat-label">{% trans "Индексов FAISS" %}</div>
             </div>
         </div>
     </div>
@@ -280,23 +281,23 @@
                     </span>
                     <input type="text" class="form-control border-start-0" 
                            name="q" value="{{ request.GET.q }}" 
-                           placeholder="Поиск по названию коллекции...">
+                           placeholder="{% trans 'Поиск по названию коллекции...' %}">
                 </div>
             </div>
             <div class="col-md-4">
                 <select name="status" class="form-select">
-                    <option value="">Все статусы</option>
+                    <option value="">{% trans "Все статусы" %}</option>
                     <option value="indexed" {% if request.GET.status == 'indexed' %}selected{% endif %}>
-                        Только с индексом
+                        {% trans "Только с индексом" %}
                     </option>
                     <option value="no_index" {% if request.GET.status == 'no_index' %}selected{% endif %}>
-                        Без индекса
+                        {% trans "Без индекса" %}
                     </option>
                 </select>
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-funnel me-1"></i> Применить
+                    <i class="bi bi-funnel me-1"></i> {% trans "Применить" %}
                 </button>
             </div>
         </form>
@@ -315,11 +316,11 @@
                             </a>
                             {% if collection.owner_id == request.user.id|stringformat:"s" %}
                                 <span class="collection-badge">
-                                    <i class="bi bi-person-check me-1"></i> Моя
+                                    <i class="bi bi-person-check me-1"></i> {% trans "Моя" %}
                                 </span>
                             {% elif collection.is_public %}
                                 <span class="collection-badge" style="background: rgba(23, 162, 184, 0.15); color: #17a2b8;">
-                                    <i class="bi bi-globe me-1"></i> Публичная
+                                    <i class="bi bi-globe me-1"></i> {% trans "Публичная" %}
                                 </span>
                             {% endif %}
                         </div>
@@ -330,7 +331,7 @@
                             </div>
                         {% else %}
                             <div class="collection-description text-muted">
-                                <em>Нет описания</em>
+                                <em>{% trans "Нет описания" %}</em>
                             </div>
                         {% endif %}
 
@@ -348,7 +349,7 @@
                         <div class="index-status">
                             {% if collection.vector_index_created %}
                                 <span class="index-badge created">
-                                    <i class="bi bi-check-circle-fill"></i> FAISS готов
+                                    <i class="bi bi-check-circle-fill"></i> {% trans "FAISS готов" %}
                                 </span>
                                 <span class="stat-item" style="background: transparent; padding-left: 0;">
                                     <i class="bi bi-database"></i>
@@ -356,7 +357,7 @@
                                 </span>
                             {% else %}
                                 <span class="index-badge not-created">
-                                    <i class="bi bi-exclamation-triangle-fill"></i> Индекс не создан
+                                    <i class="bi bi-exclamation-triangle-fill"></i> {% trans "Индекс не создан" %}
                                 </span>
                             {% endif %}
                         </div>
@@ -364,7 +365,7 @@
                         {% if collection.has_embeddings_count is not None %}
                             <div class="embedding-progress">
                                 <div class="progress-label">
-                                    <span>Эмбеддинги</span>
+                                    <span>{% trans "Эмбеддинги" %}</span>
                                     <span>{{ collection.has_embeddings_count|default:0 }}/{{ collection.chunk_count|default:0 }}</span>
                                 </div>
                                 <div class="progress">
@@ -377,15 +378,15 @@
 
                         <div class="collection-actions">
                             <a href="{% url 'rag_collection_detail' collection.id %}" class="action-btn">
-                                <i class="bi bi-eye"></i> Просмотр
+                                <i class="bi bi-eye"></i> {% trans "Просмотр" %}
                             </a>
                             <a href="{% url 'rag_upload_documents' %}?collection={{ collection.id }}" class="action-btn">
-                                <i class="bi bi-upload"></i> Загрузить
+                                <i class="bi bi-upload"></i> {% trans "Загрузить" %}
                             </a>
                             {% if collection.owner_id == request.user.id|stringformat:"s" %}
                                 <button type="button" class="action-btn danger" 
                                         onclick="confirmDelete({{ collection.id }}, '{{ collection.name|escapejs }}')">
-                                    <i class="bi bi-trash"></i> Удалить
+                                    <i class="bi bi-trash"></i> {% trans "Удалить" %}
                                 </button>
                             {% endif %}
                         </div>
@@ -396,7 +397,7 @@
 
         <!-- Пагинация -->
         {% if page_obj.has_other_pages %}
-            <nav aria-label="Навигация по страницам">
+            <nav aria-label="{% trans 'Навигация по страницам' %}">
                 <ul class="pagination justify-content-center">
                     {% if page_obj.has_previous %}
                         <li class="page-item">
@@ -456,10 +457,10 @@
     {% else %}
         <div class="text-center py-5">
             <i class="bi bi-folder-x display-1 text-muted"></i>
-            <h4 class="mt-3">Нет коллекций</h4>
-            <p class="text-muted mb-4">Создайте первую коллекцию, чтобы начать работу с RAG-системой</p>
+            <h4 class="mt-3">{% trans "Нет коллекций" %}</h4>
+            <p class="text-muted mb-4">{% trans "Создайте первую коллекцию, чтобы начать работу с RAG-системой" %}</p>
             <a href="{% url 'rag_collection_create' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-1"></i> Создать коллекцию
+                <i class="bi bi-plus-circle me-1"></i> {% trans "Создать коллекцию" %}
             </a>
         </div>
     {% endif %}

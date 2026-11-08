@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 
 {% block title %}{{ title }} - Ivanna Lab{% endblock %}
 
@@ -17,21 +18,21 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.name.id_for_label }}" class="form-label">Имя модели *</label>
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">{% trans "Имя модели *" %}</label>
                                     {{ form.name }}
                                     {% if form.name.errors %}
                                     <div class="invalid-feedback d-block">
                                         {{ form.name.errors }}
                                     </div>
                                     {% endif %}
-                                    <div class="form-text">Уникальное имя модели в системе</div>
+                                    <div class="form-text">{% trans "Уникальное имя модели в системе" %}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.display_name.id_for_label }}" class="form-label">Отображаемое имя</label>
+                                    <label for="{{ form.display_name.id_for_label }}" class="form-label">{% trans "Отображаемое имя" %}</label>
                                     {{ form.display_name }}
-                                    <div class="form-text">Человекочитаемое имя для интерфейса</div>
+                                    <div class="form-text">{% trans "Человекочитаемое имя для интерфейса" %}</div>
                                 </div>
                             </div>
                         </div>
@@ -39,13 +40,13 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.model_type.id_for_label }}" class="form-label">Тип модели *</label>
+                                    <label for="{{ form.model_type.id_for_label }}" class="form-label">{% trans "Тип модели *" %}</label>
                                     {{ form.model_type }}
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.experiment.id_for_label }}" class="form-label">Эксперимент</label>
+                                    <label for="{{ form.experiment.id_for_label }}" class="form-label">{% trans "Эксперимент" %}</label>
                                     {{ form.experiment }}
                                 </div>
                             </div>
@@ -54,26 +55,26 @@
                         <div class="mb-3">
                             <label for="{{ form.huggingface_id.id_for_label }}" class="form-label">Hugging Face ID</label>
                             {{ form.huggingface_id }}
-                            <div class="form-text">Например: Qwen/Qwen2.5-7B-Instruct</div>
+                            <div class="form-text">{% trans "Например: Qwen/Qwen2.5-7B-Instruct" %}</div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.parameter_count.id_for_label }}" class="form-label">Параметры</label>
+                                    <label for="{{ form.parameter_count.id_for_label }}" class="form-label">{% trans "Параметры" %}</label>
                                     {{ form.parameter_count }}
-                                    <div class="form-text">Например: 7000000000 для 7B</div>
+                                    <div class="form-text">{% trans "Например: 7000000000 для 7B" %}</div>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.context_length.id_for_label }}" class="form-label">Контекст</label>
+                                    <label for="{{ form.context_length.id_for_label }}" class="form-label">{% trans "Контекст" %}</label>
                                     {{ form.context_length }}
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="{{ form.quantization.id_for_label }}" class="form-label">Квантизация</label>
+                                    <label for="{{ form.quantization.id_for_label }}" class="form-label">{% trans "Квантизация" %}</label>
                                     {{ form.quantization }}
                                 </div>
                             </div>
@@ -82,30 +83,30 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.license_type.id_for_label }}" class="form-label">Лицензия</label>
+                                    <label for="{{ form.license_type.id_for_label }}" class="form-label">{% trans "Лицензия" %}</label>
                                     {{ form.license_type }}
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="{{ form.tags.id_for_label }}" class="form-label">Теги</label>
+                                    <label for="{{ form.tags.id_for_label }}" class="form-label">{% trans "Теги" %}</label>
                                     {{ form.tags }}
-                                    <div class="form-text">Через запятую: ru, code, instruct</div>
+                                    <div class="form-text">{% trans "Через запятую: ru, code, instruct" %}</div>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="mb-3 form-check">
                             {{ form.is_public }}
-                            <label for="{{ form.is_public.id_for_label }}" class="form-check-label">Сделать модель публичной</label>
+                            <label for="{{ form.is_public.id_for_label }}" class="form-check-label">{% trans "Сделать модель публичной" %}</label>
                         </div>
                         
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'model_list' %}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Отмена
+                                <i class="bi bi-arrow-left"></i> {% trans "Отмена" %}
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> Сохранить
+                                <i class="bi bi-check-circle"></i> {% trans "Сохранить" %}
                             </button>
                         </div>
                     </form>

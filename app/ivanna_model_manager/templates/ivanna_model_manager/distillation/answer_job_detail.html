@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -126,7 +127,7 @@
     <!-- Верхняя панель -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a href="{% url 'distillation_answer_job_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>К списку задач
+            <i class="bi bi-arrow-left me-1"></i>{% trans "К списку задач" %}
         </a>
         <div>
             <span class="badge {% if job.status == 'COMPLETED' %}bg-success{% elif job.status == 'RUNNING' %}bg-primary{% elif job.status == 'FAILED' %}bg-danger{% else %}bg-secondary{% endif %}">
@@ -143,19 +144,19 @@
             
             <div class="row g-3">
                 <div class="col-md-3">
-                    <div class="small text-muted">Прогресс</div>
+                    <div class="small text-muted">{% trans "Прогресс" %}</div>
                     <div class="fw-medium">{{ job.progress|floatformat:1 }}%</div>
                 </div>
                 <div class="col-md-3">
-                    <div class="small text-muted">Вопросов обработано</div>
+                    <div class="small text-muted">{% trans "Вопросов обработано" %}</div>
                     <div class="fw-medium">{{ answered_count }}/{{ total_questions }}</div>
                 </div>
                 <div class="col-md-3">
-                    <div class="small text-muted">Набор вопросов</div>
+                    <div class="small text-muted">{% trans "Набор вопросов" %}</div>
                     <div class="fw-medium">{{ job.question_set.name|default:"—" }}</div>
                 </div>
                 <div class="col-md-3">
-                    <div class="small text-muted">Создана</div>
+                    <div class="small text-muted">{% trans "Создана" %}</div>
                     <div class="fw-medium">{{ job.created_at|date:"d.m.Y H:i" }}</div>
                 </div>
             </div>
@@ -175,13 +176,13 @@
             {% if job.checkpoint_data and job.status != 'RUNNING' %}
             <div class="alert alert-info mt-3 mb-0">
                 <i class="bi bi-info-circle me-2"></i>
-                <strong>Чекпоинт доступен!</strong>
+                <strong>{% trans "Чекпоинт доступен!" %}</strong>
                 Задача прервана после обработки 
                 {{ job.checkpoint_data.last_processed_question_index|add:1 }} из {{ job.checkpoint_data.total_questions }} вопросов.
                 <form method="post" action="{% url 'distillation_resume_answer_generation' job.id %}" class="d-inline ms-3">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-arrow-clockwise"></i> Возобновить
+                        <i class="bi bi-arrow-clockwise"></i> {% trans "Возобновить" %}
                     </button>
                 </form>
             </div>
@@ -193,7 +194,7 @@
     {% if job.logs %}
     <div class="card mb-4">
         <div class="card-header bg-transparent border-bottom">
-            <h5 class="mb-0">Логи выполнения</h5>
+            <h5 class="mb-0">{% trans "Логи выполнения" %}</h5>
         </div>
         <div class="card-body">
             <div class="bg-dark rounded p-3" style="max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
@@ -208,9 +209,9 @@
     <!-- Вопросы и ответы -->
     <div class="card">
         <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Вопросы и ответы</h5>
+            <h5 class="mb-0">{% trans "Вопросы и ответы" %}</h5>
             <button class="btn btn-sm btn-outline-primary" id="expandAllBtn">
-                <i class="bi bi-arrows-expand"></i> Развернуть все
+                <i class="bi bi-arrows-expand"></i> {% trans "Развернуть все" %}
             </button>
         </div>
         <div class="card-body">
@@ -223,25 +224,25 @@
                             {% if pair.answer %}Ответ получен{% else %}Ожидает ответа{% endif %}
                         </span>
                         <span class="version-badge" id="version-badge-{{ pair.question.id }}">
-                            <i class="bi bi-layers"></i> <span id="version-count-{{ pair.question.id }}">{{ pair.all_answers|length }}</span> версий
+                            <i class="bi bi-layers"></i> <span id="version-count-{{ pair.question.id }}">{{ pair.all_answers|length }}</span> {% trans "версий" %}
                         </span>
                     </div>
                     <button class="btn btn-sm btn-outline-primary regenerate-btn" 
                             data-question-id="{{ pair.question.id }}"
                             data-answer-id="{{ pair.answer.id|default:'' }}">
-                        <i class="bi bi-arrow-clockwise"></i> Переписать ответ
+                        <i class="bi bi-arrow-clockwise"></i> {% trans "Переписать ответ" %}
                     </button>
                 </div>
 
                 <!-- Вопрос -->
                 <div class="question-text">
-                    <label class="form-label small text-muted mb-2">Вопрос</label>
+                    <label class="form-label small text-muted mb-2">{% trans "Вопрос" %}</label>
                     <div>{{ pair.question.question_text }}</div>
                 </div>
 
                 <!-- Ответ -->
                 <div>
-                    <label class="form-label small text-muted">Ответ</label>
+                    <label class="form-label small text-muted">{% trans "Ответ" %}</label>
                     {% if pair.answer %}
                     <div class="answer-content" id="answer-{{ pair.question.id }}">
                         {{ pair.answer.answer_text|clean_text|linebreaksbr }}
@@ -250,12 +251,12 @@
                     <!-- История версий ответа -->
                     <div class="mt-2">
                         <button class="btn btn-sm btn-link text-muted history-toggle" data-question-id="{{ pair.question.id }}">
-                            <i class="bi bi-clock-history"></i> Показать историю версий (<span class="version-count">{{ pair.all_answers|length }}</span>)
+                            <i class="bi bi-clock-history"></i> {% trans "Показать историю версий (" %}<span class="version-count">{{ pair.all_answers|length }}</span>)
                         </button>
                     </div>
                     <div class="answer-history" id="history-{{ pair.question.id }}">
                         <div class="small text-muted mb-2">
-                            <i class="bi bi-clock-history"></i> История версий
+                            <i class="bi bi-clock-history"></i> {% trans "История версий" %}
                         </div>
                         {% for ans in pair.all_answers %}
                         <div class="answer-version" 
@@ -268,7 +269,7 @@
                                     Версия от {{ ans.created_at|date:"d.m.Y H:i" }}
                                 </span>
                                 {% if ans.id == pair.answer.id %}
-                                <span class="badge bg-success current-version-badge">Текущая</span>
+                                <span class="badge bg-success current-version-badge">{% trans "Текущая" %}</span>
                                 {% endif %}
                             </div>
                             <div class="small text-muted mt-1">
@@ -280,7 +281,7 @@
                     
                     {% else %}
                     <div class="p-3 bg-dark rounded text-muted">
-                        <em>Ответ ещё не сгенерирован</em>
+                        <em>{% trans "Ответ ещё не сгенерирован" %}</em>
                     </div>
                     {% endif %}
                 </div>
@@ -288,7 +289,7 @@
             {% empty %}
             <div class="text-center text-muted py-5">
                 <i class="bi bi-inbox fs-1"></i>
-                <p class="mt-3">Нет вопросов для отображения</p>
+                <p class="mt-3">{% trans "Нет вопросов для отображения" %}</p>
             </div>
             {% endfor %}
         </div>
@@ -297,23 +298,23 @@
     <!-- Генерация ответов (массовая) -->
     <div class="card mt-4">
         <div class="card-header bg-transparent border-bottom">
-            <h5 class="mb-0">Генерация ответов</h5>
+            <h5 class="mb-0">{% trans "Генерация ответов" %}</h5>
         </div>
         <div class="card-body">
             <form method="post" action="{% url 'distillation_start_answer_generation' job.id %}" id="startGenerationForm">
                 {% csrf_token %}
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="form-label">Модель-учитель *</label>
+                        <label class="form-label">{% trans "Модель-учитель *" %}</label>
                         <select name="teacher_model_id" class="form-select" id="massTeacherModelSelect" required>
-                            <option value="">Выберите модель</option>
+                            <option value="">{% trans "Выберите модель" %}</option>
                             {% for model in available_models %}
                             <option value="{{ model.id }}">{{ model.display_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Квантизация</label>
+                        <label class="form-label">{% trans "Квантизация" %}</label>
                         <select name="quantization" class="form-select">
                             <option value="int4">INT4</option>
                             <option value="int8">INT8</option>
@@ -321,12 +322,12 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Максимум токенов</label>
+                        <label class="form-label">{% trans "Максимум токенов" %}</label>
                         <input type="number" name="max_tokens" class="form-control" value="1024" min="256" max="4096">
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary w-100" id="startGenerationBtn">
-                            <i class="bi bi-play-fill"></i> Запустить
+                            <i class="bi bi-play-fill"></i> {% trans "Запустить" %}
                         </button>
                     </div>
                 </div>
@@ -334,7 +335,7 @@
                 {% if job.status != 'RUNNING' %}
                 <div class="mt-3">
                     <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#restartJobModal">
-                        <i class="bi bi-arrow-clockwise"></i> Перезапустить задачу
+                        <i class="bi bi-arrow-clockwise"></i> {% trans "Перезапустить задачу" %}
                     </button>
                 </div>
                 {% endif %}
@@ -348,16 +349,16 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Переписать ответ</h5>
+                <h5 class="modal-title">{% trans "Переписать ответ" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="regenerateQuestionId">
                 
                 <div class="mb-3">
-                    <label class="form-label">Модель-учитель *</label>
+                    <label class="form-label">{% trans "Модель-учитель *" %}</label>
                     <select id="regenerateTeacherModel" class="form-select">
-                        <option value="">Выберите модель</option>
+                        <option value="">{% trans "Выберите модель" %}</option>
                         {% for model in available_models %}
                         <option value="{{ model.id }}">{{ model.display_name }}</option>
                         {% endfor %}
@@ -366,7 +367,7 @@
                 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label">Квантизация</label>
+                        <label class="form-label">{% trans "Квантизация" %}</label>
                         <select id="regenerateQuantization" class="form-select">
                             <option value="int4">INT4</option>
                             <option value="int8">INT8</option>
@@ -374,14 +375,14 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Максимум токенов</label>
+                        <label class="form-label">{% trans "Максимум токенов" %}</label>
                         <input type="number" id="regenerateMaxTokens" class="form-control" value="1024" min="256" max="4096">
                     </div>
                 </div>
                 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label">Температура</label>
+                        <label class="form-label">{% trans "Температура" %}</label>
                         <input type="number" id="regenerateTemperature" class="form-control" value="0.7" step="0.1" min="0" max="2">
                     </div>
                     <div class="col-md-6">
@@ -391,14 +392,14 @@
                 </div>
                 
                 <div class="mb-3">
-                    <label class="form-label">Шаблон промпта (опционально)</label>
-                    <textarea id="regeneratePromptTemplate" class="form-control" rows="3" placeholder="Оставьте пустым для использования шаблона по умолчанию"></textarea>
+                    <label class="form-label">{% trans "Шаблон промпта (опционально)" %}</label>
+                    <textarea id="regeneratePromptTemplate" class="form-control" rows="3" placeholder="{% trans 'Оставьте пустым для использования шаблона по умолчанию' %}"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
                 <button type="button" class="btn btn-primary" id="confirmRegenerateBtn">
-                    <i class="bi bi-play-fill"></i> Генерировать
+                    <i class="bi bi-play-fill"></i> {% trans "Генерировать" %}
                 </button>
             </div>
         </div>
@@ -410,22 +411,22 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Перезапуск задачи</h5>
+                <h5 class="modal-title">{% trans "Перезапуск задачи" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-warning">
                     <i class="bi bi-exclamation-triangle"></i>
-                    <strong>Внимание!</strong> Все существующие ответы будут удалены.
+                    <strong>{% trans "Внимание!" %}</strong> {% trans "Все существующие ответы будут удалены." %}
                 </div>
-                <p>Вы уверены, что хотите перезапустить задачу? Это действие нельзя отменить.</p>
+                <p>{% trans "Вы уверены, что хотите перезапустить задачу? Это действие нельзя отменить." %}</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
                 <form method="post" action="{% url 'distillation_restart_answer_job' job.id %}" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-arrow-clockwise"></i> Перезапустить
+                        <i class="bi bi-arrow-clockwise"></i> {% trans "Перезапустить" %}
                     </button>
                 </form>
             </div>
@@ -439,10 +440,10 @@
         <div class="modal-content">
             <div class="modal-body text-center py-4">
                 <div class="spinner-border text-primary mb-3" role="status"></div>
-                <h5>Генерация ответа...</h5>
-                <p class="text-muted">Это может занять несколько секунд</p>
+                <h5>{% trans "Генерация ответа..." %}</h5>
+                <p class="text-muted">{% trans "Это может занять несколько секунд" %}</p>
                 <button class="btn btn-outline-secondary mt-3" data-bs-dismiss="modal">
-                    Закрыть окно (генерация продолжится в фоне)
+                    {% trans "Закрыть окно (генерация продолжится в фоне)" %}
                 </button>
             </div>
         </div>
@@ -453,7 +454,7 @@
 <div class="loading-overlay" id="loadingOverlay" style="display: none;">
     <div class="text-center">
         <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
-        <div id="loadingText" class="text-white fs-5">Загрузка...</div>
+        <div id="loadingText" class="text-white fs-5">{% trans "Загрузка..." %}</div>
     </div>
 </div>
 {% endblock %}
@@ -566,9 +567,9 @@ document.addEventListener('click', function(e) {
             history.classList.toggle('show');
             const icon = btn.querySelector('i');
             if (history.classList.contains('show')) {
-                btn.innerHTML = `<i class="bi bi-clock-history"></i> Скрыть историю версий (<span class="version-count">${document.querySelectorAll(`#history-${questionId} .answer-version`).length}</span>)`;
+                btn.innerHTML = `<i class="bi bi-clock-history"></i> {% trans "Скрыть историю версий (" %}<span class="version-count">${document.querySelectorAll(`#history-${questionId} .answer-version`).length}</span>)`;
             } else {
-                btn.innerHTML = `<i class="bi bi-clock-history"></i> Показать историю версий (<span class="version-count">${document.querySelectorAll(`#history-${questionId} .answer-version`).length}</span>)`;
+                btn.innerHTML = `<i class="bi bi-clock-history"></i> {% trans "Показать историю версий (" %}<span class="version-count">${document.querySelectorAll(`#history-${questionId} .answer-version`).length}</span>)`;
             }
         }
     }
@@ -633,7 +634,7 @@ function updateAnswerInDOM(questionId, newAnswerText, newAnswerId, newAnswerTime
                     <span class="version-label">
                         Версия от ${newAnswerTime}
                     </span>
-                    <span class="badge bg-success current-version-badge">Текущая</span>
+                    <span class="badge bg-success current-version-badge">{% trans "Текущая" %}</span>
                 </div>
                 <div class="small text-muted mt-1">
                     ${escapeHtml(cleanText(newAnswerText).substring(0, 150))}
@@ -649,7 +650,7 @@ function updateAnswerInDOM(questionId, newAnswerText, newAnswerId, newAnswerTime
         if (versionCountSpan) versionCountSpan.textContent = newCount;
         if (versionBadgeSpan) versionBadgeSpan.textContent = newCount;
         if (historyToggle) {
-            historyToggle.innerHTML = `<i class="bi bi-clock-history"></i> Показать историю версий (<span class="version-count">${newCount}</span>)`;
+            historyToggle.innerHTML = `<i class="bi bi-clock-history"></i> {% trans "Показать историю версий (" %}<span class="version-count">${newCount}</span>)`;
         }
     }
     

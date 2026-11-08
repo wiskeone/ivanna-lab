@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -396,7 +397,7 @@
                 </div>
                 <div>
                     <a href="{% url 'evaluation_dashboard' %}" class="btn btn-outline-secondary me-2">
-                        <i class="bi bi-arrow-left"></i> Назад
+                        <i class="bi bi-arrow-left"></i> {% trans "Назад" %}
                     </a>
                 </div>
             </div>
@@ -421,7 +422,7 @@
                         </span>
                     </div>
                     <div>
-                        <small class="text-muted">Прогресс: <span id="progressPercent">{{ task.progress|floatformat:1 }}</span>%</small>
+                        <small class="text-muted">{% trans "Прогресс:" %} <span id="progressPercent">{{ task.progress|floatformat:1 }}</span>%</small>
                     </div>
                 </div>
                 
@@ -439,10 +440,10 @@
             <div class="checkpoint-alert">
                 <div class="checkpoint-info">
                     <div class="checkpoint-title">
-                        <i class="bi bi-save me-2"></i>Чекпоинт доступен!
+                        <i class="bi bi-save me-2"></i>{% trans "Чекпоинт доступен!" %}
                     </div>
                     <div class="checkpoint-details">
-                        Задача была прервана на 
+                        {% trans "Задача была прервана на" %} 
                         <span>модели {{ task.metadata.checkpoint.last_model_idx|add:1 }}</span> из {{ task.evaluation_models.count }},
                         <span>вопросе {{ task.metadata.checkpoint.last_question_idx|add:1 }}</span>
                         {% if task.metadata.checkpoint.timestamp %}
@@ -452,7 +453,7 @@
                 </div>
                 <button class="btn-resume" onclick="resumeTask()" id="resumeBtn">
                     <i class="bi bi-play-circle"></i>
-                    Возобновить выполнение
+                    {% trans "Возобновить выполнение" %}
                 </button>
             </div>
             {% endif %}
@@ -460,26 +461,26 @@
             <!-- Информация о задаче -->
             <div class="task-info">
                 <div class="info-card">
-                    <div class="info-label">Датасет</div>
+                    <div class="info-label">{% trans "Датасет" %}</div>
                     <div class="info-value">{{ task.dataset.name }}</div>
                     <small class="text-muted">{{ task.dataset.total_questions }} вопросов</small>
                 </div>
                 
                 <div class="info-card">
-                    <div class="info-label">Модели</div>
+                    <div class="info-label">{% trans "Модели" %}</div>
                     <div class="info-value">{{ task.evaluation_models.count }}</div>
-                    <small class="text-muted">всего моделей</small>
+                    <small class="text-muted">{% trans "всего моделей" %}</small>
                 </div>
                 
                 <div class="info-card">
-                    <div class="info-label">Создана</div>
+                    <div class="info-label">{% trans "Создана" %}</div>
                     <div class="info-value">{{ task.created_at|date:"d.m.Y" }}</div>
                     <small class="text-muted">{{ task.created_by|default:"Система" }}</small>
                 </div>
                 
                 {% if task.completed_at %}
                 <div class="info-card">
-                    <div class="info-label">Завершена</div>
+                    <div class="info-label">{% trans "Завершена" %}</div>
                     <div class="info-value">{{ task.completed_at|date:"d.m.Y H:i" }}</div>
                 </div>
                 {% endif %}
@@ -489,34 +490,34 @@
             <div class="action-buttons">
                 {% if task.status == 'RUNNING' or task.status == 'PENDING' %}
                 <button class="btn-action btn-danger" onclick="cancelTask()">
-                    <i class="bi bi-x-circle"></i> Отменить
+                    <i class="bi bi-x-circle"></i> {% trans "Отменить" %}
                 </button>
                 {% endif %}
                 
                 {% if task.status == 'RUNNING' and not task.celery_task_active %}
                 <button class="btn-action btn-warning" onclick="forceResetTask()">
-                    <i class="bi bi-arrow-repeat"></i> Сбросить зависшую задачу
+                    <i class="bi bi-arrow-repeat"></i> {% trans "Сбросить зависшую задачу" %}
                 </button>
                 {% endif %}
                 
                 {% if task.status == 'FAILED' or task.status == 'COMPLETED' %}
                 <button class="btn-action btn-warning" onclick="restartTask(false)" id="restartBtn">
-                    <i class="bi bi-arrow-repeat"></i> Перезапустить
+                    <i class="bi bi-arrow-repeat"></i> {% trans "Перезапустить" %}
                 </button>
                 {% endif %}
                 
                 {% if task.status == 'COMPLETED' %}
                 <button class="btn-action btn-success" onclick="exportResults()">
-                    <i class="bi bi-download"></i> Экспорт результатов
+                    <i class="bi bi-download"></i> {% trans "Экспорт результатов" %}
                 </button>
                 
                 <a href="{% url 'evaluation_task_compare' task.id %}" class="btn-action btn-primary">
-                    <i class="bi bi-bar-chart"></i> Сравнить модели
+                    <i class="bi bi-bar-chart"></i> {% trans "Сравнить модели" %}
                 </a>
                 {% endif %}
                 
                 <button class="btn-action btn-danger" onclick="deleteTask()">
-                    <i class="bi bi-trash"></i> Удалить
+                    <i class="bi bi-trash"></i> {% trans "Удалить" %}
                 </button>
             </div>
             
@@ -524,7 +525,7 @@
             {% if task.logs %}
             <div class="mt-4">
                 <h6 class="text-light mb-2">
-                    <i class="bi bi-journal-text me-2"></i>Логи выполнения
+                    <i class="bi bi-journal-text me-2"></i>{% trans "Логи выполнения" %}
                 </h6>
                 <div class="logs-container" id="logs">
                     {% for line in task.logs.splitlines %}
@@ -543,7 +544,7 @@
             {% if results_by_model %}
             <div class="model-results">
                 <h5 class="text-light mb-3">
-                    <i class="bi bi-cpu me-2"></i>Результаты по моделям
+                    <i class="bi bi-cpu me-2"></i>{% trans "Результаты по моделям" %}
                 </h5>
                 
                 {% for model_id, data in results_by_model.items %}
@@ -587,7 +588,7 @@
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <button class="btn-action btn-outline-secondary btn-sm" type="button" aria-expanded="false"></i> Источники ({{ result.metadata.rag_sources|length }})</button>
                                     <button class="btn-action btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#sources-{{ result.id }}" aria-expanded="false">
-                                        <i class="bi bi-chevron-down"></i> Показать
+                                        <i class="bi bi-chevron-down"></i> {% trans "Показать" %}
                                     </button>
                                 </div>
                                 <div class="collapse" id="sources-{{ result.id }}">
@@ -601,7 +602,7 @@
                                         <div class="mt-1">
                                             {% if source.document_id %}
                                             <button class="btn btn-xs btn-outline-info" onclick="previewDocument({{ source.document_id }}, '{{ source.title|escapejs }}', {{ source.chunk_id }})">
-                                                <i class="bi bi-eye"></i> Просмотр
+                                                <i class="bi bi-eye"></i> {% trans "Просмотр" %}
                                             </button>
                                             {% endif %}
                                         </div>
@@ -635,16 +636,16 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Комментарий к оценке</h5>
+                <h5 class="modal-title">{% trans "Комментарий к оценке" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <textarea class="form-control" id="ratingComment" rows="3" 
-                          placeholder="Оставьте комментарий (необязательно)"></textarea>
+                          placeholder="{% trans 'Оставьте комментарий (необязательно)' %}"></textarea>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="submitRating()">Сохранить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" onclick="submitRating()">{% trans "Сохранить" %}</button>
             </div>
         </div>
     </div>
@@ -655,16 +656,16 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title" id="previewDocumentTitle">Документ</h5>
+                <h5 class="modal-title" id="previewDocumentTitle">{% trans "Документ" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="previewContent">
                 <!-- Контент будет загружен через JS -->
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
                 <a href="#" id="previewDocumentLink" class="btn btn-primary" target="_blank">
-                    <i class="bi bi-box-arrow-up-right me-1"></i> Открыть документ
+                    <i class="bi bi-box-arrow-up-right me-1"></i> {% trans "Открыть документ" %}
                 </a>
             </div>
         </div>
@@ -695,8 +696,8 @@
         responseElements.forEach(el => {
             let originalHtml = el.innerHTML;
             
-            // 1. Извлечение блоков <think> с очисткой содержимого
-            const thinkRegex = /<think>([\s\S]*?)<\/think>/gi;
+            // 1. Извлечение блоков <think> {% trans "с очисткой содержимого
+            const thinkRegex = /" %}<think>([\s\S]*?)<\/think>/gi;
             let matches = [...originalHtml.matchAll(thinkRegex)];
             let processedHtml = originalHtml;
             let thinkBlocksHtml = '';
@@ -708,7 +709,7 @@
                 const escapedThink = escapeHtml(thinkContent);
                 thinkBlocksHtml += `
                     <div class="think-block">
-                        <small><i class="bi bi-chat-quote"></i> Рассуждение модели:</small>
+                        <small><i class="bi bi-chat-quote"></i> {% trans "Рассуждение модели:" %}</small>
                         <div class="think-content">${escapedThink}</div>
                     </div>
                 `;
@@ -729,9 +730,9 @@
     // Форматирование: **жирный** и ### Заголовок
     function formatText(html) {
         // Жирный текст
-        let formatted = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        let formatted = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>{% trans "');
         // Заголовки ###
-        formatted = formatted.replace(/^###\s+(.*?)$/gm, '<strong>$1</strong>');
+        formatted = formatted.replace(/^###\s+(.*?)$/gm, '" %}<strong>$1</strong>');
         return formatted;
     }
     
@@ -1039,7 +1040,7 @@
                 } else if (data.error) {
                     content = `<div class="alert alert-warning">${escapeHtml(data.error)}</div>`;
                 } else {
-                    content = '<div class="text-muted">Содержимое документа недоступно</div>';
+                    content = '<div class="text-muted">{% trans "Содержимое документа недоступно" %}</div>';
                 }
                 document.getElementById('previewContent').innerHTML = content;
                 document.getElementById('previewDocumentLink').href = `/documents/${documentId}/download/`;

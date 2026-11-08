@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -33,7 +34,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>{{ job.name }}</h3>
         <a href="{% url 'conversion_dashboard' %}" class="btn-action">
-            <i class="bi bi-arrow-left"></i> Назад
+            <i class="bi bi-arrow-left"></i> {% trans "Назад" %}
         </a>
     </div>
 
@@ -49,12 +50,12 @@
         </div>
         <div class="job-meta">
             <div class="meta-item">
-                <div class="meta-label">Исходная модель</div>
+                <div class="meta-label">{% trans "Исходная модель" %}</div>
                 <div class="meta-value">{{ job.source_model.display_name }}</div>
             </div>
             {% if job.output_model %}
             <div class="meta-item">
-                <div class="meta-label">Результат</div>
+                <div class="meta-label">{% trans "Результат" %}</div>
                 <div class="meta-value">
                     <a href="{% url 'model_detail' job.output_model.id %}" class="text-info">{{ job.output_model.display_name }}</a>
                 </div>
@@ -66,29 +67,29 @@
     <div class="action-buttons">
         {% if job.status == 'PENDING' %}
         <button class="btn-action primary" onclick="startJob()">
-            <i class="bi bi-play-fill"></i> Запустить
+            <i class="bi bi-play-fill"></i> {% trans "Запустить" %}
         </button>
         {% endif %}
         {% if job.status == 'PREPARING' or job.status == 'CONVERTING' %}
         <button class="btn-action danger" onclick="cancelJob()">
-            <i class="bi bi-x-circle"></i> Отменить
+            <i class="bi bi-x-circle"></i> {% trans "Отменить" %}
         </button>
         {% endif %}
         {% if job.status == 'COMPLETED' and job.output_model %}
         <a href="{% url 'model_detail' job.output_model.id %}" class="btn-action primary">
-            <i class="bi bi-cpu"></i> Перейти к модели
+            <i class="bi bi-cpu"></i> {% trans "Перейти к модели" %}
         </a>
         {% endif %}
         {% if job.status == 'FAILED' or job.status == 'CANCELLED' %}
         <button class="btn-action primary" onclick="restartJob()">
-            <i class="bi bi-arrow-repeat"></i> Перезапустить
+            <i class="bi bi-arrow-repeat"></i> {% trans "Перезапустить" %}
         </button>
         {% endif %}
     </div>
 
     <div class="progress-container">
         <div class="d-flex justify-content-between mb-2">
-            <span>Прогресс</span>
+            <span>{% trans "Прогресс" %}</span>
             <span id="progressPercent">{{ job.progress|floatformat:1 }}%</span>
         </div>
         <div class="progress">
@@ -102,7 +103,7 @@
     <div class="log-accordion">
         <div class="card bg-dark border">
             <div class="card-header" data-bs-toggle="collapse" data-bs-target="#logCollapse">
-                <i class="bi bi-journal-text me-2"></i>Логи выполнения
+                <i class="bi bi-journal-text me-2"></i>{% trans "Логи выполнения" %}
             </div>
             <div class="collapse show" id="logCollapse">
                 <div class="logs-container" id="logs">
@@ -115,7 +116,7 @@
                         </div>
                         {% endwith %}
                     {% empty %}
-                    <div class="log-line">Логи пусты...</div>
+                    <div class="log-line">{% trans "Логи пусты..." %}</div>
                     {% endfor %}
                 </div>
             </div>

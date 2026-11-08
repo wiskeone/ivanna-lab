@@ -1,14 +1,15 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% block title %}Удаление модели эмбеддингов{% endblock %}
 {% block content %}
 <div class="container">
     <div class="alert alert-danger">
-        <h3>Подтверждение удаления</h3>
+        <h3>{% trans "Подтверждение удаления" %}</h3>
         <p>Вы уверены, что хотите удалить модель "{{ model.name }}"?</p>
         <form method="post">
             {% csrf_token %}
-            <button type="submit" class="btn btn-danger">Удалить</button>
-            <a href="{% url 'embedding_model_detail' model.pk %}" class="btn btn-secondary">Отмена</a>
+            <button type="submit" class="btn btn-danger">{% trans "Удалить" %}</button>
+            <a href="{% url 'embedding_model_detail' model.pk %}" class="btn btn-secondary">{% trans "Отмена" %}</a>
         </form>
     </div>
 </div>

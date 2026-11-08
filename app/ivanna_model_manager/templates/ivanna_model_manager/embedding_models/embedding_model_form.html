@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}{% if object.pk %}Редактирование{% else %}Добавление{% endif %} модели эмбеддингов{% endblock %}
@@ -122,9 +123,9 @@
     <div class="card-body">
         {% if not object.pk %}
         <div class="alert alert-info border-info mb-4">
-            <h5><i class="bi bi-info-circle me-2"></i> Источник моделей:</h5>
+            <h5><i class="bi bi-info-circle me-2"></i> {% trans "Источник моделей:" %}</h5>
             <ul class="mb-0">
-                <li><strong class="text-primary">Hugging Face Hub</strong> — модели будут загружены в фоновом режиме после сохранения.</li>
+                <li><strong class="text-primary">Hugging Face Hub</strong> {% trans "— модели будут загружены в фоновом режиме после сохранения." %}</li>
             </ul>
         </div>
         {% endif %}
@@ -141,23 +142,23 @@
 
             <!-- Основная информация -->
             <div class="mb-4">
-                <h5 class="mb-3"><i class="bi bi-1-circle me-2" style="color: var(--primary-color);"></i> Основная информация</h5>
+                <h5 class="mb-3"><i class="bi bi-1-circle me-2" style="color: var(--primary-color);"></i> {% trans "Основная информация" %}</h5>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="form-floating">
                             {{ form.name }}
-                            <label for="{{ form.name.id_for_label }}" class="text-white">Имя модели *</label>
+                            <label for="{{ form.name.id_for_label }}" class="text-white">{% trans "Имя модели *" %}</label>
                             {% if form.name.errors %}
                             <div class="text-danger small">{{ form.name.errors.0 }}</div>
                             {% endif %}
-                            <div class="form-text text-muted">Уникальное имя в системе (только латиница, цифры, подчёркивание)</div>
+                            <div class="form-text text-muted">{% trans "Уникальное имя в системе (только латиница, цифры, подчёркивание)" %}</div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-floating">
                             {{ form.display_name }}
-                            <label for="{{ form.display_name.id_for_label }}" class="text-white">Отображаемое имя</label>
-                            <div class="form-text text-muted">Человекочитаемое имя для интерфейса</div>
+                            <label for="{{ form.display_name.id_for_label }}" class="text-white">{% trans "Отображаемое имя" %}</label>
+                            <div class="form-text text-muted">{% trans "Человекочитаемое имя для интерфейса" %}</div>
                         </div>
                     </div>
                 </div>
@@ -169,15 +170,15 @@
             <div class="model-search-container mb-4">
                 <div class="card bg-dark-transparent">
                     <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0"><i class="bi bi-search me-2"></i> Поиск моделей эмбеддингов на Hugging Face</h6>
-                        <span class="badge bg-secondary" id="searchResultsCount">0 результатов</span>
+                        <h6 class="mb-0"><i class="bi bi-search me-2"></i> {% trans "Поиск моделей эмбеддингов на Hugging Face" %}</h6>
+                        <span class="badge bg-secondary" id="searchResultsCount">{% trans "0 результатов" %}</span>
                     </div>
                     <div class="card-body">
                         <div class="input-group mb-3">
                             <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                   id="modelSearchInput" placeholder="Поиск по названию или автору...">
+                                   id="modelSearchInput" placeholder="{% trans 'Поиск по названию или автору...' %}">
                             <button class="btn btn-outline-primary" type="button" id="buttonSearch">
-                                <i class="bi bi-search"></i> Поиск
+                                <i class="bi bi-search"></i> {% trans "Поиск" %}
                             </button>
                         </div>
 
@@ -185,7 +186,7 @@
                             <div class="search-results" id="searchResults">
                                 <div class="text-center text-muted py-5">
                                     <i class="bi bi-search display-4 mb-3"></i>
-                                    <p>Начните поиск моделей эмбеддингов</p>
+                                    <p>{% trans "Начните поиск моделей эмбеддингов" %}</p>
                                 </div>
                             </div>
                         </div>
@@ -193,9 +194,9 @@
                         <div class="search-pagination d-none mt-3" id="searchPagination">
                             <nav>
                                 <ul class="pagination justify-content-center mb-0">
-                                    <li class="page-item"><button class="page-link" id="prevPage" disabled>Назад</button></li>
-                                    <li class="page-item"><span class="page-link bg-transparent border-0" id="pageInfo">Страница 1</span></li>
-                                    <li class="page-item"><button class="page-link" id="nextPage" disabled>Вперёд</button></li>
+                                    <li class="page-item"><button class="page-link" id="prevPage" disabled>{% trans "Назад" %}</button></li>
+                                    <li class="page-item"><span class="page-link bg-transparent border-0" id="pageInfo">{% trans "Страница 1" %}</span></li>
+                                    <li class="page-item"><button class="page-link" id="nextPage" disabled>{% trans "Вперёд" %}</button></li>
                                 </ul>
                             </nav>
                         </div>
@@ -206,15 +207,15 @@
             <!-- Популярные модели -->
             <div class="popular-models-by-type mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0"><i class="bi bi-trophy me-2"></i> Популярные модели эмбеддингов</h6>
+                    <h6 class="mb-0"><i class="bi bi-trophy me-2"></i> {% trans "Популярные модели эмбеддингов" %}</h6>
                     <button type="button" class="btn btn-sm btn-outline-primary" id="refreshTopModels">
-                        <i class="bi bi-arrow-clockwise"></i> Обновить
+                        <i class="bi bi-arrow-clockwise"></i> {% trans "Обновить" %}
                     </button>
                 </div>
                 <div class="row g-2" id="popularModelsList">
                     <div class="col-12 text-center py-4">
                         <div class="spinner-border text-primary"></div>
-                        <p class="text-muted mt-2">Загрузка...</p>
+                        <p class="text-muted mt-2">{% trans "Загрузка..." %}</p>
                     </div>
                 </div>
             </div>
@@ -226,9 +227,9 @@
                     <label for="{{ form.model_id.id_for_label }}" class="form-label">
                         Hugging Face ID *
                         {% if not object.pk %}
-                        <span class="validation-indicator validation-success d-none" id="validationSuccess"><i class="bi bi-check-circle-fill"></i> Проверено</span>
-                        <span class="validation-indicator validation-error d-none" id="validationError"><i class="bi bi-x-circle-fill"></i> Не найдено</span>
-                        <span class="validation-indicator validation-loading d-none" id="validationLoading"><i class="bi bi-hourglass-split spinner"></i> Проверка...</span>
+                        <span class="validation-indicator validation-success d-none" id="validationSuccess"><i class="bi bi-check-circle-fill"></i> {% trans "Проверено" %}</span>
+                        <span class="validation-indicator validation-error d-none" id="validationError"><i class="bi bi-x-circle-fill"></i> {% trans "Не найдено" %}</span>
+                        <span class="validation-indicator validation-loading d-none" id="validationLoading"><i class="bi bi-hourglass-split spinner"></i> {% trans "Проверка..." %}</span>
                         {% endif %}
                     </label>
                     <div class="input-group">
@@ -236,12 +237,12 @@
                         {{ form.model_id }}
                         {% if not object.pk %}
                         <button class="btn btn-outline-primary" type="button" id="validateModelBtn">
-                            <i class="bi bi-check-circle"></i> Проверить
+                            <i class="bi bi-check-circle"></i> {% trans "Проверить" %}
                         </button>
                         {% endif %}
                     </div>
                     <div class="form-text text-muted" id="modelInfo">
-                        Например: sentence-transformers/all-MiniLM-L6-v2, intfloat/e5-large-v2
+                        {% trans "Например: sentence-transformers/all-MiniLM-L6-v2, intfloat/e5-large-v2" %}
                     </div>
                     {% if not object.pk %}
                     <div id="modelDetails" class="model-details-card d-none mt-3"></div>
@@ -252,46 +253,46 @@
                     <div class="col-md-6">
                         <div class="form-floating">
                             {{ form.model_version }}
-                            <label for="{{ form.model_version.id_for_label }}" class="text-white">Ревизия</label>
-                            <div class="form-text text-muted">Ветка, тег или коммит (по умолчанию: main)</div>
+                            <label for="{{ form.model_version.id_for_label }}" class="text-white">{% trans "Ревизия" %}</label>
+                            <div class="form-text text-muted">{% trans "Ветка, тег или коммит (по умолчанию: main)" %}</div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-floating">
                             {{ form.embedding_dim }}
-                            <label for="{{ form.embedding_dim.id_for_label }}" class="text-white">Размерность эмбеддингов</label>
+                            <label for="{{ form.embedding_dim.id_for_label }}" class="text-white">{% trans "Размерность эмбеддингов" %}</label>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-floating">
                             {{ form.max_tokens }}
-                            <label for="{{ form.max_tokens.id_for_label }}" class="text-white">Макс. токенов</label>
+                            <label for="{{ form.max_tokens.id_for_label }}" class="text-white">{% trans "Макс. токенов" %}</label>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-floating">
                             {{ form.license_type }}
-                            <label for="{{ form.license_type.id_for_label }}" class="text-white">Лицензия</label>
+                            <label for="{{ form.license_type.id_for_label }}" class="text-white">{% trans "Лицензия" %}</label>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-check mt-4">
                             {{ form.is_multilingual }}
-                            <label class="form-check-label text-white" for="{{ form.is_multilingual.id_for_label }}">Мультиязычная</label>
+                            <label class="form-check-label text-white" for="{{ form.is_multilingual.id_for_label }}">{% trans "Мультиязычная" %}</label>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-check mt-4">
                             {{ form.is_default }}
-                            <label class="form-check-label text-white" for="{{ form.is_default.id_for_label }}">Использовать по умолчанию</label>
-                            <div class="form-text text-muted">Будет использоваться, если не указана иная</div>
+                            <label class="form-check-label text-white" for="{{ form.is_default.id_for_label }}">{% trans "Использовать по умолчанию" %}</label>
+                            <div class="form-text text-muted">{% trans "Будет использоваться, если не указана иная" %}</div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-check mt-4">
                             {{ form.is_active }}
-                            <label class="form-check-label text-white" for="{{ form.is_active.id_for_label }}">Активна</label>
-                            <div class="form-text text-muted">Только активные модели доступны для выбора в коллекциях</div>
+                            <label class="form-check-label text-white" for="{{ form.is_active.id_for_label }}">{% trans "Активна" %}</label>
+                            <div class="form-text text-muted">{% trans "Только активные модели доступны для выбора в коллекциях" %}</div>
                         </div>
                     </div>
                 </div>
@@ -300,7 +301,7 @@
             <!-- Кнопки -->
             <div class="d-flex justify-content-between mt-5 pt-3 border-top border-secondary">
                 <a href="{% url 'embedding_model_list' %}" class="btn btn-outline-secondary btn-lg">
-                    <i class="bi bi-arrow-left me-2"></i> Отмена
+                    <i class="bi bi-arrow-left me-2"></i> {% trans "Отмена" %}
                 </a>
                 <button type="submit" class="btn btn-primary btn-lg px-5">
                     <i class="bi bi-cloud-arrow-up me-2"></i> {% if object.pk %}Сохранить изменения{% else %}Добавить модель{% endif %}
@@ -315,7 +316,7 @@
     <div id="liveToast" class="toast" role="alert">
         <div class="toast-header bg-dark text-white">
             <i class="bi bi-info-circle me-2"></i>
-            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <strong class="me-auto" id="toastTitle">{% trans "Уведомление" %}</strong>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body bg-dark text-white" id="toastMessage"></div>
@@ -362,10 +363,10 @@ async function loadTopModels() {
         if (data.models && data.models.length > 0) {
             renderTopModels(data.models);
         } else {
-            container.innerHTML = '<div class="col-12"><div class="alert alert-info">Нет популярных моделей</div></div>';
+            container.innerHTML = '<div class="col-12"><div class="alert alert-info">{% trans "Нет популярных моделей" %}</div></div>';
         }
     } catch (e) {
-        container.innerHTML = '<div class="col-12"><div class="alert alert-danger">Ошибка загрузки</div></div>';
+        container.innerHTML = '<div class="col-12"><div class="alert alert-danger">{% trans "Ошибка загрузки" %}</div></div>';
     }
 }
 
@@ -384,7 +385,7 @@ function renderTopModels(models) {
                     </div>
                     <div class="mt-2">
                         <button class="btn btn-sm btn-outline-primary w-100 select-model-btn" data-model-id="${model.id}">
-                            <i class="bi bi-check-lg"></i> Выбрать
+                            <i class="bi bi-check-lg"></i> {% trans "Выбрать" %}
                         </button>
                     </div>
                 </div>
@@ -433,7 +434,7 @@ function showSearchLoading() {
     document.getElementById('searchResults').innerHTML = `
         <div class="text-center py-5">
             <div class="spinner-border text-primary"></div>
-            <p class="text-muted mt-2">Поиск...</p>
+            <p class="text-muted mt-2">{% trans "Поиск..." %}</p>
         </div>
     `;
 }
@@ -457,7 +458,7 @@ function displaySearchResults(results, total, page) {
                     </div>
                     <div>
                         <button class="btn btn-sm ${isSelected ? 'btn-success' : 'btn-outline-primary'} select-search-btn" data-model-id="${model.id}">
-                            ${isSelected ? '<i class="bi bi-check-lg"></i> Выбрана' : '<i class="bi bi-plus-lg"></i> Выбрать'}
+                            ${isSelected ? '<i class="bi bi-check-lg"></i> {% trans "Выбрана' : '" %}<i class="bi bi-plus-lg"></i> Выбрать'}
                         </button>
                     </div>
                 </div>
@@ -486,7 +487,7 @@ function showNoSearchResults() {
     document.getElementById('searchResults').innerHTML = `
         <div class="text-center py-5">
             <i class="bi bi-search display-4 text-muted"></i>
-            <p class="text-muted">Ничего не найдено</p>
+            <p class="text-muted">{% trans "Ничего не найдено" %}</p>
         </div>
     `;
     document.getElementById('searchPagination').classList.add('d-none');
@@ -497,7 +498,7 @@ function showSearchError() {
     document.getElementById('searchResults').innerHTML = `
         <div class="text-center py-5">
             <i class="bi bi-exclamation-triangle display-4 text-danger"></i>
-            <p class="text-danger">Ошибка поиска</p>
+            <p class="text-danger">{% trans "Ошибка поиска" %}</p>
         </div>
     `;
 }
@@ -572,16 +573,16 @@ function showModelDetails(data, modelId) {
     const details = document.getElementById('modelDetails');
     details.innerHTML = `
         <div class="model-detail-row d-flex justify-content-between py-1">
-            <span class="text-muted">Автор:</span> <span class="text-white">${data.author || 'Неизвестно'}</span>
+            <span class="text-muted">{% trans "Автор:" %}</span> <span class="text-white">${data.author || 'Неизвестно'}</span>
         </div>
         <div class="model-detail-row d-flex justify-content-between py-1">
-            <span class="text-muted">Загрузки:</span> <span class="text-white">${formatNumber(data.downloads || 0)}</span>
+            <span class="text-muted">{% trans "Загрузки:" %}</span> <span class="text-white">${formatNumber(data.downloads || 0)}</span>
         </div>
         <div class="model-detail-row d-flex justify-content-between py-1">
-            <span class="text-muted">Размерность:</span> <span class="text-white">${data.dimension || '?'}</span>
+            <span class="text-muted">{% trans "Размерность:" %}</span> <span class="text-white">${data.dimension || '?'}</span>
         </div>
         <div class="model-detail-row d-flex justify-content-between py-1">
-            <span class="text-muted">Лицензия:</span> <span class="text-white">${data.license || 'Не указана'}</span>
+            <span class="text-muted">{% trans "Лицензия:" %}</span> <span class="text-white">${data.license || 'Не указана'}</span>
         </div>
     `;
     details.classList.remove('d-none');

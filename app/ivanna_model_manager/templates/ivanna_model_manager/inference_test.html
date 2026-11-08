@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block page_title %}Тестирование модели: {{ model.display_name }}{% endblock %}
@@ -57,15 +58,15 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2><i class="bi bi-cpu"></i> Тестирование модели</h2>
+            <h2><i class="bi bi-cpu"></i> {% trans "Тестирование модели" %}</h2>
             <p class="text-muted">{{ model.display_name }} ({{ model.get_model_type_display }})</p>
         </div>
         <div>
             <a href="{% url 'model_detail' pk=model.id %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Назад
+                <i class="bi bi-arrow-left"></i> {% trans "Назад" %}
             </a>
             <a href="{% url 'model_config' pk=model.id %}" class="btn btn-outline-primary">
-                <i class="bi bi-gear"></i> Конфигурация
+                <i class="bi bi-gear"></i> {% trans "Конфигурация" %}
             </a>
         </div>
     </div>
@@ -75,7 +76,7 @@
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 <i class="bi bi-info-circle"></i>
-                <strong>Статус модели:</strong>
+                <strong>{% trans "Статус модели:" %}</strong>
                 <span class="badge bg-{% if model.status == 'LOADED' %}success{% elif model.status == 'DOWNLOADED' %}warning{% else %}secondary{% endif %}">
                     {{ model.get_status_display }}
                 </span>
@@ -83,7 +84,7 @@
             <div>
                 {% if not model.is_loaded_in_memory %}
                 <a href="{% url 'model_config' pk=model.id %}" class="btn btn-sm btn-success">
-                    <i class="bi bi-download"></i> Загрузить модель
+                    <i class="bi bi-download"></i> {% trans "Загрузить модель" %}
                 </a>
                 {% endif %}
             </div>
@@ -93,7 +94,7 @@
     <!-- Форма тестирования -->
     <div class="card mb-4">
         <div class="card-header">
-            <i class="bi bi-chat-text"></i> Тестовый промпт
+            <i class="bi bi-chat-text"></i> {% trans "Тестовый промпт" %}
         </div>
         <div class="card-body">
             <form method="post">
@@ -102,17 +103,17 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="{{ form.prompt.id_for_label }}" class="form-label">Промпт</label>
+                            <label for="{{ form.prompt.id_for_label }}" class="form-label">{% trans "Промпт" %}</label>
                             {{ form.prompt }}
-                            <div class="form-text">Введите текст для генерации ответа</div>
+                            <div class="form-text">{% trans "Введите текст для генерации ответа" %}</div>
                         </div>
                     </div>
                     
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="{{ form.system_prompt.id_for_label }}" class="form-label">Системный промпт (опционально)</label>
+                            <label for="{{ form.system_prompt.id_for_label }}" class="form-label">{% trans "Системный промпт (опционально)" %}</label>
                             {{ form.system_prompt }}
-                            <div class="form-text">Инструкции для модели о том, как себя вести</div>
+                            <div class="form-text">{% trans "Инструкции для модели о том, как себя вести" %}</div>
                         </div>
                     </div>
                 </div>
@@ -120,14 +121,14 @@
                 <div class="row">
                     <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="{{ form.max_tokens.id_for_label }}" class="form-label">Макс. токенов</label>
+                            <label for="{{ form.max_tokens.id_for_label }}" class="form-label">{% trans "Макс. токенов" %}</label>
                             {{ form.max_tokens }}
                         </div>
                     </div>
                     
                     <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="{{ form.temperature.id_for_label }}" class="form-label">Температура</label>
+                            <label for="{{ form.temperature.id_for_label }}" class="form-label">{% trans "Температура" %}</label>
                             {{ form.temperature }}
                         </div>
                     </div>
@@ -150,16 +151,16 @@
                 <div class="d-flex justify-content-between">
                     <div>
                         <button type="submit" class="btn btn-primary" {% if not model.is_loaded_in_memory %}disabled{% endif %}>
-                            <i class="bi bi-play-circle"></i> Запустить тест
+                            <i class="bi bi-play-circle"></i> {% trans "Запустить тест" %}
                         </button>
                         <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
-                            <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                            <i class="bi bi-arrow-counterclockwise"></i> {% trans "Сбросить" %}
                         </button>
                     </div>
                     
                     <div>
                         <a href="{% url 'chat_view' %}?model_id={{ model.id }}" class="btn btn-success">
-                            <i class="bi bi-chat-dots"></i> Открыть в чате
+                            <i class="bi bi-chat-dots"></i> {% trans "Открыть в чате" %}
                         </a>
                     </div>
                 </div>
@@ -171,7 +172,7 @@
     {% if response %}
     <div class="card">
         <div class="card-header bg-success text-white">
-            <i class="bi bi-check-circle"></i> Результаты тестирования
+            <i class="bi bi-check-circle"></i> {% trans "Результаты тестирования" %}
         </div>
         <div class="card-body">
             
@@ -179,28 +180,28 @@
             <div class="metrics-grid">
                 <div class="metric-card">
                     <div class="metric-value">{{ response_metadata.generation_time }} сек</div>
-                    <div class="metric-label">Время генерации</div>
+                    <div class="metric-label">{% trans "Время генерации" %}</div>
                 </div>
                 
                 <div class="metric-card">
                     <div class="metric-value">{{ response_metadata.tokens_generated }}</div>
-                    <div class="metric-label">Сгенерировано токенов</div>
+                    <div class="metric-label">{% trans "Сгенерировано токенов" %}</div>
                 </div>
                 
                 <div class="metric-card">
                     <div class="metric-value">{{ response_metadata.tokens_per_second }}</div>
-                    <div class="metric-label">Токенов/сек (генерация)</div>
+                    <div class="metric-label">{% trans "Токенов/сек (генерация)" %}</div>
                 </div>
                 
                 <div class="metric-card">
                     <div class="metric-value">{{ response_metadata.tokens_per_second_total }}</div>
-                    <div class="metric-label">Токенов/сек (всего)</div>
+                    <div class="metric-label">{% trans "Токенов/сек (всего)" %}</div>
                 </div>
             </div>
             
             <!-- Ответ модели -->
             <div class="mb-4">
-                <h5><i class="bi bi-robot"></i> Ответ модели</h5>
+                <h5><i class="bi bi-robot"></i> {% trans "Ответ модели" %}</h5>
                 <div class="response-area">
                     {{ response }}
                 </div>
@@ -209,29 +210,29 @@
             <!-- Детальная информация -->
             <div class="row">
                 <div class="col-md-6">
-                    <h6><i class="bi bi-card-text"></i> Исходный промпт</h6>
+                    <h6><i class="bi bi-card-text"></i> {% trans "Исходный промпт" %}</h6>
                     <div class="alert alert-light">
                         {{ prompt|truncatechars:300 }}
                     </div>
                 </div>
                 
                 <div class="col-md-6">
-                    <h6><i class="bi bi-info-circle"></i> Информация о сессии</h6>
+                    <h6><i class="bi bi-info-circle"></i> {% trans "Информация о сессии" %}</h6>
                     <ul class="list-group">
                         <li class="list-group-item d-flex justify-content-between">
-                            <span>ID сессии:</span>
+                            <span>{% trans "ID сессии:" %}</span>
                             <span class="text-muted">{{ session.session_id }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
-                            <span>Всего токенов:</span>
+                            <span>{% trans "Всего токенов:" %}</span>
                             <span class="text-muted">{{ response_metadata.total_tokens }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
-                            <span>Параметры модели:</span>
+                            <span>{% trans "Параметры модели:" %}</span>
                             <span class="text-muted">{{ model.parameter_count|floatformat:0 }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
-                            <span>Время:</span>
+                            <span>{% trans "Время:" %}</span>
                             <span class="text-muted">{{ session.created_at|date:"H:i:s" }}</span>
                         </li>
                     </ul>

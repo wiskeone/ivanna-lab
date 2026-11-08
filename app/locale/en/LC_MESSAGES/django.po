@@ -1,0 +1,4025 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ivanna-lab\n"
+"Language: en\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "(или"
+msgstr "(or"
+
+msgid "- по абзацам"
+msgstr "- by paragraphs"
+
+msgid "- по размеру"
+msgstr "- by size"
+
+msgid "- по смыслу"
+msgstr "- by meaning"
+
+msgid "- по структуре документа"
+msgstr "- by document structure"
+
+msgid "-- Выберите модель --"
+msgstr "-- Select a model --"
+
+msgid "--- Без квантизации (использовать настройки модели) ---"
+msgstr "--- No quantization (use model settings) ---"
+
+msgid "--- Без эксперимента ---"
+msgstr "--- No experiment ---"
+
+msgid "--- Выберите документ ---"
+msgstr "--- Select a document ---"
+
+msgid "--- Выберите коллекцию ---"
+msgstr "--- Select a collection ---"
+
+msgid "--- Выберите набор (будут взяты все вопросы) ---"
+msgstr "--- Select a set (all questions will be taken) ---"
+
+msgid "0 = только базовая, 1 = только сливаемая"
+msgstr "0 = base only, 1 = merged only"
+
+msgid "0 вопросов"
+msgstr "0 questions"
+
+msgid "0 мс"
+msgstr "0 ms"
+
+msgid "0 результатов"
+msgstr "0 results"
+
+msgid "1. Тип модели"
+msgstr "1. Model type"
+
+msgid "2. Основная информация"
+msgstr "2. Basic information"
+
+msgid "3. Hugging Face параметры"
+msgstr "3. Hugging Face parameters"
+
+msgid "4. Поиск моделей на Hugging Face"
+msgstr "4. Search models on Hugging Face"
+
+msgid "5. Параметры модели"
+msgstr "5. Model parameters"
+
+msgid "6. Дополнительные настройки"
+msgstr "6. Advanced settings"
+
+msgid ": \"4bit\" или \"float16\""
+msgstr ": \"4bit\" or \"float16\""
+
+msgid ": \"auto\" для автоматического распределения"
+msgstr ": \"auto\" for automatic allocation"
+
+msgid ": true для Qwen, false для других"
+msgstr ": true for Qwen, false for others"
+
+msgid ": не удалось загрузить"
+msgstr ": failed to load"
+
+msgid ": ошибка загрузки"
+msgstr ": download error"
+
+msgid "CSV формат"
+msgstr "CSV format"
+
+msgid "CUDA доступен"
+msgstr "CUDA available"
+
+msgid "DOCX/DOC — поддерживается извлечение"
+msgstr "DOCX/DOC — extraction supported"
+
+msgid "FAISS готов"
+msgstr "FAISS ready"
+
+msgid "FAISS индекс"
+msgstr "FAISS index"
+
+msgid "FAISS индекс и эмбеддинги"
+msgstr "FAISS index and embeddings"
+
+msgid "FP16 (половинная точность)"
+msgstr "FP16 (half precision)"
+
+msgid "FP32 / FP16 (оригинальная точность)"
+msgstr "FP32 / FP16 (original precision)"
+
+msgid "GPU Система"
+msgstr "GPU System"
+
+msgid "GPU в реальном времени"
+msgstr "GPU in real time"
+
+msgid "GPU не обнаружено"
+msgstr "No GPU detected"
+
+msgid "GPU не обнаружено или CUDA не доступно"
+msgstr "No GPU detected or CUDA unavailable"
+
+msgid "GPU недоступен"
+msgstr "GPU unavailable"
+
+msgid "ID модели:"
+msgstr "Model ID:"
+
+msgid "ID репозитория"
+msgstr "Repository ID"
+
+msgid "ID сессии"
+msgstr "Session ID"
+
+msgid "ID сессии:"
+msgstr "Session ID:"
+
+msgid "ID чанков (через запятую)"
+msgstr "Chunk IDs (comma-separated)"
+
+msgid "INT4 (4‑бит)"
+msgstr "INT4 (4-bit)"
+
+msgid "INT8 (8‑бит)"
+msgstr "INT8 (8-bit)"
+
+msgid "JSON формат"
+msgstr "JSON format"
+
+msgid ""
+"JSON-объект с параметрами: max_tokens, temperature, top_p, top_k, "
+"repetition_penalty, prompt_template"
+msgstr ""
+"JSON object with parameters: max_tokens, temperature, top_p, top_k, "
+"repetition_penalty, prompt_template"
+
+msgid "LoRA параметры"
+msgstr "LoRA parameters"
+
+msgid "LoRA параметры:"
+msgstr "LoRA parameters:"
+
+msgid "PDF — лучшее качество текста"
+msgstr "PDF — best text quality"
+
+msgid "PDF/Документы"
+msgstr "PDF/Documents"
+
+msgid "R (ранг)"
+msgstr "R (rank)"
+
+msgid "RAG Чат"
+msgstr "RAG Chat"
+
+msgid "RAG настройки"
+msgstr "RAG settings"
+
+msgid "RAG чат"
+msgstr "RAG chat"
+
+msgid "RAG: включен, выбрано коллекций:"
+msgstr "RAG: enabled, collections selected:"
+
+msgid "Shift+Enter для новой строки • Enter для отправки"
+msgstr "Shift+Enter for a new line • Enter to send"
+
+msgid ""
+"TIES (Task Arithmetic) — удаляет конфликтующие изменения, усредняет "
+"остальные. Отлично для разнородных моделей. Рекомендуемая плотность: "
+"0.5-0.8."
+msgstr ""
+"TIES (Task Arithmetic) — removes conflicting changes, averages the rest. "
+"Great for heterogeneous models. Recommended density: 0.5–0.8."
+
+msgid "TIES (Task Arithmetic) — хорошо сбалансирован для большинства задач."
+msgstr "TIES (Task Arithmetic) — well balanced for most tasks."
+
+msgid "TIES (рекомендуется)"
+msgstr "TIES (recommended)"
+
+msgid "TXT формат"
+msgstr "TXT format"
+
+msgid "~1.2× размера модели"
+msgstr "~1.2× of model size"
+
+msgid "~2.5× размера модели"
+msgstr "~2.5× of model size"
+
+msgid "~5 мин / GB"
+msgstr "~5 min / GB"
+
+msgid ""
+"Абсолютный путь к директории модели в контейнере (например, "
+"/app/models/qwen-7b)"
+msgstr ""
+"Absolute path to the model directory in the container (e.g., "
+"/app/models/qwen-7b)"
+
+msgid "Автоматическая обработка"
+msgstr "Automatic processing"
+
+msgid "Автоматически из repo_id"
+msgstr "Automatically from repo_id"
+
+msgid "Автоматически начать обработку после загрузки"
+msgstr "Start processing automatically after upload"
+
+msgid "Автоматически обрабатывать новые документы"
+msgstr "Automatically process new documents"
+
+msgid "Автоматически создать группы"
+msgstr "Automatically create groups"
+
+msgid "Автоматический поиск"
+msgstr "Automatic search"
+
+msgid "Автоматический поиск при отправке сообщения"
+msgstr "Automatic search when sending a message"
+
+msgid "Автообновление"
+msgstr "Auto-refresh"
+
+msgid "Автор:"
+msgstr "Author:"
+
+msgid "Активировать"
+msgstr "Activate"
+
+msgid "Активна"
+msgstr "Active"
+
+msgid "Активно"
+msgstr "Active"
+
+msgid "Активность"
+msgstr "Activity"
+
+msgid "Активные"
+msgstr "Active"
+
+msgid "Активные загрузки моделей"
+msgstr "Active model downloads"
+
+msgid "Активные задачи"
+msgstr "Active tasks"
+
+msgid "Активные задачи загрузки моделей"
+msgstr "Active model download tasks"
+
+msgid "Активные задачи слияния"
+msgstr "Active merge tasks"
+
+msgid "Активные сессии"
+msgstr "Active sessions"
+
+msgid "Активные сессии:"
+msgstr "Active sessions:"
+
+msgid "Анализ ответа..."
+msgstr "Analyzing response..."
+
+msgid "Анализировать качество"
+msgstr "Analyze quality"
+
+msgid "Английский"
+msgstr "English"
+
+msgid "Архивировать"
+msgstr "Archive"
+
+msgid "Ассистент"
+msgstr "Assistant"
+
+msgid "Базовая модель"
+msgstr "Base model"
+
+msgid "Базовая модель:"
+msgstr "Base model:"
+
+msgid "Баланс"
+msgstr "Balance"
+
+msgid "Без индекса"
+msgstr "No index"
+
+msgid "Без квантизации"
+msgstr "No quantization"
+
+msgid "Без коллекции"
+msgstr "No collection"
+
+msgid "Без оценок"
+msgstr "No ratings"
+
+msgid "Безопасна"
+msgstr "Safe"
+
+msgid "Безопасность"
+msgstr "Security"
+
+msgid "Больше параметров"
+msgstr "More parameters"
+
+msgid "Будет добавлен к каждому документу"
+msgstr "Will be added to each document"
+
+msgid "Будет использоваться, если не указана иная"
+msgstr "Will be used if no other is specified"
+
+msgid "Быстрое создание групп"
+msgstr "Quick group creation"
+
+msgid "Быстрое тестирование"
+msgstr "Quick test"
+
+msgid "Быстрые действия"
+msgstr "Quick actions"
+
+msgid "Быстрый"
+msgstr "Fast"
+
+msgid "Быстрый контроль"
+msgstr "Quick check"
+
+msgid "Быстрый поиск:"
+msgstr "Quick search:"
+
+msgid "В коллекции нет документов"
+msgstr "No documents in the collection"
+
+msgid "В ожидании"
+msgstr "Pending"
+
+msgid "В памяти"
+msgstr "In memory"
+
+msgid "В процессе"
+msgstr "In progress"
+
+msgid "В этом наборе нет вопросов"
+msgstr "No questions in this set"
+
+msgid "Ваш пароль был успешно изменен."
+msgstr "Your password has been changed successfully."
+
+msgid "Ваши данные защищены"
+msgstr "Your data is protected"
+
+msgid "Ваши коллекции"
+msgstr "Your collections"
+
+msgid "Введите ваш запрос здесь..."
+msgstr "Type your query here..."
+
+msgid "Введите вопросы (один на строку):"
+msgstr "Enter questions (one per line):"
+
+msgid "Введите запрос"
+msgstr "Enter a query"
+
+msgid "Введите запрос для поиска в документах..."
+msgstr "Enter a query to search the documents..."
+
+msgid "Введите запрос..."
+msgstr "Enter a query..."
+
+msgid "Введите название датасета"
+msgstr "Enter a dataset name"
+
+msgid ""
+"Введите поисковый запрос... (например, 'какие документы регламентируют "
+"авиационную безопасность')"
+msgstr ""
+"Enter a search query... (e.g., 'which documents regulate aviation safety')"
+
+msgid "Введите промпт для сравнения..."
+msgstr "Enter a prompt for comparison..."
+
+msgid "Введите сообщение..."
+msgstr "Type a message..."
+
+msgid "Введите текст вопроса..."
+msgstr "Enter the question text..."
+
+msgid "Введите текст для генерации ответа"
+msgstr "Enter text to generate a response"
+
+msgid "Векторов"
+msgstr "Vectors"
+
+msgid "Вернуться к задаче"
+msgstr "Back to task"
+
+msgid "Вернуться к модели"
+msgstr "Back to model"
+
+msgid "Вернуться к набору"
+msgstr "Back to set"
+
+msgid "Вернуться к списку"
+msgstr "Back to list"
+
+msgid "Версия"
+msgstr "Version"
+
+msgid "Вес ключевых слов"
+msgstr "Keyword weight"
+
+msgid "Вес свежести"
+msgstr "Freshness weight"
+
+msgid "Веса (гибридный)"
+msgstr "Weights (hybrid)"
+
+msgid "Ветка, тег или коммит"
+msgstr "Branch, tag or commit"
+
+msgid "Ветка, тег или коммит (по умолчанию: main)"
+msgstr "Branch, tag or commit (default: main)"
+
+msgid "Визуализация разделения на чанки"
+msgstr "Chunking visualization"
+
+msgid "Владелец"
+msgstr "Owner"
+
+msgid "Внимание!"
+msgstr "Warning!"
+
+msgid "Возобновить"
+msgstr "Resume"
+
+msgid "Возобновить выполнение"
+msgstr "Resume execution"
+
+msgid "Войти"
+msgstr "Sign in"
+
+msgid "Вопрос"
+msgstr "Question"
+
+msgid "Вопрос о моделях"
+msgstr "Question about models"
+
+msgid "Вопрос:"
+msgstr "Question:"
+
+msgid "Вопросов"
+msgstr "Questions"
+
+msgid "Вопросов на группу"
+msgstr "Questions per group"
+
+msgid "Вопросов обработано"
+msgstr "Questions processed"
+
+msgid "Вопросы"
+msgstr "Questions"
+
+msgid "Вопросы для включения в датасет"
+msgstr "Questions to include in the dataset"
+
+msgid "Вопросы ещё не сгенерированы"
+msgstr "Questions are not generated yet"
+
+msgid "Вопросы и ответы"
+msgstr "Questions and answers"
+
+msgid "Вперед"
+msgstr "Forward"
+
+msgid "Вперёд"
+msgstr "Forward"
+
+msgid "Время"
+msgstr "Time"
+
+msgid "Время генерации"
+msgstr "Generation time"
+
+msgid "Время начала"
+msgstr "Start time"
+
+msgid "Время:"
+msgstr "Time:"
+
+msgid "Вручную"
+msgstr "Manual"
+
+msgid "Все"
+msgstr "All"
+
+msgid "Все fine-tuning"
+msgstr "All fine-tuning"
+
+msgid "Все вопросы"
+msgstr "All questions"
+
+msgid "Все вопросы загружены"
+msgstr "All questions loaded"
+
+msgid ""
+"Все группы, вопросы и связанные данные будут удалены без возможности "
+"восстановления."
+msgstr "All groups, questions and related data will be deleted permanently."
+
+msgid "Все датасеты"
+msgstr "All datasets"
+
+msgid "Все задачи"
+msgstr "All tasks"
+
+msgid "Все задачи завершены или нет активных загрузок"
+msgstr "All tasks are finished or there are no active downloads"
+
+msgid "Все задачи загрузки завершены"
+msgstr "All download tasks are finished"
+
+msgid "Все категории"
+msgstr "All categories"
+
+msgid "Все методы"
+msgstr "All methods"
+
+msgid "Все модели"
+msgstr "All models"
+
+msgid "Все наборы"
+msgstr "All sets"
+
+msgid "Все оценки"
+msgstr "All evaluations"
+
+msgid "Все размеры"
+msgstr "All sizes"
+
+msgid "Все сообщения будут удалены без возможности восстановления."
+msgstr "All messages will be deleted permanently."
+
+msgid "Все статусы"
+msgstr "All statuses"
+
+msgid "Все существующие группы будут удалены (при необходимости)"
+msgstr "All existing groups will be deleted (if needed)"
+
+msgid "Все существующие ответы будут удалены."
+msgstr "All existing answers will be deleted."
+
+msgid "Все теги"
+msgstr "All tags"
+
+msgid "Все типы"
+msgstr "All types"
+
+msgid "Все чанки и эмбеддинги будут удалены без возможности восстановления."
+msgstr "All chunks and embeddings will be deleted permanently."
+
+msgid "Все эксперименты"
+msgstr "All experiments"
+
+msgid "Все языки"
+msgstr "All languages"
+
+msgid "Всего"
+msgstr "Total"
+
+msgid "Всего вопросов"
+msgstr "Total questions"
+
+msgid "Всего датасетов"
+msgstr "Total datasets"
+
+msgid "Всего задач"
+msgstr "Total tasks"
+
+msgid "Всего записей"
+msgstr "Total records"
+
+msgid "Всего коллекций"
+msgstr "Total collections"
+
+msgid "Всего моделей"
+msgstr "Total models"
+
+msgid "Всего сессий"
+msgstr "Total sessions"
+
+msgid "Всего символов"
+msgstr "Total characters"
+
+msgid "Всего токенов:"
+msgstr "Total tokens:"
+
+msgid "Всего чанков"
+msgstr "Total chunks"
+
+msgid "Вставить пример"
+msgstr "Insert example"
+
+msgid "Вход в систему"
+msgstr "Sign in"
+
+msgid "Вы можете создавать разные коллекции для разных типов документов"
+msgstr "You can create different collections for different document types"
+
+msgid "Вы сможете выбирать модели, включать RAG и сохранять историю диалогов."
+msgstr ""
+"You will be able to pick models, enable RAG and keep conversation history."
+
+msgid "Вы собираетесь удалить модель"
+msgstr "You are about to delete the model"
+
+msgid "Вы уверены, что хотите выгрузить модель из памяти?"
+msgstr "Are you sure you want to unload the model from memory?"
+
+msgid ""
+"Вы уверены, что хотите перезапустить задачу? Это действие нельзя отменить."
+msgstr "Are you sure you want to restart the task? This cannot be undone."
+
+msgid "Вы уверены, что хотите сделать"
+msgstr "Are you sure you want to make"
+
+msgid "Вы уверены, что хотите удалить документ"
+msgstr "Are you sure you want to delete the document"
+
+msgid "Вы уверены, что хотите удалить набор"
+msgstr "Are you sure you want to delete the set"
+
+msgid "Вы уверены, что хотите удалить сессию"
+msgstr "Are you sure you want to delete the session"
+
+msgid "Выберите датасет..."
+msgstr "Select a dataset..."
+
+msgid "Выберите документ"
+msgstr "Select a document"
+
+msgid "Выберите документ для отображения чанков"
+msgstr "Select a document to show chunks"
+
+msgid "Выберите документ слева"
+msgstr "Select a document on the left"
+
+msgid "Выберите коллекции документов:"
+msgstr "Select document collections:"
+
+msgid "Выберите коллекции:"
+msgstr "Select collections:"
+
+msgid "Выберите коллекцию"
+msgstr "Select a collection"
+
+msgid "Выберите коллекцию..."
+msgstr "Select a collection..."
+
+msgid "Выберите модель"
+msgstr "Select a model"
+
+msgid ""
+"Выберите модель для создания эмбеддингов в этой коллекции. Если модель не "
+"выбрана, будет использоваться модель по умолчанию."
+msgstr ""
+"Select a model for creating embeddings in this collection. If none is "
+"selected, the default model will be used."
+
+msgid "Выберите модель..."
+msgstr "Select a model..."
+
+msgid ""
+"Выберите набор вопросов и задачи генерации ответов, затем нажмите «Загрузить"
+" данные»"
+msgstr ""
+"Select a question set and answer-generation tasks, then click “Load data”"
+
+msgid "Выберите одну или несколько задач"
+msgstr "Select one or more tasks"
+
+msgid "Выберите тип квантизации"
+msgstr "Select a quantization type"
+
+msgid "Выберите файл для предпросмотра..."
+msgstr "Select a file for preview..."
+
+msgid "Выберите формат или оставьте \"Автоопределение\""
+msgstr "Choose a format or leave \"Auto-detect\""
+
+msgid "Выберите чанки (через запятую или диапазоны)"
+msgstr "Select chunks (comma-separated or ranges)"
+
+msgid "Выбор вопросов"
+msgstr "Question selection"
+
+msgid "Выбор моделей для оценки"
+msgstr "Model selection for evaluation"
+
+msgid "Выбор модели"
+msgstr "Model selection"
+
+msgid "Выбор модели эмбеддингов"
+msgstr "Embedding model selection"
+
+msgid "Выбор чанков"
+msgstr "Chunk selection"
+
+msgid "Выбор чанков для группы"
+msgstr "Chunk selection for group"
+
+msgid "Выбран' : '"
+msgstr "Selected' : '"
+
+msgid "Выбрана"
+msgstr "Selected"
+
+msgid "Выбрана' : '"
+msgstr "Selected' : '"
+
+msgid "Выбранный датасет"
+msgstr "Selected dataset"
+
+msgid "Выбрано 0 вопросов"
+msgstr "0 questions selected"
+
+msgid "Выбрано документов:"
+msgstr "Documents selected:"
+
+msgid "Выбрать"
+msgstr "Select"
+
+msgid "Выбрать вопросы вручную"
+msgstr "Select questions manually"
+
+msgid "Выбрать все"
+msgstr "Select all"
+
+msgid "Выбрать для чата"
+msgstr "Pick for chat"
+
+msgid "Выбрать файл"
+msgstr "Choose file"
+
+msgid "Выбрать файлы"
+msgstr "Choose files"
+
+msgid "Выбрать чанки"
+msgstr "Select chunks"
+
+msgid "Выгрузить"
+msgstr "Unload"
+
+msgid "Выполнить"
+msgstr "Run"
+
+msgid "Выполняется"
+msgstr "Running"
+
+msgid "Выполняется задача"
+msgstr "Task running"
+
+msgid "Выполняется поиск..."
+msgstr "Searching..."
+
+msgid "Выполняются сейчас"
+msgstr "Running now"
+
+msgid "Генерация вопросов"
+msgstr "Question generation"
+
+msgid "Генерация кода"
+msgstr "Code generation"
+
+msgid "Генерация ответа..."
+msgstr "Generating response..."
+
+msgid "Генерация ответов"
+msgstr "Answer generation"
+
+msgid "Генерировать"
+msgstr "Generate"
+
+msgid "Гибридный"
+msgstr "Hybrid"
+
+msgid "Гиперпараметры"
+msgstr "Hyperparameters"
+
+msgid "Гиперпараметры обучения"
+msgstr "Training hyperparameters"
+
+msgid "Гиперпараметры:"
+msgstr "Hyperparameters:"
+
+msgid "Готов"
+msgstr "Ready"
+
+msgid "Готов к запуску"
+msgstr "Ready to run"
+
+msgid "Готово"
+msgstr "Done"
+
+msgid "Готовые шаблоны конфигураций"
+msgstr "Ready-made configuration templates"
+
+msgid "Групп / Вопросов"
+msgstr "Groups / Questions"
+
+msgid "Группы чанков"
+msgstr "Chunk groups"
+
+msgid "Да"
+msgstr "Yes"
+
+msgid "Да, сделать по умолчанию"
+msgstr "Yes, make default"
+
+msgid "Дайте коллекции понятное название"
+msgstr "Give the collection a clear name"
+
+msgid "Дата"
+msgstr "Date"
+
+msgid "Дата регистрации"
+msgstr "Registration date"
+
+msgid "Дата создания:"
+msgstr "Created:"
+
+msgid "Датасет"
+msgstr "Dataset"
+
+msgid "Датасет будет преобразован в формат JSONL и сохранён в системе как"
+msgstr "The dataset will be converted to JSONL and saved as"
+
+msgid "Датасет пуст"
+msgstr "Dataset is empty"
+
+msgid "Датасет:"
+msgstr "Dataset:"
+
+msgid "Датасетов"
+msgstr "Datasets"
+
+msgid "Датасетов инструкций:"
+msgstr "Instruction datasets:"
+
+msgid "Датасеты"
+msgstr "Datasets"
+
+msgid "Датасеты дистилляции"
+msgstr "Distillation datasets"
+
+msgid "Датасеты с Hugging Face"
+msgstr "Datasets from Hugging Face"
+
+msgid "Деактивировать"
+msgstr "Deactivate"
+
+msgid "Действие"
+msgstr "Action"
+
+msgid "Действия"
+msgstr "Actions"
+
+msgid "Детали"
+msgstr "Details"
+
+msgid "Детали задачи fine-tuning:"
+msgstr "Fine-tuning task details:"
+
+msgid "Детали задачи:"
+msgstr "Task details:"
+
+msgid "Детали модели"
+msgstr "Model details"
+
+msgid "Дисковое пространство"
+msgstr "Disk space"
+
+msgid "Дистилляция"
+msgstr "Distillation"
+
+msgid "Дистракторов на пример"
+msgstr "Distractors per example"
+
+msgid "Длина контекста"
+msgstr "Context length"
+
+msgid "Длина ответа:"
+msgstr "Answer length:"
+
+msgid ""
+"Для автоматического выбора чанков необходимо выбрать коллекцию при создании "
+"набора."
+msgstr ""
+"For automatic chunk selection, choose a collection when creating the set."
+
+msgid "Для архитектур с поддержкой bfloat16"
+msgstr "For architectures with bfloat16 support"
+
+msgid "Для доступа к системе требуется авторизация"
+msgstr "Authentication is required to access the system"
+
+msgid "Для запуска оценки сначала загрузите модели в интерфейсе моделей"
+msgstr "To run an evaluation, first download models in the models section"
+
+msgid "Добавить"
+msgstr "Add"
+
+msgid "Добавить вопрос"
+msgstr "Add question"
+
+msgid "Добавить группу"
+msgstr "Add group"
+
+msgid "Добавить инструкцию"
+msgstr "Add instruction"
+
+msgid "Добавить модель"
+msgstr "Add model"
+
+msgid "Добавить промпт"
+msgstr "Add prompt"
+
+msgid "Добавление локальной модели"
+msgstr "Add a local model"
+
+msgid ""
+"Добавьте вопросы с помощью кнопки \"Добавить вопрос\" или импортируйте из "
+"текста"
+msgstr "Add questions with the \"Add question\" button or import from text"
+
+msgid "Добавьте первую модель, чтобы начать работу."
+msgstr "Add the first model to get started."
+
+msgid "Документ"
+msgstr "Document"
+
+msgid "Документов"
+msgstr "Documents"
+
+msgid "Документы"
+msgstr "Documents"
+
+msgid "Документы в коллекции"
+msgstr "Documents in the collection"
+
+msgid "Документы коллекции"
+msgstr "Collection documents"
+
+msgid "Документы не найдены"
+msgstr "No documents found"
+
+msgid "Доля oracle примеров"
+msgstr "Share of oracle examples"
+
+msgid "Доля без контекста"
+msgstr "Share without context"
+
+msgid "Доля общих инструкций"
+msgstr "Share of common instructions"
+
+msgid ""
+"Доля параметров, которые будут изменены (0 = без изменений, 1 = все). "
+"Рекомендуется 0.5–0.8."
+msgstr ""
+"Share of parameters to be changed (0 = none, 1 = all). 0.5–0.8 recommended."
+
+msgid "Доля с дистракторами"
+msgstr "Share with distractors"
+
+msgid ""
+"Доля сливаемой модели в результате (0 = только базовая, 1 = только "
+"сливаемая)."
+msgstr ""
+"Share of the merged model in the result (0 = base only, 1 = merged only)."
+
+msgid "Доступ"
+msgstr "Access"
+
+msgid "Доступно для оценки"
+msgstr "Available for evaluation"
+
+msgid "Доступно на Hugging Face"
+msgstr "Available on Hugging Face"
+
+msgid "Доступные GPU:"
+msgstr "Available GPUs:"
+
+msgid "Доступные модели"
+msgstr "Available models"
+
+msgid "Доступные модели для оценки"
+msgstr "Available models for evaluation"
+
+msgid "Доступные модели:"
+msgstr "Available models:"
+
+msgid "Доступные форматы"
+msgstr "Available formats"
+
+msgid ""
+"Если выбран набор, все вопросы будут использованы автоматически. Для ручного"
+" выбора вопросов оставьте набор пустым и нажмите кнопку ниже."
+msgstr ""
+"If a set is selected, all its questions are used automatically. To pick "
+"questions manually, leave the set empty and press the button below."
+
+msgid "Если выбрать коллекцию, можно будет легко загрузить все её чанки"
+msgstr "If you select a collection, all its chunks can be loaded easily"
+
+msgid "Если не указано, будет использовано имя файла"
+msgstr "If not specified, the file name will be used"
+
+msgid "Завершена"
+msgstr "Completed"
+
+msgid "Завершена:"
+msgstr "Completed:"
+
+msgid "Завершено"
+msgstr "Completed"
+
+msgid "Загружаем популярные датасеты..."
+msgstr "Loading popular datasets..."
+
+msgid "Загружается"
+msgstr "Downloading"
+
+msgid "Загружаются"
+msgstr "Downloading"
+
+msgid "Загружаются сейчас"
+msgstr "Downloading now"
+
+msgid "Загружен"
+msgstr "Uploaded"
+
+msgid "Загружена"
+msgstr "Downloaded"
+
+msgid "Загруженная модель для дообучения"
+msgstr "Loaded model for fine-tuning"
+
+msgid "Загруженных моделей"
+msgstr "Downloaded models"
+
+msgid "Загружено"
+msgstr "Downloaded"
+
+msgid "Загружено в память"
+msgstr "Loaded into memory"
+
+msgid "Загрузите первую модель"
+msgstr "Download the first model"
+
+msgid "Загрузите первый документ, чтобы начать работу с RAG."
+msgstr "Upload the first document to start working with RAG."
+
+msgid "Загрузить"
+msgstr "Download"
+
+msgid "Загрузить в память"
+msgstr "Load into memory"
+
+msgid "Загрузить данные"
+msgstr "Load data"
+
+msgid "Загрузить датасет"
+msgstr "Download dataset"
+
+msgid "Загрузить документ"
+msgstr "Upload document"
+
+msgid "Загрузить документы"
+msgstr "Upload documents"
+
+msgid "Загрузить из файла"
+msgstr "Load from file"
+
+msgid "Загрузить локально"
+msgstr "Load locally"
+
+msgid "Загрузить модель"
+msgstr "Download model"
+
+msgid "Загрузить модель с Hugging Face"
+msgstr "Download a model from Hugging Face"
+
+msgid "Загрузить с Hugging Face"
+msgstr "Download from Hugging Face"
+
+msgid "Загрузка"
+msgstr "Download"
+
+msgid "Загрузка GPU"
+msgstr "GPU load"
+
+msgid ""
+"Загрузка больших моделей может занять длительное время. Убедитесь, что у вас"
+" достаточно места на диске."
+msgstr ""
+"Downloading large models can take a long time. Make sure you have enough "
+"disk space."
+
+msgid "Загрузка в память..."
+msgstr "Loading into memory..."
+
+msgid "Загрузка в процессе..."
+msgstr "Download in progress..."
+
+msgid "Загрузка вопросов..."
+msgstr "Loading questions..."
+
+msgid "Загрузка данных..."
+msgstr "Loading data..."
+
+msgid "Загрузка датасета из файла"
+msgstr "Load dataset from file"
+
+msgid "Загрузка документов..."
+msgstr "Loading documents..."
+
+msgid "Загрузка информации о GPU..."
+msgstr "Loading GPU info..."
+
+msgid "Загрузка информации о диске..."
+msgstr "Loading disk info..."
+
+msgid "Загрузка информации о документах..."
+msgstr "Loading document info..."
+
+msgid "Загрузка информации о задачах..."
+msgstr "Loading task info..."
+
+msgid "Загрузка информации о памяти..."
+msgstr "Loading memory info..."
+
+msgid "Загрузка коллекций..."
+msgstr "Loading collections..."
+
+msgid "Загрузка метрик диска..."
+msgstr "Loading disk metrics..."
+
+msgid "Загрузка метрик памяти..."
+msgstr "Loading memory metrics..."
+
+msgid "Загрузка метрик..."
+msgstr "Loading metrics..."
+
+msgid "Загрузка моделей..."
+msgstr "Loading models..."
+
+msgid "Загрузка модели..."
+msgstr "Loading model..."
+
+msgid "Загрузка популярных моделей..."
+msgstr "Loading popular models..."
+
+msgid "Загрузка предпросмотра..."
+msgstr "Loading preview..."
+
+msgid "Загрузка сетевой информации..."
+msgstr "Loading network info..."
+
+msgid "Загрузка..."
+msgstr "Loading..."
+
+msgid "Загрузки"
+msgstr "Downloads"
+
+msgid "Загрузки:"
+msgstr "Downloads:"
+
+msgid "Задач оценки"
+msgstr "Evaluation tasks"
+
+msgid ""
+"Задача будет выполнена в фоновом режиме. Вы можете закрыть страницу после "
+"запуска."
+msgstr ""
+"The task will run in the background. You can close the page after starting "
+"it."
+
+msgid "Задача была прервана на"
+msgstr "The task was interrupted at"
+
+msgid "Задача не содержит результатов или не завершена"
+msgstr "The task has no results or is not finished"
+
+msgid "Задачи генерации ответов"
+msgstr "Answer generation tasks"
+
+msgid "Задачи оценки"
+msgstr "Evaluation tasks"
+
+msgid "Закрыть"
+msgstr "Close"
+
+msgid "Закрыть окно (генерация продолжится в фоне)"
+msgstr "Close the window (generation continues in background)"
+
+msgid "Заменить и переобработать"
+msgstr "Replace and reprocess"
+
+msgid "Заменить файл документа"
+msgstr "Replace document file"
+
+msgid "Занято (подозрительно)"
+msgstr "Used (suspiciously)"
+
+msgid "Записи датасета"
+msgstr "Dataset records"
+
+msgid "Заполнено"
+msgstr "Filled"
+
+msgid "Заполните основные параметры для предпросмотра"
+msgstr "Fill in the main parameters for a preview"
+
+msgid "Запрос"
+msgstr "Query"
+
+msgid "Запрос к модели"
+msgstr "Model query"
+
+msgid "Запрос:"
+msgstr "Query:"
+
+msgid "Запрошенная квантизация"
+msgstr "Requested quantization"
+
+msgid "Запустить"
+msgstr "Start"
+
+msgid "Запустить импорт"
+msgstr "Start import"
+
+msgid "Запустить инференс"
+msgstr "Run inference"
+
+msgid "Запустить обучение"
+msgstr "Start training"
+
+msgid "Запустить оценку"
+msgstr "Start evaluation"
+
+msgid "Запустить слияние"
+msgstr "Start merge"
+
+msgid "Запустить тест"
+msgstr "Run test"
+
+msgid "Запущена:"
+msgstr "Started:"
+
+msgid "Зачем нужен токен?"
+msgstr "Why is a token needed?"
+
+msgid "Из вопросов и ответов"
+msgstr "From questions and answers"
+
+msgid "Изменить"
+msgstr "Change"
+
+msgid "Изменить пароль"
+msgstr "Change password"
+
+msgid "Или выберите из популярных ниже"
+msgstr "Or pick from the popular ones below"
+
+msgid "Импорт JSONL"
+msgstr "JSONL import"
+
+msgid "Импорт вопросов из текста"
+msgstr "Import questions from text"
+
+msgid "Импорт датасета"
+msgstr "Import dataset"
+
+msgid "Импорт датасета с Hugging Face"
+msgstr "Import dataset from Hugging Face"
+
+msgid "Импорт текста"
+msgstr "Text import"
+
+msgid "Импортированные датасеты будут доступны для fine-tuning"
+msgstr "Imported datasets will be available for fine-tuning"
+
+msgid "Импортировать"
+msgstr "Import"
+
+msgid "Импортировать датасет"
+msgstr "Import dataset"
+
+msgid "Имя модели"
+msgstr "Model name"
+
+msgid "Имя модели *"
+msgstr "Model name *"
+
+msgid "Имя модели в системе"
+msgstr "Model name in the system"
+
+msgid "Имя пользователя"
+msgstr "Username"
+
+msgid "Индекс"
+msgstr "Index"
+
+msgid "Индекс готов"
+msgstr "Index ready"
+
+msgid "Индекс не создан"
+msgstr "Index not created"
+
+msgid "Индекс создан"
+msgstr "Index created"
+
+msgid "Индексов FAISS"
+msgstr "FAISS indexes"
+
+msgid "Инициализация..."
+msgstr "Initializing..."
+
+msgid "Инструкции"
+msgstr "Instructions"
+
+msgid "Инструкции для модели о том, как себя вести"
+msgstr "Instructions for the model on how to behave"
+
+msgid "Интеграция с RAG"
+msgstr "RAG integration"
+
+msgid "Инференс"
+msgstr "Inference"
+
+msgid "Информация о документе"
+msgstr "Document information"
+
+msgid "Информация о загрузке"
+msgstr "Download information"
+
+msgid "Информация о коллекции"
+msgstr "Collection information"
+
+msgid "Информация о модели"
+msgstr "Model information"
+
+msgid "Информация о пользователе"
+msgstr "User information"
+
+msgid "Информация о сессии"
+msgstr "Session information"
+
+msgid "Информация о системе"
+msgstr "System information"
+
+msgid "Информация о тесте"
+msgstr "Test information"
+
+msgid "Информация о форматах"
+msgstr "Format information"
+
+msgid "Исключить"
+msgstr "Exclude"
+
+msgid "Исключить все"
+msgstr "Exclude all"
+
+msgid "Использование CPU"
+msgstr "CPU usage"
+
+msgid "Использование ОЗУ"
+msgstr "RAM usage"
+
+msgid "Использование диска"
+msgstr "Disk usage"
+
+msgid "Использование памяти"
+msgstr "Memory usage"
+
+msgid "Использованные документы"
+msgstr "Documents used"
+
+msgid "Использовано"
+msgstr "Used"
+
+msgid "Использовать"
+msgstr "Use"
+
+msgid "Использовать Flash Attention 2"
+msgstr "Use Flash Attention 2"
+
+msgid "Использовать KL-регуляризацию против забывания"
+msgstr "Use KL regularization against forgetting"
+
+msgid "Использовать RAG (поиск по документам)"
+msgstr "Use RAG (document search)"
+
+msgid "Использовать в RAG"
+msgstr "Use in RAG"
+
+msgid "Использовать для оценки"
+msgstr "Use for evaluation"
+
+msgid "Использовать кэш внимания"
+msgstr "Use attention cache"
+
+msgid "Использовать по умолчанию"
+msgstr "Use as default"
+
+msgid "Использовать реранжирование"
+msgstr "Use reranking"
+
+msgid "Используется CPU для вычислений"
+msgstr "CPU is used for computation"
+
+msgid "Исправьте ошибки в форме"
+msgstr "Fix the errors in the form"
+
+msgid "История"
+msgstr "History"
+
+msgid "История версий"
+msgstr "Version history"
+
+msgid "История диалога пуста"
+msgstr "Conversation history is empty"
+
+msgid "История диалога:"
+msgstr "Conversation history:"
+
+msgid "История и статус выполнения задач оценки"
+msgstr "Evaluation task history and status"
+
+msgid "История обработки"
+msgstr "Processing history"
+
+msgid "История очищена"
+msgstr "History cleared"
+
+msgid "История поиска"
+msgstr "Search history"
+
+msgid "Источник"
+msgstr "Source"
+
+msgid "Источник моделей:"
+msgstr "Model source:"
+
+msgid "Источники данных"
+msgstr "Data sources"
+
+msgid "Исходная модель"
+msgstr "Source model"
+
+msgid "Исходное имя"
+msgstr "Original name"
+
+msgid "Исходный промпт"
+msgstr "Original prompt"
+
+msgid "Ищем датасеты..."
+msgstr "Searching datasets..."
+
+msgid "К наборам"
+msgstr "To sets"
+
+msgid "К списку"
+msgstr "To list"
+
+msgid "К списку датасетов"
+msgstr "To datasets"
+
+msgid "К списку задач"
+msgstr "To tasks"
+
+msgid "К списку наборов"
+msgstr "To sets"
+
+msgid ""
+"Каждая строка будет преобразована в отдельный вопрос. Пустые строки "
+"игнорируются."
+msgstr "Each line becomes a separate question. Empty lines are ignored."
+
+msgid "Категория"
+msgstr "Category"
+
+msgid "Категория (необязательно)"
+msgstr "Category (optional)"
+
+msgid "Категория:"
+msgstr "Category:"
+
+msgid "Квантизация"
+msgstr "Quantization"
+
+msgid "Квантизация моделей"
+msgstr "Model quantization"
+
+msgid ""
+"Квантизация уменьшает потребление памяти, но может незначительно снизить "
+"качество."
+msgstr "Quantization reduces memory usage but may slightly reduce quality."
+
+msgid "Квантизация:"
+msgstr "Quantization:"
+
+msgid "Квантизировано"
+msgstr "Quantized"
+
+msgid "Ключевые слова"
+msgstr "Keywords"
+
+msgid "Код/Техническая документация"
+msgstr "Code/Technical documentation"
+
+msgid "Количество вопросов"
+msgstr "Number of questions"
+
+msgid "Количество запросов"
+msgstr "Number of requests"
+
+msgid "Количество параметров"
+msgstr "Parameter count"
+
+msgid "Количество результатов"
+msgstr "Number of results"
+
+msgid "Коллекции"
+msgstr "Collections"
+
+msgid "Коллекции вопросов для оценки моделей"
+msgstr "Question collections for model evaluation"
+
+msgid "Коллекции документов"
+msgstr "Document collections"
+
+msgid "Коллекции документов:"
+msgstr "Document collections:"
+
+msgid "Коллекций"
+msgstr "Collections"
+
+msgid "Коллекций документов:"
+msgstr "Document collections:"
+
+msgid "Коллекция"
+msgstr "Collection"
+
+msgid "Коллекция (опционально)"
+msgstr "Collection (optional)"
+
+msgid "Коллекция *"
+msgstr "Collection *"
+
+msgid ""
+"Коллекция группирует связанные документы по теме, проекту или пользователю"
+msgstr "A collection groups related documents by topic, project or user"
+
+msgid "Коллекция не выбрана"
+msgstr "No collection selected"
+
+msgid "Комментарий (необязательно)"
+msgstr "Comment (optional)"
+
+msgid "Комментарий к оценке"
+msgstr "Rating comment"
+
+msgid "Контекст"
+msgstr "Context"
+
+msgid "Контекст (токенов)"
+msgstr "Context (tokens)"
+
+msgid "Контекст не указан"
+msgstr "No context provided"
+
+msgid "Контекст:"
+msgstr "Context:"
+
+msgid "Контекстные чанки"
+msgstr "Context chunks"
+
+msgid "Контроль случайности (0.0-2.0)"
+msgstr "Randomness control (0.0–2.0)"
+
+msgid "Конфигурация"
+msgstr "Configuration"
+
+msgid "Конфигурация (опционально)"
+msgstr "Configuration (optional)"
+
+msgid "Конфигурация в формате JSON. Будьте осторожны при редактировании."
+msgstr "JSON configuration. Be careful when editing."
+
+msgid "Конфигурация загрузки"
+msgstr "Download configuration"
+
+msgid "Конфигурация загрузки (JSON)"
+msgstr "Download configuration (JSON)"
+
+msgid "Конфигурация загрузки модели"
+msgstr "Model download configuration"
+
+msgid "Копировать"
+msgstr "Copy"
+
+msgid "Коротко"
+msgstr "Brief"
+
+msgid "Коэффициент слияния"
+msgstr "Merge coefficient"
+
+msgid "Краткое описание"
+msgstr "Short description"
+
+msgid "Краткое описание документа"
+msgstr "Short document description"
+
+msgid "Креативный"
+msgstr "Creative"
+
+msgid "Крупные (&gt; 100K)"
+msgstr "Large (&gt; 100K)"
+
+msgid "Кэш"
+msgstr "Cache"
+
+msgid "Лайки"
+msgstr "Likes"
+
+msgid "Легкая"
+msgstr "Light"
+
+msgid "Лицензия"
+msgstr "License"
+
+msgid "Лицензия:"
+msgstr "License:"
+
+msgid "Логи выполнения"
+msgstr "Execution logs"
+
+msgid "Логи пока пусты..."
+msgstr "Logs are empty so far..."
+
+msgid "Логи пусты..."
+msgstr "Logs are empty..."
+
+msgid "Локальный путь"
+msgstr "Local path"
+
+msgid "Лучшие модели:"
+msgstr "Top models:"
+
+msgid "Лучший"
+msgstr "Best"
+
+msgid "Макс. длина"
+msgstr "Max length"
+
+msgid "Макс. токенов"
+msgstr "Max tokens"
+
+msgid "Макс. токенов:"
+msgstr "Max tokens:"
+
+msgid "Максимальная длина ответа в токенах"
+msgstr "Maximum answer length in tokens"
+
+msgid "Максимальная экономия, заметное падение качества"
+msgstr "Maximum savings, noticeable quality drop"
+
+msgid "Максимальное количество токенов"
+msgstr "Maximum number of tokens"
+
+msgid "Максимальное количество файлов"
+msgstr "Maximum number of files"
+
+msgid "Максимальный размер файла"
+msgstr "Maximum file size"
+
+msgid "Максимум токенов"
+msgstr "Maximum tokens"
+
+msgid "Малые (&lt; 10K примеров)"
+msgstr "Small (&lt; 10K examples)"
+
+msgid "Массив объектов вопросов"
+msgstr "Array of question objects"
+
+msgid "Массовые действия"
+msgstr "Bulk actions"
+
+msgid "Меньше параметров"
+msgstr "Fewer parameters"
+
+msgid "Меню"
+msgstr "Menu"
+
+msgid "Метод"
+msgstr "Method"
+
+msgid "Метод обучения"
+msgstr "Training method"
+
+msgid "Метод слияния"
+msgstr "Merge method"
+
+msgid "Метод:"
+msgstr "Method:"
+
+msgid "Метрика"
+msgstr "Metric"
+
+msgid ""
+"Метрики обновляются автоматически каждые 5 секунд. Для получения точных "
+"данных о GPU требуется наличие драйверов NVIDIA."
+msgstr ""
+"Metrics refresh automatically every 5 seconds. Accurate GPU data requires "
+"NVIDIA drivers."
+
+msgid "Метрики обучения"
+msgstr "Training metrics"
+
+msgid "Минут"
+msgstr "Minutes"
+
+msgid "Моделей"
+msgstr "Models"
+
+msgid "Моделей для оценки:"
+msgstr "Models for evaluation:"
+
+msgid "Моделей не найдено"
+msgstr "No models found"
+
+msgid "Моделей:"
+msgstr "Models:"
+
+msgid "Модели"
+msgstr "Models"
+
+msgid "Модели в сравнении:"
+msgstr "Models in comparison:"
+
+msgid "Модели для сравнения *"
+msgstr "Models for comparison *"
+
+msgid "Модели не найдены"
+msgstr "No models found"
+
+msgid "Модели эмбеддингов"
+msgstr "Embedding models"
+
+msgid "Модель"
+msgstr "Model"
+
+msgid "Модель для слияния"
+msgstr "Model to merge"
+
+msgid "Модель зависла в памяти или не отвечает."
+msgstr "The model is stuck in memory or not responding."
+
+msgid "Модель загружена в память"
+msgstr "Model loaded into memory"
+
+msgid "Модель загружена на диск"
+msgstr "Model downloaded to disk"
+
+msgid "Модель набирает ответ..."
+msgstr "The model is typing..."
+
+msgid "Модель найдена"
+msgstr "Model found"
+
+msgid "Модель не загружена"
+msgstr "Model not loaded"
+
+msgid "Модель не найдена"
+msgstr "Model not found"
+
+msgid ""
+"Модель по умолчанию будет использоваться для новых коллекций, если не "
+"указана иная."
+msgstr ""
+"The default model will be used for new collections unless another is "
+"specified."
+
+msgid "Модель эмбеддингов"
+msgstr "Embedding model"
+
+msgid "Модель эмбеддингов не выбрана"
+msgstr "No embedding model selected"
+
+msgid "Модель-учитель *"
+msgstr "Teacher model *"
+
+msgid "Модель:"
+msgstr "Model:"
+
+msgid "Можно указать диапазоны (начало-конец) и отдельные ID"
+msgstr "You can specify ranges (start-end) and individual IDs"
+
+msgid "Мои RAG"
+msgstr "My RAG"
+
+msgid "Мои задачи"
+msgstr "My tasks"
+
+msgid "Мои последние задачи"
+msgstr "My recent tasks"
+
+msgid "Мои чат-сессии"
+msgstr "My chat sessions"
+
+msgid "Мои чаты"
+msgstr "My chats"
+
+msgid "Мой датасет"
+msgstr "My dataset"
+
+msgid "Моя"
+msgstr "Mine"
+
+msgid "Моя слитая модель"
+msgstr "My merged model"
+
+msgid "Мультиязычная"
+msgstr "Multilingual"
+
+msgid "Мультиязычная:"
+msgstr "Multilingual:"
+
+msgid "Мультиязычный"
+msgstr "Multilingual"
+
+msgid "На главную"
+msgstr "To home"
+
+msgid "Набор вопросов"
+msgstr "Question set"
+
+msgid "Наборы вопросов"
+msgstr "Question sets"
+
+msgid "Навигация по документам"
+msgstr "Document navigation"
+
+msgid "Навигация по страницам"
+msgstr "Page navigation"
+
+msgid "Нажмите на кнопку \"Модели\" и выберите модель для начала диалога"
+msgstr "Click \"Models\" and pick a model to start a conversation"
+
+msgid "Назад"
+msgstr "Back"
+
+msgid "Назад к датасетам"
+msgstr "Back to datasets"
+
+msgid "Назад к датасету"
+msgstr "Back to dataset"
+
+msgid "Назад к документу"
+msgstr "Back to document"
+
+msgid "Назад к коллекции"
+msgstr "Back to collection"
+
+msgid "Назад к списку моделей"
+msgstr "Back to model list"
+
+msgid "Название"
+msgstr "Name"
+
+msgid "Название *"
+msgstr "Name *"
+
+msgid "Название версии"
+msgstr "Version name"
+
+msgid "Название группы (опционально)"
+msgstr "Group name (optional)"
+
+msgid "Название датасета"
+msgstr "Dataset name"
+
+msgid "Название датасета (в системе)"
+msgstr "Dataset name (in the system)"
+
+msgid "Название документа"
+msgstr "Document name"
+
+msgid "Название задачи"
+msgstr "Task name"
+
+msgid "Название или HF ID..."
+msgstr "Name or HF ID..."
+
+msgid "Название коллекции *"
+msgstr "Collection name *"
+
+msgid "Название модели"
+msgstr "Model name"
+
+msgid "Название набора"
+msgstr "Set name"
+
+msgid "Название набора..."
+msgstr "Set name..."
+
+msgid "Название сессии"
+msgstr "Session name"
+
+msgid "Название слитой модели"
+msgstr "Merged model name"
+
+msgid "Название сравнения *"
+msgstr "Comparison name *"
+
+msgid "Название, описание..."
+msgstr "Name, description..."
+
+msgid "Назначить коллекцию"
+msgstr "Assign collection"
+
+msgid "Найдите модель в каталоге"
+msgstr "Find a model in the catalog"
+
+msgid "Найти"
+msgstr "Find"
+
+msgid "Например: \"Дообучение Qwen на юридических документах\""
+msgstr "E.g.: \"Fine-tuning Qwen on legal documents\""
+
+msgid "Например: \"Сравнение Qwen и Llama на русских вопросах\""
+msgstr "E.g.: \"Qwen vs Llama comparison on Russian questions\""
+
+msgid "Например: 1-50, 60-100, 105, 110"
+msgstr "E.g.: 1-50, 60-100, 105, 110"
+
+msgid "Например: 7000000000 для 7B"
+msgstr "E.g.: 7000000000 for 7B"
+
+msgid "Например: AI, Python, Math"
+msgstr "E.g.: AI, Python, Math"
+
+msgid "Например: Qwen/Qwen2.5-7B-Instruct"
+msgstr "E.g.: Qwen/Qwen2.5-7B-Instruct"
+
+msgid "Например: sentence-transformers/all-MiniLM-L6-v2, intfloat/e5-large-v2"
+msgstr "E.g.: sentence-transformers/all-MiniLM-L6-v2, intfloat/e5-large-v2"
+
+msgid "Например: Сравнение Qwen3-8B до и после обучения"
+msgstr "E.g.: Qwen3-8B comparison before and after training"
+
+msgid "Настройки"
+msgstr "Settings"
+
+msgid "Настройки Hugging Face"
+msgstr "Hugging Face settings"
+
+msgid "Настройки генерации"
+msgstr "Generation settings"
+
+msgid "Настройки коллекции определяют, как документы будут обрабатываться"
+msgstr "Collection settings define how documents are processed"
+
+msgid "Настройки обработки документов"
+msgstr "Document processing settings"
+
+msgid "Начать загрузку сразу"
+msgstr "Start download immediately"
+
+msgid "Начать слияние"
+msgstr "Start merge"
+
+msgid "Начните поиск датасетов на Hugging Face Hub"
+msgstr "Start searching datasets on the Hugging Face Hub"
+
+msgid "Начните поиск моделей на Hugging Face Hub"
+msgstr "Start searching models on the Hugging Face Hub"
+
+msgid "Начните поиск моделей эмбеддингов"
+msgstr "Start searching embedding models"
+
+msgid "Начните с импорта датасета с Hugging Face Hub"
+msgstr "Start by importing a dataset from the Hugging Face Hub"
+
+msgid "Не выбрано ни одного документа."
+msgstr "No documents selected."
+
+msgid "Не измерена"
+msgstr "Not measured"
+
+msgid "Не найдено"
+msgstr "Not found"
+
+msgid "Не найдено датасетов по вашему запросу"
+msgstr "No datasets found for your query"
+
+msgid "Не найдено популярных датасетов"
+msgstr "No popular datasets found"
+
+msgid "Не оценена"
+msgstr "Not evaluated"
+
+msgid "Не создан"
+msgstr "Not created"
+
+msgid "Не созданы"
+msgstr "Not created"
+
+msgid "Не удалось загрузить информацию о задачах"
+msgstr "Failed to load task information"
+
+msgid "Не удалось загрузить коллекции"
+msgstr "Failed to load collections"
+
+msgid "Не удалось загрузить модели"
+msgstr "Failed to load models"
+
+msgid "Не удалось получить информацию о GPU"
+msgstr "Failed to get GPU information"
+
+msgid "Не удалось проанализировать ответ"
+msgstr "Failed to analyze the response"
+
+msgid "Неактивна"
+msgstr "Inactive"
+
+msgid "Недавние загрузки эмбеддингов"
+msgstr "Recent embedding downloads"
+
+msgid "Недоступно"
+msgstr "Unavailable"
+
+msgid "Неизвестно"
+msgstr "Unknown"
+
+msgid "Необязательно, от 0 до 1"
+msgstr "Optional, from 0 to 1"
+
+msgid "Неправильное имя пользователя или пароль."
+msgstr "Incorrect username or password."
+
+msgid "Несколько документов"
+msgstr "Multiple documents"
+
+msgid "Нет"
+msgstr "No"
+
+msgid "Нет активных загрузок моделей"
+msgstr "No active model downloads"
+
+msgid "Нет активных загрузок эмбеддингов"
+msgstr "No active embedding downloads"
+
+msgid "Нет активных задач загрузки"
+msgstr "No active download tasks"
+
+msgid "Нет активных задач загрузки моделей"
+msgstr "No active model download tasks"
+
+msgid "Нет активных сессий"
+msgstr "No active sessions"
+
+msgid "Нет версий"
+msgstr "No versions"
+
+msgid "Нет вопросов"
+msgstr "No questions"
+
+msgid "Нет вопросов для отображения"
+msgstr "No questions to display"
+
+msgid "Нет вопросов для отображения."
+msgstr "No questions to display."
+
+msgid "Нет выбранных чанков"
+msgstr "No chunks selected"
+
+msgid "Нет групп. Создайте группы чанков через редактирование."
+msgstr "No groups. Create chunk groups via editing."
+
+msgid "Нет данных для сравнения"
+msgstr "No data to compare"
+
+msgid "Нет датасетов"
+msgstr "No datasets"
+
+msgid "Нет датасетов дистилляции"
+msgstr "No distillation datasets"
+
+msgid "Нет документов в коллекции"
+msgstr "No documents in the collection"
+
+msgid "Нет доступных задач"
+msgstr "No tasks available"
+
+msgid "Нет доступных коллекций."
+msgstr "No collections available."
+
+msgid ""
+"Нет доступных коллекций. Сначала создайте коллекции и загрузите документы."
+msgstr ""
+"No collections available. First create collections and upload documents."
+
+msgid "Нет доступных моделей"
+msgstr "No models available"
+
+msgid "Нет доступных моделей для слияния"
+msgstr "No models available for merging"
+
+msgid "Нет доступных моделей эмбеддингов"
+msgstr "No embedding models available"
+
+msgid "Нет доступных моделей. Сначала загрузите модели в интерфейсе моделей."
+msgstr "No models available. First download models in the models section."
+
+msgid "Нет доступных ответов"
+msgstr "No answers available"
+
+msgid "Нет загруженных моделей"
+msgstr "No downloaded models"
+
+msgid "Нет задач fine-tuning"
+msgstr "No fine-tuning tasks"
+
+msgid "Нет задач генерации ответов"
+msgstr "No answer generation tasks"
+
+msgid "Нет задач конвертации"
+msgstr "No conversion tasks"
+
+msgid "Нет задач оценки"
+msgstr "No evaluation tasks"
+
+msgid "Нет записей"
+msgstr "No records"
+
+msgid "Нет импортированных датасетов"
+msgstr "No imported datasets"
+
+msgid "Нет импортированных датасетов Hugging Face"
+msgstr "No Hugging Face imported datasets"
+
+msgid "Нет коллекций"
+msgstr "No collections"
+
+msgid "Нет моделей"
+msgstr "No models"
+
+msgid "Нет моделей эмбеддингов"
+msgstr "No embedding models"
+
+msgid "Нет наборов вопросов"
+msgstr "No question sets"
+
+msgid "Нет описания"
+msgstr "No description"
+
+msgid "Нет оценок"
+msgstr "No ratings"
+
+msgid "Нет подходящих моделей для слияния"
+msgstr "No suitable models for merging"
+
+msgid "Нет популярных моделей"
+msgstr "No popular models"
+
+msgid "Нет популярных моделей для этого типа"
+msgstr "No popular models for this type"
+
+msgid "Нет ручных датасетов"
+msgstr "No manual datasets"
+
+msgid "Нет сравнений"
+msgstr "No comparisons"
+
+msgid "Нет чанков в этом документе"
+msgstr "No chunks in this document"
+
+msgid "Нет шаблонов"
+msgstr "No templates"
+
+msgid "Ничего не найдено"
+msgstr "Nothing found"
+
+msgid "Новая задача"
+msgstr "New task"
+
+msgid "Новая коллекция"
+msgstr "New collection"
+
+msgid "Новая конвертация"
+msgstr "New conversion"
+
+msgid "Новая сессия"
+msgstr "New session"
+
+msgid "Новое сравнение"
+msgstr "New comparison"
+
+msgid "Новый набор"
+msgstr "New set"
+
+msgid "Новый пароль"
+msgstr "New password"
+
+msgid "Новый тест"
+msgstr "New test"
+
+msgid "Новый файл"
+msgstr "New file"
+
+msgid "Нуклеусная выборка (0.0-1.0)"
+msgstr "Nucleus sampling (0.0–1.0)"
+
+msgid "О загрузке датасетов:"
+msgstr "About dataset downloads:"
+
+msgid "О модели"
+msgstr "About the model"
+
+msgid "Обнаружено"
+msgstr "Detected"
+
+msgid "Обновить"
+msgstr "Refresh"
+
+msgid "Обновить индекс"
+msgstr "Refresh index"
+
+msgid "Обновить метрики"
+msgstr "Refresh metrics"
+
+msgid "Обновлена"
+msgstr "Updated"
+
+msgid "Обновлена:"
+msgstr "Updated:"
+
+msgid "Обрабатывается"
+msgstr "Processing"
+
+msgid "Обработано токенов"
+msgstr "Tokens processed"
+
+msgid "Обработка"
+msgstr "Processing"
+
+msgid "Обучение"
+msgstr "Training"
+
+msgid ""
+"Обучение будет выполнено в фоновом режиме. Это может занять от 30 минут до "
+"нескольких часов. Вы можете отслеживать прогресс на странице задачи."
+msgstr ""
+"Training will run in the background. It may take from 30 minutes to several "
+"hours. You can track progress on the task page."
+
+msgid "Обучение на документах"
+msgstr "Document-based training"
+
+msgid "Обучение на инструкциях"
+msgstr "Instruction-based training"
+
+msgid "Обучение нейросети"
+msgstr "Neural network training"
+
+msgid "Общий прогресс"
+msgstr "Overall progress"
+
+msgid "Общий размер"
+msgstr "Total size"
+
+msgid "Объяснение концепции"
+msgstr "Concept explanation"
+
+msgid "Ограничение словаря (1-100)"
+msgstr "Vocabulary limit (1–100)"
+
+msgid "Один вопрос на строку"
+msgstr "One question per line"
+
+msgid "Один документ"
+msgstr "One document"
+
+msgid "Ожидает ответа"
+msgstr "Awaiting answer"
+
+msgid "Ожидают ответа"
+msgstr "Awaiting answers"
+
+msgid "Оперативная память"
+msgstr "RAM"
+
+msgid "Описание"
+msgstr "Description"
+
+msgid "Описание (необязательно)"
+msgstr "Description (optional)"
+
+msgid "Описание набора"
+msgstr "Set description"
+
+msgid "Опишите назначение и содержание коллекции"
+msgstr "Describe the purpose and content of the collection"
+
+msgid "Опишите цель сравнения..."
+msgstr "Describe the goal of the comparison..."
+
+msgid "Опциональное описание датасета"
+msgstr "Optional dataset description"
+
+msgid "Основная информация"
+msgstr "Basic information"
+
+msgid "Основные параметры:"
+msgstr "Main parameters:"
+
+msgid "Оставьте комментарий (необязательно)"
+msgstr "Leave a comment (optional)"
+
+msgid "Оставьте пустым для использования шаблона по умолчанию"
+msgstr "Leave empty to use the default template"
+
+msgid "Ответ"
+msgstr "Answer"
+
+msgid "Ответ ассистента"
+msgstr "Assistant's answer"
+
+msgid "Ответ будет сохранён только для этого датасета"
+msgstr "The answer will be saved only for this dataset"
+
+msgid "Ответ ещё не сгенерирован"
+msgstr "The answer is not generated yet"
+
+msgid "Ответ модели"
+msgstr "Model answer"
+
+msgid "Ответ модели:"
+msgstr "Model answer:"
+
+msgid "Ответ не сгенерирован"
+msgstr "Answer not generated"
+
+msgid "Ответ получен"
+msgstr "Answer received"
+
+msgid "Ответ:"
+msgstr "Answer:"
+
+msgid "Ответы моделей:"
+msgstr "Model answers:"
+
+msgid ""
+"Ответь на вопрос, используя только информацию из "
+"контекста.\\n\\nКонтекст:\\n{context}\\n\\nВопрос: {question}\\n\\nОтвет:"
+msgstr ""
+"Answer the question using only the information from the "
+"context.\\n\\nContext:\\n{context}\\n\\nQuestion: {question}\\n\\nAnswer:"
+
+msgid "Открыть в чате"
+msgstr "Open in chat"
+
+msgid "Открыть документ"
+msgstr "Open document"
+
+msgid "Отмена"
+msgstr "Cancel"
+
+msgid "Отменено"
+msgstr "Cancelled"
+
+msgid "Отменить"
+msgstr "Cancel"
+
+msgid "Относительный путь"
+msgstr "Relative path"
+
+msgid "Отображаемое имя"
+msgstr "Display name"
+
+msgid "Отправить"
+msgstr "Send"
+
+msgid "Отправить (Enter)"
+msgstr "Send (Enter)"
+
+msgid "Отправлено"
+msgstr "Sent"
+
+msgid "Оценить"
+msgstr "Rate"
+
+msgid "Оценка"
+msgstr "Rating"
+
+msgid "Оценка качества (0-1)"
+msgstr "Quality score (0–1)"
+
+msgid "Оценка ответа"
+msgstr "Answer rating"
+
+msgid "Оценка ресурсов"
+msgstr "Resource estimate"
+
+msgid "Оценки"
+msgstr "Ratings"
+
+msgid "Очистить"
+msgstr "Clear"
+
+msgid "Очистить историю"
+msgstr "Clear history"
+
+msgid "Очистить память"
+msgstr "Clear memory"
+
+msgid "Очистить чат"
+msgstr "Clear chat"
+
+msgid "Ошибка"
+msgstr "Error"
+
+msgid "Ошибка загрузки"
+msgstr "Download error"
+
+msgid "Ошибка загрузки GPU данных"
+msgstr "Failed to load GPU data"
+
+msgid "Ошибка загрузки вопросов"
+msgstr "Failed to load questions"
+
+msgid "Ошибка загрузки документов"
+msgstr "Failed to load documents"
+
+msgid "Ошибка загрузки истории"
+msgstr "Failed to load history"
+
+msgid "Ошибка загрузки коллекций"
+msgstr "Failed to load collections"
+
+msgid "Ошибка загрузки метрик"
+msgstr "Failed to load metrics"
+
+msgid "Ошибка загрузки моделей"
+msgstr "Failed to load models"
+
+msgid "Ошибка загрузки популярных датасетов"
+msgstr "Failed to load popular datasets"
+
+msgid "Ошибка загрузки популярных моделей"
+msgstr "Failed to load popular models"
+
+msgid "Ошибка загрузки статуса GPU"
+msgstr "Failed to load GPU status"
+
+msgid "Ошибка загрузки чанков"
+msgstr "Failed to load chunks"
+
+msgid "Ошибка поиска"
+msgstr "Search error"
+
+msgid "Ошибка при выполнении поиска"
+msgstr "Error while searching"
+
+msgid "Ошибка при поиске датасетов"
+msgstr "Error searching datasets"
+
+msgid "Ошибка сети"
+msgstr "Network error"
+
+msgid "Ошибка!"
+msgstr "Error!"
+
+msgid "Ошибка:"
+msgstr "Error:"
+
+msgid "Ошибок"
+msgstr "Errors"
+
+msgid "Память"
+msgstr "Memory"
+
+msgid "Память системы"
+msgstr "System memory"
+
+msgid "Панель управления"
+msgstr "Dashboard"
+
+msgid "Параметры"
+msgstr "Parameters"
+
+msgid "Параметры LoRA"
+msgstr "LoRA parameters"
+
+msgid "Параметры RAFT"
+msgstr "RAFT parameters"
+
+msgid "Параметры генерации"
+msgstr "Generation parameters"
+
+msgid ""
+"Параметры генерации по умолчанию (можно будет переопределить в группах)"
+msgstr "Default generation parameters (can be overridden per group)"
+
+msgid "Параметры генерации:"
+msgstr "Generation parameters:"
+
+msgid "Параметры модели"
+msgstr "Model parameters"
+
+msgid "Параметры модели:"
+msgstr "Model parameters:"
+
+msgid "Параметры сборки"
+msgstr "Build parameters"
+
+msgid "Параметры:"
+msgstr "Parameters:"
+
+msgid "Пароль"
+msgstr "Password"
+
+msgid "Пароль должен содержать не менее 8 символов."
+msgstr "The password must be at least 8 characters long."
+
+msgid "Пароль успешно изменен"
+msgstr "Password changed successfully"
+
+msgid "Перезагрузить модель"
+msgstr "Reload model"
+
+msgid "Перезапуск задачи"
+msgstr "Task restart"
+
+msgid "Перезапустить"
+msgstr "Restart"
+
+msgid "Перезапустить задачу"
+msgstr "Restart task"
+
+msgid "Переименовать"
+msgstr "Rename"
+
+msgid "Переименовать сессию"
+msgstr "Rename session"
+
+msgid "Перейдите в раздел \"Модели\" для загрузки"
+msgstr "Go to the \"Models\" section to download"
+
+msgid "Перейти в чат"
+msgstr "Go to chat"
+
+msgid "Перейти к модели"
+msgstr "Go to model"
+
+msgid "Перейти к моделям"
+msgstr "Go to models"
+
+msgid "Перекрытие"
+msgstr "Overlap"
+
+msgid "Перекрытие помогает сохранить контекст между фрагментами текста"
+msgstr "Overlap helps preserve context between text fragments"
+
+msgid "Перекрытие чанков"
+msgstr "Chunk overlap"
+
+msgid "Перекрытие чанков (символов) *"
+msgstr "Chunk overlap (characters) *"
+
+msgid "Перекрытие:"
+msgstr "Overlap:"
+
+msgid "Перекрытие: 200"
+msgstr "Overlap: 200"
+
+msgid "Перекрытие: 300"
+msgstr "Overlap: 300"
+
+msgid "Перекрытие: 400"
+msgstr "Overlap: 400"
+
+msgid "Переобработать"
+msgstr "Reprocess"
+
+msgid "Переписать ответ"
+msgstr "Rewrite answer"
+
+msgid "Пересоздать чанки (удалит существующие и создаст новые)"
+msgstr "Recreate chunks (deletes existing ones and creates new)"
+
+msgid "Перетащите файл сюда"
+msgstr "Drop a file here"
+
+msgid "Перетащите файлы сюда"
+msgstr "Drop files here"
+
+msgid "Печатает..."
+msgstr "Typing..."
+
+msgid "Плотность (density)"
+msgstr "Density"
+
+msgid "По времени"
+msgstr "By time"
+
+msgid "По дате"
+msgstr "By date"
+
+msgid "По дате (новые)"
+msgstr "By date (newest)"
+
+msgid "По дате (старые)"
+msgstr "By date (oldest)"
+
+msgid "По загрузкам"
+msgstr "By downloads"
+
+msgid "По имени А-Я"
+msgstr "By name A–Z"
+
+msgid "По имени Я-А"
+msgstr "By name Z–A"
+
+msgid "По лайкам"
+msgstr "By likes"
+
+msgid "По названию"
+msgstr "By name"
+
+msgid "По названию (А-Я)"
+msgstr "By name (A–Z)"
+
+msgid "По названию (Я-А)"
+msgstr "By name (Z–A)"
+
+msgid "По параграфам"
+msgstr "By paragraphs"
+
+msgid "По размеру (↑)"
+msgstr "By size (↑)"
+
+msgid "По размеру (↓)"
+msgstr "By size (↓)"
+
+msgid "По умолчанию"
+msgstr "Default"
+
+msgid "По шагам"
+msgstr "By steps"
+
+msgid "По эпохам"
+msgstr "By epochs"
+
+msgid "Повторить загрузку"
+msgstr "Retry download"
+
+msgid "Погружение в доменную терминологию"
+msgstr "Domain terminology immersion"
+
+msgid "Подготовка"
+msgstr "Preparing"
+
+msgid "Поддерживаемые форматы: .txt, .csv, .json"
+msgstr "Supported formats: .txt, .csv, .json"
+
+msgid "Поддерживаемые форматы: PDF, DOCX, TXT, HTML, MD, CSV, Excel"
+msgstr "Supported formats: PDF, DOCX, TXT, HTML, MD, CSV, Excel"
+
+msgid "Поддерживаются датасеты, содержащие поля"
+msgstr "Datasets containing fields are supported"
+
+msgid "Поддерживаются файлы JSONL с парами \"instruction\"/\"output\" или \"text\"/\"answer\""
+msgstr ""
+"JSONL files with \"instruction\"/\"output\" or \"text\"/\"answer\" pairs are"
+" supported"
+
+msgid "Подробнее"
+msgstr "Details"
+
+msgid "Подробно"
+msgstr "Detailed"
+
+msgid "Подробные метрики"
+msgstr "Detailed metrics"
+
+msgid "Подтверждаю необратимое действие"
+msgstr "I confirm the irreversible action"
+
+msgid "Подтверждение выгрузки"
+msgstr "Unload confirmation"
+
+msgid "Подтверждение нового пароля"
+msgstr "Confirm new password"
+
+msgid "Подтверждение удаления"
+msgstr "Delete confirmation"
+
+msgid "Пожалуйста, исправьте ошибки ниже."
+msgstr "Please fix the errors below."
+
+msgid "Поиск"
+msgstr "Search"
+
+msgid "Поиск (Enter)"
+msgstr "Search (Enter)"
+
+msgid "Поиск датасетов"
+msgstr "Search datasets"
+
+msgid "Поиск датасетов (например: alpaca, dolly, oasst1)..."
+msgstr "Search datasets (e.g.: alpaca, dolly, oasst1)..."
+
+msgid "Поиск коллекций..."
+msgstr "Search collections..."
+
+msgid "Поиск моделей эмбеддингов на Hugging Face"
+msgstr "Search embedding models on Hugging Face"
+
+msgid "Поиск моделей..."
+msgstr "Search models..."
+
+msgid "Поиск по вопросам..."
+msgstr "Search questions..."
+
+msgid "Поиск по документам"
+msgstr "Search documents"
+
+msgid "Поиск по документам (RAG)"
+msgstr "Search documents (RAG)"
+
+msgid "Поиск по имени, описанию..."
+msgstr "Search by name, description..."
+
+msgid "Поиск по названию или автору..."
+msgstr "Search by name or author..."
+
+msgid "Поиск по названию коллекции..."
+msgstr "Search by collection name..."
+
+msgid "Поиск по названию..."
+msgstr "Search by name..."
+
+msgid "Поиск по тексту чанков..."
+msgstr "Search chunk text..."
+
+msgid "Поиск..."
+msgstr "Search..."
+
+msgid "Показать"
+msgstr "Show"
+
+msgid "Показать 5' : '"
+msgstr "Show 5' : '"
+
+msgid "Показать все"
+msgstr "Show all"
+
+msgid "Показать историю версий ("
+msgstr "Show version history ("
+
+msgid "Полная перестройка"
+msgstr "Full rebuild"
+
+msgid "Полуточность, хороший баланс"
+msgstr "Half precision, good balance"
+
+msgid "Получение данных GPU..."
+msgstr "Fetching GPU data..."
+
+msgid "Получено"
+msgstr "Received"
+
+msgid "Пометить как безопасную"
+msgstr "Mark as safe"
+
+msgid "Попробуйте изменить запрос или фильтры"
+msgstr "Try changing the query or filters"
+
+msgid "Попробуйте изменить параметры фильтрации или создайте новую модель"
+msgstr "Try changing the filters or create a new model"
+
+msgid "Попробуйте обновить страницу"
+msgstr "Try refreshing the page"
+
+msgid "Попробуйте позже"
+msgstr "Try again later"
+
+msgid "Популярные модели эмбеддингов"
+msgstr "Popular embedding models"
+
+msgid "Порог релевантности"
+msgstr "Relevance threshold"
+
+msgid "После изменения конфигурации потребуется перезагрузить модель."
+msgstr "After changing the configuration the model must be reloaded."
+
+msgid ""
+"После импорта датасет можно использовать для обучения моделей (fine-tuning) "
+"методами instruction и RAFT"
+msgstr ""
+"After import, the dataset can be used for model training (fine-tuning) with "
+"instruction and RAFT methods"
+
+msgid "Последние датасеты"
+msgstr "Recent datasets"
+
+msgid "Последние задачи оценки"
+msgstr "Recent evaluation tasks"
+
+msgid "Последние модели"
+msgstr "Recent models"
+
+msgid "Последний вход"
+msgstr "Last login"
+
+msgid "Последняя активность"
+msgstr "Last activity"
+
+msgid "Постраничная навигация"
+msgstr "Pagination"
+
+msgid "Построить FAISS индекс"
+msgstr "Build FAISS index"
+
+msgid "Построить индекс"
+msgstr "Build index"
+
+msgid "Предложений:"
+msgstr "Suggestions:"
+
+msgid "Предпросмотр"
+msgstr "Preview"
+
+msgid "Предпросмотр задачи"
+msgstr "Task preview"
+
+msgid "Предпросмотр файла"
+msgstr "File preview"
+
+msgid "Предустановки:"
+msgstr "Presets:"
+
+msgid "Префикс названия"
+msgstr "Name prefix"
+
+msgid ""
+"При включении модель будет получать контекст из выбранных коллекций "
+"документов"
+msgstr ""
+"When enabled, the model will receive context from the selected document "
+"collections"
+
+msgid "Приватная"
+msgstr "Private"
+
+msgid "Применить"
+msgstr "Apply"
+
+msgid "Применить фильтры"
+msgstr "Apply filters"
+
+msgid "Пример для Llama:"
+msgstr "Example for Llama:"
+
+msgid "Пример для Qwen:"
+msgstr "Example for Qwen:"
+
+msgid "Пример кода"
+msgstr "Code example"
+
+msgid "Пример: legal, finance, report"
+msgstr "Example: legal, finance, report"
+
+msgid "Примерно токенов:"
+msgstr "Approx. tokens:"
+
+msgid "Примерное время"
+msgstr "Estimated time"
+
+msgid "Примеры"
+msgstr "Examples"
+
+msgid "Примеры ответов:"
+msgstr "Answer examples:"
+
+msgid "Примеры форматов"
+msgstr "Format examples"
+
+msgid "Примечание:"
+msgstr "Note:"
+
+msgid "Принудительная выгрузка"
+msgstr "Forced unload"
+
+msgid "Принудительная выгрузка может привести к ошибкам в активных сессиях."
+msgstr "Forced unload may cause errors in active sessions."
+
+msgid "Принудительно выгрузить"
+msgstr "Force unload"
+
+msgid "Проверено"
+msgstr "Verified"
+
+msgid "Проверить"
+msgstr "Check"
+
+msgid "Проверить JSON"
+msgstr "Validate JSON"
+
+msgid "Проверить датасет"
+msgstr "Validate dataset"
+
+msgid "Проверка статуса..."
+msgstr "Checking status..."
+
+msgid "Проверка..."
+msgstr "Checking..."
+
+msgid "Проверьте работу модели с примерными запросами"
+msgstr "Test the model with sample queries"
+
+msgid "Прогресс"
+msgstr "Progress"
+
+msgid "Прогресс выполнения"
+msgstr "Execution progress"
+
+msgid "Прогресс обучения"
+msgstr "Training progress"
+
+msgid "Прогресс по моделям:"
+msgstr "Progress by models:"
+
+msgid "Прогресс эмбеддингов"
+msgstr "Embedding progress"
+
+msgid "Прогресс:"
+msgstr "Progress:"
+
+msgid "Продолжить"
+msgstr "Continue"
+
+msgid "Проиндексирован"
+msgstr "Indexed"
+
+msgid "Проиндексировано"
+msgstr "Indexed"
+
+msgid "Промпт"
+msgstr "Prompt"
+
+msgid "Промпты для сравнения *"
+msgstr "Prompts for comparison *"
+
+msgid "Просмотр"
+msgstr "View"
+
+msgid "Просмотреть датасет"
+msgstr "View dataset"
+
+msgid "Публичная"
+msgstr "Public"
+
+msgid "Публичная коллекция"
+msgstr "Public collection"
+
+msgid "Публичная модель (доступна другим)"
+msgstr "Public model (visible to others)"
+
+msgid "Публичный доступ"
+msgstr "Public access"
+
+msgid "Развернуть"
+msgstr "Expand"
+
+msgid "Развернуть все"
+msgstr "Expand all"
+
+msgid "Раздел"
+msgstr "Section"
+
+msgid "Размер"
+msgstr "Size"
+
+msgid "Размер окна"
+msgstr "Window size"
+
+msgid "Размер словаря"
+msgstr "Vocabulary size"
+
+msgid "Размер словаря:"
+msgstr "Vocabulary size:"
+
+msgid "Размер чанка (символов)"
+msgstr "Chunk size (characters)"
+
+msgid "Размер чанка (символов) *"
+msgstr "Chunk size (characters) *"
+
+msgid "Размер чанка:"
+msgstr "Chunk size:"
+
+msgid "Размер чанка: 1000"
+msgstr "Chunk size: 1000"
+
+msgid "Размер чанка: 1500"
+msgstr "Chunk size: 1500"
+
+msgid "Размер чанка: 2000"
+msgstr "Chunk size: 2000"
+
+msgid "Размер:"
+msgstr "Size:"
+
+msgid "Размерность"
+msgstr "Dimension"
+
+msgid "Размерность эмбеддингов"
+msgstr "Embedding dimension"
+
+msgid "Размерность:"
+msgstr "Dimension:"
+
+msgid "Разнообразие"
+msgstr "Diversity"
+
+msgid "Рассуждение модели:"
+msgstr "Model reasoning:"
+
+msgid "Ревизия"
+msgstr "Revision"
+
+msgid "Редактирование"
+msgstr "Editing"
+
+msgid "Редактирование вопроса"
+msgstr "Edit question"
+
+msgid "Редактирование документа"
+msgstr "Edit document"
+
+msgid "Редактирование конфигурации"
+msgstr "Edit configuration"
+
+msgid "Редактировать"
+msgstr "Edit"
+
+msgid "Редактировать конфигурацию"
+msgstr "Edit configuration"
+
+msgid "Редактировать ответ"
+msgstr "Edit answer"
+
+msgid ""
+"Редактируйте конфигурацию загрузки модели. Будьте осторожны с синтаксисом "
+"JSON."
+msgstr "Edit the model download configuration. Be careful with JSON syntax."
+
+msgid "Результат"
+msgstr "Result"
+
+msgid "Результат инференса"
+msgstr "Inference result"
+
+msgid "Результаты оценки"
+msgstr "Evaluation results"
+
+msgid "Результаты по моделям"
+msgstr "Results by models"
+
+msgid "Результаты тестирования"
+msgstr "Test results"
+
+msgid "Результаты:"
+msgstr "Results:"
+
+msgid "Результирующая модель"
+msgstr "Resulting model"
+
+msgid "Рекомендации"
+msgstr "Recommendations"
+
+msgid "Рекомендации по настройке"
+msgstr "Configuration recommendations"
+
+msgid "Рекомендуемые модели:"
+msgstr "Recommended models:"
+
+msgid "Рекомендуемые настройки:"
+msgstr "Recommended settings:"
+
+msgid "Рекурсивное"
+msgstr "Recursive"
+
+msgid "Русский"
+msgstr "Russian"
+
+msgid "Ручной"
+msgstr "Manual"
+
+msgid "Ручной ввод вопросов"
+msgstr "Manual question entry"
+
+msgid "С загруженной моделью"
+msgstr "With a downloaded model"
+
+msgid "Сбалансированный"
+msgstr "Balanced"
+
+msgid "Сбросить"
+msgstr "Reset"
+
+msgid "Сбросить зависшую задачу"
+msgstr "Reset stuck task"
+
+msgid "Сбросить к значениям по умолчанию"
+msgstr "Reset to defaults"
+
+msgid "Сбросить статус"
+msgstr "Reset status"
+
+msgid "Свободно"
+msgstr "Free"
+
+msgid "Сводная статистика"
+msgstr "Summary statistics"
+
+msgid "Связанные данные"
+msgstr "Related data"
+
+msgid "Сгенерированные вопросы"
+msgstr "Generated questions"
+
+msgid "Сгенерировано токенов"
+msgstr "Tokens generated"
+
+msgid "Сделать модель публичной"
+msgstr "Make model public"
+
+msgid "Сделать моделью по умолчанию"
+msgstr "Make default model"
+
+msgid "Сделать по умолчанию"
+msgstr "Make default"
+
+msgid "Семантический"
+msgstr "Semantic"
+
+msgid "Семантический вес"
+msgstr "Semantic weight"
+
+msgid ""
+"Семантический поиск будет работать медленнее. Рекомендуется построить индекс"
+" FAISS."
+msgstr ""
+"Semantic search will be slower. Building a FAISS index is recommended."
+
+msgid "Семантическое"
+msgstr "Semantic"
+
+msgid "Сессии"
+msgstr "Sessions"
+
+msgid "Сеть"
+msgstr "Network"
+
+msgid "Сильная экономия памяти, небольшое падение качества"
+msgstr "Strong memory savings, slight quality drop"
+
+msgid "Система оценки моделей"
+msgstr "Model evaluation system"
+
+msgid "Системная информация"
+msgstr "System information"
+
+msgid "Системные метрики"
+msgstr "System metrics"
+
+msgid "Системный промпт (опционально)"
+msgstr "System prompt (optional)"
+
+msgid "Скачано"
+msgstr "Downloads"
+
+msgid "Скачать"
+msgstr "Download"
+
+msgid "Скачать как JSONL"
+msgstr "Download as JSONL"
+
+msgid "Скачать файл"
+msgstr "Download file"
+
+msgid "Скачивание модели..."
+msgstr "Downloading model..."
+
+msgid "Скорость:"
+msgstr "Speed:"
+
+msgid "Скрыть историю версий ("
+msgstr "Hide version history ("
+
+msgid "Сливаемая модель"
+msgstr "Model to merge"
+
+msgid "Слитая"
+msgstr "Merged"
+
+msgid "Слитые"
+msgstr "Merged"
+
+msgid "Слияние"
+msgstr "Merging"
+
+msgid "Слияние моделей"
+msgstr "Model merging"
+
+msgid "Слов:"
+msgstr "Words:"
+
+msgid "Сложная"
+msgstr "Complex"
+
+msgid "Сложность"
+msgstr "Difficulty"
+
+msgid "Сложность:"
+msgstr "Difficulty:"
+
+msgid "Смена пароля"
+msgstr "Change password"
+
+msgid "Сменить модель:"
+msgstr "Switch model:"
+
+msgid "Сначала выберите коллекцию"
+msgstr "First select a collection"
+
+msgid "Сначала выберите набор вопросов"
+msgstr "First select a question set"
+
+msgid "Сначала новые"
+msgstr "Newest first"
+
+msgid "Сначала старые"
+msgstr "Oldest first"
+
+msgid "Собранные датасеты для дообучения моделей"
+msgstr "Collected datasets for model fine-tuning"
+
+msgid "Содержимое"
+msgstr "Content"
+
+msgid "Содержимое документа недоступно"
+msgstr "Document content is unavailable"
+
+msgid "Содержимое недоступно"
+msgstr "Content unavailable"
+
+msgid "Содержимое:"
+msgstr "Content:"
+
+msgid ""
+"Создавайте группы чанков, для каждой группы будут сгенерированы вопросы"
+msgstr "Create chunk groups; questions will be generated for each group"
+
+msgid "Создавайте наборы из документов и генерируйте вопросы для дистилляции"
+msgstr "Create sets from documents and generate questions for distillation"
+
+msgid "Создайте или загрузите датасет для начала оценки моделей"
+msgstr "Create or download a dataset to start evaluating models"
+
+msgid "Создайте новую сессию для начала диалога"
+msgstr "Create a new session to start a conversation"
+
+msgid "Создайте первое сравнение моделей"
+msgstr "Create the first model comparison"
+
+msgid "Создайте первую задачу для генерации ответов на вопросы"
+msgstr "Create the first answer-generation task"
+
+msgid "Создайте первую задачу для дообучения модели"
+msgstr "Create the first fine-tuning task"
+
+msgid "Создайте первую задачу оценки моделей"
+msgstr "Create the first model evaluation task"
+
+msgid "Создайте первую коллекцию, чтобы начать работу с RAG-системой"
+msgstr "Create the first collection to start with the RAG system"
+
+msgid "Создайте первую сессию, чтобы начать общение с моделями."
+msgstr "Create the first session to start talking to models."
+
+msgid "Создайте первый датасет"
+msgstr "Create the first dataset"
+
+msgid ""
+"Создайте первый набор для генерации вопросов из документов вашей коллекции."
+msgstr ""
+"Create the first set to generate questions from your collection documents."
+
+msgid "Создайте первый шаблон для быстрого запуска задач fine-tuning"
+msgstr "Create the first template for quick fine-tuning tasks"
+
+msgid "Создайте первый эксперимент для организации ваших моделей"
+msgstr "Create the first experiment to organize your models"
+
+msgid "Создан"
+msgstr "Created"
+
+msgid "Создана"
+msgstr "Created"
+
+msgid "Создана:"
+msgstr "Created:"
+
+msgid "Создание датасета вручную"
+msgstr "Create a dataset manually"
+
+msgid "Создание задачи генерации ответов"
+msgstr "Create an answer generation task"
+
+msgid "Создание задачи конвертации"
+msgstr "Create a conversion task"
+
+msgid "Создание новой задачи fine-tuning"
+msgstr "Create a new fine-tuning task"
+
+msgid "Создание новой задачи оценки"
+msgstr "Create a new evaluation task"
+
+msgid "Создание новой коллекции документов"
+msgstr "Create a new document collection"
+
+msgid "Создание сравнения моделей"
+msgstr "Create a model comparison"
+
+msgid "Создано эмбеддингов"
+msgstr "Embeddings created"
+
+msgid "Созданы"
+msgstr "Created"
+
+msgid "Создать"
+msgstr "Create"
+
+msgid "Создать версию"
+msgstr "Create version"
+
+msgid "Создать вручную"
+msgstr "Create manually"
+
+msgid "Создать датасет"
+msgstr "Create dataset"
+
+msgid "Создать задачу"
+msgstr "Create task"
+
+msgid "Создать задачу оценки"
+msgstr "Create evaluation task"
+
+msgid "Создать и добавить документы"
+msgstr "Create and add documents"
+
+msgid "Создать коллекцию"
+msgstr "Create collection"
+
+msgid "Создать модель"
+msgstr "Create model"
+
+msgid "Создать набор"
+msgstr "Create set"
+
+msgid "Создать недостающие эмбеддинги"
+msgstr "Create missing embeddings"
+
+msgid "Создать новую версию"
+msgstr "Create new version"
+
+msgid "Создать первую задачу"
+msgstr "Create the first task"
+
+msgid "Создать сессию"
+msgstr "Create session"
+
+msgid "Создать сравнение"
+msgstr "Create comparison"
+
+msgid "Создать шаблон"
+msgstr "Create template"
+
+msgid "Создать эксперимент"
+msgstr "Create experiment"
+
+msgid "Создать эмбеддинги"
+msgstr "Create embeddings"
+
+msgid "Сообщение"
+msgstr "Message"
+
+msgid "Сортировка"
+msgstr "Sorting"
+
+msgid "Состояние системы"
+msgstr "System state"
+
+msgid "Сохранить"
+msgstr "Save"
+
+msgid "Сохранить датасет"
+msgstr "Save dataset"
+
+msgid "Сохранить и перейти к группам"
+msgstr "Save and continue to groups"
+
+msgid "Сохранить изменения"
+msgstr "Save changes"
+
+msgid "Сохранить модель"
+msgstr "Save model"
+
+msgid "Сохранить набор"
+msgstr "Save set"
+
+msgid "Сохранить результат"
+msgstr "Save result"
+
+msgid "Сохранить токен"
+msgstr "Save token"
+
+msgid "Список моделей"
+msgstr "Model list"
+
+msgid "Список экспериментов"
+msgstr "Experiment list"
+
+msgid "Справка по конфигурации"
+msgstr "Configuration help"
+
+msgid "Сравнение моделей"
+msgstr "Model comparison"
+
+msgid "Сравнение ответов по вопросам"
+msgstr "Answer comparison by questions"
+
+msgid "Сравнить"
+msgstr "Compare"
+
+msgid "Сравнить модели"
+msgstr "Compare models"
+
+msgid "Сравнить с другими моделями"
+msgstr "Compare with other models"
+
+msgid "Среднее время ответа (с)"
+msgstr "Average response time (s)"
+
+msgid "Среднее число токенов"
+msgstr "Average token count"
+
+msgid "Средние (10K - 100K)"
+msgstr "Medium (10K–100K)"
+
+msgid "Средняя"
+msgstr "Average"
+
+msgid "Средняя длина"
+msgstr "Average length"
+
+msgid "Средняя длина слова:"
+msgstr "Average word length:"
+
+msgid "Средняя оценка:"
+msgstr "Average rating:"
+
+msgid "Стабильная"
+msgstr "Stable"
+
+msgid "Стандарт"
+msgstr "Standard"
+
+msgid "Старый пароль"
+msgstr "Current password"
+
+msgid "Статистика"
+msgstr "Statistics"
+
+msgid "Статистика использования"
+msgstr "Usage statistics"
+
+msgid "Статистика моделей"
+msgstr "Model statistics"
+
+msgid "Статус"
+msgstr "Status"
+
+msgid "Статус GPU"
+msgstr "GPU status"
+
+msgid "Статус модели:"
+msgstr "Model status:"
+
+msgid "Статус обработки"
+msgstr "Processing status"
+
+msgid "Статус:"
+msgstr "Status:"
+
+msgid "Столбцы: text, category, difficulty"
+msgstr "Columns: text, category, difficulty"
+
+msgid "Страница 1"
+msgstr "Page 1"
+
+msgid "Стратегия разделения *"
+msgstr "Splitting strategy *"
+
+msgid "Стратегия: По параграфам"
+msgstr "Strategy: By paragraphs"
+
+msgid "Стратегия: Рекурсивное"
+msgstr "Strategy: Recursive"
+
+msgid "Стратегия: Фиксированный"
+msgstr "Strategy: Fixed"
+
+msgid "Творческий"
+msgstr "Creative"
+
+msgid "Теги"
+msgstr "Tags"
+
+msgid "Теги (через запятую)"
+msgstr "Tags (comma-separated)"
+
+msgid "Теги через запятую (russian, general, code)"
+msgstr "Comma-separated tags (russian, general, code)"
+
+msgid "Теги через запятую для классификации"
+msgstr "Comma-separated tags for classification"
+
+msgid "Текст вопроса:"
+msgstr "Question text:"
+
+msgid "Текстовые документы"
+msgstr "Text documents"
+
+msgid "Текстовые файлы — самый быстрый вариант"
+msgstr "Text files — the fastest option"
+
+msgid "Текущая"
+msgstr "Current"
+
+msgid "Текущий файл:"
+msgstr "Current file:"
+
+msgid "Текущий шаг:"
+msgstr "Current step:"
+
+msgid "Температура"
+msgstr "Temperature"
+
+msgid "Тест"
+msgstr "Test"
+
+msgid "Тестирование моделей"
+msgstr "Model testing"
+
+msgid "Тестирование модели"
+msgstr "Model testing"
+
+msgid "Тестировать"
+msgstr "Test"
+
+msgid "Тестовый поиск"
+msgstr "Test search"
+
+msgid "Тестовый промпт"
+msgstr "Test prompt"
+
+msgid "Технические детали"
+msgstr "Technical details"
+
+msgid "Тип"
+msgstr "Type"
+
+msgid "Тип индекса"
+msgstr "Index type"
+
+msgid "Тип источника"
+msgstr "Source type"
+
+msgid "Тип квантизации (для всех моделей)"
+msgstr "Quantization type (for all models)"
+
+msgid "Тип квантизации для обучения (будет применён к модели)"
+msgstr "Quantization type for training (will be applied to the model)"
+
+msgid "Тип модели"
+msgstr "Model type"
+
+msgid "Тип модели *"
+msgstr "Model type *"
+
+msgid "Тип поиска"
+msgstr "Search type"
+
+msgid "Тип:"
+msgstr "Type:"
+
+msgid "Токен Hugging Face"
+msgstr "Hugging Face token"
+
+msgid "Токенов/сек (всего)"
+msgstr "Tokens/s (total)"
+
+msgid "Токенов/сек (генерация)"
+msgstr "Tokens/s (generation)"
+
+msgid "Токены"
+msgstr "Tokens"
+
+msgid "Токены:"
+msgstr "Tokens:"
+
+msgid "Только активные модели доступны для выбора в коллекциях"
+msgstr "Only active models can be selected in collections"
+
+msgid "Только лучшие"
+msgstr "Best only"
+
+msgid "Только с индексом"
+msgstr "With index only"
+
+msgid "Топ-5 самых скачиваемых датасетов"
+msgstr "Top-5 most downloaded datasets"
+
+msgid "Топ-5 самых скачиваемых моделей"
+msgstr "Top-5 most downloaded models"
+
+msgid "Топ-P"
+msgstr "Top-P"
+
+msgid "Точность:"
+msgstr "Accuracy:"
+
+msgid "Точный"
+msgstr "Precise"
+
+msgid "Требуется диска"
+msgstr "Disk required"
+
+msgid "Требуется памяти"
+msgstr "Memory required"
+
+msgid "Требуется памяти (RAM/VRAM)"
+msgstr "Memory required (RAM/VRAM)"
+
+msgid "У вас ещё нет коллекций."
+msgstr "You have no collections yet."
+
+msgid "У вас нет активных задач"
+msgstr "You have no active tasks"
+
+msgid "У вас нет доступных коллекций"
+msgstr "You have no available collections"
+
+msgid "У вас пока нет чат-сессий"
+msgstr "You have no chat sessions yet"
+
+msgid "Уведомление"
+msgstr "Notification"
+
+msgid "Удален"
+msgstr "Deleted"
+
+msgid ""
+"Удаление будет \"мягким\" - модель будет деактивирована и перемещена в "
+"архив."
+msgstr ""
+"The deletion will be \"soft\" — the model will be deactivated and moved to "
+"the archive."
+
+msgid "Удаление документа"
+msgstr "Delete document"
+
+msgid "Удаление набора"
+msgstr "Delete set"
+
+msgid "Удаление сессии"
+msgstr "Delete session"
+
+msgid "Удалить"
+msgstr "Delete"
+
+msgid "Удалить коллекцию"
+msgstr "Delete collection"
+
+msgid "Удалить модель"
+msgstr "Delete model"
+
+msgid "Удалить набор"
+msgstr "Delete set"
+
+msgid "Удалить сессию"
+msgstr "Delete session"
+
+msgid ""
+"Укажите ID модели на Hugging Face Hub. Параметры модели будут заполнены "
+"автоматически."
+msgstr ""
+"Specify the model ID on the Hugging Face Hub. Model parameters will be "
+"filled in automatically."
+
+msgid "Уникальное имя в системе"
+msgstr "Unique name in the system"
+
+msgid "Уникальное имя в системе (только латиница, цифры, подчёркивание)"
+msgstr "Unique name in the system (latin letters, digits, underscore only)"
+
+msgid "Уникальное имя для идентификации"
+msgstr "Unique name for identification"
+
+msgid "Уникальное имя для идентификации датасета"
+msgstr "Unique name for dataset identification"
+
+msgid "Уникальное имя модели в системе"
+msgstr "Unique model name in the system"
+
+msgid "Управление вашими диалогами с AI"
+msgstr "Manage your AI conversations"
+
+msgid "Управление вашими диалогами с AI моделями"
+msgstr "Manage your conversations with AI models"
+
+msgid "Управление загруженными и доступными моделями"
+msgstr "Manage downloaded and available models"
+
+msgid "Управление задачами на генерацию ответов для вопросов дистилляции"
+msgstr "Manage answer generation tasks for distillation questions"
+
+msgid "Управление моделями"
+msgstr "Manage models"
+
+msgid "Управление моделями для создания векторных представлений текста"
+msgstr "Manage models for creating text vector representations"
+
+msgid "Управление системой"
+msgstr "System management"
+
+msgid "Устройств"
+msgstr "Devices"
+
+msgid "Устройства GPU не обнаружены"
+msgstr "No GPU devices detected"
+
+msgid "Устройство"
+msgstr "Device"
+
+msgid "Файл"
+msgstr "File"
+
+msgid "Файл не выбран"
+msgstr "No file selected"
+
+msgid "Файл с вопросами"
+msgstr "Question file"
+
+msgid "Фактическая квантизация"
+msgstr "Actual quantization"
+
+msgid "Фиксированный"
+msgstr "Fixed"
+
+msgid "Фильтр"
+msgstr "Filter"
+
+msgid "Фокус"
+msgstr "Focus"
+
+msgid "Формат файла"
+msgstr "File format"
+
+msgid "Форматировать"
+msgstr "Format"
+
+msgid "Форматировать JSON"
+msgstr "Format JSON"
+
+msgid "Формирование желаемого поведения"
+msgstr "Shaping desired behavior"
+
+msgid "Фрагменты документа (чанки)"
+msgstr "Document fragments (chunks)"
+
+msgid "Чанк"
+msgstr "Chunk"
+
+msgid "Чанк 1"
+msgstr "Chunk 1"
+
+msgid "Чанк 2"
+msgstr "Chunk 2"
+
+msgid "Чанки"
+msgstr "Chunks"
+
+msgid "Чанки документа"
+msgstr "Document chunks"
+
+msgid "Чанки не найдены"
+msgstr "No chunks found"
+
+msgid "Чанки не созданы"
+msgstr "Chunks not created"
+
+msgid "Чанки с эмбеддингами"
+msgstr "Chunks with embeddings"
+
+msgid "Чанков"
+msgstr "Chunks"
+
+msgid "Чанков с эмбеддингами"
+msgstr "Chunks with embeddings"
+
+msgid "Чат"
+msgstr "Chat"
+
+msgid "Чат-сессии"
+msgstr "Chat sessions"
+
+msgid "Чекпоинт доступен!"
+msgstr "Checkpoint available!"
+
+msgid "Чекпоинты"
+msgstr "Checkpoints"
+
+msgid "Человекочитаемое имя"
+msgstr "Human-readable name"
+
+msgid "Человекочитаемое имя для интерфейса"
+msgstr "Human-readable name for the interface"
+
+msgid "Через запятую: ru, code, instruct"
+msgstr "Comma-separated: ru, code, instruct"
+
+msgid "Что изменилось?"
+msgstr "What changed?"
+
+msgid "Что такое коллекция документов?"
+msgstr "What is a document collection?"
+
+msgid "Шаблон промпта (опционально)"
+msgstr "Prompt template (optional)"
+
+msgid "Штраф за повторения (0.0-2.0)"
+msgstr "Repetition penalty (0.0–2.0)"
+
+msgid "Эксперимент"
+msgstr "Experiment"
+
+msgid "Эксперименты"
+msgstr "Experiments"
+
+msgid "Эксперименты не найдены"
+msgstr "No experiments found"
+
+msgid "Экспорт"
+msgstr "Export"
+
+msgid "Экспорт JSONL"
+msgstr "JSONL export"
+
+msgid "Экспорт результатов"
+msgstr "Export results"
+
+msgid "Экспорт чата"
+msgstr "Export chat"
+
+msgid "Экспорт чекпоинтов"
+msgstr "Export checkpoints"
+
+msgid "Экспортировать метаданные"
+msgstr "Export metadata"
+
+msgid "Эмбеддинг"
+msgstr "Embedding"
+
+msgid "Эмбеддинг:"
+msgstr "Embedding:"
+
+msgid "Эмбеддинги"
+msgstr "Embeddings"
+
+msgid "Это быстрое тестирование. Для расширенных возможностей используйте"
+msgstr "This is a quick test. For advanced features use"
+
+msgid "Это действие остановит все активные сессии с этой моделью."
+msgstr "This action will stop all active sessions with this model."
+
+msgid "Это может занять несколько секунд"
+msgstr "This may take a few seconds"
+
+msgid "активных экспериментов"
+msgstr "active experiments"
+
+msgid "версий"
+msgstr "versions"
+
+msgid "вопросов"
+msgstr "questions"
+
+msgid "всего моделей"
+msgstr "models total"
+
+msgid "групп"
+msgstr "groups"
+
+msgid "детальную страницу модели"
+msgstr "detailed model page"
+
+msgid "и"
+msgstr "and"
+
+msgid "или"
+msgstr "or"
+
+msgid "личная"
+msgstr "personal"
+
+msgid "моделей"
+msgstr "models"
+
+msgid "моделью эмбеддингов по умолчанию?"
+msgstr "the default embedding model?"
+
+msgid "например: договоры"
+msgstr "e.g.: contracts"
+
+msgid "не выбрана"
+msgstr "not selected"
+
+msgid "нет тегов"
+msgstr "no tags"
+
+msgid "осталось"
+msgstr "remaining"
+
+msgid "при редактировании набора"
+msgstr "when editing the set"
+
+msgid "символов"
+msgstr "characters"
+
+msgid "сообщ."
+msgstr "msgs"
+
+msgid "сообщений •"
+msgstr "messages •"
+
+msgid "странице настроек Hugging Face"
+msgstr "Hugging Face settings page"
+
+msgid "токенов"
+msgstr "tokens"
+
+msgid "юридические, важные, 2025"
+msgstr "legal, important, 2025"
+
+msgid "— Выберите задачи —"
+msgstr "— Select tasks —"
+
+msgid "— Выберите набор вопросов —"
+msgstr "— Select a question set —"
+
+msgid "— модели будут загружены в фоновом режиме после сохранения."
+msgstr "— models will be downloaded in the background after saving."
+
+msgid "⏳ Загрузка метрик..."
+msgstr "⏳ Loading metrics..."
+
+msgid "✍️ Ручные датасеты:"
+msgstr "✍️ Manual datasets:"
+
+msgid "📄 Коллекция"
+msgstr "📄 Collection"
+
+msgid "📊 Датасеты дистилляции:"
+msgstr "📊 Distillation datasets:"
+
+msgid "🤗 Датасеты Hugging Face:"
+msgstr "🤗 Hugging Face datasets:"
+
+msgid "🧠 Модель эмбеддингов"
+msgstr "🧠 Embedding model"

@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% block title %}{% if instruction_set %}Редактирование: {{ instruction_set.name }}{% else %}Создание ручного набора инструкций{% endif %}{% endblock %}
 {% block page_title %}{% if instruction_set %}Редактирование набора{% else %}Создание ручного набора инструкций{% endif %}{% endblock %}
@@ -44,19 +45,19 @@
         <div class="col-12">
             <div class="mb-3 d-flex justify-content-between align-items-center">
                 <a href="{% url 'distillation_dataset_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Назад к датасетам
+                    <i class="bi bi-arrow-left"></i> {% trans "Назад к датасетам" %}
                 </a>
                 <div class="d-flex gap-2">
                     {% if instruction_set %}
                     <button class="btn btn-outline-danger" id="deleteSetBtn">
-                        <i class="bi bi-trash"></i> Удалить набор
+                        <i class="bi bi-trash"></i> {% trans "Удалить набор" %}
                     </button>
                     {% endif %}
                     <button class="btn btn-outline-primary" id="addInstructionBtn">
-                        <i class="bi bi-plus-circle"></i> Добавить инструкцию
+                        <i class="bi bi-plus-circle"></i> {% trans "Добавить инструкцию" %}
                     </button>
                     <button class="btn btn-success" id="saveSetBtn">
-                        <i class="bi bi-save"></i> Сохранить набор
+                        <i class="bi bi-save"></i> {% trans "Сохранить набор" %}
                     </button>
                 </div>
             </div>
@@ -67,12 +68,12 @@
                 <div class="card-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label">Название набора</label>
-                            <input type="text" id="setName" class="form-control" placeholder="Мой датасет" value="{{ instruction_set.name|default:'' }}">
+                            <label class="form-label">{% trans "Название набора" %}</label>
+                            <input type="text" id="setName" class="form-control" placeholder="{% trans 'Мой датасет' %}" value="{{ instruction_set.name|default:'' }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Описание</label>
-                            <input type="text" id="setDescription" class="form-control" placeholder="Описание набора" value="{{ instruction_set.description|default:'' }}">
+                            <label class="form-label">{% trans "Описание" %}</label>
+                            <input type="text" id="setDescription" class="form-control" placeholder="{% trans 'Описание набора' %}" value="{{ instruction_set.description|default:'' }}">
                         </div>
                     </div>
                     <div id="instructionsContainer">
@@ -89,37 +90,37 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Выбор чанков</h5>
+                <h5 class="modal-title">{% trans "Выбор чанков" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label">Выберите коллекцию</label>
+                        <label class="form-label">{% trans "Выберите коллекцию" %}</label>
                         <select id="chunkCollectionSelect" class="form-select">
-                            <option value="">--- Выберите коллекцию ---</option>
+                            <option value="">{% trans "--- Выберите коллекцию ---" %}</option>
                             {% for coll in collections %}
                             <option value="{{ coll.id }}">{{ coll.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Выберите документ</label>
+                        <label class="form-label">{% trans "Выберите документ" %}</label>
                         <select id="chunkDocumentSelect" class="form-select" disabled>
-                            <option value="">Сначала выберите коллекцию</option>
+                            <option value="">{% trans "Сначала выберите коллекцию" %}</option>
                         </select>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <input type="text" id="chunkSearch" class="form-control" placeholder="Поиск по тексту чанков...">
+                    <input type="text" id="chunkSearch" class="form-control" placeholder="{% trans 'Поиск по тексту чанков...' %}">
                 </div>
                 <div id="chunksList" class="chunk-selector-modal">
-                    <div class="text-muted">Выберите документ для отображения чанков</div>
+                    <div class="text-muted">{% trans "Выберите документ для отображения чанков" %}</div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="confirmChunksBtn">Применить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" id="confirmChunksBtn">{% trans "Применить" %}</button>
             </div>
         </div>
     </div>
@@ -183,20 +184,20 @@ function addInstruction(question = '', answer = '', chunks = [], order = null) {
                 </button>
             </div>
             <div class="mb-2">
-                <label class="form-label">Вопрос</label>
+                <label class="form-label">{% trans "Вопрос" %}</label>
                 <textarea class="form-control question-text" rows="2">${escapeHtml(question)}</textarea>
             </div>
             <div class="mb-2">
-                <label class="form-label">Ответ</label>
+                <label class="form-label">{% trans "Ответ" %}</label>
                 <textarea class="form-control answer-text" rows="4">${escapeHtml(answer)}</textarea>
             </div>
             <div class="mb-2">
-                <label class="form-label">Контекстные чанки</label>
+                <label class="form-label">{% trans "Контекстные чанки" %}</label>
                 <div class="chunk-preview" id="chunk-preview-${idx}">
-                    ${chunkPreviews || '<em class="text-muted">Нет выбранных чанков</em>'}
+                    ${chunkPreviews || '<em class="text-muted">{% trans "Нет выбранных чанков" %}</em>'}
                 </div>
                 <button class="btn btn-sm btn-outline-secondary select-chunks-btn mt-1" data-idx="${idx}">
-                    <i class="bi bi-folder"></i> Выбрать чанки
+                    <i class="bi bi-folder"></i> {% trans "Выбрать чанки" %}
                 </button>
             </div>
             <hr>
@@ -272,15 +273,15 @@ document.getElementById('chunkCollectionSelect').addEventListener('change', func
     const docSelect = document.getElementById('chunkDocumentSelect');
     if (!collectionId) {
         docSelect.disabled = true;
-        docSelect.innerHTML = '<option value="">Сначала выберите коллекцию</option>';
-        document.getElementById('chunksList').innerHTML = '<div class="text-muted">Выберите документ для отображения чанков</div>';
+        docSelect.innerHTML = '<option value="">{% trans "Сначала выберите коллекцию" %}</option>';
+        document.getElementById('chunksList').innerHTML = '<div class="text-muted">{% trans "Выберите документ для отображения чанков" %}</div>';
         return;
     }
     fetch(`/api/rag/collections/${collectionId}/documents/`)
         .then(res => res.json())
         .then(data => {
             docSelect.disabled = false;
-            docSelect.innerHTML = '<option value="">--- Выберите документ ---</option>';
+            docSelect.innerHTML = '<option value="">{% trans "--- Выберите документ ---" %}</option>';
             data.forEach(doc => {
                 docSelect.innerHTML += `<option value="${doc.id}">${escapeHtml(doc.title)}</option>`;
             });
@@ -299,7 +300,7 @@ function triggerDocumentLoad() {
 document.getElementById('chunkDocumentSelect').addEventListener('change', function() {
     const docId = this.value;
     if (!docId) {
-        document.getElementById('chunksList').innerHTML = '<div class="text-muted">Выберите документ</div>';
+        document.getElementById('chunksList').innerHTML = '<div class="text-muted">{% trans "Выберите документ" %}</div>';
         return;
     }
     fetch(`/api/rag/documents/${docId}/chunks/`)
@@ -314,7 +315,7 @@ function renderChunksList(chunks) {
     const filtered = chunks.filter(chunk => chunk.content.toLowerCase().includes(searchInput));
     
     if (filtered.length === 0) {
-        container.innerHTML = '<div class="text-muted">Чанки не найдены</div>';
+        container.innerHTML = '<div class="text-muted">{% trans "Чанки не найдены" %}</div>';
         return;
     }
     
@@ -360,7 +361,7 @@ document.getElementById('confirmChunksBtn').addEventListener('click', () => {
     const previewDiv = document.querySelector(`#chunk-preview-${currentInstructionIndex}`);
     if (previewDiv) {
         const previews = currentInstructionChunks.map(c => (c.content || '').substring(0, 100)).join('<br>');
-        previewDiv.innerHTML = previews || '<em class="text-muted">Нет выбранных чанков</em>';
+        previewDiv.innerHTML = previews || '<em class="text-muted">{% trans "Нет выбранных чанков" %}</em>';
     }
     bootstrap.Modal.getInstance(document.getElementById('chunkModal')).hide();
 });

@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -366,10 +367,10 @@
             <div class="filters-card">
                 <div class="filter-group">
                     <div class="filter-group-title">
-                        <i class="bi bi-collection"></i> Коллекция
+                        <i class="bi bi-collection"></i> {% trans "Коллекция" %}
                     </div>
                     <select class="form-select" id="collectionSelect">
-                        <option value="">Выберите коллекцию...</option>
+                        <option value="">{% trans "Выберите коллекцию..." %}</option>
                         {% for collection in collections %}
                         <option value="{{ collection.id }}" 
                                 {% if selected_collection and selected_collection.id == collection.id %}selected{% endif %}>
@@ -382,23 +383,23 @@
 
                 <div class="filter-group">
                     <div class="filter-group-title">
-                        <i class="bi bi-search"></i> Тип поиска
+                        <i class="bi bi-search"></i> {% trans "Тип поиска" %}
                     </div>
                     <div class="btn-group-search" role="group">
                         <input type="radio" class="btn-check" name="searchType" id="typeHybrid" value="hybrid" checked>
-                        <label class="btn" for="typeHybrid">Гибридный</label>
+                        <label class="btn" for="typeHybrid">{% trans "Гибридный" %}</label>
                         
                         <input type="radio" class="btn-check" name="searchType" id="typeSemantic" value="semantic">
-                        <label class="btn" for="typeSemantic">Семантический</label>
+                        <label class="btn" for="typeSemantic">{% trans "Семантический" %}</label>
                         
                         <input type="radio" class="btn-check" name="searchType" id="typeKeyword" value="keyword">
-                        <label class="btn" for="typeKeyword">Ключевые слова</label>
+                        <label class="btn" for="typeKeyword">{% trans "Ключевые слова" %}</label>
                     </div>
                 </div>
 
                 <div class="filter-group">
                     <div class="filter-group-title">
-                        <i class="bi bi-sliders"></i> Количество результатов
+                        <i class="bi bi-sliders"></i> {% trans "Количество результатов" %}
                     </div>
                     <input type="range" class="form-range" id="resultCount" min="5" max="50" step="5" value="10">
                     <div class="d-flex justify-content-between">
@@ -410,7 +411,7 @@
 
                 <div class="filter-group">
                     <div class="filter-group-title">
-                        <i class="bi bi-filter"></i> Порог релевантности
+                        <i class="bi bi-filter"></i> {% trans "Порог релевантности" %}
                     </div>
                     <input type="range" class="form-range" id="threshold" min="0.1" max="0.9" step="0.05" value="0.5">
                     <div class="d-flex justify-content-between">
@@ -422,23 +423,23 @@
 
                 <div class="filter-group" id="hybridWeights">
                     <div class="filter-group-title">
-                        <i class="bi bi-weight-hanging"></i> Веса (гибридный)
+                        <i class="bi bi-weight-hanging"></i> {% trans "Веса (гибридный)" %}
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label small text-muted">Семантический вес</label>
+                        <label class="form-label small text-muted">{% trans "Семантический вес" %}</label>
                         <input type="range" class="form-range" id="semanticWeight" min="0" max="1" step="0.05" value="0.7">
                         <span class="range-value" id="semanticWeightValue">0.70</span>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label small text-muted">Вес ключевых слов</label>
+                        <label class="form-label small text-muted">{% trans "Вес ключевых слов" %}</label>
                         <input type="range" class="form-range" id="keywordWeight" min="0" max="1" step="0.05" value="0.2">
                         <span class="range-value" id="keywordWeightValue">0.20</span>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label small text-muted">Вес свежести</label>
+                        <label class="form-label small text-muted">{% trans "Вес свежести" %}</label>
                         <input type="range" class="form-range" id="freshnessWeight" min="0" max="1" step="0.05" value="0.1">
                         <span class="range-value" id="freshnessWeightValue">0.10</span>
                     </div>
@@ -446,13 +447,13 @@
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="useReranking" checked>
                         <label class="form-check-label" for="useReranking">
-                            Использовать реранжирование
+                            {% trans "Использовать реранжирование" %}
                         </label>
                     </div>
                 </div>
 
                 <button class="btn btn-primary w-100" onclick="performSearch()">
-                    <i class="bi bi-search"></i> Найти
+                    <i class="bi bi-search"></i> {% trans "Найти" %}
                 </button>
             </div>
         </div>
@@ -462,13 +463,13 @@
             <!-- Поле ввода запроса -->
             <div class="search-input-wrapper">
                 <textarea class="search-textarea" id="searchQuery" 
-                          placeholder="Введите поисковый запрос... (например, 'какие документы регламентируют авиационную безопасность')"
+                          placeholder="{% trans 'Введите поисковый запрос... (например, \'какие документы регламентируют авиационную безопасность\')' %}"
                           rows="3"></textarea>
                 <div class="input-actions">
-                    <button onclick="clearSearch()" title="Очистить">
+                    <button onclick="clearSearch()" title="{% trans 'Очистить' %}">
                         <i class="bi bi-x-lg"></i>
                     </button>
-                    <button onclick="performSearch()" title="Поиск (Enter)">
+                    <button onclick="performSearch()" title="{% trans 'Поиск (Enter)' %}">
                         <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
@@ -481,14 +482,14 @@
                     <div class="searching-dot"></div>
                     <div class="searching-dot"></div>
                 </div>
-                <span>Выполняется поиск...</span>
+                <span>{% trans "Выполняется поиск..." %}</span>
             </div>
 
             <!-- Панель статистики результатов -->
             <div id="resultsStats" class="results-stats" style="display: none;">
                 <div>
                     <span class="stats-badge" id="resultsCount">0</span>
-                    <span class="stats-badge" id="searchTime">0 мс</span>
+                    <span class="stats-badge" id="searchTime">{% trans "0 мс" %}</span>
                     <span class="stats-badge" id="collectionName"></span>
                 </div>
                 <div>
@@ -509,7 +510,7 @@
             <div class="history-card">
                 <div class="history-header">
                     <div class="history-title">
-                        <i class="bi bi-clock-history"></i> История поиска
+                        <i class="bi bi-clock-history"></i> {% trans "История поиска" %}
                     </div>
                     <button class="btn btn-sm btn-outline-secondary" onclick="toggleHistory()">
                         <i class="bi bi-chevron-up" id="historyToggleIcon"></i>
@@ -768,7 +769,7 @@ function displaySearchResults(data) {
 
     if (results.length === 0) {
         container.innerHTML = `
-            <div class="alert alert-info">Ничего не найдено</div>
+            <div class="alert alert-info">{% trans "Ничего не найдено" %}</div>
         `;
         return;
     }
@@ -791,13 +792,13 @@ function displaySearchResults(data) {
                 </div>
                 <div class="result-actions">
                     <button class="action-btn" onclick="previewChunk(${result.chunk_id})">
-                        <i class="bi bi-eye"></i> Просмотр
+                        <i class="bi bi-eye"></i> {% trans "Просмотр" %}
                     </button>
                     <button class="action-btn" onclick="useInRag(${result.chunk_id}, '${escapeHtml(data.query)}')">
-                        <i class="bi bi-chat"></i> Использовать в RAG
+                        <i class="bi bi-chat"></i> {% trans "Использовать в RAG" %}
                     </button>
                     <button class="action-btn" onclick="copyToClipboard('${escapeHtml(result.content).replace(/'/g, "\\'")}')">
-                        <i class="bi bi-files"></i> Копировать
+                        <i class="bi bi-files"></i> {% trans "Копировать" %}
                     </button>
                 </div>
             </div>

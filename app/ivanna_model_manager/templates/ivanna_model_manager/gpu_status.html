@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 
 {% block title %}{{ title }} - Ivanna Lab{% endblock %}
 
@@ -141,7 +142,7 @@
     {% if error %}
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="fas fa-exclamation-triangle me-2"></i>
-        <strong>Ошибка:</strong> {{ error }}
+        <strong>{% trans "Ошибка:" %}</strong> {{ error }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     {% endif %}
@@ -152,14 +153,14 @@
             <div class="card metric-card gpu-card">
                 <div class="card-header bg-transparent border-0 pb-0">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-microchip me-2"></i>GPU Система</h5>
+                        <h5 class="mb-0"><i class="fas fa-microchip me-2"></i>{% trans "GPU Система" %}</h5>
                         {% if gpu_info.available %}
                             <span class="badge bg-success status-badge">
-                                <i class="fas fa-check-circle me-1"></i>Активно
+                                <i class="fas fa-check-circle me-1"></i>{% trans "Активно" %}
                             </span>
                         {% else %}
                             <span class="badge bg-secondary status-badge">
-                                <i class="fas fa-times-circle me-1"></i>Недоступно
+                                <i class="fas fa-times-circle me-1"></i>{% trans "Недоступно" %}
                             </span>
                         {% endif %}
                     </div>
@@ -169,7 +170,7 @@
                         <div class="row mb-3">
                             <div class="col-4 text-center">
                                 <div class="metric-value">{{ gpu_info.count }}</div>
-                                <div class="metric-label">Устройств</div>
+                                <div class="metric-label">{% trans "Устройств" %}</div>
                             </div>
                             <div class="col-4 text-center">
                                 <div class="metric-value">{{ gpu_info.cuda_version|default:"-" }}</div>
@@ -177,13 +178,13 @@
                             </div>
                             <div class="col-4 text-center">
                                 <div class="metric-value">{% if gpu_info.device_names %}✓{% else %}✗{% endif %}</div>
-                                <div class="metric-label">Обнаружено</div>
+                                <div class="metric-label">{% trans "Обнаружено" %}</div>
                             </div>
                         </div>
                         
                         {% if gpu_info.device_names %}
                             <div class="mt-3">
-                                <small class="opacity-75"><i class="fas fa-list me-1"></i>Доступные GPU:</small>
+                                <small class="opacity-75"><i class="fas fa-list me-1"></i>{% trans "Доступные GPU:" %}</small>
                                 <div class="mt-2">
                                     {% for device in gpu_info.device_names %}
                                     <div class="d-flex align-items-center mb-2">
@@ -197,8 +198,8 @@
                     {% else %}
                         <div class="text-center py-4">
                             <i class="fas fa-microchip-slash fa-3x mb-3 opacity-50"></i>
-                            <p class="mb-2">GPU не обнаружено</p>
-                            <small class="opacity-75">Используется CPU для вычислений</small>
+                            <p class="mb-2">{% trans "GPU не обнаружено" %}</p>
+                            <small class="opacity-75">{% trans "Используется CPU для вычислений" %}</small>
                         </div>
                     {% endif %}
                 </div>
@@ -208,39 +209,39 @@
         <div class="col-md-6">
             <div class="card metric-card cpu-card">
                 <div class="card-header bg-transparent border-0 pb-0">
-                    <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Статистика моделей</h5>
+                    <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>{% trans "Статистика моделей" %}</h5>
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
                         <div class="col-6 col-md-3 mb-3">
                             <div class="bg-dark rounded p-3">
                                 <div class="metric-value text-primary">{{ total_models }}</div>
-                                <div class="metric-label">Всего</div>
+                                <div class="metric-label">{% trans "Всего" %}</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3 mb-3">
                             <div class="bg-dark rounded p-3">
                                 <div class="metric-value text-success">{{ loaded_models }}</div>
-                                <div class="metric-label">В памяти</div>
+                                <div class="metric-label">{% trans "В памяти" %}</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="bg-dark rounded p-3">
                                 <div class="metric-value text-warning">{{ downloading_models }}</div>
-                                <div class="metric-label">Загружаются</div>
+                                <div class="metric-label">{% trans "Загружаются" %}</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="bg-dark rounded p-3">
                                 <div class="metric-value text-info">{{ active_downloads_count }}</div>
-                                <div class="metric-label">Активные сессии</div>
+                                <div class="metric-label">{% trans "Активные сессии" %}</div>
                             </div>
                         </div>
                     </div>
                     
                     {% if active_downloads_count > 0 %}
                     <div class="mt-3">
-                        <small class="opacity-75"><i class="fas fa-sync-alt me-1"></i>Активные сессии:</small>
+                        <small class="opacity-75"><i class="fas fa-sync-alt me-1"></i>{% trans "Активные сессии:" %}</small>
                         <div class="mt-2">
                             {% for download in active_downloads %}
                             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -267,15 +268,15 @@
         <div class="col-md-6">
             <div class="card metric-card memory-card">
                 <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-memory me-2"></i>Оперативная память</h5>
+                    <h5 class="mb-0"><i class="fas fa-memory me-2"></i>{% trans "Оперативная память" %}</h5>
                     <small class="opacity-75">LIVE</small>
                 </div>
                 <div class="card-body">
                     <div id="memory-status" class="text-center">
                         <div class="spinner-border text-light" role="status">
-                            <span class="visually-hidden">Загрузка...</span>
+                            <span class="visually-hidden">{% trans "Загрузка..." %}</span>
                         </div>
-                        <p class="mt-3 mb-0">Загрузка метрик памяти...</p>
+                        <p class="mt-3 mb-0">{% trans "Загрузка метрик памяти..." %}</p>
                     </div>
                 </div>
             </div>
@@ -284,15 +285,15 @@
         <div class="col-md-6">
             <div class="card metric-card disk-card">
                 <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-hard-drive me-2"></i>Дисковое пространство</h5>
+                    <h5 class="mb-0"><i class="fas fa-hard-drive me-2"></i>{% trans "Дисковое пространство" %}</h5>
                     <small class="opacity-75">LIVE</small>
                 </div>
                 <div class="card-body">
                     <div id="disk-status" class="text-center">
                         <div class="spinner-border text-light" role="status">
-                            <span class="visually-hidden">Загрузка...</span>
+                            <span class="visually-hidden">{% trans "Загрузка..." %}</span>
                         </div>
-                        <p class="mt-3 mb-0">Загрузка метрик диска...</p>
+                        <p class="mt-3 mb-0">{% trans "Загрузка метрик диска..." %}</p>
                     </div>
                 </div>
             </div>
@@ -302,16 +303,16 @@
     <!-- GPU Live метрики -->
     <div class="card metric-card gpu-card mb-4">
         <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>GPU в реальном времени</h5>
+            <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>{% trans "GPU в реальном времени" %}</h5>
             <small class="opacity-75">LIVE</small>
         </div>
         <div class="card-body">
             <div id="gpu-live-status">
                 <div class="text-center py-4">
                     <div class="spinner-border text-light" role="status">
-                        <span class="visually-hidden">Загрузка...</span>
+                        <span class="visually-hidden">{% trans "Загрузка..." %}</span>
                     </div>
-                    <p class="mt-3 mb-0">Получение данных GPU...</p>
+                    <p class="mt-3 mb-0">{% trans "Получение данных GPU..." %}</p>
                 </div>
             </div>
         </div>
@@ -320,16 +321,16 @@
     <!-- Активные задачи загрузки (только если они есть) -->
     <div class="card mb-4 border-0 shadow-sm" id="downloads-container">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-download me-2"></i>Активные задачи загрузки моделей</h5>
+            <h5 class="mb-0"><i class="fas fa-download me-2"></i>{% trans "Активные задачи загрузки моделей" %}</h5>
             <span class="badge bg-info" id="downloads-count">0</span>
         </div>
         <div class="card-body">
             <div id="downloads-content">
                 <div class="text-center py-4">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Загрузка...</span>
+                        <span class="visually-hidden">{% trans "Загрузка..." %}</span>
                     </div>
-                    <p class="mt-3 mb-0">Загрузка информации о задачах...</p>
+                    <p class="mt-3 mb-0">{% trans "Загрузка информации о задачах..." %}</p>
                 </div>
             </div>
         </div>
@@ -338,24 +339,24 @@
     <!-- Управление -->
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-0">
-            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Управление системой</h5>
+            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>{% trans "Управление системой" %}</h5>
         </div>
         <div class="card-body">
             <div class="d-flex flex-wrap gap-2">
                 <a href="{% url 'model_list' %}" class="btn btn-primary">
-                    <i class="fas fa-list me-2"></i>Все модели
+                    <i class="fas fa-list me-2"></i>{% trans "Все модели" %}
                 </a>
                 <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
-                    <i class="fas fa-tachometer-alt me-2"></i>Панель управления
+                    <i class="fas fa-tachometer-alt me-2"></i>{% trans "Панель управления" %}
                 </a>
                 <button id="refresh-metrics" class="btn btn-success">
-                    <i class="fas fa-sync-alt me-2"></i>Обновить метрики
+                    <i class="fas fa-sync-alt me-2"></i>{% trans "Обновить метрики" %}
                 </button>
                 <button id="auto-refresh-toggle" class="btn btn-outline-secondary">
-                    <i class="fas fa-play me-2"></i>Автообновление
+                    <i class="fas fa-play me-2"></i>{% trans "Автообновление" %}
                 </button>
                 <a href="{% url 'system_metrics_view' %}" class="btn btn-outline-info">
-                    <i class="fas fa-chart-bar me-2"></i>Подробные метрики
+                    <i class="fas fa-chart-bar me-2"></i>{% trans "Подробные метрики" %}
                 </a>
             </div>
             
@@ -366,8 +367,8 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-info-circle fa-2x me-3"></i>
                                 <div>
-                                    <h6 class="alert-heading mb-1">Информация о системе</h6>
-                                    <p class="mb-0 small">Метрики обновляются автоматически каждые 5 секунд. Для получения точных данных о GPU требуется наличие драйверов NVIDIA.</p>
+                                    <h6 class="alert-heading mb-1">{% trans "Информация о системе" %}</h6>
+                                    <p class="mb-0 small">{% trans "Метрики обновляются автоматически каждые 5 секунд. Для получения точных данных о GPU требуется наличие драйверов NVIDIA." %}</p>
                                 </div>
                             </div>
                         </div>
@@ -377,9 +378,9 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-microchip fa-2x me-3 text-primary"></i>
                                 <div>
-                                    <h6 class="alert-heading mb-1">Состояние системы</h6>
+                                    <h6 class="alert-heading mb-1">{% trans "Состояние системы" %}</h6>
                                     <p class="mb-0 small">
-                                        <span id="system-status">Проверка...</span>
+                                        <span id="system-status">{% trans "Проверка..." %}</span>
                                     </p>
                                 </div>
                             </div>
@@ -481,7 +482,7 @@ async function updateDownloads() {
             contentElement.innerHTML = `
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    Не удалось загрузить информацию о задачах
+                    {% trans "Не удалось загрузить информацию о задачах" %}
                 </div>
             `;
         }
@@ -494,8 +495,8 @@ function renderDownloadsTable(downloads) {
         return `
             <div class="text-center py-5">
                 <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
-                <h5 class="mb-2">Нет активных задач загрузки</h5>
-                <p class="text-muted mb-0">Все задачи завершены или нет активных загрузок</p>
+                <h5 class="mb-2">{% trans "Нет активных задач загрузки" %}</h5>
+                <p class="text-muted mb-0">{% trans "Все задачи завершены или нет активных загрузок" %}</p>
             </div>
         `;
     }
@@ -505,11 +506,11 @@ function renderDownloadsTable(downloads) {
             <table class="table table-hover table-borderless mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th width="35%">Модель</th>
-                        <th width="15%">Тип</th>
-                        <th width="15%">Статус</th>
-                        <th width="20%">Прогресс</th>
-                        <th width="15%">Размер</th>
+                        <th width="35%">{% trans "Модель" %}</th>
+                        <th width="15%">{% trans "Тип" %}</th>
+                        <th width="15%">{% trans "Статус" %}</th>
+                        <th width="20%">{% trans "Прогресс" %}</th>
+                        <th width="15%">{% trans "Размер" %}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -596,8 +597,8 @@ function renderDownloadsTable(downloads) {
         html = `
             <div class="text-center py-5">
                 <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
-                <h5 class="mb-2">Нет активных задач загрузки моделей</h5>
-                <p class="text-muted mb-0">Все задачи загрузки завершены</p>
+                <h5 class="mb-2">{% trans "Нет активных задач загрузки моделей" %}</h5>
+                <p class="text-muted mb-0">{% trans "Все задачи загрузки завершены" %}</p>
             </div>
         `;
     }
@@ -619,11 +620,11 @@ function getStatusClass(status) {
 
 function getStatusText(status) {
     switch(status.toUpperCase()) {
-        case 'PENDING': return '<i class="fas fa-clock me-1"></i>Ожидание';
-        case 'DOWNLOADING': return '<i class="fas fa-sync-alt fa-spin me-1"></i>Загрузка';
-        case 'COMPLETED': return '<i class="fas fa-check me-1"></i>Завершено';
-        case 'FAILED': return '<i class="fas fa-times me-1"></i>Ошибка';
-        case 'CANCELLED': return '<i class="fas fa-ban me-1"></i>Отменено';
+        case 'PENDING': return '<i class="fas fa-clock me-1"></i>{% trans "Ожидание';
+        case 'DOWNLOADING': return '" %}<i class="fas fa-sync-alt fa-spin me-1"></i>{% trans "Загрузка';
+        case 'COMPLETED': return '" %}<i class="fas fa-check me-1"></i>{% trans "Завершено';
+        case 'FAILED': return '" %}<i class="fas fa-times me-1"></i>{% trans "Ошибка';
+        case 'CANCELLED': return '" %}<i class="fas fa-ban me-1"></i>Отменено';
         default: return status;
     }
 }
@@ -752,7 +753,7 @@ function renderGPULiveStatus(data) {
                     </div>
                     
                     <div class="mb-3">
-                        <small class="opacity-75 d-block mb-1">Использование памяти</small>
+                        <small class="opacity-75 d-block mb-1">{% trans "Использование памяти" %}</small>
                         <div class="progress" style="height: 6px;">
                             <div class="progress-bar bg-${statusColor}" 
                                  style="width: ${usedPercent}%">
@@ -769,7 +770,7 @@ function renderGPULiveStatus(data) {
                     <div class="row text-center">
                         <div class="col-4">
                             <div class="bg-dark rounded p-2">
-                                <small class="opacity-75 d-block">Температура</small>
+                                <small class="opacity-75 d-block">{% trans "Температура" %}</small>
                                 <strong class="${temp > 80 ? 'text-danger' : temp > 70 ? 'text-warning' : 'text-success'}">
                                     ${temp}°C
                                 </strong>
@@ -777,7 +778,7 @@ function renderGPULiveStatus(data) {
                         </div>
                         <div class="col-4">
                             <div class="bg-dark rounded p-2">
-                                <small class="opacity-75 d-block">Загрузка GPU</small>
+                                <small class="opacity-75 d-block">{% trans "Загрузка GPU" %}</small>
                                 <strong class="${gpuUtil > 80 ? 'text-danger' : gpuUtil > 60 ? 'text-warning' : 'text-success'}">
                                     ${gpuUtil}%
                                 </strong>
@@ -785,7 +786,7 @@ function renderGPULiveStatus(data) {
                         </div>
                         <div class="col-4">
                             <div class="bg-dark rounded p-2">
-                                <small class="opacity-75 d-block">Память</small>
+                                <small class="opacity-75 d-block">{% trans "Память" %}</small>
                                 <strong class="${memoryUtil > 80 ? 'text-danger' : memoryUtil > 60 ? 'text-warning' : 'text-success'}">
                                     ${memoryUtil}%
                                 </strong>
@@ -828,16 +829,16 @@ function renderGPULiveStatus(data) {
         html = `
         <div class="text-center py-4">
             <i class="fas fa-microchip fa-3x mb-3 text-info"></i>
-            <h5 class="mb-2">CUDA доступен</h5>
-            <p class="mb-0 opacity-75">Устройства GPU не обнаружены</p>
+            <h5 class="mb-2">{% trans "CUDA доступен" %}</h5>
+            <p class="mb-0 opacity-75">{% trans "Устройства GPU не обнаружены" %}</p>
         </div>
         `;
     } else {
         html = `
         <div class="text-center py-4">
             <i class="fas fa-microchip-slash fa-3x mb-3 text-warning"></i>
-            <h5 class="mb-2">GPU недоступен</h5>
-            <p class="mb-0 opacity-75">Используется CPU для вычислений</p>
+            <h5 class="mb-2">{% trans "GPU недоступен" %}</h5>
+            <p class="mb-0 opacity-75">{% trans "Используется CPU для вычислений" %}</p>
         </div>
         `;
     }
@@ -851,8 +852,8 @@ function renderGPUError() {
         gpuElement.innerHTML = `
             <div class="text-center py-4">
                 <i class="fas fa-exclamation-triangle fa-3x mb-3 text-warning"></i>
-                <h5 class="mb-2">Ошибка загрузки GPU данных</h5>
-                <p class="mb-0 opacity-75">Не удалось получить информацию о GPU</p>
+                <h5 class="mb-2">{% trans "Ошибка загрузки GPU данных" %}</h5>
+                <p class="mb-0 opacity-75">{% trans "Не удалось получить информацию о GPU" %}</p>
             </div>
         `;
     }
@@ -873,13 +874,13 @@ function renderMemoryStatus(memory) {
             <div class="col-md-5 text-center mb-3 mb-md-0">
                 <div class="metric-value ${statusColor}">${usedPercent.toFixed(1)}%</div>
                 <div class="metric-label">
-                    <i class="fas ${statusIcon} me-1"></i>Использовано
+                    <i class="fas ${statusIcon} me-1"></i>{% trans "Использовано" %}
                 </div>
             </div>
             <div class="col-md-7">
                 <div class="mb-2">
                     <div class="d-flex justify-content-between mb-1">
-                        <small class="opacity-75">Использование ОЗУ</small>
+                        <small class="opacity-75">{% trans "Использование ОЗУ" %}</small>
                         <small class="opacity-75">${usedPercent.toFixed(1)}%</small>
                     </div>
                     <div class="progress" style="height: 10px;">
@@ -889,13 +890,13 @@ function renderMemoryStatus(memory) {
                 <div class="row text-center">
                     <div class="col-4">
                         <div class="bg-dark rounded p-2">
-                            <small class="opacity-75 d-block">Всего</small>
+                            <small class="opacity-75 d-block">{% trans "Всего" %}</small>
                             <strong>${memory.total_gb ? memory.total_gb.toFixed(1) : '0.0'} GB</strong>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="bg-dark rounded p-2">
-                            <small class="opacity-75 d-block">Использовано</small>
+                            <small class="opacity-75 d-block">{% trans "Использовано" %}</small>
                             <strong class="${usedPercent > 60 ? 'text-warning' : 'text-info'}">
                                 ${memory.used_gb ? memory.used_gb.toFixed(1) : '0.0'} GB
                             </strong>
@@ -903,7 +904,7 @@ function renderMemoryStatus(memory) {
                     </div>
                     <div class="col-4">
                         <div class="bg-dark rounded p-2">
-                            <small class="opacity-75 d-block">Свободно</small>
+                            <small class="opacity-75 d-block">{% trans "Свободно" %}</small>
                             <strong class="text-success">
                                 ${memory.free_gb ? memory.free_gb.toFixed(1) : '0.0'} GB
                             </strong>
@@ -930,13 +931,13 @@ function renderDiskStatus(disk) {
             <div class="col-md-5 text-center mb-3 mb-md-0">
                 <div class="metric-value ${statusColor}">${usedPercent.toFixed(1)}%</div>
                 <div class="metric-label">
-                    <i class="fas ${statusIcon} me-1"></i>Заполнено
+                    <i class="fas ${statusIcon} me-1"></i>{% trans "Заполнено" %}
                 </div>
             </div>
             <div class="col-md-7">
                 <div class="mb-2">
                     <div class="d-flex justify-content-between mb-1">
-                        <small class="opacity-75">Дисковое пространство</small>
+                        <small class="opacity-75">{% trans "Дисковое пространство" %}</small>
                         <small class="opacity-75">${usedPercent.toFixed(1)}%</small>
                     </div>
                     <div class="progress" style="height: 10px;">
@@ -946,13 +947,13 @@ function renderDiskStatus(disk) {
                 <div class="row text-center">
                     <div class="col-4">
                         <div class="bg-dark rounded p-2">
-                            <small class="opacity-75 d-block">Всего</small>
+                            <small class="opacity-75 d-block">{% trans "Всего" %}</small>
                             <strong>${disk.total_gb ? disk.total_gb.toFixed(1) : '0.0'} GB</strong>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="bg-dark rounded p-2">
-                            <small class="opacity-75 d-block">Использовано</small>
+                            <small class="opacity-75 d-block">{% trans "Использовано" %}</small>
                             <strong class="${usedPercent > 80 ? 'text-warning' : 'text-info'}">
                                 ${disk.used_gb ? disk.used_gb.toFixed(1) : '0.0'} GB
                             </strong>
@@ -960,7 +961,7 @@ function renderDiskStatus(disk) {
                     </div>
                     <div class="col-4">
                         <div class="bg-dark rounded p-2">
-                            <small class="opacity-75 d-block">Свободно</small>
+                            <small class="opacity-75 d-block">{% trans "Свободно" %}</small>
                             <strong class="text-success">
                                 ${disk.free_gb ? disk.free_gb.toFixed(1) : '0.0'} GB
                             </strong>
@@ -981,17 +982,17 @@ function renderBasicSystemMetrics() {
     const spinnerHtml = `
         <div class="text-center py-4">
             <div class="spinner-border text-light" role="status">
-                <span class="visually-hidden">Загрузка...</span>
+                <span class="visually-hidden">{% trans "Загрузка..." %}</span>
             </div>
-            <p class="mt-3 mb-0">Загрузка метрик...</p>
-            <small class="text-muted">Попробуйте обновить страницу</small>
+            <p class="mt-3 mb-0">{% trans "Загрузка метрик..." %}</p>
+            <small class="text-muted">{% trans "Попробуйте обновить страницу" %}</small>
         </div>
     `;
     
     if (memoryElement) memoryElement.innerHTML = spinnerHtml;
     if (diskElement) diskElement.innerHTML = spinnerHtml;
     if (systemStatusElement) {
-        systemStatusElement.innerHTML = '<span class="text-warning">⏳ Загрузка метрик...</span>';
+        systemStatusElement.innerHTML = '<span class="text-warning">{% trans "⏳ Загрузка метрик..." %}</span>';
     }
 }
 
@@ -1049,7 +1050,7 @@ function showError(message) {
         <div class="d-flex align-items-center">
             <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
             <div>
-                <h6 class="alert-heading mb-1">Ошибка загрузки метрик</h6>
+                <h6 class="alert-heading mb-1">{% trans "Ошибка загрузки метрик" %}</h6>
                 <p class="mb-0">${message}</p>
             </div>
         </div>

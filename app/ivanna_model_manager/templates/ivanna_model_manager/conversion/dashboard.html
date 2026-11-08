@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Конвертация в GGUF - дашборд{% endblock %}
@@ -63,24 +64,24 @@
     <div class="stats-cards">
         <div class="stat-card">
             <div class="stat-value">{{ total_jobs }}</div>
-            <div class="stat-label">Всего задач</div>
+            <div class="stat-label">{% trans "Всего задач" %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-value">{{ running_jobs }}</div>
-            <div class="stat-label">Выполняется</div>
+            <div class="stat-label">{% trans "Выполняется" %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-value">{{ completed_jobs }}</div>
-            <div class="stat-label">Завершено</div>
+            <div class="stat-label">{% trans "Завершено" %}</div>
         </div>
     </div>
 
     <div class="filter-bar">
         <div>
-            <input type="text" placeholder="Поиск..." class="search-input" id="searchInput">
+            <input type="text" placeholder="{% trans 'Поиск...' %}" class="search-input" id="searchInput">
         </div>
         <a href="{% url 'conversion_create' %}" class="btn-create">
-            <i class="bi bi-plus-lg"></i> Новая конвертация
+            <i class="bi bi-plus-lg"></i> {% trans "Новая конвертация" %}
         </a>
     </div>
 
@@ -88,13 +89,13 @@
     <table class="jobs-table">
         <thead>
             <tr>
-                <th>Название</th>
-                <th>Модель</th>
-                <th>Квантизация</th>
-                <th>Статус</th>
-                <th>Прогресс</th>
-                <th>Создана</th>
-                <th>Действия</th>
+                <th>{% trans "Название" %}</th>
+                <th>{% trans "Модель" %}</th>
+                <th>{% trans "Квантизация" %}</th>
+                <th>{% trans "Статус" %}</th>
+                <th>{% trans "Прогресс" %}</th>
+                <th>{% trans "Создана" %}</th>
+                <th>{% trans "Действия" %}</th>
             </tr>
         </thead>
         <tbody>
@@ -118,8 +119,8 @@
     {% else %}
     <div class="empty-state">
         <i class="bi bi-arrow-left-right display-1"></i>
-        <h3>Нет задач конвертации</h3>
-        <a href="{% url 'conversion_create' %}" class="btn-create">Создать задачу</a>
+        <h3>{% trans "Нет задач конвертации" %}</h3>
+        <a href="{% url 'conversion_create' %}" class="btn-create">{% trans "Создать задачу" %}</a>
     </div>
     {% endif %}
 </div>

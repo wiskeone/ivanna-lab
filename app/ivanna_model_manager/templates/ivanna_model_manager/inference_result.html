@@ -1,12 +1,13 @@
 <!-- inference_result.html -->
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 
 {% block content %}
 <div class="container">
     <div class="row mb-4">
         <div class="col-12">
             <h1 class="h3 mb-0">
-                <i class="bi bi-chat-left-text"></i> Результат инференса
+                <i class="bi bi-chat-left-text"></i> {% trans "Результат инференса" %}
             </h1>
         </div>
     </div>
@@ -24,14 +25,14 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-4">
-                        <h6>Запрос:</h6>
+                        <h6>{% trans "Запрос:" %}</h6>
                         <div class="alert alert-light">
                             {{ form.prompt.value }}
                         </div>
                     </div>
                     
                     <div class="mb-4">
-                        <h6>Ответ модели:</h6>
+                        <h6>{% trans "Ответ модели:" %}</h6>
                         <div class="alert alert-success">
                             <pre style="white-space: pre-wrap;" class="mb-0">{{ result }}</pre>
                         </div>
@@ -39,14 +40,14 @@
                         <div class="text-end">
                             <button class="btn btn-sm btn-outline-secondary" 
                                     onclick="copyToClipboard('{{ result|escapejs }}')">
-                                <i class="bi bi-clipboard"></i> Копировать
+                                <i class="bi bi-clipboard"></i> {% trans "Копировать" %}
                             </button>
                         </div>
                     </div>
                     
                     {% if generation_config %}
                     <div class="mb-3">
-                        <h6>Параметры генерации:</h6>
+                        <h6>{% trans "Параметры генерации:" %}</h6>
                         <div class="code-block small">
                             {{ generation_config }}
                         </div>
@@ -55,10 +56,10 @@
                 </div>
                 <div class="card-footer">
                     <a href="{% url 'model_detail' model.id %}" class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-left"></i> Вернуться к модели
+                        <i class="bi bi-arrow-left"></i> {% trans "Вернуться к модели" %}
                     </a>
                     <a href="{% url 'quick_test' model.id %}" class="btn btn-primary ms-2">
-                        <i class="bi bi-lightning-charge"></i> Новый тест
+                        <i class="bi bi-lightning-charge"></i> {% trans "Новый тест" %}
                     </a>
                 </div>
             </div>
@@ -67,15 +68,15 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Статистика</h5>
+                    <h5 class="card-title mb-0">{% trans "Статистика" %}</h5>
                 </div>
                 <div class="card-body">
                     <div id="inferenceStats">
                         <div class="text-center py-3">
                             <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Анализ ответа...</span>
+                                <span class="visually-hidden">{% trans "Анализ ответа..." %}</span>
                             </div>
-                            <p class="mt-2">Анализ ответа...</p>
+                            <p class="mt-2">{% trans "Анализ ответа..." %}</p>
                         </div>
                     </div>
                 </div>
@@ -83,18 +84,18 @@
             
             <div class="card mt-3">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Действия</h5>
+                    <h5 class="card-title mb-0">{% trans "Действия" %}</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <button class="btn btn-outline-success" onclick="saveResult()">
-                            <i class="bi bi-save"></i> Сохранить результат
+                            <i class="bi bi-save"></i> {% trans "Сохранить результат" %}
                         </button>
                         <button class="btn btn-outline-info" onclick="analyzeResponse()">
-                            <i class="bi bi-graph-up"></i> Анализировать качество
+                            <i class="bi bi-graph-up"></i> {% trans "Анализировать качество" %}
                         </button>
                         <button class="btn btn-outline-warning" onclick="compareWithOtherModels()">
-                            <i class="bi bi-arrow-left-right"></i> Сравнить с другими моделями
+                            <i class="bi bi-arrow-left-right"></i> {% trans "Сравнить с другими моделями" %}
                         </button>
                     </div>
                 </div>
@@ -128,23 +129,23 @@ async function analyzeResponseStats() {
             <ul class="list-unstyled mb-0">
                 <li class="mb-2">
                     <i class="bi bi-text-left text-primary"></i>
-                    <strong>Длина ответа:</strong> ${stats.response_length} символов
+                    <strong>{% trans "Длина ответа:" %}</strong> ${stats.response_length} символов
                 </li>
                 <li class="mb-2">
                     <i class="bi bi-hash text-success"></i>
-                    <strong>Примерно токенов:</strong> ${stats.response_tokens}
+                    <strong>{% trans "Примерно токенов:" %}</strong> ${stats.response_tokens}
                 </li>
                 <li class="mb-2">
                     <i class="bi bi-wordpress text-info"></i>
-                    <strong>Слов:</strong> ${stats.words_count}
+                    <strong>{% trans "Слов:" %}</strong> ${stats.words_count}
                 </li>
                 <li class="mb-2">
                     <i class="bi bi-text-paragraph text-warning"></i>
-                    <strong>Предложений:</strong> ${stats.sentences_count}
+                    <strong>{% trans "Предложений:" %}</strong> ${stats.sentences_count}
                 </li>
                 <li>
                     <i class="bi bi-rulers text-secondary"></i>
-                    <strong>Средняя длина слова:</strong> ${stats.avg_word_length.toFixed(1)} символов
+                    <strong>{% trans "Средняя длина слова:" %}</strong> ${stats.avg_word_length.toFixed(1)} символов
                 </li>
             </ul>
         `;
@@ -155,7 +156,7 @@ async function analyzeResponseStats() {
         document.getElementById('inferenceStats').innerHTML = `
             <div class="alert alert-warning">
                 <i class="bi bi-exclamation-triangle"></i>
-                Не удалось проанализировать ответ
+                {% trans "Не удалось проанализировать ответ" %}
             </div>
         `;
     }

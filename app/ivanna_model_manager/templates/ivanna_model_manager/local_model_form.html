@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Добавить модель (локально){% endblock %}
@@ -12,7 +13,7 @@
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="mb-0">
                         <i class="bi bi-hdd-stack me-2" style="color: var(--primary-color);"></i>
-                        Добавление локальной модели
+                        {% trans "Добавление локальной модели" %}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -21,7 +22,7 @@
 
                         <!-- Выбор типа модели (карточки) -->
                         <div class="mb-4">
-                            <label class="form-label small text-muted">Тип модели <span class="text-danger">*</span></label>
+                            <label class="form-label small text-muted">{% trans "Тип модели" %} <span class="text-danger">*</span></label>
                             <div class="row g-3" id="modelTypeCards">
                                 {% for choice in model_choices %}
                                 <div class="col-md-3 col-sm-6">
@@ -44,14 +45,14 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Название модели <span class="text-danger">*</span></label>
+                                    <label class="form-label small text-muted">{% trans "Название модели" %} <span class="text-danger">*</span></label>
                                     <input type="text" name="name" class="form-control" required
                                            placeholder="qwen-7b-instruct" value="{{ form.name.value|default:'' }}">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Отображаемое имя</label>
+                                    <label class="form-label small text-muted">{% trans "Отображаемое имя" %}</label>
                                     <input type="text" name="display_name" class="form-control"
                                            placeholder="Qwen 7B Instruct" value="{{ form.display_name.value|default:'' }}">
                                 </div>
@@ -61,9 +62,9 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Эксперимент</label>
+                                    <label class="form-label small text-muted">{% trans "Эксперимент" %}</label>
                                     <select name="experiment" class="form-select">
-                                        <option value="">--- Без эксперимента ---</option>
+                                        <option value="">{% trans "--- Без эксперимента ---" %}</option>
                                         {% for exp in experiments %}
                                         <option value="{{ exp.id }}" {% if form.experiment.value == exp.id|stringformat:"s" %}selected{% endif %}>
                                             {{ exp.name }}
@@ -74,7 +75,7 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Теги</label>
+                                    <label class="form-label small text-muted">{% trans "Теги" %}</label>
                                     <input type="text" name="tags" class="form-control" value="{{ form.tags.value|default:'' }}"
                                            placeholder="ru, instruct, 7b">
                                 </div>
@@ -83,38 +84,38 @@
 
                         <!-- Локальный путь -->
                         <div class="mb-4">
-                            <label class="form-label small text-muted">Локальный путь <span class="text-danger">*</span></label>
+                            <label class="form-label small text-muted">{% trans "Локальный путь" %} <span class="text-danger">*</span></label>
                             <input type="text" name="local_path" class="form-control" required
                                    placeholder="/app/models/your_model" value="{{ form.local_path.value|default:'' }}">
-                            <div class="form-text small">Абсолютный путь к директории модели в контейнере (например, /app/models/qwen-7b)</div>
+                            <div class="form-text small">{% trans "Абсолютный путь к директории модели в контейнере (например, /app/models/qwen-7b)" %}</div>
                         </div>
 
                         <!-- Дополнительные настройки -->
                         <div class="card mb-4">
                             <div class="card-header bg-transparent border-bottom">
-                                <h6 class="mb-0">Параметры модели</h6>
+                                <h6 class="mb-0">{% trans "Параметры модели" %}</h6>
                             </div>
                             <div class="card-body">
                                 <div class="row g-3">
                                     <div class="col-md-4">
-                                        <label class="form-label small text-muted">Количество параметров</label>
+                                        <label class="form-label small text-muted">{% trans "Количество параметров" %}</label>
                                         <input type="number" name="parameter_count" class="form-control" 
                                                placeholder="7000000000" value="{{ form.parameter_count.value|default:'' }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small text-muted">Длина контекста</label>
+                                        <label class="form-label small text-muted">{% trans "Длина контекста" %}</label>
                                         <input type="number" name="context_length" class="form-control" 
                                                placeholder="4096" value="{{ form.context_length.value|default:'' }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small text-muted">Размер словаря</label>
+                                        <label class="form-label small text-muted">{% trans "Размер словаря" %}</label>
                                         <input type="number" name="vocab_size" class="form-control" 
                                                placeholder="32000" value="{{ form.vocab_size.value|default:'' }}">
                                     </div>
                                 </div>
                                 <div class="row g-3 mt-2">
                                     <div class="col-md-6">
-                                        <label class="form-label small text-muted">Квантизация</label>
+                                        <label class="form-label small text-muted">{% trans "Квантизация" %}</label>
                                         <select name="quantization" class="form-select">
                                             {% for val, label in form.quantization.field.choices %}
                                             <option value="{{ val }}" {% if form.quantization.value == val %}selected{% endif %}>
@@ -124,7 +125,7 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label small text-muted">Лицензия</label>
+                                        <label class="form-label small text-muted">{% trans "Лицензия" %}</label>
                                         <input type="text" name="license_type" class="form-control"
                                                value="{{ form.license_type.value|default:'Apache 2.0' }}">
                                     </div>
@@ -141,24 +142,24 @@
                                         <div class="form-check mt-4">
                                             <input type="checkbox" name="use_flash_attention_2" class="form-check-input" id="flashAttention"
                                                    {% if form.use_flash_attention_2.value %}checked{% endif %}>
-                                            <label class="form-check-label" for="flashAttention">Использовать Flash Attention 2</label>
+                                            <label class="form-check-label" for="flashAttention">{% trans "Использовать Flash Attention 2" %}</label>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="form-check mt-3">
                                     <input type="checkbox" name="mark_safe" class="form-check-input" id="markSafe"
                                            {% if form.mark_safe.value %}checked{% endif %}>
-                                    <label class="form-check-label" for="markSafe">Пометить как безопасную</label>
+                                    <label class="form-check-label" for="markSafe">{% trans "Пометить как безопасную" %}</label>
                                 </div>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'model_list' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i> Отмена
+                                <i class="bi bi-arrow-left me-1"></i> {% trans "Отмена" %}
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save me-1"></i> Сохранить модель
+                                <i class="bi bi-save me-1"></i> {% trans "Сохранить модель" %}
                             </button>
                         </div>
                     </form>

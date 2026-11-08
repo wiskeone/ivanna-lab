@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Редактирование групп: {{ question_set.name }}{% endblock %}
@@ -91,11 +92,11 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3>Редактирование групп: {{ question_set.name }}</h3>
-                    <p class="text-muted">Создавайте группы чанков, для каждой группы будут сгенерированы вопросы</p>
+                    <p class="text-muted">{% trans "Создавайте группы чанков, для каждой группы будут сгенерированы вопросы" %}</p>
                 </div>
                 <div>
                     <a href="{% url 'distillation_question_set_detail' question_set.id %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Вернуться к набору
+                        <i class="bi bi-arrow-left"></i> {% trans "Вернуться к набору" %}
                     </a>
                 </div>
             </div>
@@ -126,15 +127,15 @@
                     <hr class="border-secondary">
                     <div class="row mt-2">
                         <div class="col-md-3">
-                            <div class="text-muted small">Документы</div>
+                            <div class="text-muted small">{% trans "Документы" %}</div>
                             <div class="fw-bold">{{ question_set.collection.total_documents }}</div>
                         </div>
                         <div class="col-md-3">
-                            <div class="text-muted small">Всего чанков</div>
+                            <div class="text-muted small">{% trans "Всего чанков" %}</div>
                             <div class="fw-bold">{{ question_set.collection.total_chunks }}</div>
                         </div>
                         <div class="col-md-3">
-                            <div class="text-muted small">Чанков с эмбеддингами</div>
+                            <div class="text-muted small">{% trans "Чанков с эмбеддингами" %}</div>
                             <div class="fw-bold">
                                 {% if question_set.collection.total_vectors %}
                                 {{ question_set.collection.total_vectors }}
@@ -144,12 +145,12 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="text-muted small">Модель эмбеддингов</div>
+                            <div class="text-muted small">{% trans "Модель эмбеддингов" %}</div>
                             <div class="fw-bold">
                                 {% if question_set.collection.embedding_model %}
                                 {{ question_set.collection.embedding_model.name }}
                                 {% else %}
-                                <span class="text-muted">не выбрана</span>
+                                <span class="text-muted">{% trans "не выбрана" %}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -167,10 +168,10 @@
                     <div class="d-flex align-items-center">
                         <i class="bi bi-exclamation-triangle-fill text-warning me-3" style="font-size: 1.5rem;"></i>
                         <div>
-                            <h5 class="card-title mb-1">Коллекция не выбрана</h5>
+                            <h5 class="card-title mb-1">{% trans "Коллекция не выбрана" %}</h5>
                             <p class="card-text text-muted mb-0">
-                                Для автоматического выбора чанков необходимо привязать набор к коллекции. 
-                                Вы можете сделать это <a href="{% url 'distillation_question_set_edit' question_set.id %}">при редактировании набора</a>.
+                                {% trans "Для автоматического выбора чанков необходимо привязать набор к коллекции. 
+                                Вы можете сделать это" %} <a href="{% url 'distillation_question_set_edit' question_set.id %}">{% trans "при редактировании набора" %}</a>.
                             </p>
                         </div>
                     </div>
@@ -182,29 +183,29 @@
             <!-- Быстрое создание групп -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Быстрое создание групп</h5>
+                    <h5 class="mb-0">{% trans "Быстрое создание групп" %}</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <label class="form-label">Выберите чанки (через запятую или диапазоны)</label>
-                            <input type="text" id="chunkRangeInput" class="form-control" placeholder="Например: 1-50, 60-100, 105, 110">
-                            <div class="form-text">Можно указать диапазоны (начало-конец) и отдельные ID</div>
+                            <label class="form-label">{% trans "Выберите чанки (через запятую или диапазоны)" %}</label>
+                            <input type="text" id="chunkRangeInput" class="form-control" placeholder="{% trans 'Например: 1-50, 60-100, 105, 110' %}">
+                            <div class="form-text">{% trans "Можно указать диапазоны (начало-конец) и отдельные ID" %}</div>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Размер окна</label>
+                            <label class="form-label">{% trans "Размер окна" %}</label>
                             <input type="number" id="windowSize" class="form-control" value="3" min="1">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Вопросов на группу</label>
+                            <label class="form-label">{% trans "Вопросов на группу" %}</label>
                             <input type="number" id="numQuestions" class="form-control" value="3" min="1">
                         </div>
                     </div>
                     <div class="mt-3">
                         <button class="btn btn-primary" id="autoCreateGroupsBtn">
-                            <i class="bi bi-magic"></i> Автоматически создать группы
+                            <i class="bi bi-magic"></i> {% trans "Автоматически создать группы" %}
                         </button>
-                        <span class="text-muted ms-3">Все существующие группы будут удалены (при необходимости)</span>
+                        <span class="text-muted ms-3">{% trans "Все существующие группы будут удалены (при необходимости)" %}</span>
                     </div>
                 </div>
             </div>
@@ -215,18 +216,18 @@
                 <div class="group-card" data-group-id="{{ group.id }}" data-group-order="{{ group.order }}">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="flex-grow-1">
-                            <input type="text" class="form-control group-name mb-2" value="{{ group.name }}" placeholder="Название группы (опционально)">
+                            <input type="text" class="form-control group-name mb-2" value="{{ group.name }}" placeholder="{% trans 'Название группы (опционально)' %}">
                             <div class="row">
                                 <div class="col-md-3">
-                                    <label class="form-label small">Количество вопросов</label>
+                                    <label class="form-label small">{% trans "Количество вопросов" %}</label>
                                     <input type="number" class="form-control form-control-sm group-num-questions" value="{{ group.num_questions }}" min="1">
                                 </div>
                                 <div class="col-md-9">
-                                    <label class="form-label small">ID чанков (через запятую)</label>
+                                    <label class="form-label small">{% trans "ID чанков (через запятую)" %}</label>
                                     <div class="input-group">
                                         <input type="text" class="form-control form-control-sm group-chunk-ids" value="{{ group.chunk_ids|join:',' }}">
                                         <button class="btn btn-sm btn-outline-primary select-chunks-btn" data-group-id="{{ group.id }}" data-group-chunks="{{ group.chunk_ids|join:',' }}">
-                                            <i class="bi bi-list-check"></i> Выбрать
+                                            <i class="bi bi-list-check"></i> {% trans "Выбрать" %}
                                         </button>
                                     </div>
                                 </div>
@@ -237,7 +238,7 @@
                         </button>
                     </div>
                     <div class="chunk-preview" data-group-id="{{ group.id }}">
-                        <div class="text-muted small">Загрузка предпросмотра...</div>
+                        <div class="text-muted small">{% trans "Загрузка предпросмотра..." %}</div>
                     </div>
                 </div>
                 {% endfor %}
@@ -245,18 +246,18 @@
 
             <div class="mt-3">
                 <button class="btn btn-outline-primary" id="addGroupBtn">
-                    <i class="bi bi-plus-circle"></i> Добавить группу
+                    <i class="bi bi-plus-circle"></i> {% trans "Добавить группу" %}
                 </button>
                 <button class="btn btn-success" id="saveGroupsBtn">
-                    <i class="bi bi-save"></i> Сохранить изменения
+                    <i class="bi bi-save"></i> {% trans "Сохранить изменения" %}
                 </button>
-                <a href="{% url 'distillation_question_set_detail' question_set.id %}" class="btn btn-secondary">Отмена</a>
+                <a href="{% url 'distillation_question_set_detail' question_set.id %}" class="btn btn-secondary">{% trans "Отмена" %}</a>
             </div>
 
             {% else %}
             <div class="alert alert-warning">
                 <i class="bi bi-exclamation-triangle"></i>
-                Для автоматического выбора чанков необходимо выбрать коллекцию при создании набора.
+                {% trans "Для автоматического выбора чанков необходимо выбрать коллекцию при создании набора." %}
             </div>
             {% endif %}
         </div>
@@ -268,28 +269,28 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Выбор чанков для группы</h5>
+                <h5 class="modal-title">{% trans "Выбор чанков для группы" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-4">
-                        <h6>Документы коллекции</h6>
+                        <h6>{% trans "Документы коллекции" %}</h6>
                         <div id="documentList" class="document-list">
-                            <div class="text-muted text-center p-3">Загрузка документов...</div>
+                            <div class="text-muted text-center p-3">{% trans "Загрузка документов..." %}</div>
                         </div>
                     </div>
                     <div class="col-md-8">
-                        <h6>Чанки документа <span id="selectedDocTitle"></span></h6>
+                        <h6>{% trans "Чанки документа" %} <span id="selectedDocTitle"></span></h6>
                         <div id="chunksContainer" class="chunk-selector">
-                            <div class="text-muted text-center p-3">Выберите документ слева</div>
+                            <div class="text-muted text-center p-3">{% trans "Выберите документ слева" %}</div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="applyChunkSelection">Применить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" id="applyChunkSelection">{% trans "Применить" %}</button>
             </div>
         </div>
     </div>
@@ -353,7 +354,7 @@
         const container = document.getElementById(containerId);
         if (!container) return;
         if (show) {
-            container.innerHTML = '<div class="text-center p-3"><div class="loading-spinner"></div> Загрузка...</div>';
+            container.innerHTML = '<div class="text-center p-3"><div class="loading-spinner"></div> {% trans "Загрузка..." %}</div>';
         }
     }
 
@@ -380,7 +381,7 @@
             })
             .catch(err => {
                 console.error('Ошибка загрузки документов:', err);
-                document.getElementById('documentList').innerHTML = `<div class="text-danger p-3">Ошибка загрузки документов</div>`;
+                document.getElementById('documentList').innerHTML = `<div class="text-danger p-3">{% trans "Ошибка загрузки документов" %}</div>`;
                 showToast('danger', 'Ошибка', 'Не удалось загрузить документы');
             });
     }
@@ -388,7 +389,7 @@
     function renderDocumentList() {
         const container = document.getElementById('documentList');
         if (!allDocuments.length) {
-            container.innerHTML = '<div class="text-muted p-3">Нет документов в коллекции</div>';
+            container.innerHTML = '<div class="text-muted p-3">{% trans "Нет документов в коллекции" %}</div>';
             return;
         }
         let html = '';
@@ -431,7 +432,7 @@
             })
             .catch(err => {
                 console.error('Ошибка загрузки чанков:', err);
-                document.getElementById('chunksContainer').innerHTML = `<div class="text-danger p-3">Ошибка загрузки чанков</div>`;
+                document.getElementById('chunksContainer').innerHTML = `<div class="text-danger p-3">{% trans "Ошибка загрузки чанков" %}</div>`;
                 showToast('danger', 'Ошибка', 'Не удалось загрузить чанки документа');
             });
     }
@@ -440,7 +441,7 @@
         const container = document.getElementById('chunksContainer');
         const chunks = allChunksByDoc[docId] || [];
         if (!chunks.length) {
-            container.innerHTML = '<div class="text-muted p-3">Нет чанков в этом документе</div>';
+            container.innerHTML = '<div class="text-muted p-3">{% trans "Нет чанков в этом документе" %}</div>';
             return;
         }
         let html = '';
@@ -511,7 +512,7 @@
             renderDocumentList();
             // Сброс выбранного документа
             document.getElementById('selectedDocTitle').innerText = '';
-            document.getElementById('chunksContainer').innerHTML = '<div class="text-muted text-center p-3">Выберите документ слева</div>';
+            document.getElementById('chunksContainer').innerHTML = '<div class="text-muted text-center p-3">{% trans "Выберите документ слева" %}</div>';
             // Снимаем активный класс со всех документов
             const docList = document.getElementById('documentList');
             if (docList) {
@@ -545,10 +546,10 @@
         const previewDiv = groupCard.querySelector('.chunk-preview');
         const ids = chunkIdsInput.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
         if (ids.length === 0) {
-            previewDiv.innerHTML = '<span class="text-muted">Нет выбранных чанков</span>';
+            previewDiv.innerHTML = '<span class="text-muted">{% trans "Нет выбранных чанков" %}</span>';
             return;
         }
-        previewDiv.innerHTML = '<div class="text-muted small"><div class="loading-spinner"></div> Загрузка предпросмотра...</div>';
+        previewDiv.innerHTML = '<div class="text-muted small"><div class="loading-spinner"></div> {% trans "Загрузка предпросмотра..." %}</div>';
         // Загружаем содержимое чанков (можно использовать API /api/document-chunks/{id}/)
         let previewHtml = '';
         for (let chunkId of ids.slice(0, 5)) { // показываем первые 5
@@ -558,10 +559,10 @@
                     const data = await res.json();
                     previewHtml += `<div><strong>Чанк ${chunkId}</strong>: ${(data.content || '').substring(0, 80)}...</div>`;
                 } else {
-                    previewHtml += `<div><strong>Чанк ${chunkId}</strong>: не удалось загрузить</div>`;
+                    previewHtml += `<div><strong>Чанк ${chunkId}</strong>{% trans ": не удалось загрузить" %}</div>`;
                 }
             } catch(e) {
-                previewHtml += `<div><strong>Чанк ${chunkId}</strong>: ошибка загрузки</div>`;
+                previewHtml += `<div><strong>Чанк ${chunkId}</strong>{% trans ": ошибка загрузки" %}</div>`;
             }
         }
         if (ids.length > 5) {

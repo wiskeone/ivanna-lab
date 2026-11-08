@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -148,10 +149,10 @@
                     </div>
                     <div class="d-flex gap-2">
                         <a href="{% url 'model_list' %}" class="action-link">
-                            <i class="bi bi-arrow-left"></i> Назад
+                            <i class="bi bi-arrow-left"></i> {% trans "Назад" %}
                         </a>
                         <a href="{% url 'model_edit' model.pk %}" class="action-link">
-                            <i class="bi bi-pencil"></i> Редактировать
+                            <i class="bi bi-pencil"></i> {% trans "Редактировать" %}
                         </a>
                     </div>
                 </div>
@@ -170,12 +171,12 @@
                         <span class="model-badge">{{ model.get_model_type_display }}</span>
                         {% if model.is_safe %}
                         <span class="embedding-status status-downloaded">
-                            <i class="bi bi-shield-check me-1"></i> Безопасна
+                            <i class="bi bi-shield-check me-1"></i> {% trans "Безопасна" %}
                         </span>
                         {% endif %}
                         {% if model.is_public %}
                         <span class="embedding-status status-default">
-                            <i class="bi bi-globe me-1"></i> Публичная
+                            <i class="bi bi-globe me-1"></i> {% trans "Публичная" %}
                         </span>
                         {% endif %}
                         {% for tag in model.tags|slice:":5" %}
@@ -190,7 +191,7 @@
                             <div class="flex-grow-1">
                                 <div id="memoryStatus">
                                     <p class="text-muted mb-0">
-                                        <i class="bi bi-arrow-repeat spin me-2"></i> Проверка статуса...
+                                        <i class="bi bi-arrow-repeat spin me-2"></i> {% trans "Проверка статуса..." %}
                                     </p>
                                 </div>
                                 <div id="loadingProgressContainer" class="mt-2" style="display: none;">
@@ -198,7 +199,7 @@
                                         <div class="progress-bar" id="loadingProgressBar" style="width: 0%"></div>
                                     </div>
                                     <div class="d-flex justify-content-between mt-1">
-                                        <span class="small text-muted" id="loadingStep">Инициализация...</span>
+                                        <span class="small text-muted" id="loadingStep">{% trans "Инициализация..." %}</span>
                                         <span class="small text-muted" id="loadingPercent">0%</span>
                                     </div>
                                 </div>
@@ -210,35 +211,35 @@
                     <!-- Кнопки управления (жирный шрифт) -->
                     <div class="d-flex flex-wrap gap-3 mb-4">
                         <button class="action-link" onclick="loadModel()" id="loadBtn" disabled>
-                            <i class="bi bi-download"></i> Загрузить в память
+                            <i class="bi bi-download"></i> {% trans "Загрузить в память" %}
                         </button>
                         <button class="action-link" onclick="unloadModel(false)" id="unloadBtn" disabled>
-                            <i class="bi bi-eject"></i> Выгрузить
+                            <i class="bi bi-eject"></i> {% trans "Выгрузить" %}
                         </button>
                         <button class="action-link danger" onclick="unloadModel(true)" id="forceUnloadBtn" style="display: none;">
-                            <i class="bi bi-exclamation-triangle"></i> Принудительно выгрузить
+                            <i class="bi bi-exclamation-triangle"></i> {% trans "Принудительно выгрузить" %}
                         </button>
                         <button class="action-link" onclick="forceCleanMemory()" id="cleanMemoryBtn" style="display: none;">
-                            <i class="bi bi-droplet"></i> Очистить память
+                            <i class="bi bi-droplet"></i> {% trans "Очистить память" %}
                         </button>
                         {% if model.huggingface_id %}
                         <button class="action-link" onclick="downloadModel()" id="downloadBtn" {% if has_local_copy %}disabled{% endif %}>
-                            <i class="bi bi-cloud-download"></i> Скачать
+                            <i class="bi bi-cloud-download"></i> {% trans "Скачать" %}
                         </button>
                         {% endif %}
                         {% if model.status == 'LOADED' %}
                         <a href="{% url 'model_test' pk=model.id %}" class="action-link">
-                            <i class="bi bi-play-circle"></i> Тестировать
+                            <i class="bi bi-play-circle"></i> {% trans "Тестировать" %}
                         </a>
                         <a href="{% url 'chat_view' %}?model_id={{ model.id }}" class="action-link">
-                            <i class="bi bi-chat-dots"></i> Чат
+                            <i class="bi bi-chat-dots"></i> {% trans "Чат" %}
                         </a>
                         {% endif %}
                         <a href="{% url 'merge_create' %}?base_model={{ model.id }}" class="action-link">
-                            <i class="bi bi-arrow-left-right"></i> Слияние
+                            <i class="bi bi-arrow-left-right"></i> {% trans "Слияние" %}
                         </a>
                         <a href="{% url 'chat_sessions_management' %}" class="action-link">
-                            <i class="bi bi-collection"></i> Сессии
+                            <i class="bi bi-collection"></i> {% trans "Сессии" %}
                         </a>
                     </div>
 
@@ -246,29 +247,29 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Тип модели</span>
+                                <span class="model-meta-label">{% trans "Тип модели" %}</span>
                                 <span class="model-meta-value">{{ model.get_model_type_display }}</span>
                             </div>
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Параметры</span>
+                                <span class="model-meta-label">{% trans "Параметры" %}</span>
                                 <span class="model-meta-value">{{ model.parameter_count|floatformat:0 }} ({{ model.size_gb }} GB)</span>
                             </div>
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Запрошенная квантизация</span>
+                                <span class="model-meta-label">{% trans "Запрошенная квантизация" %}</span>
                                 <span class="model-meta-value">{{ model.get_quantization_display|default:"FP16" }}</span>
                             </div>
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Контекст</span>
+                                <span class="model-meta-label">{% trans "Контекст" %}</span>
                                 <span class="model-meta-value">{{ model.context_length }} токенов</span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Лицензия</span>
+                                <span class="model-meta-label">{% trans "Лицензия" %}</span>
                                 <span class="model-meta-value">{{ model.license_type|default:"Не указана" }}</span>
                             </div>
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Безопасность</span>
+                                <span class="model-meta-label">{% trans "Безопасность" %}</span>
                                 <span class="model-meta-value">
                                     {% if model.safety_score %}
                                     <span class="badge bg-{% if model.safety_score > 0.8 %}success{% elif model.safety_score > 0.6 %}warning text-dark{% else %}danger{% endif %}">
@@ -280,7 +281,7 @@
                                 </span>
                             </div>
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Публичный доступ</span>
+                                <span class="model-meta-label">{% trans "Публичный доступ" %}</span>
                                 <span class="model-meta-value">
                                     {% if model.is_public %}
                                     <i class="bi bi-check-circle text-success"></i> Да
@@ -290,7 +291,7 @@
                                 </span>
                             </div>
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Активность</span>
+                                <span class="model-meta-label">{% trans "Активность" %}</span>
                                 <span class="model-meta-value">
                                     {% if model.is_active %}
                                     <i class="bi bi-check-circle text-success"></i> Активна
@@ -308,7 +309,7 @@
                         {% if model.loader_config.actual_quantization %}
                         <div class="col-md-6">
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Фактическая квантизация</span>
+                                <span class="model-meta-label">{% trans "Фактическая квантизация" %}</span>
                                 <span class="model-meta-value">{{ model.loader_config.actual_quantization }}</span>
                             </div>
                         </div>
@@ -316,7 +317,7 @@
                         {% if model.loader_config.target_device %}
                         <div class="col-md-6">
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Устройство</span>
+                                <span class="model-meta-label">{% trans "Устройство" %}</span>
                                 <span class="model-meta-value">{{ model.loader_config.target_device|upper }}</span>
                             </div>
                         </div>
@@ -324,7 +325,7 @@
                         {% if model.loader_config.loaded_at %}
                         <div class="col-md-6">
                             <div class="model-meta-item">
-                                <span class="model-meta-label">Загружена</span>
+                                <span class="model-meta-label">{% trans "Загружена" %}</span>
                                 <span class="model-meta-value">{{ model.loader_config.loaded_at|date:"d.m.Y H:i:s"|default:"—" }}</span>
                             </div>
                         </div>
@@ -351,7 +352,7 @@
                     <!-- Активные сессии -->
                     {% if active_sessions %}
                     <div class="mt-4">
-                        <h6 class="mb-2"><i class="bi bi-activity me-2"></i> Активные сессии</h6>
+                        <h6 class="mb-2"><i class="bi bi-activity me-2"></i> {% trans "Активные сессии" %}</h6>
                         <div class="list-group">
                             {% for session in active_sessions|slice:":3" %}
                             <a href="{% url 'chat_session' session_id=session.session_id %}" class="list-group-item list-group-item-action bg-transparent border-secondary">
@@ -373,24 +374,24 @@
             <!-- Редактор конфигурации -->
             <div class="card mt-4">
                 <div class="card-header bg-transparent border-bottom">
-                    <i class="bi bi-code-slash me-2"></i> Конфигурация загрузки
+                    <i class="bi bi-code-slash me-2"></i> {% trans "Конфигурация загрузки" %}
                 </div>
                 <div class="card-body">
                     <textarea id="configEditor" class="form-control font-monospace" rows="15" spellcheck="false" style="background: rgba(0,0,0,0.3);">{{ config_json }}</textarea>
                     <div class="form-text text-muted mt-2">
-                        <i class="bi bi-info-circle me-1"></i> Редактируйте конфигурацию загрузки модели. Будьте осторожны с синтаксисом JSON.
+                        <i class="bi bi-info-circle me-1"></i> {% trans "Редактируйте конфигурацию загрузки модели. Будьте осторожны с синтаксисом JSON." %}
                     </div>
                     <div class="d-flex justify-content-between mt-3">
                         <div class="d-flex gap-2">
                             <button class="action-link" onclick="resetConfig()">
-                                <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                                <i class="bi bi-arrow-counterclockwise"></i> {% trans "Сбросить" %}
                             </button>
                             <button class="action-link" onclick="formatConfig()">
-                                <i class="bi bi-align-left"></i> Форматировать
+                                <i class="bi bi-align-left"></i> {% trans "Форматировать" %}
                             </button>
                         </div>
                         <button class="btn btn-primary" onclick="saveConfig()">
-                            <i class="bi bi-check-circle me-1"></i> Сохранить
+                            <i class="bi bi-check-circle me-1"></i> {% trans "Сохранить" %}
                         </button>
                     </div>
                 </div>
@@ -402,12 +403,12 @@
             <!-- Системная информация -->
             <div class="card">
                 <div class="card-header bg-transparent border-bottom">
-                    <h5 class="mb-0"><i class="bi bi-folder me-2"></i> Системная информация</h5>
+                    <h5 class="mb-0"><i class="bi bi-folder me-2"></i> {% trans "Системная информация" %}</h5>
                 </div>
                 <div class="card-body">
                     {% if model.experiment %}
                     <div class="mb-3">
-                        <small class="text-muted d-block">Эксперимент</small>
+                        <small class="text-muted d-block">{% trans "Эксперимент" %}</small>
                         <a href="{% url 'experiment_detail' model.experiment.pk %}" class="action-link">
                             <i class="bi bi-flask me-1"></i> {{ model.experiment.name }}
                         </a>
@@ -415,7 +416,7 @@
                     {% endif %}
 
                     <div class="mb-3">
-                        <small class="text-muted d-block">Локальный путь</small>
+                        <small class="text-muted d-block">{% trans "Локальный путь" %}</small>
                         <div class="text-truncate" title="{{ model.local_path }}">
                             <i class="bi bi-folder2 me-1"></i> {{ model.local_path|default:"Не скачана"|truncatechars:40 }}
                         </div>
@@ -423,25 +424,25 @@
 
                     {% if model.relative_path %}
                     <div class="mb-3">
-                        <small class="text-muted d-block">Относительный путь</small>
+                        <small class="text-muted d-block">{% trans "Относительный путь" %}</small>
                         <div class="fw-bold">{{ model.relative_path }}</div>
                     </div>
                     {% endif %}
 
                     <div class="mb-3">
-                        <small class="text-muted d-block">Создана</small>
+                        <small class="text-muted d-block">{% trans "Создана" %}</small>
                         <div>{{ model.created_at|date:"d.m.Y H:i" }}</div>
                     </div>
 
                     <div class="mb-4">
-                        <small class="text-muted d-block">Обновлена</small>
+                        <small class="text-muted d-block">{% trans "Обновлена" %}</small>
                         <div>{{ model.updated_at|date:"d.m.Y H:i" }}</div>
                     </div>
 
                     {% if perms.ivanna_model_manager.can_delete_protected %}
                     <a href="{% url 'model_delete' model.pk %}" class="action-link danger"
                        onclick="return confirm('Вы уверены, что хотите удалить эту модель?')">
-                        <i class="bi bi-trash me-1"></i> Удалить модель
+                        <i class="bi bi-trash me-1"></i> {% trans "Удалить модель" %}
                     </a>
                     {% endif %}
                 </div>
@@ -452,7 +453,7 @@
                 <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-collection me-2"></i> Версии ({{ versions|length }})</h5>
                     <button class="action-link" data-bs-toggle="modal" data-bs-target="#createVersionModal">
-                        <i class="bi bi-plus-lg"></i> Создать
+                        <i class="bi bi-plus-lg"></i> {% trans "Создать" %}
                     </button>
                 </div>
                 <div class="list-group list-group-flush">
@@ -463,7 +464,7 @@
                                 <div>
                                     <strong>{{ version.version }}</strong>
                                     {% if version.is_stable %}
-                                    <span class="embedding-status status-default ms-2">Стабильная</span>
+                                    <span class="embedding-status status-default ms-2">{% trans "Стабильная" %}</span>
                                     {% endif %}
                                     {% if version.notes %}
                                     <div class="small text-muted mt-1">{{ version.notes|truncatechars:50 }}</div>
@@ -476,7 +477,7 @@
                     {% else %}
                     <div class="text-center py-4">
                         <i class="bi bi-inboxes display-6 text-muted"></i>
-                        <p class="mt-2 text-muted">Нет версий</p>
+                        <p class="mt-2 text-muted">{% trans "Нет версий" %}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -485,7 +486,7 @@
             <!-- Оценки модели -->
             <div class="card mt-4">
                 <div class="card-header bg-transparent border-bottom">
-                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i> Оценки</h5>
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i> {% trans "Оценки" %}</h5>
                 </div>
                 <div class="list-group list-group-flush">
                     {% if evaluations %}
@@ -511,7 +512,7 @@
                     {% else %}
                     <div class="text-center py-4">
                         <i class="bi bi-clipboard-data display-6 text-muted"></i>
-                        <p class="mt-2 text-muted">Нет оценок</p>
+                        <p class="mt-2 text-muted">{% trans "Нет оценок" %}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -525,24 +526,24 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
-                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> Создать новую версию</h5>
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> {% trans "Создать новую версию" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="{% url 'model_create_version' model.pk %}">
                 <div class="modal-body">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label class="form-label">Название версии</label>
+                        <label class="form-label">{% trans "Название версии" %}</label>
                         <input type="text" class="form-control" name="version_name" value="v{{ versions|length|add:1 }}" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Описание</label>
-                        <textarea class="form-control" name="notes" rows="3" placeholder="Что изменилось?"></textarea>
+                        <label class="form-label">{% trans "Описание" %}</label>
+                        <textarea class="form-control" name="notes" rows="3" placeholder="{% trans 'Что изменилось?' %}"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="submit" class="btn btn-primary">Создать версию</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Создать версию" %}</button>
                 </div>
             </form>
         </div>
@@ -553,42 +554,42 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
-                <h5 class="modal-title"><i class="bi bi-arrow-down-up me-2"></i> Выберите тип квантизации</h5>
+                <h5 class="modal-title"><i class="bi bi-arrow-down-up me-2"></i> {% trans "Выберите тип квантизации" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="text-muted small mb-3">Квантизация уменьшает потребление памяти, но может незначительно снизить качество.</p>
+                <p class="text-muted small mb-3">{% trans "Квантизация уменьшает потребление памяти, но может незначительно снизить качество." %}</p>
                 <div class="list-group">
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="quantization" value="none" checked>
-                        <strong>Без квантизации</strong>
-                        <span class="d-block small text-muted">FP32 / FP16 (оригинальная точность)</span>
+                        <strong>{% trans "Без квантизации" %}</strong>
+                        <span class="d-block small text-muted">{% trans "FP32 / FP16 (оригинальная точность)" %}</span>
                     </label>
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="quantization" value="float16">
                         <strong>FP16</strong>
-                        <span class="d-block small text-muted">Полуточность, хороший баланс</span>
+                        <span class="d-block small text-muted">{% trans "Полуточность, хороший баланс" %}</span>
                     </label>
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="quantization" value="bfloat16">
                         <strong>BF16</strong>
-                        <span class="d-block small text-muted">Для архитектур с поддержкой bfloat16</span>
+                        <span class="d-block small text-muted">{% trans "Для архитектур с поддержкой bfloat16" %}</span>
                     </label>
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="quantization" value="int8">
                         <strong>8-bit (INT8)</strong>
-                        <span class="d-block small text-muted">Сильная экономия памяти, небольшое падение качества</span>
+                        <span class="d-block small text-muted">{% trans "Сильная экономия памяти, небольшое падение качества" %}</span>
                     </label>
                     <label class="list-group-item bg-dark text-white border-secondary">
                         <input class="form-check-input me-2" type="radio" name="quantization" value="int4">
                         <strong>4-bit (INT4)</strong>
-                        <span class="d-block small text-muted">Максимальная экономия, заметное падение качества</span>
+                        <span class="d-block small text-muted">{% trans "Максимальная экономия, заметное падение качества" %}</span>
                     </label>
                 </div>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="confirmLoadWithQuantization()">Загрузить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" onclick="confirmLoadWithQuantization()">{% trans "Загрузить" %}</button>
             </div>
         </div>
     </div>
@@ -598,16 +599,16 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
-                <h5 class="modal-title"><i class="bi bi-eject me-2"></i> Подтверждение выгрузки</h5>
+                <h5 class="modal-title"><i class="bi bi-eject me-2"></i> {% trans "Подтверждение выгрузки" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Вы уверены, что хотите выгрузить модель из памяти?</p>
-                <p class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i> Это действие остановит все активные сессии с этой моделью.</p>
+                <p>{% trans "Вы уверены, что хотите выгрузить модель из памяти?" %}</p>
+                <p class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i> {% trans "Это действие остановит все активные сессии с этой моделью." %}</p>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" onclick="confirmUnload(false)">Выгрузить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-danger" onclick="confirmUnload(false)">{% trans "Выгрузить" %}</button>
             </div>
         </div>
     </div>
@@ -617,16 +618,16 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i> Принудительная выгрузка</h5>
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i> {% trans "Принудительная выгрузка" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="text-danger">Модель зависла в памяти или не отвечает.</p>
-                <p>Принудительная выгрузка может привести к ошибкам в активных сессиях.</p>
+                <p class="text-danger">{% trans "Модель зависла в памяти или не отвечает." %}</p>
+                <p>{% trans "Принудительная выгрузка может привести к ошибкам в активных сессиях." %}</p>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" onclick="confirmUnload(true)">Принудительно выгрузить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-danger" onclick="confirmUnload(true)">{% trans "Принудительно выгрузить" %}</button>
             </div>
         </div>
     </div>
@@ -641,7 +642,7 @@
             </div>
             <div class="modal-body" id="notificationMessage"></div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
             </div>
         </div>
     </div>
@@ -755,7 +756,7 @@
                 <div class="d-flex align-items-center">
                     <i class="bi bi-check-circle text-success fs-4 me-3"></i>
                     <div>
-                        <p class="mb-1">Модель загружена в память</p>
+                        <p class="mb-1">{% trans "Модель загружена в память" %}</p>
                         <div class="d-flex gap-2">
                             <span class="embedding-status status-default">
                                 <i class="bi bi-${data.device === 'cuda' ? 'gpu-card' : 'cpu'} me-1"></i>
@@ -795,7 +796,7 @@
                 memoryStatus.innerHTML = `
                     <div class="d-flex align-items-center">
                         <i class="bi bi-hourglass text-warning fs-4 me-3"></i>
-                        <div><p class="mb-1">Загрузка в память...</p><small class="text-muted">${step}</small></div>
+                        <div><p class="mb-1">{% trans "Загрузка в память..." %}</p><small class="text-muted">${step}</small></div>
                     </div>
                 `;
                 progressContainer.style.display = 'block';
@@ -811,7 +812,7 @@
                 memoryStatus.innerHTML = `
                     <div class="d-flex align-items-center">
                         <i class="bi bi-cloud-download text-primary fs-4 me-3"></i>
-                        <div><p class="mb-1">Скачивание модели...</p></div>
+                        <div><p class="mb-1">{% trans "Скачивание модели..." %}</p></div>
                     </div>
                 `;
                 progressContainer.style.display = 'block';
@@ -827,7 +828,7 @@
                 memoryStatus.innerHTML = `
                     <div class="d-flex align-items-center">
                         <i class="bi bi-hdd text-warning fs-4 me-3"></i>
-                        <div><p class="mb-1">Модель загружена на диск</p><small class="text-muted">${data.local_path || ''}</small></div>
+                        <div><p class="mb-1">{% trans "Модель загружена на диск" %}</p><small class="text-muted">${data.local_path || ''}</small></div>
                     </div>
                 `;
                 loadBtn.disabled = false;
@@ -842,13 +843,13 @@
             memoryStatus.innerHTML = `
                 <div class="d-flex align-items-center">
                     <i class="bi bi-cloud text-muted fs-4 me-3"></i>
-                    <div><p class="mb-1">Модель не загружена</p>${data.huggingface_id ? `<small class="text-muted">${data.huggingface_id}</small>` : ''}</div>
+                    <div><p class="mb-1">{% trans "Модель не загружена" %}</p>${data.huggingface_id ? `<small class="text-muted">${data.huggingface_id}</small>` : ''}</div>
                 </div>
             `;
             if (data.memory_status && data.memory_status.cuda_allocated_gb > 0.5) {
                 cleanMemoryBtn.style.display = 'inline-block';
                 memoryStats.innerHTML = `
-                    <div class="col"><div class="model-meta-item"><span class="model-meta-label">Занято (подозрительно)</span><span class="model-meta-value">${data.memory_status.cuda_allocated_gb.toFixed(2)} GB</span></div></div>
+                    <div class="col"><div class="model-meta-item"><span class="model-meta-label">{% trans "Занято (подозрительно)" %}</span><span class="model-meta-value">${data.memory_status.cuda_allocated_gb.toFixed(2)} GB</span></div></div>
                     <div class="col"><div class="model-meta-item"><span class="model-meta-label">Cached</span><span class="model-meta-value">${data.memory_status.cuda_cached_gb.toFixed(2)} GB</span></div></div>
                     <div class="col"><div class="model-meta-item"><span class="model-meta-label">Free</span><span class="model-meta-value">${data.memory_status.cuda_free_gb.toFixed(2)} GB</span></div></div>
                 `;

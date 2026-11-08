@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Загрузка модели — Ivanna Lab{% endblock %}
@@ -164,13 +165,13 @@
     <div class="card-header bg-transparent border-bottom">
         <h5 class="mb-0">
             <i class="bi bi-cloud-arrow-up me-2" style="color: var(--primary-color);"></i>
-            Загрузить модель с Hugging Face
+            {% trans "Загрузить модель с Hugging Face" %}
         </h5>
     </div>
     <div class="card-body">
         <div class="alert alert-info bg-dark-transparent border-info">
             <i class="bi bi-info-circle me-2"></i>
-            Укажите ID модели на Hugging Face Hub. Параметры модели будут заполнены автоматически.
+            {% trans "Укажите ID модели на Hugging Face Hub. Параметры модели будут заполнены автоматически." %}
         </div>
     </div>
 </div>
@@ -185,7 +186,7 @@
 
             <!-- Шаг 1: Тип модели (карточки) -->
             <div class="mb-5">
-                <h5 class="mb-3">1. Тип модели</h5>
+                <h5 class="mb-3">{% trans "1. Тип модели" %}</h5>
                 <div class="row g-3" id="modelTypeCards">
                     {% for item in model_choices %}
                     <div class="col-xl-3 col-lg-4 col-md-6">
@@ -214,24 +215,24 @@
 
             <!-- Шаг 2: Основная информация -->
             <div class="mb-5">
-                <h5 class="mb-3">2. Основная информация</h5>
+                <h5 class="mb-3">{% trans "2. Основная информация" %}</h5>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Имя модели *</label>
+                        <label class="form-label small text-muted">{% trans "Имя модели *" %}</label>
                         <input type="text" name="name" class="form-control" id="id_name" required>
-                        <div class="form-text">Уникальное имя в системе</div>
+                        <div class="form-text">{% trans "Уникальное имя в системе" %}</div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Отображаемое имя</label>
+                        <label class="form-label small text-muted">{% trans "Отображаемое имя" %}</label>
                         <input type="text" name="display_name" class="form-control" id="id_display_name">
-                        <div class="form-text">Человекочитаемое имя</div>
+                        <div class="form-text">{% trans "Человекочитаемое имя" %}</div>
                     </div>
                 </div>
             </div>
 
             <!-- Шаг 3: Hugging Face параметры -->
             <div class="mb-5">
-                <h5 class="mb-3">3. Hugging Face параметры</h5>
+                <h5 class="mb-3">{% trans "3. Hugging Face параметры" %}</h5>
                 <div class="row g-3">
                     <div class="col-md-8">
                         <label class="form-label small text-muted">Hugging Face ID *</label>
@@ -239,26 +240,26 @@
                             <span class="input-group-text bg-dark border-secondary">https://huggingface.co/</span>
                             <input type="text" name="huggingface_id" class="form-control" id="hfId" required>
                             <button type="button" class="btn btn-outline-primary" id="validateModelBtn">
-                                <i class="bi bi-check-circle"></i> Проверить
+                                <i class="bi bi-check-circle"></i> {% trans "Проверить" %}
                             </button>
                         </div>
-                        <div class="form-text">Например: Qwen/Qwen2.5-7B-Instruct</div>
+                        <div class="form-text">{% trans "Например: Qwen/Qwen2.5-7B-Instruct" %}</div>
                         <div id="validationIndicators" class="mt-2">
                             <span class="validation-indicator validation-success d-none" id="validationSuccess">
-                                <i class="bi bi-check-circle-fill"></i> Модель найдена
+                                <i class="bi bi-check-circle-fill"></i> {% trans "Модель найдена" %}
                             </span>
                             <span class="validation-indicator validation-error d-none" id="validationError">
-                                <i class="bi bi-x-circle-fill"></i> Модель не найдена
+                                <i class="bi bi-x-circle-fill"></i> {% trans "Модель не найдена" %}
                             </span>
                             <span class="validation-indicator validation-loading d-none" id="validationLoading">
-                                <i class="bi bi-hourglass-split"></i> Проверка...
+                                <i class="bi bi-hourglass-split"></i> {% trans "Проверка..." %}
                             </span>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small text-muted">Ревизия</label>
+                        <label class="form-label small text-muted">{% trans "Ревизия" %}</label>
                         <input type="text" name="huggingface_revision" class="form-control" value="main">
-                        <div class="form-text">Ветка, тег или коммит</div>
+                        <div class="form-text">{% trans "Ветка, тег или коммит" %}</div>
                     </div>
                 </div>
 
@@ -269,33 +270,33 @@
 
             <!-- Блок поиска (перенесён наверх) -->
             <div class="mb-5">
-                <h5 class="mb-3">4. Поиск моделей на Hugging Face</h5>
+                <h5 class="mb-3">{% trans "4. Поиск моделей на Hugging Face" %}</h5>
                 <div class="card bg-dark-transparent">
                     <div class="card-header bg-transparent border-bottom">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span>Найдите модель в каталоге</span>
-                            <span class="badge bg-secondary" id="searchResultsCount">0 результатов</span>
+                            <span>{% trans "Найдите модель в каталоге" %}</span>
+                            <span class="badge bg-secondary" id="searchResultsCount">{% trans "0 результатов" %}</span>
                         </div>
                     </div>
                     <div class="card-body">
                         <div class="input-group mb-3">
-                            <input type="text" class="form-control" id="modelSearchInput" placeholder="Поиск моделей...">
+                            <input type="text" class="form-control" id="modelSearchInput" placeholder="{% trans 'Поиск моделей...' %}">
                             <button class="btn btn-primary" type="button" id="buttonSearch">
-                                <i class="bi bi-search"></i> Найти
+                                <i class="bi bi-search"></i> {% trans "Найти" %}
                             </button>
                         </div>
                         <div class="search-results-container" id="searchResults">
                             <div class="text-center text-muted py-4">
                                 <i class="bi bi-search display-6 mb-2"></i>
-                                <p>Начните поиск моделей на Hugging Face Hub</p>
+                                <p>{% trans "Начните поиск моделей на Hugging Face Hub" %}</p>
                             </div>
                         </div>
                         <div class="search-pagination d-none mt-3" id="searchPagination">
                             <nav>
                                 <ul class="pagination justify-content-center mb-0">
-                                    <li class="page-item"><button class="page-link" id="prevPage" disabled>Назад</button></li>
-                                    <li class="page-item"><span class="page-link bg-transparent border-0" id="pageInfo">Страница 1</span></li>
-                                    <li class="page-item"><button class="page-link" id="nextPage" disabled>Вперед</button></li>
+                                    <li class="page-item"><button class="page-link" id="prevPage" disabled>{% trans "Назад" %}</button></li>
+                                    <li class="page-item"><span class="page-link bg-transparent border-0" id="pageInfo">{% trans "Страница 1" %}</span></li>
+                                    <li class="page-item"><button class="page-link" id="nextPage" disabled>{% trans "Вперед" %}</button></li>
                                 </ul>
                             </nav>
                         </div>
@@ -306,45 +307,45 @@
             <!-- Топ-5 моделей (с обработкой ошибок) -->
             <div class="mb-5">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Топ-5 самых скачиваемых моделей</h5>
+                    <h5 class="mb-0">{% trans "Топ-5 самых скачиваемых моделей" %}</h5>
                     <div>
                         <button type="button" class="btn btn-sm btn-outline-primary me-2" id="refreshTopModels">
-                            <i class="bi bi-arrow-clockwise"></i> Обновить
+                            <i class="bi bi-arrow-clockwise"></i> {% trans "Обновить" %}
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleAllModels">
-                            <i class="bi bi-grid"></i> Показать все
+                            <i class="bi bi-grid"></i> {% trans "Показать все" %}
                         </button>
                     </div>
                 </div>
                 <div class="row g-3" id="popularModelsList">
                     <div class="col-12 text-center py-4">
                         <div class="spinner-border text-primary" role="status"></div>
-                        <p class="text-muted mt-2">Загрузка популярных моделей...</p>
+                        <p class="text-muted mt-2">{% trans "Загрузка популярных моделей..." %}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Шаг 5: Параметры модели (автозаполняемые) -->
             <div class="mb-5">
-                <h5 class="mb-3">5. Параметры модели</h5>
+                <h5 class="mb-3">{% trans "5. Параметры модели" %}</h5>
                 <div class="row g-3">
                     <div class="col-md-3">
-                        <label class="form-label small text-muted">Параметры</label>
+                        <label class="form-label small text-muted">{% trans "Параметры" %}</label>
                         <input type="number" class="form-control" id="parameter_count_display" readonly>
                         <input type="hidden" name="parameter_count" id="id_parameter_count">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small text-muted">Контекст (токенов)</label>
+                        <label class="form-label small text-muted">{% trans "Контекст (токенов)" %}</label>
                         <input type="number" class="form-control" id="context_length_display" readonly>
                         <input type="hidden" name="context_length" id="id_context_length">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small text-muted">Размер словаря</label>
+                        <label class="form-label small text-muted">{% trans "Размер словаря" %}</label>
                         <input type="number" class="form-control" id="vocab_size_display" readonly>
                         <input type="hidden" name="vocab_size" id="id_vocab_size">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small text-muted">Лицензия</label>
+                        <label class="form-label small text-muted">{% trans "Лицензия" %}</label>
                         <input type="text" class="form-control" id="license_type_display" readonly>
                         <input type="hidden" name="license_type" id="id_license_type">
                     </div>
@@ -353,10 +354,10 @@
 
             <!-- Шаг 6: Дополнительные настройки -->
             <div class="mb-5">
-                <h5 class="mb-3">6. Дополнительные настройки</h5>
+                <h5 class="mb-3">{% trans "6. Дополнительные настройки" %}</h5>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Квантизация</label>
+                        <label class="form-label small text-muted">{% trans "Квантизация" %}</label>
                         <select name="quantization" class="form-select">
                             {% for value, label in form.quantization.field.choices %}
                             <option value="{{ value }}" {% if value == 'none' %}selected{% endif %}>{{ label }}</option>
@@ -364,9 +365,9 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Эксперимент</label>
+                        <label class="form-label small text-muted">{% trans "Эксперимент" %}</label>
                         <select name="experiment" class="form-select">
-                            <option value="">--- Без эксперимента ---</option>
+                            <option value="">{% trans "--- Без эксперимента ---" %}</option>
                             {% for exp in experiments %}
                             <option value="{{ exp.id }}">{{ exp.name }}</option>
                             {% endfor %}
@@ -375,7 +376,7 @@
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Теги</label>
+                        <label class="form-label small text-muted">{% trans "Теги" %}</label>
                         <input type="text" name="tags" class="form-control" placeholder="ru, instruct, 7b">
                     </div>
                     <div class="col-md-6">
@@ -385,7 +386,7 @@
                         </div>
                         <div class="form-check mt-2">
                             <input type="checkbox" name="use_flash_attention_2" class="form-check-input" id="flashAttn" checked>
-                            <label class="form-check-label" for="flashAttn">Использовать Flash Attention 2</label>
+                            <label class="form-check-label" for="flashAttn">{% trans "Использовать Flash Attention 2" %}</label>
                         </div>
                     </div>
                 </div>
@@ -393,19 +394,19 @@
                     <div class="col-md-6">
                         <div class="form-check">
                             <input type="checkbox" name="start_download" class="form-check-input" id="startDownload" checked>
-                            <label class="form-check-label" for="startDownload">Начать загрузку сразу</label>
+                            <label class="form-check-label" for="startDownload">{% trans "Начать загрузку сразу" %}</label>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-check">
                             <input type="checkbox" name="mark_safe" class="form-check-input" id="markSafe">
-                            <label class="form-check-label" for="markSafe">Пометить как безопасную</label>
+                            <label class="form-check-label" for="markSafe">{% trans "Пометить как безопасную" %}</label>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-check">
                             <input type="checkbox" name="is_public" class="form-check-input" id="isPublic">
-                            <label class="form-check-label" for="isPublic">Публичная модель (доступна другим)</label>
+                            <label class="form-check-label" for="isPublic">{% trans "Публичная модель (доступна другим)" %}</label>
                         </div>
                     </div>
                 </div>
@@ -414,15 +415,15 @@
             <!-- Предупреждение -->
             <div class="alert alert-warning border-warning mb-4">
                 <i class="bi bi-exclamation-triangle me-2"></i>
-                Загрузка больших моделей может занять длительное время. Убедитесь, что у вас достаточно места на диске.
+                {% trans "Загрузка больших моделей может занять длительное время. Убедитесь, что у вас достаточно места на диске." %}
             </div>
 
             <div class="d-flex justify-content-between mt-4">
                 <a href="{% url 'model_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i> Отмена
+                    <i class="bi bi-arrow-left me-1"></i> {% trans "Отмена" %}
                 </a>
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-cloud-arrow-up me-1"></i> Загрузить модель
+                    <i class="bi bi-cloud-arrow-up me-1"></i> {% trans "Загрузить модель" %}
                 </button>
             </div>
         </form>
@@ -434,7 +435,7 @@
     <div id="liveToast" class="toast" role="alert">
         <div class="toast-header bg-dark text-white">
             <i class="bi bi-info-circle me-2"></i>
-            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <strong class="me-auto" id="toastTitle">{% trans "Уведомление" %}</strong>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body bg-dark text-white" id="toastMessage"></div>
@@ -499,11 +500,11 @@
             if (data.models && data.models.length) {
                 renderTopModels(data.models, modelType);
             } else {
-                container.innerHTML = '<div class="col-12 text-center text-muted">Нет популярных моделей для этого типа</div>';
+                container.innerHTML = '<div class="col-12 text-center text-muted">{% trans "Нет популярных моделей для этого типа" %}</div>';
             }
         } catch (err) {
             console.error(err);
-            container.innerHTML = '<div class="col-12 text-center text-danger">Ошибка загрузки популярных моделей</div>';
+            container.innerHTML = '<div class="col-12 text-center text-danger">{% trans "Ошибка загрузки популярных моделей" %}</div>';
         }
     }
 
@@ -518,11 +519,11 @@
                         <div class="model-name">${escapeHtml(model.name)}</div>
                         <div class="model-author">${escapeHtml(model.author)}</div>
                         <div class="model-stats">
-                            <div class="model-stat-item" title="Загрузки"><i class="bi bi-download"></i> ${formatNumber(model.downloads)}</div>
+                            <div class="model-stat-item" title="{% trans 'Загрузки' %}"><i class="bi bi-download"></i> ${formatNumber(model.downloads)}</div>
                         </div>
                         <div class="mt-3">
                             <button class="btn btn-sm btn-outline-primary w-100 select-model-btn" data-model-id="${model.full_name}">
-                                <i class="bi bi-check-lg"></i> Выбрать
+                                <i class="bi bi-check-lg"></i> {% trans "Выбрать" %}
                             </button>
                         </div>
                     </div>
@@ -537,7 +538,7 @@
         if (!query) return;
         currentSearchQuery = query;
         currentPage = page;
-        document.getElementById('searchResults').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="text-muted mt-2">Поиск...</p></div>';
+        document.getElementById('searchResults').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="text-muted mt-2">{% trans "Поиск..." %}</p></div>';
         try {
             const params = new URLSearchParams({ action: 'search', q: query, type: modelType, page, limit: 10 });
             const resp = await fetch(`/api/huggingface/?${params}`);
@@ -547,13 +548,13 @@
                 displaySearchResults(data.results, data.total, page);
                 document.getElementById('searchResultsCount').textContent = `${data.total} результатов`;
             } else {
-                document.getElementById('searchResults').innerHTML = '<div class="text-center text-muted py-4">Ничего не найдено</div>';
+                document.getElementById('searchResults').innerHTML = '<div class="text-center text-muted py-4">{% trans "Ничего не найдено" %}</div>';
                 document.getElementById('searchPagination').classList.add('d-none');
                 document.getElementById('searchResultsCount').textContent = '0 результатов';
             }
         } catch (err) {
             console.error(err);
-            document.getElementById('searchResults').innerHTML = '<div class="text-center text-danger py-4">Ошибка поиска</div>';
+            document.getElementById('searchResults').innerHTML = '<div class="text-center text-danger py-4">{% trans "Ошибка поиска" %}</div>';
             document.getElementById('searchResultsCount').textContent = 'Ошибка';
         }
     }
@@ -618,12 +619,12 @@
                 successSpan.classList.remove('d-none');
                 modelDetailsDiv.classList.remove('d-none');
                 modelDetailsDiv.innerHTML = `
-                    <div class="model-detail-row"><span class="model-detail-label">Автор:</span><span class="model-detail-value">${escapeHtml(data.author || '—')}</span></div>
-                    <div class="model-detail-row"><span class="model-detail-label">Загрузки:</span><span class="model-detail-value">${formatNumber(data.downloads)}</span></div>
-                    <div class="model-detail-row"><span class="model-detail-label">Статус:</span><span class="model-detail-value">${data.private ? 'Приватная' : 'Публичная'}${data.gated ? ' (Gated)' : ''}</span></div>
-                    <div class="model-detail-row"><span class="model-detail-label">Контекст:</span><span class="model-detail-value">${data.context_length || '?'} токенов</span></div>
-                    <div class="model-detail-row"><span class="model-detail-label">Размер словаря:</span><span class="model-detail-value">${data.vocab_size || '?'}</span></div>
-                    <div class="model-detail-row"><span class="model-detail-label">Параметры:</span><span class="model-detail-value">${data.parameter_count ? formatNumber(data.parameter_count) : '?'}</span></div>
+                    <div class="model-detail-row"><span class="model-detail-label">{% trans "Автор:" %}</span><span class="model-detail-value">${escapeHtml(data.author || '—')}</span></div>
+                    <div class="model-detail-row"><span class="model-detail-label">{% trans "Загрузки:" %}</span><span class="model-detail-value">${formatNumber(data.downloads)}</span></div>
+                    <div class="model-detail-row"><span class="model-detail-label">{% trans "Статус:" %}</span><span class="model-detail-value">${data.private ? 'Приватная' : 'Публичная'}${data.gated ? ' (Gated)' : ''}</span></div>
+                    <div class="model-detail-row"><span class="model-detail-label">{% trans "Контекст:" %}</span><span class="model-detail-value">${data.context_length || '?'} токенов</span></div>
+                    <div class="model-detail-row"><span class="model-detail-label">{% trans "Размер словаря:" %}</span><span class="model-detail-value">${data.vocab_size || '?'}</span></div>
+                    <div class="model-detail-row"><span class="model-detail-label">{% trans "Параметры:" %}</span><span class="model-detail-value">${data.parameter_count ? formatNumber(data.parameter_count) : '?'}</span></div>
                 `;
                 autoFillModelData(modelId, data);
                 showToast('Модель найдена', `Модель "${modelId}" доступна для загрузки`, 'success');

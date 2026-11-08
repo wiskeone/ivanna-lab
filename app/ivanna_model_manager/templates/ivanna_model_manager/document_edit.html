@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -9,7 +10,7 @@
     <!-- Кнопка назад -->
     <div class="mb-4">
         <a href="{% if document.collection %}{% url 'rag_collection_detail' document.collection.id %}{% else %}{% url 'document_list' %}{% endif %}" class="action-link">
-            <i class="bi bi-arrow-left"></i> Назад к коллекции
+            <i class="bi bi-arrow-left"></i> {% trans "Назад к коллекции" %}
         </a>
     </div>
 
@@ -19,7 +20,7 @@
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="mb-0">
                         <i class="bi bi-pencil-square me-2" style="color: var(--primary-color);"></i>
-                        Редактирование документа
+                        {% trans "Редактирование документа" %}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -36,7 +37,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Название</label>
+                                    <label class="form-label small text-muted">{% trans "Название" %}</label>
                                     {{ form.title }}
                                     {% if form.title.errors %}
                                     <div class="text-danger small">{{ form.title.errors.0 }}</div>
@@ -45,28 +46,28 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Категория</label>
+                                    <label class="form-label small text-muted">{% trans "Категория" %}</label>
                                     {{ form.category }}
                                 </div>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small text-muted">Описание</label>
+                            <label class="form-label small text-muted">{% trans "Описание" %}</label>
                             {{ form.description }}
                         </div>
 
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Теги (через запятую)</label>
+                                    <label class="form-label small text-muted">{% trans "Теги (через запятую)" %}</label>
                                     {{ form.tags }}
-                                    <div class="form-text">Пример: legal, finance, report</div>
+                                    <div class="form-text">{% trans "Пример: legal, finance, report" %}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Коллекция</label>
+                                    <label class="form-label small text-muted">{% trans "Коллекция" %}</label>
                                     {{ form.collection }}
                                 </div>
                             </div>
@@ -75,14 +76,14 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Оценка качества (0-1)</label>
+                                    <label class="form-label small text-muted">{% trans "Оценка качества (0-1)" %}</label>
                                     {{ form.quality_score }}
-                                    <div class="form-text">Необязательно, от 0 до 1</div>
+                                    <div class="form-text">{% trans "Необязательно, от 0 до 1" %}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Размер чанка (символов)</label>
+                                    <label class="form-label small text-muted">{% trans "Размер чанка (символов)" %}</label>
                                     {{ form.chunk_size }}
                                 </div>
                             </div>
@@ -91,7 +92,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Перекрытие чанков</label>
+                                    <label class="form-label small text-muted">{% trans "Перекрытие чанков" %}</label>
                                     {{ form.chunk_overlap }}
                                 </div>
                             </div>
@@ -99,7 +100,7 @@
                                 <div class="form-check">
                                     {{ form.regenerate_chunks }}
                                     <label class="form-check-label small" for="{{ form.regenerate_chunks.id_for_label }}">
-                                        Пересоздать чанки (удалит существующие и создаст новые)
+                                        {% trans "Пересоздать чанки (удалит существующие и создаст новые)" %}
                                     </label>
                                 </div>
                             </div>
@@ -107,10 +108,10 @@
 
                         <div class="d-flex justify-content-between mt-4 pt-3 border-top">
                             <a href="{% if document.collection %}{% url 'rag_collection_detail' document.collection.id %}{% else %}{% url 'document_list' %}{% endif %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-x-circle me-1"></i> Отмена
+                                <i class="bi bi-x-circle me-1"></i> {% trans "Отмена" %}
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save me-1"></i> Сохранить изменения
+                                <i class="bi bi-save me-1"></i> {% trans "Сохранить изменения" %}
                             </button>
                         </div>
                     </form>
@@ -122,24 +123,24 @@
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="mb-0">
                         <i class="bi bi-upload me-2" style="color: var(--primary-color);"></i>
-                        Заменить файл документа
+                        {% trans "Заменить файл документа" %}
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
-                        Текущий файл: <strong>{{ document.original_filename }}</strong> ({{ document.file_size_mb|floatformat:1 }} MB)
+                        {% trans "Текущий файл:" %} <strong>{{ document.original_filename }}</strong> ({{ document.file_size_mb|floatformat:1 }} MB)
                     </div>
                     <form method="post" enctype="multipart/form-data" id="reloadForm" action="{% url 'document_reload' document.id %}">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label small text-muted">Новый файл</label>
+                            <label class="form-label small text-muted">{% trans "Новый файл" %}</label>
                             <input type="file" class="form-control" name="file" accept=".pdf,.docx,.doc,.txt,.html,.htm,.md,.csv,.xlsx,.xls" required>
-                            <div class="form-text">Поддерживаемые форматы: PDF, DOCX, TXT, HTML, MD, CSV, Excel</div>
+                            <div class="form-text">{% trans "Поддерживаемые форматы: PDF, DOCX, TXT, HTML, MD, CSV, Excel" %}</div>
                         </div>
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-warning" onclick="return confirm('Заменить файл? Документ будет переобработан.')">
-                                <i class="bi bi-arrow-repeat me-1"></i> Заменить и переобработать
+                                <i class="bi bi-arrow-repeat me-1"></i> {% trans "Заменить и переобработать" %}
                             </button>
                         </div>
                     </form>

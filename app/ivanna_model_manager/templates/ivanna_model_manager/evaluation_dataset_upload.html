@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Загрузка датасета{% endblock %}
@@ -11,7 +12,7 @@
             <div class="card">
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="mb-0">
-                        <i class="bi bi-cloud-upload me-2"></i>Загрузка датасета из файла
+                        <i class="bi bi-cloud-upload me-2"></i>{% trans "Загрузка датасета из файла" %}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -20,7 +21,7 @@
                         
                         {% if form.errors %}
                         <div class="alert alert-danger">
-                            <strong>Ошибка!</strong> Пожалуйста, исправьте ошибки ниже.
+                            <strong>{% trans "Ошибка!" %}</strong> {% trans "Пожалуйста, исправьте ошибки ниже." %}
                             <ul class="mb-0 mt-2">
                                 {% for field, errors in form.errors.items %}
                                     {% for error in errors %}
@@ -37,28 +38,28 @@
                                 <!-- Название -->
                                 <div class="mb-3">
                                     <label for="id_name" class="form-label">
-                                        <i class="bi bi-card-heading me-1"></i>Название датасета
+                                        <i class="bi bi-card-heading me-1"></i>{% trans "Название датасета" %}
                                     </label>
                                     {{ form.name }}
-                                    <div class="form-text">Уникальное имя для идентификации датасета</div>
+                                    <div class="form-text">{% trans "Уникальное имя для идентификации датасета" %}</div>
                                 </div>
                                 
                                 <!-- Описание -->
                                 <div class="mb-3">
                                     <label for="id_description" class="form-label">
-                                        <i class="bi bi-text-paragraph me-1"></i>Описание
+                                        <i class="bi bi-text-paragraph me-1"></i>{% trans "Описание" %}
                                     </label>
                                     {{ form.description }}
-                                    <div class="form-text">Опциональное описание датасета</div>
+                                    <div class="form-text">{% trans "Опциональное описание датасета" %}</div>
                                 </div>
                                 
                                 <!-- Теги -->
                                 <div class="mb-3">
                                     <label for="id_tags" class="form-label">
-                                        <i class="bi bi-tags me-1"></i>Теги
+                                        <i class="bi bi-tags me-1"></i>{% trans "Теги" %}
                                     </label>
                                     {{ form.tags }}
-                                    <div class="form-text">Теги через запятую для классификации</div>
+                                    <div class="form-text">{% trans "Теги через запятую для классификации" %}</div>
                                 </div>
                             </div>
                             
@@ -67,7 +68,7 @@
                                 <!-- Файл -->
                                 <div class="mb-3">
                                     <label for="id_file" class="form-label">
-                                        <i class="bi bi-file-earmark-arrow-up me-1"></i>Файл с вопросами
+                                        <i class="bi bi-file-earmark-arrow-up me-1"></i>{% trans "Файл с вопросами" %}
                                     </label>
                                     <div class="input-group">
                                         {{ form.file }}
@@ -75,36 +76,36 @@
                                             <i class="bi bi-folder2-open"></i>
                                         </button>
                                     </div>
-                                    <div class="form-text">Поддерживаемые форматы: .txt, .csv, .json</div>
+                                    <div class="form-text">{% trans "Поддерживаемые форматы: .txt, .csv, .json" %}</div>
                                 </div>
                                 
                                 <!-- Формат файла -->
                                 <div class="mb-4">
                                     <label for="id_file_format" class="form-label">
-                                        <i class="bi bi-gear me-1"></i>Формат файла
+                                        <i class="bi bi-gear me-1"></i>{% trans "Формат файла" %}
                                     </label>
                                     {{ form.file_format }}
-                                    <div class="form-text">Выберите формат или оставьте "Автоопределение"</div>
+                                    <div class="form-text">{% trans "Выберите формат или оставьте \"Автоопределение\"" %}</div>
                                 </div>
                                 
                                 <!-- Информация о форматах -->
                                 <div class="card bg-dark border">
                                     <div class="card-body">
                                         <h6 class="card-title">
-                                            <i class="bi bi-info-circle me-1"></i>Информация о форматах
+                                            <i class="bi bi-info-circle me-1"></i>{% trans "Информация о форматах" %}
                                         </h6>
                                         <ul class="list-unstyled small mb-0">
                                             <li class="mb-1">
                                                 <span class="badge bg-primary me-1">TXT</span>
-                                                Один вопрос на строку
+                                                {% trans "Один вопрос на строку" %}
                                             </li>
                                             <li class="mb-1">
                                                 <span class="badge bg-success me-1">CSV</span>
-                                                Столбцы: text, category, difficulty
+                                                {% trans "Столбцы: text, category, difficulty" %}
                                             </li>
                                             <li>
                                                 <span class="badge bg-warning me-1">JSON</span>
-                                                Массив объектов вопросов
+                                                {% trans "Массив объектов вопросов" %}
                                             </li>
                                         </ul>
                                     </div>
@@ -116,21 +117,21 @@
                         <div class="mb-4">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="mb-0">
-                                    <i class="bi bi-eye me-1"></i>Предпросмотр файла
+                                    <i class="bi bi-eye me-1"></i>{% trans "Предпросмотр файла" %}
                                 </h6>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="previewFile()">
-                                    <i class="bi bi-arrow-clockwise me-1"></i>Обновить
+                                    <i class="bi bi-arrow-clockwise me-1"></i>{% trans "Обновить" %}
                                 </button>
                             </div>
                             <div id="filePreview" class="card bg-dark border">
                                 <div class="card-body">
                                     <pre class="mb-0 small text-muted" id="previewContent" style="max-height: 200px; overflow: auto;">
-Выберите файл для предпросмотра...
+{% trans "Выберите файл для предпросмотра..." %}
                                     </pre>
                                 </div>
                                 <div class="card-footer bg-transparent border-top d-flex justify-content-between">
-                                    <small class="text-muted" id="fileInfo">Файл не выбран</small>
-                                    <small class="text-muted" id="questionsCount">0 вопросов</small>
+                                    <small class="text-muted" id="fileInfo">{% trans "Файл не выбран" %}</small>
+                                    <small class="text-muted" id="questionsCount">{% trans "0 вопросов" %}</small>
                                 </div>
                             </div>
                         </div>
@@ -138,14 +139,14 @@
                         <!-- Кнопки -->
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'evaluation_dashboard' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>Назад
+                                <i class="bi bi-arrow-left me-1"></i>{% trans "Назад" %}
                             </a>
                             <div>
                                 <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-outline-primary me-2">
-                                    <i class="bi bi-pencil me-1"></i>Создать вручную
+                                    <i class="bi bi-pencil me-1"></i>{% trans "Создать вручную" %}
                                 </a>
                                 <button type="submit" class="btn btn-primary" id="submitBtn">
-                                    <i class="bi bi-cloud-upload me-1"></i>Загрузить датасет
+                                    <i class="bi bi-cloud-upload me-1"></i>{% trans "Загрузить датасет" %}
                                 </button>
                             </div>
                         </div>
@@ -157,26 +158,26 @@
             <div class="card mt-4">
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="mb-0">
-                        <i class="bi bi-file-earmark-code me-2"></i>Примеры форматов
+                        <i class="bi bi-file-earmark-code me-2"></i>{% trans "Примеры форматов" %}
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <h6>TXT формат</h6>
-                            <pre class="bg-dark p-2 rounded small" style="height: 150px; overflow: auto;">Что такое искусственный интеллект?
+                            <h6>{% trans "TXT формат" %}</h6>
+                            <pre class="bg-dark p-2 rounded small" style="height: 150px; overflow: auto;">{% trans "Что такое искусственный интеллект?
 Как работает нейронная сеть?
-Назовите основные типы машинного обучения.</pre>
+Назовите основные типы машинного обучения." %}</pre>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <h6>CSV формат</h6>
-                            <pre class="bg-dark p-2 rounded small" style="height: 150px; overflow: auto;">text,category,difficulty
-"Что такое искусственный интеллект?","AI","easy"
-"Как работает нейронная сеть?","NN","medium"
-"Назовите основные типы машинного обучения","ML","easy"</pre>
+                            <h6>{% trans "CSV формат" %}</h6>
+                            <pre class="bg-dark p-2 rounded small" style="height: 150px; overflow: auto;">{% trans "text,category,difficulty
+\"Что такое искусственный интеллект?\",\"AI\",\"easy\"
+\"Как работает нейронная сеть?\",\"NN\",\"medium\"
+\"Назовите основные типы машинного обучения\",\"ML\",\"easy\"" %}</pre>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <h6>JSON формат</h6>
+                            <h6>{% trans "JSON формат" %}</h6>
                             <pre class="bg-dark p-2 rounded small" style="height: 150px; overflow: auto;">[
   {
     "id": 1,

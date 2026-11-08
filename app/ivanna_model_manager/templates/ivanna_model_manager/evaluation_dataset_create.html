@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Создание датасета{% endblock %}
@@ -11,7 +12,7 @@
             <div class="card">
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="mb-0">
-                        <i class="bi bi-pencil-square me-2"></i>Создание датасета вручную
+                        <i class="bi bi-pencil-square me-2"></i>{% trans "Создание датасета вручную" %}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -20,7 +21,7 @@
                         
                         {% if form.errors %}
                         <div class="alert alert-danger">
-                            <strong>Ошибка!</strong> Пожалуйста, исправьте ошибки ниже.
+                            <strong>{% trans "Ошибка!" %}</strong> {% trans "Пожалуйста, исправьте ошибки ниже." %}
                             <ul class="mb-0 mt-2">
                                 {% for field, errors in form.errors.items %}
                                     {% for error in errors %}
@@ -39,7 +40,7 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="id_name" class="form-label">
-                                        <i class="bi bi-card-heading me-1"></i>Название датасета
+                                        <i class="bi bi-card-heading me-1"></i>{% trans "Название датасета" %}
                                     </label>
                                     {{ form.name }}
                                     {% if form.name.errors %}
@@ -47,13 +48,13 @@
                                         {{ form.name.errors }}
                                     </div>
                                     {% endif %}
-                                    <div class="form-text">Уникальное имя для идентификации</div>
+                                    <div class="form-text">{% trans "Уникальное имя для идентификации" %}</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="id_tags" class="form-label">
-                                        <i class="bi bi-tags me-1"></i>Теги
+                                        <i class="bi bi-tags me-1"></i>{% trans "Теги" %}
                                     </label>
                                     {{ form.tags }}
                                     {% if form.tags.errors %}
@@ -61,7 +62,7 @@
                                         {{ form.tags.errors }}
                                     </div>
                                     {% endif %}
-                                    <div class="form-text">Теги через запятую (russian, general, code)</div>
+                                    <div class="form-text">{% trans "Теги через запятую (russian, general, code)" %}</div>
                                 </div>
                             </div>
                         </div>
@@ -69,7 +70,7 @@
                         <!-- Описание -->
                         <div class="mb-4">
                             <label for="id_description" class="form-label">
-                                <i class="bi bi-text-paragraph me-1"></i>Описание
+                                <i class="bi bi-text-paragraph me-1"></i>{% trans "Описание" %}
                             </label>
                             {{ form.description }}
                             {% if form.description.errors %}
@@ -77,21 +78,21 @@
                                 {{ form.description.errors }}
                             </div>
                             {% endif %}
-                            <div class="form-text">Опциональное описание датасета</div>
+                            <div class="form-text">{% trans "Опциональное описание датасета" %}</div>
                         </div>
                         
                         <!-- Вопросы -->
                         <div class="mb-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="mb-0">
-                                    <i class="bi bi-question-circle me-2"></i>Вопросы
+                                    <i class="bi bi-question-circle me-2"></i>{% trans "Вопросы" %}
                                 </h6>
                                 <div class="btn-group btn-group-sm">
                                     <button type="button" class="btn btn-outline-secondary" onclick="addQuestion()">
-                                        <i class="bi bi-plus me-1"></i>Добавить вопрос
+                                        <i class="bi bi-plus me-1"></i>{% trans "Добавить вопрос" %}
                                     </button>
                                     <button type="button" class="btn btn-outline-secondary" onclick="importFromText()">
-                                        <i class="bi bi-file-text me-1"></i>Импорт текста
+                                        <i class="bi bi-file-text me-1"></i>{% trans "Импорт текста" %}
                                     </button>
                                 </div>
                             </div>
@@ -100,7 +101,7 @@
                                 <!-- Вопросы будут добавляться сюда динамически -->
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle me-2"></i>
-                                    Добавьте вопросы с помощью кнопки "Добавить вопрос" или импортируйте из текста
+                                    {% trans "Добавьте вопросы с помощью кнопки \"Добавить вопрос\" или импортируйте из текста" %}
                                 </div>
                             </div>
                             
@@ -114,15 +115,15 @@
                                 <div class="row text-center">
                                     <div class="col-md-4">
                                         <h5 id="questionsCount">0</h5>
-                                        <small class="text-muted">Всего вопросов</small>
+                                        <small class="text-muted">{% trans "Всего вопросов" %}</small>
                                     </div>
                                     <div class="col-md-4">
                                         <h5 id="totalChars">0</h5>
-                                        <small class="text-muted">Всего символов</small>
+                                        <small class="text-muted">{% trans "Всего символов" %}</small>
                                     </div>
                                     <div class="col-md-4">
                                         <h5 id="avgLength">0</h5>
-                                        <small class="text-muted">Средняя длина</small>
+                                        <small class="text-muted">{% trans "Средняя длина" %}</small>
                                     </div>
                                 </div>
                             </div>
@@ -131,14 +132,14 @@
                         <!-- Кнопки -->
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'evaluation_dashboard' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>Назад
+                                <i class="bi bi-arrow-left me-1"></i>{% trans "Назад" %}
                             </a>
                             <div>
                                 <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-outline-primary me-2">
-                                    <i class="bi bi-cloud-upload me-1"></i>Загрузить из файла
+                                    <i class="bi bi-cloud-upload me-1"></i>{% trans "Загрузить из файла" %}
                                 </a>
                                 <button type="submit" class="btn btn-primary" id="submitBtn">
-                                    <i class="bi bi-check-circle me-1"></i>Создать датасет
+                                    <i class="bi bi-check-circle me-1"></i>{% trans "Создать датасет" %}
                                 </button>
                             </div>
                         </div>
@@ -155,26 +156,26 @@
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
                 <h5 class="modal-title">
-                    <i class="bi bi-file-text me-2"></i>Импорт вопросов из текста
+                    <i class="bi bi-file-text me-2"></i>{% trans "Импорт вопросов из текста" %}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">Введите вопросы (один на строку):</label>
+                    <label class="form-label">{% trans "Введите вопросы (один на строку):" %}</label>
                     <textarea class="form-control" id="importText" rows="10" 
-                              placeholder="Что такое искусственный интеллект?
+                              placeholder="{% trans 'Что такое искусственный интеллект?
 Как работает нейронная сеть?
-Назовите основные типы машинного обучения..."></textarea>
+Назовите основные типы машинного обучения...' %}"></textarea>
                 </div>
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle me-2"></i>
-                    Каждая строка будет преобразована в отдельный вопрос. Пустые строки игнорируются.
+                    {% trans "Каждая строка будет преобразована в отдельный вопрос. Пустые строки игнорируются." %}
                 </div>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="processImport()">Импортировать</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" onclick="processImport()">{% trans "Импортировать" %}</button>
             </div>
         </div>
     </div>
@@ -252,25 +253,25 @@ function addQuestion(text = '', category = '', difficulty = 'medium') {
             </div>
             
             <div class="mb-3">
-                <label class="form-label">Текст вопроса:</label>
+                <label class="form-label">{% trans "Текст вопроса:" %}</label>
                 <textarea class="form-control question-text" rows="3" 
-                          placeholder="Введите текст вопроса..." 
+                          placeholder="{% trans 'Введите текст вопроса...' %}" 
                           oninput="updateQuestion(${questionId})">${text}</textarea>
             </div>
             
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label class="form-label">Категория:</label>
+                    <label class="form-label">{% trans "Категория:" %}</label>
                     <input type="text" class="form-control question-category" 
-                           placeholder="Например: AI, Python, Math" 
+                           placeholder="{% trans 'Например: AI, Python, Math' %}" 
                            value="${category}" oninput="updateQuestion(${questionId})">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Сложность:</label>
+                    <label class="form-label">{% trans "Сложность:" %}</label>
                     <select class="form-select question-difficulty" onchange="updateQuestion(${questionId})">
-                        <option value="easy" ${difficulty === 'easy' ? 'selected' : ''}>Легкая</option>
-                        <option value="medium" ${difficulty === 'medium' ? 'selected' : ''}>Средняя</option>
-                        <option value="hard" ${difficulty === 'hard' ? 'selected' : ''}>Сложная</option>
+                        <option value="easy" ${difficulty === 'easy' ? 'selected' : ''}>{% trans "Легкая" %}</option>
+                        <option value="medium" ${difficulty === 'medium' ? 'selected' : ''}>{% trans "Средняя" %}</option>
+                        <option value="hard" ${difficulty === 'hard' ? 'selected' : ''}>{% trans "Сложная" %}</option>
                     </select>
                 </div>
             </div>
@@ -317,7 +318,7 @@ function removeQuestion(id) {
             container.innerHTML = `
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle me-2"></i>
-                    Добавьте вопросы с помощью кнопки "Добавить вопрос" или импортируйте из текста
+                    {% trans "Добавьте вопросы с помощью кнопки \"Добавить вопрос\" или импортируйте из текста" %}
                 </div>
             `;
         }

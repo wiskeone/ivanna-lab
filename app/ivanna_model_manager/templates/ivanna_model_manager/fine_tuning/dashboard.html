@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -293,15 +294,15 @@
     <div class="stats-cards">
         <div class="stat-card">
             <div class="stat-value">{{ total_jobs }}</div>
-            <div class="stat-label">Всего задач</div>
+            <div class="stat-label">{% trans "Всего задач" %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-value">{{ running_jobs }}</div>
-            <div class="stat-label">Выполняется</div>
+            <div class="stat-label">{% trans "Выполняется" %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-value">{{ completed_jobs }}</div>
-            <div class="stat-label">Завершено</div>
+            <div class="stat-label">{% trans "Завершено" %}</div>
         </div>
     </div>
     
@@ -309,30 +310,30 @@
     <div class="filter-bar">
         <div class="filter-group">
             <select class="filter-select" id="statusFilter" onchange="applyFilters()">
-                <option value="">Все статусы</option>
-                <option value="PENDING">В ожидании</option>
-                <option value="PREPARING">Подготовка</option>
-                <option value="TRAINING">Обучение</option>
-                <option value="COMPLETED">Завершено</option>
-                <option value="FAILED">Ошибка</option>
-                <option value="CANCELLED">Отменено</option>
+                <option value="">{% trans "Все статусы" %}</option>
+                <option value="PENDING">{% trans "В ожидании" %}</option>
+                <option value="PREPARING">{% trans "Подготовка" %}</option>
+                <option value="TRAINING">{% trans "Обучение" %}</option>
+                <option value="COMPLETED">{% trans "Завершено" %}</option>
+                <option value="FAILED">{% trans "Ошибка" %}</option>
+                <option value="CANCELLED">{% trans "Отменено" %}</option>
             </select>
             
             <select class="filter-select" id="methodFilter" onchange="applyFilters()">
-                <option value="">Все методы</option>
-                <option value="document">Обучение на документах</option>
-                <option value="instruction">Обучение на инструкциях</option>
+                <option value="">{% trans "Все методы" %}</option>
+                <option value="document">{% trans "Обучение на документах" %}</option>
+                <option value="instruction">{% trans "Обучение на инструкциях" %}</option>
                 <option value="raft">RAFT</option>
             </select>
         </div>
         
         <div>
             <input type="text" class="search-input" id="searchInput" 
-                   placeholder="Поиск по названию..." onkeyup="applyFilters()">
+                   placeholder="{% trans 'Поиск по названию...' %}" onkeyup="applyFilters()">
         </div>
         
         <a href="{% url 'fine_tuning_create' %}" class="btn-create">
-            <i class="bi bi-plus-lg"></i> Новая задача
+            <i class="bi bi-plus-lg"></i> {% trans "Новая задача" %}
         </a>
     </div>
     
@@ -341,13 +342,13 @@
     <table class="jobs-table">
         <thead>
             <tr>
-                <th>Название</th>
-                <th>Метод</th>
-                <th>Базовая модель</th>
-                <th>Статус</th>
-                <th>Прогресс</th>
-                <th>Создана</th>
-                <th>Действия</th>
+                <th>{% trans "Название" %}</th>
+                <th>{% trans "Метод" %}</th>
+                <th>{% trans "Базовая модель" %}</th>
+                <th>{% trans "Статус" %}</th>
+                <th>{% trans "Прогресс" %}</th>
+                <th>{% trans "Создана" %}</th>
+                <th>{% trans "Действия" %}</th>
             </tr>
         </thead>
         <tbody id="jobsTableBody">
@@ -386,16 +387,16 @@
                 </td>
                 <td>
                     <div class="action-buttons">
-                        <a href="{% url 'fine_tuning_detail' job.id %}" class="btn-icon" title="Просмотр">
+                        <a href="{% url 'fine_tuning_detail' job.id %}" class="btn-icon" title="{% trans 'Просмотр' %}">
                             <i class="bi bi-eye"></i>
                         </a>
                         {% if job.status == 'COMPLETED' and job.output_model %}
-                        <a href="{% url 'model_detail' job.output_model.id %}" class="btn-icon" title="Модель">
+                        <a href="{% url 'model_detail' job.output_model.id %}" class="btn-icon" title="{% trans 'Модель' %}">
                             <i class="bi bi-cpu"></i>
                         </a>
                         {% endif %}
                         {% if job.status == 'RUNNING' %}
-                        <button class="btn-icon" onclick="cancelJob({{ job.id }})" title="Отменить">
+                        <button class="btn-icon" onclick="cancelJob({{ job.id }})" title="{% trans 'Отменить' %}">
                             <i class="bi bi-x-circle"></i>
                         </button>
                         {% endif %}
@@ -410,10 +411,10 @@
         <div class="empty-state-icon">
             <i class="bi bi-cpu"></i>
         </div>
-        <h3>Нет задач fine-tuning</h3>
-        <p>Создайте первую задачу для дообучения модели</p>
+        <h3>{% trans "Нет задач fine-tuning" %}</h3>
+        <p>{% trans "Создайте первую задачу для дообучения модели" %}</p>
         <a href="{% url 'fine_tuning_create' %}" class="btn-create">
-            <i class="bi bi-plus-lg"></i> Создать задачу
+            <i class="bi bi-plus-lg"></i> {% trans "Создать задачу" %}
         </a>
     </div>
     {% endif %}

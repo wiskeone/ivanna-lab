@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Модели - Ivanna Lab{% endblock %}
@@ -9,11 +10,11 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="h3 mb-0">
-                    <i class="bi bi-grid-3x3-gap text-primary"></i> Управление моделями
+                    <i class="bi bi-grid-3x3-gap text-primary"></i> {% trans "Управление моделями" %}
                 </h1>
                 <div>
                     <a href="{% url 'upload_model' %}" class="btn btn-primary">
-                        <i class="bi bi-cloud-upload"></i> Загрузить модель
+                        <i class="bi bi-cloud-upload"></i> {% trans "Загрузить модель" %}
                     </a>
                     <button class="btn btn-outline-secondary ms-2" onclick="refreshModelList()">
                         <i class="bi bi-arrow-clockwise"></i>
@@ -31,9 +32,9 @@
                 <div class="card-body">
                     <form method="get" action="{% url 'model_list' %}" class="row g-3">
                         <div class="col-md-3">
-                            <label class="form-label">Тип модели</label>
+                            <label class="form-label">{% trans "Тип модели" %}</label>
                             <select name="model_type" class="form-select">
-                                <option value="">Все типы</option>
+                                <option value="">{% trans "Все типы" %}</option>
                                 {% for value, label in model_types %}
                                 <option value="{{ value }}" {% if request.GET.model_type == value %}selected{% endif %}>
                                     {{ label }}
@@ -42,24 +43,24 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Статус</label>
+                            <label class="form-label">{% trans "Статус" %}</label>
                             <select name="status" class="form-select">
-                                <option value="">Все статусы</option>
-                                <option value="LOADED" {% if request.GET.status == 'LOADED' %}selected{% endif %}>Загружено</option>
-                                <option value="DOWNLOADING" {% if request.GET.status == 'DOWNLOADING' %}selected{% endif %}>Загрузка</option>
-                                <option value="ERROR" {% if request.GET.status == 'ERROR' %}selected{% endif %}>Ошибка</option>
-                                <option value="MERGED" {% if request.GET.status == 'MERGED' %}selected{% endif %}>Слитая</option>
+                                <option value="">{% trans "Все статусы" %}</option>
+                                <option value="LOADED" {% if request.GET.status == 'LOADED' %}selected{% endif %}>{% trans "Загружено" %}</option>
+                                <option value="DOWNLOADING" {% if request.GET.status == 'DOWNLOADING' %}selected{% endif %}>{% trans "Загрузка" %}</option>
+                                <option value="ERROR" {% if request.GET.status == 'ERROR' %}selected{% endif %}>{% trans "Ошибка" %}</option>
+                                <option value="MERGED" {% if request.GET.status == 'MERGED' %}selected{% endif %}>{% trans "Слитая" %}</option>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Поиск</label>
+                            <label class="form-label">{% trans "Поиск" %}</label>
                             <input type="text" name="search" class="form-control" 
-                                   placeholder="Название или HF ID..." 
+                                   placeholder="{% trans 'Название или HF ID...' %}" 
                                    value="{{ request.GET.search|default:'' }}">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-funnel"></i> Фильтр
+                                <i class="bi bi-funnel"></i> {% trans "Фильтр" %}
                             </button>
                         </div>
                     </form>
@@ -75,7 +76,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title mb-0">Всего моделей</h6>
+                            <h6 class="card-title mb-0">{% trans "Всего моделей" %}</h6>
                             <h2 class="mb-0">{{ total_count }}</h2>
                         </div>
                         <i class="bi bi-collection display-6 opacity-50"></i>
@@ -88,7 +89,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title mb-0">Загружено</h6>
+                            <h6 class="card-title mb-0">{% trans "Загружено" %}</h6>
                             <h2 class="mb-0">{{ loaded_count }}</h2>
                         </div>
                         <i class="bi bi-check-circle display-6 opacity-50"></i>
@@ -101,7 +102,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title mb-0">В процессе</h6>
+                            <h6 class="card-title mb-0">{% trans "В процессе" %}</h6>
                             <h2 class="mb-0">{{ downloading_count }}</h2>
                         </div>
                         <i class="bi bi-hourglass-split display-6 opacity-50"></i>
@@ -114,7 +115,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title mb-0">Слитые</h6>
+                            <h6 class="card-title mb-0">{% trans "Слитые" %}</h6>
                             <h2 class="mb-0">{{ merged_count }}</h2>
                         </div>
                         <i class="bi bi-arrow-left-right display-6 opacity-50"></i>
@@ -135,12 +136,12 @@
                 <div class="card">
                     <div class="card-body text-center py-5">
                         <i class="bi bi-emoji-frown display-1 text-muted"></i>
-                        <h4 class="mt-3">Моделей не найдено</h4>
+                        <h4 class="mt-3">{% trans "Моделей не найдено" %}</h4>
                         <p class="text-muted">
                             {% if request.GET.search or request.GET.model_type or request.GET.status %}
                                 Попробуйте изменить параметры фильтрации
                             {% else %}
-                                <a href="{% url 'upload_model' %}">Загрузите первую модель</a>
+                                <a href="{% url 'upload_model' %}">{% trans "Загрузите первую модель" %}</a>
                             {% endif %}
                         </p>
                     </div>
@@ -207,7 +208,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="bi bi-arrow-left-right"></i> Слияние моделей
+                    <i class="bi bi-arrow-left-right"></i> {% trans "Слияние моделей" %}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>

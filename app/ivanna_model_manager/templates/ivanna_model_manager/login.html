@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 
 {% block title %}Вход в систему - Ivanna Lab{% endblock %}
 
@@ -8,12 +9,12 @@
         <div class="col-md-6 col-lg-5">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0 text-center"><i class="fas fa-sign-in-alt"></i> Вход в систему</h4>
+                    <h4 class="mb-0 text-center"><i class="fas fa-sign-in-alt"></i> {% trans "Вход в систему" %}</h4>
                 </div>
                 <div class="card-body">
                     {% if form.errors %}
                     <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i> Неправильное имя пользователя или пароль.
+                        <i class="fas fa-exclamation-triangle"></i> {% trans "Неправильное имя пользователя или пароль." %}
                     </div>
                     {% endif %}
                     
@@ -22,7 +23,7 @@
                         
                         <div class="mb-3">
                             <label for="id_username" class="form-label">
-                                <i class="fas fa-user"></i> Имя пользователя
+                                <i class="fas fa-user"></i> {% trans "Имя пользователя" %}
                             </label>
                             <input type="text" name="username" id="id_username" 
                                    class="form-control" required autofocus>
@@ -30,7 +31,7 @@
                         
                         <div class="mb-4">
                             <label for="id_password" class="form-label">
-                                <i class="fas fa-lock"></i> Пароль
+                                <i class="fas fa-lock"></i> {% trans "Пароль" %}
                             </label>
                             <input type="password" name="password" id="id_password" 
                                    class="form-control" required>
@@ -38,7 +39,7 @@
                         
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-sign-in-alt"></i> Войти
+                                <i class="fas fa-sign-in-alt"></i> {% trans "Войти" %}
                             </button>
                             
                             {% if next %}
@@ -49,14 +50,14 @@
                 </div>
                 <div class="card-footer text-center">
                     <small class="text-muted">
-                        Для доступа к системе требуется авторизация
+                        {% trans "Для доступа к системе требуется авторизация" %}
                     </small>
                 </div>
             </div>
             
             <div class="text-center mt-4">
                 <a href="/" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> На главную
+                    <i class="fas fa-arrow-left"></i> {% trans "На главную" %}
                 </a>
             </div>
         </div>

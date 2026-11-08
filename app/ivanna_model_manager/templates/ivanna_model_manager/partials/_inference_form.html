@@ -1,7 +1,8 @@
+{% load i18n %}
 <div class="card">
     <div class="card-header">
         <h5 class="card-title mb-0">
-            <i class="bi bi-chat-left-text"></i> Инференс
+            <i class="bi bi-chat-left-text"></i> {% trans "Инференс" %}
         </h5>
     </div>
     <div class="card-body">
@@ -9,19 +10,19 @@
             {% csrf_token %}
             
             <div class="mb-3">
-                <label for="prompt" class="form-label">Запрос</label>
+                <label for="prompt" class="form-label">{% trans "Запрос" %}</label>
                 <textarea class="form-control" id="prompt" name="prompt" rows="4" 
-                          placeholder="Введите ваш запрос здесь..."></textarea>
+                          placeholder="{% trans 'Введите ваш запрос здесь...' %}"></textarea>
             </div>
             
             <div class="row g-3">
                 <div class="col-md-3">
-                    <label for="max_length" class="form-label">Макс. длина</label>
+                    <label for="max_length" class="form-label">{% trans "Макс. длина" %}</label>
                     <input type="number" class="form-control" id="max_length" name="max_length" 
                            min="10" max="4096" value="512">
                 </div>
                 <div class="col-md-3">
-                    <label for="temperature" class="form-label">Температура</label>
+                    <label for="temperature" class="form-label">{% trans "Температура" %}</label>
                     <input type="number" class="form-control" id="temperature" name="temperature" 
                            min="0" max="2" step="0.1" value="0.7">
                 </div>
@@ -40,16 +41,16 @@
             <div class="form-check mt-3">
                 <input class="form-check-input" type="checkbox" id="use_cache" name="use_cache" checked>
                 <label class="form-check-label" for="use_cache">
-                    Использовать кэш внимания
+                    {% trans "Использовать кэш внимания" %}
                 </label>
             </div>
             
             <div class="mt-4">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-play-circle"></i> Запустить инференс
+                    <i class="bi bi-play-circle"></i> {% trans "Запустить инференс" %}
                 </button>
                 <button type="button" class="btn btn-outline-secondary" onclick="clearInferenceForm()">
-                    <i class="bi bi-x-circle"></i> Очистить
+                    <i class="bi bi-x-circle"></i> {% trans "Очистить" %}
                 </button>
             </div>
         </form>

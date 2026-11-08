@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -255,7 +256,7 @@
                                     id="single-tab" data-bs-toggle="tab" 
                                     data-bs-target="#single" type="button" role="tab"
                                     aria-controls="single" aria-selected="{% if not show_multiple %}true{% else %}false{% endif %}">
-                                <i class="bi bi-file-earmark me-1"></i> Один документ
+                                <i class="bi bi-file-earmark me-1"></i> {% trans "Один документ" %}
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -263,7 +264,7 @@
                                     id="multiple-tab" data-bs-toggle="tab" 
                                     data-bs-target="#multiple" type="button" role="tab"
                                     aria-controls="multiple" aria-selected="{% if show_multiple %}true{% else %}false{% endif %}">
-                                <i class="bi bi-files me-1"></i> Несколько документов
+                                <i class="bi bi-files me-1"></i> {% trans "Несколько документов" %}
                             </button>
                         </li>
                     </ul>
@@ -277,9 +278,9 @@
                                 {% csrf_token %}
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Коллекция *</label>
+                                        <label class="form-label">{% trans "Коллекция *" %}</label>
                                         <select name="collection" class="form-select" required>
-                                            <option value="">Выберите коллекцию...</option>
+                                            <option value="">{% trans "Выберите коллекцию..." %}</option>
                                             {% for collection in collections_list %}
                                             <option value="{{ collection.id }}" 
                                                 {% if request.GET.collection == collection.id|stringformat:"s" %}selected{% endif %}>
@@ -290,38 +291,38 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Категория (необязательно)</label>
+                                        <label class="form-label">{% trans "Категория (необязательно)" %}</label>
                                         <input type="text" name="category" class="form-control" 
-                                               placeholder="например: договоры">
+                                               placeholder="{% trans 'например: договоры' %}">
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Теги (через запятую)</label>
+                                    <label class="form-label">{% trans "Теги (через запятую)" %}</label>
                                     <input type="text" name="tags" class="form-control" 
-                                           placeholder="юридические, важные, 2025">
+                                           placeholder="{% trans 'юридические, важные, 2025' %}">
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Название документа</label>
+                                    <label class="form-label">{% trans "Название документа" %}</label>
                                     <input type="text" name="title" class="form-control" id="singleTitle"
-                                           placeholder="Если не указано, будет использовано имя файла">
+                                           placeholder="{% trans 'Если не указано, будет использовано имя файла' %}">
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Описание</label>
+                                    <label class="form-label">{% trans "Описание" %}</label>
                                     <textarea name="description" class="form-control" rows="2" 
-                                              placeholder="Краткое описание документа"></textarea>
+                                              placeholder="{% trans 'Краткое описание документа' %}"></textarea>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Размер чанка (символов)</label>
+                                        <label class="form-label">{% trans "Размер чанка (символов)" %}</label>
                                         <input type="number" name="chunk_size" class="form-control" 
                                                value="1000" min="100" max="10000" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Перекрытие чанков</label>
+                                        <label class="form-label">{% trans "Перекрытие чанков" %}</label>
                                         <input type="number" name="chunk_overlap" class="form-control" 
                                                value="200" min="0" max="2000" required>
                                     </div>
@@ -332,7 +333,7 @@
                                         <input type="checkbox" name="auto_process" class="form-check-input" 
                                                id="singleAutoProcess" checked>
                                         <label class="form-check-label" for="singleAutoProcess">
-                                            Автоматически начать обработку после загрузки
+                                            {% trans "Автоматически начать обработку после загрузки" %}
                                         </label>
                                     </div>
                                 </div>
@@ -340,10 +341,10 @@
                                 <!-- Область загрузки файла (один) -->
                                 <div class="dropzone" id="singleDropzone">
                                     <i class="bi bi-cloud-arrow-up"></i>
-                                    <h5>Перетащите файл сюда</h5>
-                                    <p>или</p>
+                                    <h5>{% trans "Перетащите файл сюда" %}</h5>
+                                    <p>{% trans "или" %}</p>
                                     <button type="button" class="btn-browse" id="singleBrowseBtn">
-                                        <i class="bi bi-folder2-open me-1"></i> Выбрать файл
+                                        <i class="bi bi-folder2-open me-1"></i> {% trans "Выбрать файл" %}
                                     </button>
                                     <input type="file" name="file" id="singleFileInput" 
                                            accept=".pdf,.docx,.doc,.txt,.html,.htm,.md" 
@@ -354,9 +355,9 @@
                                 <div id="singleFileList" class="file-list" style="display: none;"></div>
 
                                 <div class="d-flex justify-content-between mt-4">
-                                    <button type="reset" class="btn btn-outline-secondary">Очистить</button>
+                                    <button type="reset" class="btn btn-outline-secondary">{% trans "Очистить" %}</button>
                                     <button type="submit" class="btn btn-primary" id="singleSubmitBtn">
-                                        <i class="bi bi-upload me-1"></i> Загрузить
+                                        <i class="bi bi-upload me-1"></i> {% trans "Загрузить" %}
                                     </button>
                                 </div>
                             </form>
@@ -369,9 +370,9 @@
                                 {% csrf_token %}
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Коллекция *</label>
+                                        <label class="form-label">{% trans "Коллекция *" %}</label>
                                         <select name="collection" class="form-select" required>
-                                            <option value="">Выберите коллекцию...</option>
+                                            <option value="">{% trans "Выберите коллекцию..." %}</option>
                                             {% for collection in collections_list %}
                                             <option value="{{ collection.id }}" 
                                                 {% if request.GET.collection == collection.id|stringformat:"s" %}selected{% endif %}>
@@ -382,32 +383,32 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Категория (необязательно)</label>
+                                        <label class="form-label">{% trans "Категория (необязательно)" %}</label>
                                         <input type="text" name="category" class="form-control" 
-                                               placeholder="например: договоры">
+                                               placeholder="{% trans 'например: договоры' %}">
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Теги (через запятую)</label>
+                                    <label class="form-label">{% trans "Теги (через запятую)" %}</label>
                                     <input type="text" name="tags" class="form-control" 
-                                           placeholder="юридические, важные, 2025">
+                                           placeholder="{% trans 'юридические, важные, 2025' %}">
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Префикс названия</label>
+                                    <label class="form-label">{% trans "Префикс названия" %}</label>
                                     <input type="text" name="title_prefix" class="form-control" id="multiPrefix"
-                                           placeholder="Будет добавлен к каждому документу">
+                                           placeholder="{% trans 'Будет добавлен к каждому документу' %}">
                                 </div>
 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Размер чанка (символов)</label>
+                                        <label class="form-label">{% trans "Размер чанка (символов)" %}</label>
                                         <input type="number" name="chunk_size" class="form-control" 
                                                value="1000" min="100" max="10000" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Перекрытие чанков</label>
+                                        <label class="form-label">{% trans "Перекрытие чанков" %}</label>
                                         <input type="number" name="chunk_overlap" class="form-control" 
                                                value="200" min="0" max="2000" required>
                                     </div>
@@ -418,7 +419,7 @@
                                         <input type="checkbox" name="auto_process" class="form-check-input" 
                                                id="multiAutoProcess" checked>
                                         <label class="form-check-label" for="multiAutoProcess">
-                                            Автоматически начать обработку после загрузки
+                                            {% trans "Автоматически начать обработку после загрузки" %}
                                         </label>
                                     </div>
                                 </div>
@@ -426,10 +427,10 @@
                                 <!-- Область загрузки файлов (множественная) -->
                                 <div class="dropzone" id="multipleDropzone">
                                     <i class="bi bi-cloud-arrow-up"></i>
-                                    <h5>Перетащите файлы сюда</h5>
-                                    <p>или</p>
+                                    <h5>{% trans "Перетащите файлы сюда" %}</h5>
+                                    <p>{% trans "или" %}</p>
                                     <button type="button" class="btn-browse" id="multipleBrowseBtn">
-                                        <i class="bi bi-folder2-open me-1"></i> Выбрать файлы
+                                        <i class="bi bi-folder2-open me-1"></i> {% trans "Выбрать файлы" %}
                                     </button>
                                     <input type="file" name="files" id="multipleFileInput" 
                                            multiple accept=".pdf,.docx,.doc,.txt,.html,.htm,.md,.csv,.xlsx,.xls" 
@@ -440,9 +441,9 @@
                                 <div id="multipleFileList" class="file-list" style="display: none;"></div>
 
                                 <div class="d-flex justify-content-between mt-4">
-                                    <button type="reset" class="btn btn-outline-secondary">Очистить</button>
+                                    <button type="reset" class="btn btn-outline-secondary">{% trans "Очистить" %}</button>
                                     <button type="submit" class="btn btn-primary" id="multipleSubmitBtn">
-                                        <i class="bi bi-upload me-1"></i> Загрузить
+                                        <i class="bi bi-upload me-1"></i> {% trans "Загрузить" %}
                                     </button>
                                 </div>
                             </form>
@@ -463,17 +464,17 @@
         <div class="col-lg-4 d-flex flex-column">
             <!-- Информационная карточка -->
             <div class="info-card mb-4">
-                <h6><i class="bi bi-info-circle me-2"></i> Информация о загрузке</h6>
+                <h6><i class="bi bi-info-circle me-2"></i> {% trans "Информация о загрузке" %}</h6>
                 <div class="stat-item">
-                    <span>Максимальный размер файла</span>
+                    <span>{% trans "Максимальный размер файла" %}</span>
                     <strong>{{ upload_stats.max_file_size }}</strong>
                 </div>
                 <div class="stat-item">
-                    <span>Максимальное количество файлов</span>
+                    <span>{% trans "Максимальное количество файлов" %}</span>
                     <strong>{{ upload_stats.max_files }}</strong>
                 </div>
                 <div class="stat-item">
-                    <span>Доступные форматы</span>
+                    <span>{% trans "Доступные форматы" %}</span>
                 </div>
                 <div class="badge-container">
                     {% for fmt in upload_stats.allowed_formats|split:", " %}
@@ -482,18 +483,18 @@
                 </div>
                 <hr class="bg-secondary">
                 <div class="stat-item">
-                    <span>Рекомендации</span>
+                    <span>{% trans "Рекомендации" %}</span>
                 </div>
                 <ul class="mt-2 mb-0 ps-3" style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                    <li>PDF — лучшее качество текста</li>
-                    <li>DOCX/DOC — поддерживается извлечение</li>
-                    <li>Текстовые файлы — самый быстрый вариант</li>
+                    <li>{% trans "PDF — лучшее качество текста" %}</li>
+                    <li>{% trans "DOCX/DOC — поддерживается извлечение" %}</li>
+                    <li>{% trans "Текстовые файлы — самый быстрый вариант" %}</li>
                 </ul>
             </div>
 
             <!-- Ваши коллекции -->
             <div class="info-card">
-                <h6><i class="bi bi-folder me-2"></i> Ваши коллекции</h6>
+                <h6><i class="bi bi-folder me-2"></i> {% trans "Ваши коллекции" %}</h6>
                 {% if collections_list %}
                     <div class="collections-scroll">
                         {% for collection in collections_list %}
@@ -502,7 +503,7 @@
                                 <i class="bi bi-folder2-open me-1" style="color: var(--primary-color);"></i>
                                 {{ collection.name }}
                                 {% if not collection.is_public %}
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">личная</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">{% trans "личная" %}</span>
                                 {% endif %}
                             </span>
                             <span class="text-muted small">{{ collection.documents.count }} док.</span>
@@ -510,9 +511,9 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="text-muted mb-0">У вас ещё нет коллекций.</p>
+                    <p class="text-muted mb-0">{% trans "У вас ещё нет коллекций." %}</p>
                     <a href="{% url 'rag_collection_create' %}" class="btn btn-sm btn-primary mt-2">
-                        <i class="bi bi-plus me-1"></i> Создать коллекцию
+                        <i class="bi bi-plus me-1"></i> {% trans "Создать коллекцию" %}
                     </a>
                 {% endif %}
             </div>

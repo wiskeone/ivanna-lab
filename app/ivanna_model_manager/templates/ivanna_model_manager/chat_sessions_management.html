@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -129,14 +130,14 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1">{{ page_title }}</h2>
-            <p class="text-muted mb-0">Управление вашими диалогами с AI</p>
+            <p class="text-muted mb-0">{% trans "Управление вашими диалогами с AI" %}</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'chat_view' %}?force_new=true" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-1"></i> Новая сессия
+                <i class="bi bi-plus-circle me-1"></i> {% trans "Новая сессия" %}
             </a>
             <button class="action-link" onclick="window.location.reload()">
-                <i class="bi bi-arrow-repeat"></i> Обновить
+                <i class="bi bi-arrow-repeat"></i> {% trans "Обновить" %}
             </button>
         </div>
     </div>
@@ -147,21 +148,21 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>
-                <div class="stat-title">Всего сессий</div>
+                <div class="stat-title">{% trans "Всего сессий" %}</div>
             </div>
             <div class="stat-value">{{ total_sessions }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-                <div class="stat-title">Активные</div>
+                <div class="stat-title">{% trans "Активные" %}</div>
             </div>
             <div class="stat-value">{{ active_sessions }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-cpu"></i></div>
-                <div class="stat-title">С загруженной моделью</div>
+                <div class="stat-title">{% trans "С загруженной моделью" %}</div>
             </div>
             <div class="stat-value">{{ loaded_models_count }}</div>
         </div>
@@ -182,8 +183,8 @@
                         </span>
                     </div>
                     <div class="session-meta">
-                        <span class="session-meta-item"><i class="bi bi-chat-text"></i> <span id="message-count-{{ session.session_id }}">{{ session.total_messages }}</span> сообщ.</span>
-                        <span class="session-meta-item"><i class="bi bi-hash"></i> <span id="token-count-{{ session.session_id }}">{{ session.total_tokens }}</span> токенов</span>
+                        <span class="session-meta-item"><i class="bi bi-chat-text"></i> <span id="message-count-{{ session.session_id }}">{{ session.total_messages }}</span> {% trans "сообщ." %}</span>
+                        <span class="session-meta-item"><i class="bi bi-hash"></i> <span id="token-count-{{ session.session_id }}">{{ session.total_tokens }}</span> {% trans "токенов" %}</span>
                         <span class="session-meta-item"><i class="bi bi-clock"></i> {{ session.last_activity|date:"d.m.Y H:i" }}</span>
                         {% if session.model_name %}
                         <span class="session-meta-item"><i class="bi bi-cpu"></i> <span id="model-name-{{ session.session_id }}">{{ session.model_name }}</span></span>
@@ -191,29 +192,29 @@
                     </div>
                 </div>
                 <div class="session-actions" onclick="event.stopPropagation()">
-                    <a href="{% url 'chat_session' session_id=session.session_id %}" class="action-link" title="Перейти в чат">
-                        <i class="bi bi-chat-dots"></i> Чат
+                    <a href="{% url 'chat_session' session_id=session.session_id %}" class="action-link" title="{% trans 'Перейти в чат' %}">
+                        <i class="bi bi-chat-dots"></i> {% trans "Чат" %}
                     </a>
-                    <button class="action-link rename-btn" data-session-id="{{ session.session_id }}" data-current-name="{{ session.notes }}" title="Переименовать">
+                    <button class="action-link rename-btn" data-session-id="{{ session.session_id }}" data-current-name="{{ session.notes }}" title="{% trans 'Переименовать' %}">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="action-link danger delete-btn" data-session-id="{{ session.session_id }}" data-session-name="{{ session.notes }}" title="Удалить">
+                    <button class="action-link danger delete-btn" data-session-id="{{ session.session_id }}" data-session-name="{{ session.notes }}" title="{% trans 'Удалить' %}">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
             </div>
             <div class="session-details" id="details-{{ session.session_id }}">
                 <div class="details-grid">
-                    <div class="model-meta-item"><span class="model-meta-label">ID сессии</span><span class="model-meta-value">{{ session.session_id|truncatechars:30 }}</span></div>
-                    <div class="model-meta-item"><span class="model-meta-label">Создана</span><span class="model-meta-value">{{ session.created_at|date:"d.m.Y H:i" }}</span></div>
-                    <div class="model-meta-item"><span class="model-meta-label">Последняя активность</span><span class="model-meta-value">{{ session.last_activity|date:"d.m.Y H:i" }}</span></div>
+                    <div class="model-meta-item"><span class="model-meta-label">{% trans "ID сессии" %}</span><span class="model-meta-value">{{ session.session_id|truncatechars:30 }}</span></div>
+                    <div class="model-meta-item"><span class="model-meta-label">{% trans "Создана" %}</span><span class="model-meta-value">{{ session.created_at|date:"d.m.Y H:i" }}</span></div>
+                    <div class="model-meta-item"><span class="model-meta-label">{% trans "Последняя активность" %}</span><span class="model-meta-value">{{ session.last_activity|date:"d.m.Y H:i" }}</span></div>
                 </div>
 
                 {% if available_models %}
                 <div class="model-selector">
-                    <label class="form-label small text-muted mb-2">Сменить модель:</label>
+                    <label class="form-label small text-muted mb-2">{% trans "Сменить модель:" %}</label>
                     <select class="form-select form-select-sm session-model-select" data-session-id="{{ session.session_id }}" style="max-width: 300px;">
-                        <option value="">-- Выберите модель --</option>
+                        <option value="">{% trans "-- Выберите модель --" %}</option>
                         {% for model in available_models %}
                             <option value="{{ model.id }}" {% if session.model_id == model.id %}selected{% endif %} {% if not model.is_loaded_in_memory_cache %}disabled{% endif %}>
                                 {{ model.display_name }} {% if model.is_loaded_in_memory_cache %}✓{% else %}(не загружена){% endif %}
@@ -223,16 +224,16 @@
                 </div>
                 {% endif %}
 
-                <h6 class="mb-2">История диалога:</h6>
+                <h6 class="mb-2">{% trans "История диалога:" %}</h6>
                 <div class="conversation-preview" id="conversation-{{ session.session_id }}">
-                    <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Загрузка...</div>
+                    <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm text-primary me-2"></div> {% trans "Загрузка..." %}</div>
                 </div>
                 <div class="mt-2 d-flex gap-2">
                     <button class="action-link refresh-history" data-session-id="{{ session.session_id }}">
-                        <i class="bi bi-arrow-repeat"></i> Обновить
+                        <i class="bi bi-arrow-repeat"></i> {% trans "Обновить" %}
                     </button>
                     <button class="action-link clear-history" data-session-id="{{ session.session_id }}">
-                        <i class="bi bi-brush"></i> Очистить историю
+                        <i class="bi bi-brush"></i> {% trans "Очистить историю" %}
                     </button>
                 </div>
             </div>
@@ -241,10 +242,10 @@
     {% else %}
         <div class="empty-state-sessions">
             <div class="empty-state-icon"><i class="bi bi-chat-dots"></i></div>
-            <h3 class="mt-3">Нет активных сессий</h3>
-            <p class="text-muted">Создайте новую сессию для начала диалога</p>
+            <h3 class="mt-3">{% trans "Нет активных сессий" %}</h3>
+            <p class="text-muted">{% trans "Создайте новую сессию для начала диалога" %}</p>
             <a href="{% url 'chat_view' %}?force_new=true" class="btn btn-primary mt-2">
-                <i class="bi bi-plus-circle me-1"></i> Создать сессию
+                <i class="bi bi-plus-circle me-1"></i> {% trans "Создать сессию" %}
             </a>
         </div>
     {% endif %}
@@ -255,15 +256,15 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
-                <h5 class="modal-title">Переименовать сессию</h5>
+                <h5 class="modal-title">{% trans "Переименовать сессию" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="text" class="form-control" id="newSessionName" placeholder="Название сессии">
+                <input type="text" class="form-control" id="newSessionName" placeholder="{% trans 'Название сессии' %}">
             </div>
             <div class="modal-footer border-top">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button class="btn btn-primary" id="confirmRenameBtn">Сохранить</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button class="btn btn-primary" id="confirmRenameBtn">{% trans "Сохранить" %}</button>
             </div>
         </div>
     </div>
@@ -274,16 +275,16 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark">
             <div class="modal-header border-bottom">
-                <h5 class="modal-title text-danger">Удаление сессии</h5>
+                <h5 class="modal-title text-danger">{% trans "Удаление сессии" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Удалить сессию <strong id="deleteSessionName"></strong>?</p>
-                <p class="text-muted small">Все сообщения будут удалены без возможности восстановления.</p>
+                <p>{% trans "Удалить сессию" %} <strong id="deleteSessionName"></strong>?</p>
+                <p class="text-muted small">{% trans "Все сообщения будут удалены без возможности восстановления." %}</p>
             </div>
             <div class="modal-footer border-top">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn">{% trans "Удалить" %}</button>
             </div>
         </div>
     </div>
@@ -354,11 +355,11 @@
                 });
                 container.innerHTML = html;
             } else {
-                container.innerHTML = '<div class="text-center text-muted py-3">История диалога пуста</div>';
+                container.innerHTML = '<div class="text-center text-muted py-3">{% trans "История диалога пуста" %}</div>';
             }
         } catch (error) {
             console.error('Error loading conversation:', error);
-            container.innerHTML = '<div class="text-center text-danger py-3">Ошибка загрузки истории</div>';
+            container.innerHTML = '<div class="text-center text-danger py-3">{% trans "Ошибка загрузки истории" %}</div>';
         }
     }
 
@@ -457,7 +458,7 @@
             if (data.success) {
                 document.getElementById(`message-count-${sessionId}`).textContent = '0';
                 document.getElementById(`token-count-${sessionId}`).textContent = '0';
-                document.getElementById(`conversation-${sessionId}`).innerHTML = '<div class="text-center text-muted py-3">История очищена</div>';
+                document.getElementById(`conversation-${sessionId}`).innerHTML = '<div class="text-center text-muted py-3">{% trans "История очищена" %}</div>';
                 showToast('Готово', 'История диалога очищена', 'success');
             } else {
                 showToast('Ошибка', data.error || 'Не удалось очистить историю', 'error');

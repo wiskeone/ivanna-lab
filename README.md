@@ -3,7 +3,9 @@
 Self-hosted **LLM model lab**: a web platform for managing models, building datasets, fine-tuning, merging models, running inference and evaluating results — everything around the "make my own model" loop, Dockerized for a single GPU machine.
 
 > Born as a personal toolchain for model experiments; now open-sourced.
-> **UI language:** Russian (English UI is planned).
+> **UI language:** Russian is the source language; core interface strings
+> (1300+) are translated to **English** — switch with the 🌐 menu in the navbar.
+> Some form/admin labels remain Russian for now.
 
 ## What it does
 

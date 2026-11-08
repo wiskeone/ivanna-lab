@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -10,14 +11,14 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2>
-                    <i class="bi bi-clipboard-check me-2"></i>Система оценки моделей
+                    <i class="bi bi-clipboard-check me-2"></i>{% trans "Система оценки моделей" %}
                 </h2>
                 <div>
                     <a href="{% url 'evaluation_task_create' %}" class="btn btn-primary me-2">
-                        <i class="bi bi-plus-circle me-1"></i>Новая задача
+                        <i class="bi bi-plus-circle me-1"></i>{% trans "Новая задача" %}
                     </a>
                     <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-secondary">
-                        <i class="bi bi-upload me-1"></i>Загрузить датасет
+                        <i class="bi bi-upload me-1"></i>{% trans "Загрузить датасет" %}
                     </a>
                 </div>
             </div>
@@ -29,7 +30,7 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="card-title">Всего датасетов</h6>
+                                    <h6 class="card-title">{% trans "Всего датасетов" %}</h6>
                                     <h2 class="display-6">{{ total_datasets }}</h2>
                                 </div>
                                 <i class="bi bi-database display-6 opacity-50"></i>
@@ -44,7 +45,7 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="card-title">Задач оценки</h6>
+                                    <h6 class="card-title">{% trans "Задач оценки" %}</h6>
                                     <h2 class="display-6">{{ total_tasks }}</h2>
                                 </div>
                                 <i class="bi bi-clipboard-data display-6 opacity-50"></i>
@@ -59,12 +60,12 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="card-title">Активные задачи</h6>
+                                    <h6 class="card-title">{% trans "Активные задачи" %}</h6>
                                     <h2 class="display-6">{{ active_tasks }}</h2>
                                 </div>
                                 <i class="bi bi-activity display-6 opacity-50"></i>
                             </div>
-                            <small>Выполняются сейчас</small>
+                            <small>{% trans "Выполняются сейчас" %}</small>
                         </div>
                     </div>
                 </div>
@@ -74,12 +75,12 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="card-title">Загруженных моделей</h6>
+                                    <h6 class="card-title">{% trans "Загруженных моделей" %}</h6>
                                     <h2 class="display-6">{{ available_models.count }}</h2>
                                 </div>
                                 <i class="bi bi-cpu display-6 opacity-50"></i>
                             </div>
-                            <small>Доступно для оценки</small>
+                            <small>{% trans "Доступно для оценки" %}</small>
                         </div>
                     </div>
                 </div>
@@ -91,7 +92,7 @@
                     <div class="card">
                         <div class="card-header bg-transparent border-bottom">
                             <h5 class="mb-0">
-                                <i class="bi bi-lightning-fill me-2 text-warning"></i>Быстрые действия
+                                <i class="bi bi-lightning-fill me-2 text-warning"></i>{% trans "Быстрые действия" %}
                             </h5>
                         </div>
                         <div class="card-body">
@@ -99,22 +100,22 @@
                                 <div class="col-md-4">
                                     <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
                                         <i class="bi bi-file-earmark-arrow-up display-4 mb-2"></i>
-                                        <span>Загрузить датасет</span>
+                                        <span>{% trans "Загрузить датасет" %}</span>
                                         <small class="text-muted mt-1">TXT, CSV, JSON</small>
                                     </a>
                                 </div>
                                 <div class="col-md-4">
                                     <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
                                         <i class="bi bi-pencil-square display-4 mb-2"></i>
-                                        <span>Создать вручную</span>
-                                        <small class="text-muted mt-1">Ручной ввод вопросов</small>
+                                        <span>{% trans "Создать вручную" %}</span>
+                                        <small class="text-muted mt-1">{% trans "Ручной ввод вопросов" %}</small>
                                     </a>
                                 </div>
                                 <div class="col-md-4">
                                     <a href="{% url 'evaluation_task_create' %}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
                                         <i class="bi bi-play-circle display-4 mb-2"></i>
-                                        <span>Запустить оценку</span>
-                                        <small class="text-muted mt-1">Тестирование моделей</small>
+                                        <span>{% trans "Запустить оценку" %}</span>
+                                        <small class="text-muted mt-1">{% trans "Тестирование моделей" %}</small>
                                     </a>
                                 </div>
                             </div>
@@ -129,10 +130,10 @@
                     <div class="card h-100">
                         <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
-                                <i class="bi bi-clock-history me-2"></i>Последние задачи оценки
+                                <i class="bi bi-clock-history me-2"></i>{% trans "Последние задачи оценки" %}
                             </h5>
                             <a href="{% url 'evaluation_task_list' %}" class="btn btn-sm btn-outline-primary">
-                                Все задачи <i class="bi bi-arrow-right ms-1"></i>
+                                {% trans "Все задачи" %} <i class="bi bi-arrow-right ms-1"></i>
                             </a>
                         </div>
                         <div class="card-body">
@@ -180,9 +181,9 @@
                             {% else %}
                             <div class="text-center py-5">
                                 <i class="bi bi-clipboard-x display-4 text-muted mb-3"></i>
-                                <p class="text-muted">Нет задач оценки</p>
+                                <p class="text-muted">{% trans "Нет задач оценки" %}</p>
                                 <a href="{% url 'evaluation_task_create' %}" class="btn btn-primary">
-                                    Создать первую задачу
+                                    {% trans "Создать первую задачу" %}
                                 </a>
                             </div>
                             {% endif %}
@@ -195,10 +196,10 @@
                     <div class="card h-100">
                         <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
-                                <i class="bi bi-folder me-2"></i>Последние датасеты
+                                <i class="bi bi-folder me-2"></i>{% trans "Последние датасеты" %}
                             </h5>
                             <a href="{% url 'evaluation_dataset_list' %}" class="btn btn-sm btn-outline-primary">
-                                Все датасеты <i class="bi bi-arrow-right ms-1"></i>
+                                {% trans "Все датасеты" %} <i class="bi bi-arrow-right ms-1"></i>
                             </a>
                         </div>
                         <div class="card-body">
@@ -238,12 +239,12 @@
                             {% else %}
                             <div class="text-center py-5">
                                 <i class="bi bi-database-slash display-4 text-muted mb-3"></i>
-                                <p class="text-muted">Нет датасетов</p>
+                                <p class="text-muted">{% trans "Нет датасетов" %}</p>
                                 <a href="{% url 'evaluation_dataset_upload' %}" class="btn btn-primary me-2">
-                                    Загрузить датасет
+                                    {% trans "Загрузить датасет" %}
                                 </a>
                                 <a href="{% url 'evaluation_dataset_create' %}" class="btn btn-secondary">
-                                    Создать вручную
+                                    {% trans "Создать вручную" %}
                                 </a>
                             </div>
                             {% endif %}
@@ -258,7 +259,7 @@
                     <div class="card">
                         <div class="card-header bg-transparent border-bottom">
                             <h5 class="mb-0">
-                                <i class="bi bi-cpu me-2"></i>Доступные модели для оценки
+                                <i class="bi bi-cpu me-2"></i>{% trans "Доступные модели для оценки" %}
                             </h5>
                         </div>
                         <div class="card-body">
@@ -305,7 +306,7 @@
                                         <div class="card-footer bg-transparent border-top">
                                             <a href="{% url 'model_detail' model.id %}" 
                                                class="btn btn-sm btn-outline-primary w-100">
-                                                <i class="bi bi-info-circle me-1"></i>Подробнее
+                                                <i class="bi bi-info-circle me-1"></i>{% trans "Подробнее" %}
                                             </a>
                                         </div>
                                     </div>
@@ -315,10 +316,10 @@
                             {% else %}
                             <div class="text-center py-5">
                                 <i class="bi bi-cpu display-4 text-muted mb-3"></i>
-                                <p class="text-muted mb-3">Нет загруженных моделей</p>
-                                <p class="text-muted small">Для запуска оценки сначала загрузите модели в интерфейсе моделей</p>
+                                <p class="text-muted mb-3">{% trans "Нет загруженных моделей" %}</p>
+                                <p class="text-muted small">{% trans "Для запуска оценки сначала загрузите модели в интерфейсе моделей" %}</p>
                                 <a href="{% url 'model_list' %}" class="btn btn-primary">
-                                    <i class="bi bi-arrow-right me-1"></i>Перейти к моделям
+                                    <i class="bi bi-arrow-right me-1"></i>{% trans "Перейти к моделям" %}
                                 </a>
                             </div>
                             {% endif %}

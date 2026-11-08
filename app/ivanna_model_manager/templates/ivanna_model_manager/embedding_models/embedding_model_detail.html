@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}{{ model.display_name|default:model.name }} — Модель эмбеддингов{% endblock %}
@@ -9,7 +10,7 @@
     <!-- Кнопка назад -->
     <div class="mb-4">
         <a href="{% url 'embedding_model_list' %}" class="action-link">
-            <i class="bi bi-arrow-left"></i> Назад к списку моделей
+            <i class="bi bi-arrow-left"></i> {% trans "Назад к списку моделей" %}
         </a>
     </div>
 
@@ -23,7 +24,7 @@
             <div>
                 {% if model.is_default %}
                 <span class="embedding-status status-default me-2">
-                    <i class="bi bi-star-fill"></i> По умолчанию
+                    <i class="bi bi-star-fill"></i> {% trans "По умолчанию" %}
                 </span>
                 {% endif %}
                 <span class="embedding-status 
@@ -52,15 +53,15 @@
         <div class="col-lg-6">
             <div class="model-card h-100">
                 <div class="card-header bg-transparent border-bottom px-3 py-2">
-                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i> Детали модели</h6>
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i> {% trans "Детали модели" %}</h6>
                 </div>
                 <div class="card-body p-3">
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
-                        <span class="model-meta-label"><i class="bi bi-tag me-1"></i> Имя модели</span>
+                        <span class="model-meta-label"><i class="bi bi-tag me-1"></i> {% trans "Имя модели" %}</span>
                         <span class="model-meta-value">{{ model.name }}</span>
                     </div>
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
-                        <span class="model-meta-label"><i class="bi bi-card-text me-1"></i> Отображаемое имя</span>
+                        <span class="model-meta-label"><i class="bi bi-card-text me-1"></i> {% trans "Отображаемое имя" %}</span>
                         <span class="model-meta-value">{{ model.display_name|default:"—" }}</span>
                     </div>
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
@@ -68,27 +69,27 @@
                         <span class="model-meta-value">{{ model.model_id }}</span>
                     </div>
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
-                        <span class="model-meta-label"><i class="bi bi-code-slash me-1"></i> Версия</span>
+                        <span class="model-meta-label"><i class="bi bi-code-slash me-1"></i> {% trans "Версия" %}</span>
                         <span class="model-meta-value">{{ model.model_version }}</span>
                     </div>
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
-                        <span class="model-meta-label"><i class="bi bi-vector-pen me-1"></i> Размерность</span>
+                        <span class="model-meta-label"><i class="bi bi-vector-pen me-1"></i> {% trans "Размерность" %}</span>
                         <span class="model-meta-value">{{ model.embedding_dim }}d</span>
                     </div>
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
-                        <span class="model-meta-label"><i class="bi bi-text-paragraph me-1"></i> Макс. токенов</span>
+                        <span class="model-meta-label"><i class="bi bi-text-paragraph me-1"></i> {% trans "Макс. токенов" %}</span>
                         <span class="model-meta-value">{{ model.max_tokens }}</span>
                     </div>
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
-                        <span class="model-meta-label"><i class="bi bi-translate me-1"></i> Мультиязычная</span>
+                        <span class="model-meta-label"><i class="bi bi-translate me-1"></i> {% trans "Мультиязычная" %}</span>
                         <span class="model-meta-value">{% if model.is_multilingual %}Да{% else %}Нет{% endif %}</span>
                     </div>
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
-                        <span class="model-meta-label"><i class="bi bi-file-text me-1"></i> Лицензия</span>
+                        <span class="model-meta-label"><i class="bi bi-file-text me-1"></i> {% trans "Лицензия" %}</span>
                         <span class="model-meta-value">{{ model.license_type|default:"—" }}</span>
                     </div>
                     <div class="model-meta-item">
-                        <span class="model-meta-label"><i class="bi bi-check-circle me-1"></i> Активна</span>
+                        <span class="model-meta-label"><i class="bi bi-check-circle me-1"></i> {% trans "Активна" %}</span>
                         <span class="model-meta-value">{% if model.is_active %}Да{% else %}Нет{% endif %}</span>
                     </div>
                 </div>
@@ -100,15 +101,15 @@
             <!-- Карточка: системная информация -->
             <div class="model-card">
                 <div class="card-header bg-transparent border-bottom px-3 py-2">
-                    <h6 class="mb-0"><i class="bi bi-calendar me-2"></i> Системная информация</h6>
+                    <h6 class="mb-0"><i class="bi bi-calendar me-2"></i> {% trans "Системная информация" %}</h6>
                 </div>
                 <div class="card-body p-3">
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
-                        <span class="model-meta-label"><i class="bi bi-calendar-plus me-1"></i> Создана</span>
+                        <span class="model-meta-label"><i class="bi bi-calendar-plus me-1"></i> {% trans "Создана" %}</span>
                         <span class="model-meta-value">{{ model.created_at|date:"d.m.Y H:i" }}</span>
                     </div>
                     <div class="model-meta-item">
-                        <span class="model-meta-label"><i class="bi bi-calendar-check me-1"></i> Обновлена</span>
+                        <span class="model-meta-label"><i class="bi bi-calendar-check me-1"></i> {% trans "Обновлена" %}</span>
                         <span class="model-meta-value">{{ model.updated_at|date:"d.m.Y H:i" }}</span>
                     </div>
                 </div>
@@ -117,15 +118,15 @@
             <!-- Карточка: статистика использования -->
             <div class="model-card">
                 <div class="card-header bg-transparent border-bottom px-3 py-2">
-                    <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i> Статистика использования</h6>
+                    <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i> {% trans "Статистика использования" %}</h6>
                 </div>
                 <div class="card-body p-3">
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
-                        <span class="model-meta-label"><i class="bi bi-database me-1"></i> Обработано токенов</span>
+                        <span class="model-meta-label"><i class="bi bi-database me-1"></i> {% trans "Обработано токенов" %}</span>
                         <span class="model-meta-value">{{ model.total_tokens_processed|default:0 }}</span>
                     </div>
                     <div class="model-meta-item">
-                        <span class="model-meta-label"><i class="bi bi-arrow-repeat me-1"></i> Количество запросов</span>
+                        <span class="model-meta-label"><i class="bi bi-arrow-repeat me-1"></i> {% trans "Количество запросов" %}</span>
                         <span class="model-meta-value">{{ model.total_requests|default:0 }}</span>
                     </div>
                 </div>
@@ -152,26 +153,26 @@
     <!-- Действия -->
     <div class="model-footer mt-4 d-flex flex-wrap gap-2">
         <a href="{% url 'embedding_model_edit' model.id %}" class="action-link">
-            <i class="bi bi-pencil"></i> Редактировать
+            <i class="bi bi-pencil"></i> {% trans "Редактировать" %}
         </a>
         {% if not model.is_default %}
         <button class="action-link" data-bs-toggle="modal" data-bs-target="#setDefaultModal">
-            <i class="bi bi-star"></i> Сделать по умолчанию
+            <i class="bi bi-star"></i> {% trans "Сделать по умолчанию" %}
         </button>
         {% endif %}
         {% if not model.is_downloaded and model.download_status != 'downloading' %}
         <button class="action-link" id="downloadBtn" onclick="startDownload()">
-            <i class="bi bi-cloud-download"></i> Скачать
+            <i class="bi bi-cloud-download"></i> {% trans "Скачать" %}
         </button>
         {% endif %}
         {% if model.download_status == 'downloading' or model.download_status == 'failed' %}
         <button class="action-link" id="resetBtn" onclick="resetDownload()">
-            <i class="bi bi-arrow-repeat"></i> Сбросить статус
+            <i class="bi bi-arrow-repeat"></i> {% trans "Сбросить статус" %}
         </button>
         {% endif %}
         {% if not model.is_default %}
         <button class="action-link danger" onclick="confirmDelete()">
-            <i class="bi bi-trash"></i> Удалить
+            <i class="bi bi-trash"></i> {% trans "Удалить" %}
         </button>
         {% endif %}
     </div>
@@ -184,18 +185,18 @@
             <div class="modal-header border-bottom">
                 <h5 class="modal-title">
                     <i class="bi bi-star-fill me-2" style="color: #f59e0b;"></i>
-                    Сделать моделью по умолчанию
+                    {% trans "Сделать моделью по умолчанию" %}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Вы уверены, что хотите сделать <strong>{{ model.display_name|default:model.name }}</strong> моделью эмбеддингов по умолчанию?</p>
-                <p class="text-muted small">Модель по умолчанию будет использоваться для новых коллекций, если не указана иная.</p>
+                <p>{% trans "Вы уверены, что хотите сделать" %} <strong>{{ model.display_name|default:model.name }}</strong> {% trans "моделью эмбеддингов по умолчанию?" %}</p>
+                <p class="text-muted small">{% trans "Модель по умолчанию будет использоваться для новых коллекций, если не указана иная." %}</p>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
                 <button type="button" class="btn btn-primary" id="confirmSetDefaultBtn">
-                    <i class="bi bi-check-lg me-1"></i> Да, сделать по умолчанию
+                    <i class="bi bi-check-lg me-1"></i> {% trans "Да, сделать по умолчанию" %}
                 </button>
             </div>
         </div>
@@ -207,7 +208,7 @@
     <div id="liveToast" class="toast" role="alert">
         <div class="toast-header bg-dark text-white">
             <i class="bi bi-info-circle me-2"></i>
-            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <strong class="me-auto" id="toastTitle">{% trans "Уведомление" %}</strong>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body bg-dark text-white" id="toastMessage"></div>

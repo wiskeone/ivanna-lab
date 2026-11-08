@@ -1,7 +1,8 @@
+{% load i18n %}
 <div class="card" id="evaluationProgressCard">
     <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
         <h6 class="mb-0">
-            <i class="bi bi-activity me-2"></i>Прогресс выполнения
+            <i class="bi bi-activity me-2"></i>{% trans "Прогресс выполнения" %}
         </h6>
         <span class="badge bg-warning" id="progressStatus">RUNNING</span>
     </div>
@@ -9,7 +10,7 @@
         <!-- Индикатор прогресса -->
         <div class="mb-3">
             <div class="d-flex justify-content-between small mb-1">
-                <span>Общий прогресс</span>
+                <span>{% trans "Общий прогресс" %}</span>
                 <span id="progressPercentage">0%</span>
             </div>
             <div class="progress" style="height: 10px;">
@@ -23,11 +24,11 @@
             <div class="col-6">
                 <div class="mb-2">
                     <i class="bi bi-cpu me-1"></i>
-                    <span id="completedModels">0</span>/<span id="totalModels">0</span> моделей
+                    <span id="completedModels">0</span>/<span id="totalModels">0</span> {% trans "моделей" %}
                 </div>
                 <div class="mb-2">
                     <i class="bi bi-question-circle me-1"></i>
-                    <span id="completedQuestions">0</span>/<span id="totalQuestions">0</span> вопросов
+                    <span id="completedQuestions">0</span>/<span id="totalQuestions">0</span> {% trans "вопросов" %}
                 </div>
             </div>
             <div class="col-6">
@@ -37,22 +38,22 @@
                 </div>
                 <div class="mb-2">
                     <i class="bi bi-lightning me-1"></i>
-                    <span id="estimatedTime">—</span> осталось
+                    <span id="estimatedTime">—</span> {% trans "осталось" %}
                 </div>
             </div>
         </div>
         
         <!-- Текущий шаг -->
         <div class="mt-3">
-            <h6 class="small text-muted mb-1">Текущий шаг:</h6>
+            <h6 class="small text-muted mb-1">{% trans "Текущий шаг:" %}</h6>
             <div class="p-2 bg-dark rounded small" id="currentStep">
-                Инициализация...
+                {% trans "Инициализация..." %}
             </div>
         </div>
         
         <!-- Прогресс по моделям -->
         <div class="mt-3" id="modelsProgress" style="display: none;">
-            <h6 class="small text-muted mb-2">Прогресс по моделям:</h6>
+            <h6 class="small text-muted mb-2">{% trans "Прогресс по моделям:" %}</h6>
             <div id="modelsProgressList">
                 <!-- Прогресс по каждой модели будет добавляться динамически -->
             </div>

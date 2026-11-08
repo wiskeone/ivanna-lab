@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -12,12 +13,12 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2>
-                        <i class="bi bi-chat-dots me-2"></i>Задачи генерации ответов
+                        <i class="bi bi-chat-dots me-2"></i>{% trans "Задачи генерации ответов" %}
                     </h2>
-                    <p class="text-muted mb-0">Управление задачами на генерацию ответов для вопросов дистилляции</p>
+                    <p class="text-muted mb-0">{% trans "Управление задачами на генерацию ответов для вопросов дистилляции" %}</p>
                 </div>
                 <a href="{% url 'distillation_answer_job_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-1"></i>Создать задачу
+                    <i class="bi bi-plus-circle me-1"></i>{% trans "Создать задачу" %}
                 </a>
             </div>
 
@@ -32,20 +33,20 @@
                                 </span>
                                 <input type="text" class="form-control border-start-0" 
                                        name="q" value="{{ request.GET.q }}" 
-                                       placeholder="Поиск по названию...">
+                                       placeholder="{% trans 'Поиск по названию...' %}">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <select name="status" class="form-select">
-                                <option value="">Все статусы</option>
-                                <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>В ожидании</option>
-                                <option value="RUNNING" {% if request.GET.status == 'RUNNING' %}selected{% endif %}>Выполняется</option>
-                                <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Завершено</option>
-                                <option value="FAILED" {% if request.GET.status == 'FAILED' %}selected{% endif %}>Ошибка</option>
+                                <option value="">{% trans "Все статусы" %}</option>
+                                <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>{% trans "В ожидании" %}</option>
+                                <option value="RUNNING" {% if request.GET.status == 'RUNNING' %}selected{% endif %}>{% trans "Выполняется" %}</option>
+                                <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>{% trans "Завершено" %}</option>
+                                <option value="FAILED" {% if request.GET.status == 'FAILED' %}selected{% endif %}>{% trans "Ошибка" %}</option>
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">Применить</button>
+                            <button type="submit" class="btn btn-primary w-100">{% trans "Применить" %}</button>
                         </div>
                     </form>
                 </div>
@@ -80,7 +81,7 @@
 
                             <div class="row small mb-3">
                                 <div class="col-6">
-                                    <div class="text-muted">Набор вопросов</div>
+                                    <div class="text-muted">{% trans "Набор вопросов" %}</div>
                                     <div class="fw-bold">
                                         {% if job.question_set %}
                                         <a href="{% url 'distillation_question_set_detail' job.question_set.id %}" class="text-decoration-none">
@@ -92,7 +93,7 @@
                                     </div>
                                 </div>
                                 <div class="col-6">
-                                    <div class="text-muted">Вопросов</div>
+                                    <div class="text-muted">{% trans "Вопросов" %}</div>
                                     <div class="fw-bold">{{ job.processed_count }} / {{ job.planned_count }} </div>
                                 </div>
                             </div>
@@ -100,7 +101,7 @@
                             {% if job.status == 'RUNNING' %}
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between small mb-1">
-                                    <span>Прогресс</span>
+                                    <span>{% trans "Прогресс" %}</span>
                                     <span>{{ job.progress|floatformat:1 }}%</span>
                                 </div>
                                 <div class="progress" style="height: 6px;">
@@ -130,17 +131,17 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     {% if job.status == 'COMPLETED' %}
-                                    <span class="badge bg-success">Готово</span>
+                                    <span class="badge bg-success">{% trans "Готово" %}</span>
                                     {% elif job.status == 'PENDING' and job.planned_count > 0 %}
-                                    <span class="badge bg-info">Готов к запуску</span>
+                                    <span class="badge bg-info">{% trans "Готов к запуску" %}</span>
                                     {% endif %}
                                 </div>
                                 <div>
                                     <a href="{% url 'distillation_answer_job_detail' job.id %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye me-1"></i>Подробнее
+                                        <i class="bi bi-eye me-1"></i>{% trans "Подробнее" %}
                                     </a>
                                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteJob({{ job.id }}, '{{ job.name|escapejs }}')">
-                                        <i class="bi bi-trash"></i> Удалить
+                                        <i class="bi bi-trash"></i> {% trans "Удалить" %}
                                     </button>
                                 </div>
                             </div>
@@ -198,10 +199,10 @@
             {% else %}
             <div class="text-center py-5">
                 <i class="bi bi-chat-dots display-4 text-muted mb-3"></i>
-                <h5 class="text-muted mb-3">Нет задач генерации ответов</h5>
-                <p class="text-muted mb-4">Создайте первую задачу для генерации ответов на вопросы</p>
+                <h5 class="text-muted mb-3">{% trans "Нет задач генерации ответов" %}</h5>
+                <p class="text-muted mb-4">{% trans "Создайте первую задачу для генерации ответов на вопросы" %}</p>
                 <a href="{% url 'distillation_answer_job_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-1"></i>Создать задачу
+                    <i class="bi bi-plus-circle me-1"></i>{% trans "Создать задачу" %}
                 </a>
             </div>
             {% endif %}

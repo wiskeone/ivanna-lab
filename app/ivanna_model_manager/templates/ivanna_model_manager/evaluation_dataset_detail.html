@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Датасет: {{ dataset.name }}{% endblock %}
@@ -50,14 +51,14 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <a href="{% url 'evaluation_dataset_list' %}" class="btn btn-outline-secondary mb-2">
-                <i class="bi bi-arrow-left"></i> К списку датасетов
+                <i class="bi bi-arrow-left"></i> {% trans "К списку датасетов" %}
             </a>
             <h3>{{ dataset.name }}</h3>
             <p class="text-muted">{{ dataset.description|default:"Нет описания" }}</p>
         </div>
         <div>
             <a href="{% url 'evaluation_dataset_edit' dataset.id %}" class="btn btn-primary">
-                <i class="bi bi-pencil"></i> Редактировать
+                <i class="bi bi-pencil"></i> {% trans "Редактировать" %}
             </a>
         </div>
     </div>
@@ -65,15 +66,15 @@
     <div class="dataset-info">
         <div class="row">
             <div class="col-md-4">
-                <div class="small text-muted">Всего вопросов</div>
+                <div class="small text-muted">{% trans "Всего вопросов" %}</div>
                 <div class="h4">{{ dataset.total_questions }}</div>
             </div>
             <div class="col-md-4">
-                <div class="small text-muted">Тип источника</div>
+                <div class="small text-muted">{% trans "Тип источника" %}</div>
                 <div class="h4">{{ dataset.get_source_type_display }}</div>
             </div>
             <div class="col-md-4">
-                <div class="small text-muted">Создан</div>
+                <div class="small text-muted">{% trans "Создан" %}</div>
                 <div class="h4">{{ dataset.created_at|date:"d.m.Y H:i" }}</div>
             </div>
         </div>
@@ -114,7 +115,7 @@ function loadQuestions(page = 1) {
                         </button>
                     `;
                 } else {
-                    container.innerHTML = '<div class="text-muted">Все вопросы загружены</div>';
+                    container.innerHTML = '<div class="text-muted">{% trans "Все вопросы загружены" %}</div>';
                 }
             } else {
                 throw new Error(data.error);
@@ -141,12 +142,12 @@ function renderQuestions(questions) {
                 <span class="badge bg-info">${q.difficulty || 'medium'}</span>
             </div>
             <div class="question-text">
-                <label class="form-label small text-muted">Вопрос</label>
+                <label class="form-label small text-muted">{% trans "Вопрос" %}</label>
                 <div>${escapeHtml(q.text)}</div>
             </div>
             ${q.answer ? `
             <div>
-                <label class="form-label small text-muted">Ответ</label>
+                <label class="form-label small text-muted">{% trans "Ответ" %}</label>
                 <div class="answer-text">${escapeHtml(q.answer)}</div>
             </div>
             ` : ''}

@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 
 {% block title %}Импорт датасета с Hugging Face{% endblock %}
 
@@ -182,15 +183,15 @@
             <!-- Заголовок -->
             <div class="card glass-effect mb-4">
                 <div class="card-header bg-dark border-bottom border-primary">
-                    <h4 class="mb-0 text-white"><i class="bi bi-cloud-arrow-up me-2"></i> Импорт датасета с Hugging Face</h4>
+                    <h4 class="mb-0 text-white"><i class="bi bi-cloud-arrow-up me-2"></i> {% trans "Импорт датасета с Hugging Face" %}</h4>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info glass-effect border-info">
-                        <h5><i class="bi bi-info-circle me-2"></i> О загрузке датасетов:</h5>
+                        <h5><i class="bi bi-info-circle me-2"></i> {% trans "О загрузке датасетов:" %}</h5>
                         <ul class="mb-0">
-                            <li>Поддерживаются датасеты, содержащие поля <strong>instruction</strong> и <strong>output</strong> (или <strong>question</strong>/<strong>answer</strong>)</li>
-                            <li>Датасет будет преобразован в формат JSONL и сохранён в системе как <strong>EvaluationDataset</strong></li>
-                            <li>После импорта датасет можно использовать для обучения моделей (fine-tuning) методами instruction и RAFT</li>
+                            <li>{% trans "Поддерживаются датасеты, содержащие поля" %} <strong>instruction</strong> {% trans "и" %} <strong>output</strong> {% trans "(или" %} <strong>question</strong>/<strong>answer</strong>)</li>
+                            <li>{% trans "Датасет будет преобразован в формат JSONL и сохранён в системе как" %} <strong>EvaluationDataset</strong></li>
+                            <li>{% trans "После импорта датасет можно использовать для обучения моделей (fine-tuning) методами instruction и RAFT" %}</li>
                         </ul>
                     </div>
                 </div>
@@ -212,7 +213,7 @@
                         <!-- Поиск датасетов -->
                         <div class="mb-5">
                             <h5 class="mb-3 text-white">
-                                <i class="bi bi-search me-2 text-primary"></i> Поиск датасетов
+                                <i class="bi bi-search me-2 text-primary"></i> {% trans "Поиск датасетов" %}
                             </h5>
                             <div class="card bg-dark border-secondary">
                                 <div class="card-header border-bottom border-secondary d-flex justify-content-between align-items-center">
@@ -220,18 +221,18 @@
                                         <i class="bi bi-database me-2"></i> Hugging Face Hub
                                     </h6>
                                     <div>
-                                        <span class="badge bg-secondary me-2" id="searchResultsCount">0 результатов</span>
+                                        <span class="badge bg-secondary me-2" id="searchResultsCount">{% trans "0 результатов" %}</span>
                                         <button type="button" class="btn btn-sm btn-outline-secondary" id="clearSearchBtn">
-                                            <i class="bi bi-x-circle"></i> Очистить
+                                            <i class="bi bi-x-circle"></i> {% trans "Очистить" %}
                                         </button>
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     <div class="input-group mb-3">
                                         <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                               id="datasetSearchInput" placeholder="Поиск датасетов (например: alpaca, dolly, oasst1)...">
+                                               id="datasetSearchInput" placeholder="{% trans 'Поиск датасетов (например: alpaca, dolly, oasst1)...' %}">
                                         <button class="btn btn-outline-primary" type="button" id="buttonSearch">
-                                            <i class="bi bi-search"></i> Поиск
+                                            <i class="bi bi-search"></i> {% trans "Поиск" %}
                                         </button>
                                     </div>
 
@@ -239,25 +240,25 @@
                                     <div class="row g-2 mb-3">
                                         <div class="col-md-4">
                                             <select class="form-select bg-dark text-white border-secondary" id="filterLanguage">
-                                                <option value="">Все языки</option>
-                                                <option value="ru">Русский</option>
-                                                <option value="en">Английский</option>
-                                                <option value="multilingual">Мультиязычный</option>
+                                                <option value="">{% trans "Все языки" %}</option>
+                                                <option value="ru">{% trans "Русский" %}</option>
+                                                <option value="en">{% trans "Английский" %}</option>
+                                                <option value="multilingual">{% trans "Мультиязычный" %}</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4">
                                             <select class="form-select bg-dark text-white border-secondary" id="filterSize">
-                                                <option value="">Все размеры</option>
-                                                <option value="small">Малые (&lt; 10K примеров)</option>
-                                                <option value="medium">Средние (10K - 100K)</option>
-                                                <option value="large">Крупные (&gt; 100K)</option>
+                                                <option value="">{% trans "Все размеры" %}</option>
+                                                <option value="small">{% trans "Малые (&lt; 10K примеров)" %}</option>
+                                                <option value="medium">{% trans "Средние (10K - 100K)" %}</option>
+                                                <option value="large">{% trans "Крупные (&gt; 100K)" %}</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4">
                                             <select class="form-select bg-dark text-white border-secondary" id="filterSort">
-                                                <option value="downloads">По загрузкам</option>
-                                                <option value="likes">По лайкам</option>
-                                                <option value="created">По дате</option>
+                                                <option value="downloads">{% trans "По загрузкам" %}</option>
+                                                <option value="likes">{% trans "По лайкам" %}</option>
+                                                <option value="created">{% trans "По дате" %}</option>
                                             </select>
                                         </div>
                                     </div>
@@ -267,24 +268,24 @@
                                         <div class="search-results" id="searchResults">
                                             <div class="text-center text-muted py-5">
                                                 <i class="bi bi-search display-4 mb-3"></i>
-                                                <p>Начните поиск датасетов на Hugging Face Hub</p>
-                                                <small class="text-muted">Или выберите из популярных ниже</small>
+                                                <p>{% trans "Начните поиск датасетов на Hugging Face Hub" %}</p>
+                                                <small class="text-muted">{% trans "Или выберите из популярных ниже" %}</small>
                                             </div>
                                         </div>
                                     </div>
 
                                     <!-- Пагинация -->
                                     <div class="search-pagination d-none mt-3" id="searchPagination">
-                                        <nav aria-label="Постраничная навигация">
+                                        <nav aria-label="{% trans 'Постраничная навигация' %}">
                                             <ul class="pagination justify-content-center mb-0">
                                                 <li class="page-item">
-                                                    <button class="page-link" id="prevPage" disabled>Назад</button>
+                                                    <button class="page-link" id="prevPage" disabled>{% trans "Назад" %}</button>
                                                 </li>
                                                 <li class="page-item">
-                                                    <span class="page-link bg-transparent border-0" id="pageInfo">Страница 1</span>
+                                                    <span class="page-link bg-transparent border-0" id="pageInfo">{% trans "Страница 1" %}</span>
                                                 </li>
                                                 <li class="page-item">
-                                                    <button class="page-link" id="nextPage" disabled>Вперед</button>
+                                                    <button class="page-link" id="nextPage" disabled>{% trans "Вперед" %}</button>
                                                 </li>
                                             </ul>
                                         </nav>
@@ -298,14 +299,14 @@
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="text-white mb-0">
                                     <i class="bi bi-trophy me-2"></i> 
-                                    <span id="popularDatasetsTitle">Топ-5 самых скачиваемых датасетов</span>
+                                    <span id="popularDatasetsTitle">{% trans "Топ-5 самых скачиваемых датасетов" %}</span>
                                 </h6>
                                 <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-outline-primary" id="refreshTopDatasets">
-                                        <i class="bi bi-arrow-clockwise"></i> Обновить
+                                        <i class="bi bi-arrow-clockwise"></i> {% trans "Обновить" %}
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleAllDatasets">
-                                        <i class="bi bi-grid"></i> Показать все
+                                        <i class="bi bi-grid"></i> {% trans "Показать все" %}
                                     </button>
                                 </div>
                             </div>
@@ -313,9 +314,9 @@
                                 <div class="col-12">
                                     <div class="text-center py-4">
                                         <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Загрузка...</span>
+                                            <span class="visually-hidden">{% trans "Загрузка..." %}</span>
                                         </div>
-                                        <p class="text-muted mt-2">Загружаем популярные датасеты...</p>
+                                        <p class="text-muted mt-2">{% trans "Загружаем популярные датасеты..." %}</p>
                                     </div>
                                 </div>
                             </div>
@@ -324,32 +325,32 @@
                         <!-- Детали выбранного датасета -->
                         <div class="mb-5" id="datasetDetailsSection" style="display: none;">
                             <h5 class="mb-3 text-white">
-                                <i class="bi bi-info-circle me-2 text-primary"></i> Выбранный датасет
+                                <i class="bi bi-info-circle me-2 text-primary"></i> {% trans "Выбранный датасет" %}
                             </h5>
                             <div class="card bg-dark border-secondary">
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-8">
                                             <div class="mb-3">
-                                                <label class="form-label text-white">ID репозитория</label>
+                                                <label class="form-label text-white">{% trans "ID репозитория" %}</label>
                                                 <input type="text" class="form-control bg-dark text-white border-secondary" id="selectedRepoId" readonly>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label text-white">Название датасета (в системе)</label>
-                                                <input type="text" class="form-control bg-dark text-white border-secondary" id="selectedDatasetName" placeholder="Автоматически из repo_id">
+                                                <label class="form-label text-white">{% trans "Название датасета (в системе)" %}</label>
+                                                <input type="text" class="form-control bg-dark text-white border-secondary" id="selectedDatasetName" placeholder="{% trans 'Автоматически из repo_id' %}">
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label text-white">Описание (необязательно)</label>
+                                                <label class="form-label text-white">{% trans "Описание (необязательно)" %}</label>
                                                 <textarea class="form-control bg-dark text-white border-secondary" id="selectedDescription" rows="2"></textarea>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="mb-3">
-                                                <label class="form-label text-white">Конфигурация (опционально)</label>
+                                                <label class="form-label text-white">{% trans "Конфигурация (опционально)" %}</label>
                                                 <input type="text" class="form-control bg-dark text-white border-secondary" id="selectedConfig" placeholder="default">
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label text-white">Раздел</label>
+                                                <label class="form-label text-white">{% trans "Раздел" %}</label>
                                                 <select class="form-select bg-dark text-white border-secondary" id="selectedSplit">
                                                     <option value="train">train</option>
                                                     <option value="validation">validation</option>
@@ -359,7 +360,7 @@
                                             <div class="mt-4">
                                                 <div class="validation-indicator d-none" id="validationStatus"></div>
                                                 <button type="button" class="btn btn-primary w-100 mt-3" id="validateDatasetBtn">
-                                                    <i class="bi bi-check-circle"></i> Проверить датасет
+                                                    <i class="bi bi-check-circle"></i> {% trans "Проверить датасет" %}
                                                 </button>
                                             </div>
                                         </div>
@@ -371,10 +372,10 @@
                         <!-- Кнопки отправки -->
                         <div class="d-flex justify-content-between mt-5 pt-3 border-top border-secondary">
                             <a href="{% url 'hf_dataset_list' %}" class="btn btn-outline-secondary btn-lg">
-                                <i class="bi bi-arrow-left me-2"></i> Отмена
+                                <i class="bi bi-arrow-left me-2"></i> {% trans "Отмена" %}
                             </a>
                             <button type="submit" class="btn btn-primary btn-lg px-5" id="submitBtn" disabled>
-                                <i class="bi bi-cloud-download me-2"></i> Импортировать датасет
+                                <i class="bi bi-cloud-download me-2"></i> {% trans "Импортировать датасет" %}
                             </button>
                         </div>
                     </form>
@@ -389,11 +390,11 @@
     <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header bg-dark text-white">
             <i class="bi bi-info-circle me-2"></i>
-            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <strong class="me-auto" id="toastTitle">{% trans "Уведомление" %}</strong>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body bg-dark text-white" id="toastMessage">
-            Сообщение
+            {% trans "Сообщение" %}
         </div>
     </div>
 </div>
@@ -460,9 +461,9 @@ async function loadTopDatasets(showAll = false) {
         <div class="col-12">
             <div class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Загрузка...</span>
+                    <span class="visually-hidden">{% trans "Загрузка..." %}</span>
                 </div>
-                <p class="text-muted mt-2">Загружаем популярные датасеты...</p>
+                <p class="text-muted mt-2">{% trans "Загружаем популярные датасеты..." %}</p>
             </div>
         </div>
     `;
@@ -480,11 +481,11 @@ async function loadTopDatasets(showAll = false) {
             renderTopDatasets(data.results);
             title.textContent = `Топ-${data.results.length} самых скачиваемых датасетов`;
         } else {
-            container.innerHTML = `<div class="col-12"><div class="alert alert-info">Не найдено популярных датасетов</div></div>`;
+            container.innerHTML = `<div class="col-12"><div class="alert alert-info">{% trans "Не найдено популярных датасетов" %}</div></div>`;
         }
     } catch (error) {
         console.error(error);
-        container.innerHTML = `<div class="col-12"><div class="alert alert-danger">Ошибка загрузки популярных датасетов</div></div>`;
+        container.innerHTML = `<div class="col-12"><div class="alert alert-danger">{% trans "Ошибка загрузки популярных датасетов" %}</div></div>`;
     }
 }
 
@@ -500,16 +501,16 @@ function renderTopDatasets(datasets) {
                     <div class="dataset-name">${escapeHtml(ds.name)}</div>
                     <div class="dataset-author">${escapeHtml(ds.author)}</div>
                     <div class="dataset-stats">
-                        <div class="dataset-stat-item" title="Загрузки">
+                        <div class="dataset-stat-item" title="{% trans 'Загрузки' %}">
                             <i class="bi bi-download"></i> ${formatNumber(ds.downloads || 0)}
                         </div>
-                        <div class="dataset-stat-item" title="Лайки">
+                        <div class="dataset-stat-item" title="{% trans 'Лайки' %}">
                             <i class="bi bi-heart"></i> ${formatNumber(ds.likes || 0)}
                         </div>
                     </div>
                     <div class="mt-3">
                         <button class="btn btn-sm btn-outline-primary w-100 select-dataset-btn" data-dataset-id="${ds.id}">
-                            <i class="bi bi-check-lg me-1"></i> Выбрать
+                            <i class="bi bi-check-lg me-1"></i> {% trans "Выбрать" %}
                         </button>
                     </div>
                 </div>
@@ -575,9 +576,9 @@ function showSearchLoading() {
     document.getElementById('searchResults').innerHTML = `
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Загрузка...</span>
+                <span class="visually-hidden">{% trans "Загрузка..." %}</span>
             </div>
-            <p class="text-muted mt-2">Ищем датасеты...</p>
+            <p class="text-muted mt-2">{% trans "Ищем датасеты..." %}</p>
         </div>
     `;
 }
@@ -607,7 +608,7 @@ function displaySearchResults(results, total, page) {
                     </div>
                     <div>
                         <button class="btn btn-sm ${isSelected ? 'btn-success' : 'btn-outline-primary'} select-search-result-btn" data-dataset-id="${ds.id}">
-                            ${isSelected ? '<i class="bi bi-check-lg"></i> Выбран' : '<i class="bi bi-plus-lg"></i> Выбрать'}
+                            ${isSelected ? '<i class="bi bi-check-lg"></i> {% trans "Выбран' : '" %}<i class="bi bi-plus-lg"></i> Выбрать'}
                         </button>
                     </div>
                 </div>
@@ -654,8 +655,8 @@ function showNoSearchResults() {
     document.getElementById('searchResults').innerHTML = `
         <div class="text-center py-5">
             <i class="bi bi-search display-4 text-muted mb-3"></i>
-            <p class="text-muted">Не найдено датасетов по вашему запросу</p>
-            <small class="text-muted">Попробуйте изменить запрос или фильтры</small>
+            <p class="text-muted">{% trans "Не найдено датасетов по вашему запросу" %}</p>
+            <small class="text-muted">{% trans "Попробуйте изменить запрос или фильтры" %}</small>
         </div>
     `;
     document.getElementById('searchPagination').classList.add('d-none');
@@ -666,8 +667,8 @@ function showSearchError() {
     document.getElementById('searchResults').innerHTML = `
         <div class="text-center py-5">
             <i class="bi bi-exclamation-triangle display-4 text-danger mb-3"></i>
-            <p class="text-danger">Ошибка при поиске датасетов</p>
-            <small class="text-muted">Попробуйте позже</small>
+            <p class="text-danger">{% trans "Ошибка при поиске датасетов" %}</p>
+            <small class="text-muted">{% trans "Попробуйте позже" %}</small>
         </div>
     `;
 }
@@ -793,8 +794,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('searchResults').innerHTML = `
             <div class="text-center text-muted py-5">
                 <i class="bi bi-search display-4 mb-3"></i>
-                <p>Начните поиск датасетов на Hugging Face Hub</p>
-                <small class="text-muted">Или выберите из популярных ниже</small>
+                <p>{% trans "Начните поиск датасетов на Hugging Face Hub" %}</p>
+                <small class="text-muted">{% trans "Или выберите из популярных ниже" %}</small>
             </div>
         `;
         document.getElementById('searchPagination').classList.add('d-none');
@@ -812,7 +813,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('refreshTopDatasets').addEventListener('click', () => loadTopDatasets(showAllTop));
     document.getElementById('toggleAllDatasets').addEventListener('click', function() {
         showAllTop = !showAllTop;
-        this.innerHTML = showAllTop ? '<i class="bi bi-grid-3x3"></i> Показать 5' : '<i class="bi bi-grid"></i> Показать все';
+        this.innerHTML = showAllTop ? '<i class="bi bi-grid-3x3"></i> {% trans "Показать 5' : '" %}<i class="bi bi-grid"></i> Показать все';
         loadTopDatasets(showAllTop);
     });
 

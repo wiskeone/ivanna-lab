@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Редактирование {{ model.name }} - Ivanna Lab{% endblock %}
@@ -9,14 +10,14 @@
         <div class="col-12">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'model_list' %}">Модели</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'model_list' %}">{% trans "Модели" %}</a></li>
                     <li class="breadcrumb-item"><a href="{% url 'model_detail' model.id %}">{{ model.name }}</a></li>
-                    <li class="breadcrumb-item active">Редактирование</li>
+                    <li class="breadcrumb-item active">{% trans "Редактирование" %}</li>
                 </ol>
             </nav>
             
             <h1 class="h3 mb-0">
-                <i class="bi bi-gear"></i> Редактирование конфигурации
+                <i class="bi bi-gear"></i> {% trans "Редактирование конфигурации" %}
                 <small class="text-muted">{{ model.name }}</small>
             </h1>
         </div>
@@ -26,7 +27,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Конфигурация загрузки модели</h5>
+                    <h5 class="card-title mb-0">{% trans "Конфигурация загрузки модели" %}</h5>
                 </div>
                 <div class="card-body">
                     <form method="post" id="configForm">
@@ -35,12 +36,12 @@
                         {% if form.errors %}
                         <div class="alert alert-danger">
                             <i class="bi bi-exclamation-triangle"></i>
-                            Исправьте ошибки в форме
+                            {% trans "Исправьте ошибки в форме" %}
                         </div>
                         {% endif %}
                         
                         <div class="mb-3">
-                            <label class="form-label">Имя модели в системе</label>
+                            <label class="form-label">{% trans "Имя модели в системе" %}</label>
                             {{ form.name }}
                             {% if form.name.errors %}
                             <div class="text-danger small">{{ form.name.errors }}</div>
@@ -48,10 +49,10 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Конфигурация загрузки (JSON)</label>
+                            <label class="form-label">{% trans "Конфигурация загрузки (JSON)" %}</label>
                             {{ form.loader_config }}
                             <div class="form-text">
-                                Конфигурация в формате JSON. Будьте осторожны при редактировании.
+                                {% trans "Конфигурация в формате JSON. Будьте осторожны при редактировании." %}
                             </div>
                             {% if form.loader_config.errors %}
                             <div class="text-danger small">{{ form.loader_config.errors }}</div>
@@ -60,19 +61,19 @@
                         
                         <div class="alert alert-warning">
                             <i class="bi bi-exclamation-triangle"></i>
-                            После изменения конфигурации потребуется перезагрузить модель.
+                            {% trans "После изменения конфигурации потребуется перезагрузить модель." %}
                         </div>
                         
                         <div class="mt-4">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save"></i> Сохранить изменения
+                                <i class="bi bi-save"></i> {% trans "Сохранить изменения" %}
                             </button>
                             <a href="{% url 'model_detail' model.id %}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> Отмена
+                                <i class="bi bi-x-circle"></i> {% trans "Отмена" %}
                             </a>
                             {% if model.status == 'LOADED' %}
                             <button type="button" class="btn btn-warning" onclick="reloadModel()">
-                                <i class="bi bi-arrow-clockwise"></i> Перезагрузить модель
+                                <i class="bi bi-arrow-clockwise"></i> {% trans "Перезагрузить модель" %}
                             </button>
                             {% endif %}
                         </div>
@@ -84,17 +85,17 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Справка по конфигурации</h5>
+                    <h5 class="card-title mb-0">{% trans "Справка по конфигурации" %}</h5>
                 </div>
                 <div class="card-body">
-                    <h6>Основные параметры:</h6>
+                    <h6>{% trans "Основные параметры:" %}</h6>
                     <ul class="small">
-                        <li><code>trust_remote_code</code>: true для Qwen, false для других</li>
-                        <li><code>quantization</code>: "4bit" или "float16"</li>
-                        <li><code>device_map</code>: "auto" для автоматического распределения</li>
+                        <li><code>trust_remote_code</code>{% trans ": true для Qwen, false для других" %}</li>
+                        <li><code>quantization</code>{% trans ": \"4bit\" или \"float16\"" %}</li>
+                        <li><code>device_map</code>{% trans ": \"auto\" для автоматического распределения" %}</li>
                     </ul>
                     
-                    <h6>Пример для Qwen:</h6>
+                    <h6>{% trans "Пример для Qwen:" %}</h6>
                     <pre class="code-block small">{
   "trust_remote_code": true,
   "quantization": "4bit",
@@ -104,7 +105,7 @@
   }
 }</pre>
                     
-                    <h6>Пример для Llama:</h6>
+                    <h6>{% trans "Пример для Llama:" %}</h6>
                     <pre class="code-block small">{
   "trust_remote_code": false,
   "quantization": "4bit",
@@ -118,18 +119,18 @@
             
             <div class="card mt-3">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Действия</h5>
+                    <h5 class="card-title mb-0">{% trans "Действия" %}</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <button class="btn btn-outline-info" onclick="validateConfig()">
-                            <i class="bi bi-check-circle"></i> Проверить JSON
+                            <i class="bi bi-check-circle"></i> {% trans "Проверить JSON" %}
                         </button>
                         <button class="btn btn-outline-secondary" onclick="formatConfig()">
-                            <i class="bi bi-code-slash"></i> Форматировать JSON
+                            <i class="bi bi-code-slash"></i> {% trans "Форматировать JSON" %}
                         </button>
                         <button class="btn btn-outline-danger" onclick="resetConfig()">
-                            <i class="bi bi-arrow-counterclockwise"></i> Сбросить к значениям по умолчанию
+                            <i class="bi bi-arrow-counterclockwise"></i> {% trans "Сбросить к значениям по умолчанию" %}
                         </button>
                     </div>
                 </div>

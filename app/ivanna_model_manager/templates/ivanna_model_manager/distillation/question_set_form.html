@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Создание набора для дистилляции{% endblock %}
@@ -11,7 +12,7 @@
             <div class="card">
                 <div class="card-header bg-transparent border-bottom">
                     <h5 class="mb-0">
-                        <i class="bi bi-distribute-vertical me-2"></i>Новый набор
+                        <i class="bi bi-distribute-vertical me-2"></i>{% trans "Новый набор" %}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -19,28 +20,28 @@
                         {% csrf_token %}
                         
                         <div class="mb-3">
-                            <label for="id_name" class="form-label">Название *</label>
+                            <label for="id_name" class="form-label">{% trans "Название *" %}</label>
                             <input type="text" name="name" class="form-control" id="id_name" required>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_description" class="form-label">Описание</label>
+                            <label for="id_description" class="form-label">{% trans "Описание" %}</label>
                             <textarea name="description" class="form-control" id="id_description" rows="3"></textarea>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_collection" class="form-label">Коллекция (опционально)</label>
+                            <label for="id_collection" class="form-label">{% trans "Коллекция (опционально)" %}</label>
                             <select name="collection" class="form-select" id="id_collection">
-                                <option value="">--- Выберите коллекцию ---</option>
+                                <option value="">{% trans "--- Выберите коллекцию ---" %}</option>
                                 {% for coll in collections %}
                                 <option value="{{ coll.id }}">{{ coll.name }}</option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text">Если выбрать коллекцию, можно будет легко загрузить все её чанки</div>
+                            <div class="form-text">{% trans "Если выбрать коллекцию, можно будет легко загрузить все её чанки" %}</div>
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Параметры генерации по умолчанию (можно будет переопределить в группах)</label>
+                            <label class="form-label">{% trans "Параметры генерации по умолчанию (можно будет переопределить в группах)" %}</label>
                             <div class="row">
                                 <div class="col-md-4">
                                     <input type="text" name="default_generation_config" class="form-control" 
@@ -48,17 +49,17 @@
                                            value='{"max_tokens":512,"temperature":0.7,"top_p":0.9,"top_k":50}'>
                                 </div>
                                 <div class="col-md-8">
-                                    <small class="text-muted">JSON-объект с параметрами: max_tokens, temperature, top_p, top_k, repetition_penalty, prompt_template</small>
+                                    <small class="text-muted">{% trans "JSON-объект с параметрами: max_tokens, temperature, top_p, top_k, repetition_penalty, prompt_template" %}</small>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'distillation_question_set_list' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>Назад
+                                <i class="bi bi-arrow-left me-1"></i>{% trans "Назад" %}
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save me-1"></i>Сохранить и перейти к группам
+                                <i class="bi bi-save me-1"></i>{% trans "Сохранить и перейти к группам" %}
                             </button>
                         </div>
                     </form>

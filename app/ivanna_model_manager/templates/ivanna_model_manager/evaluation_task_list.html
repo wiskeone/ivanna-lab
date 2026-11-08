@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Задачи оценки{% endblock %}
@@ -11,12 +12,12 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2>
-                        <i class="bi bi-clipboard-data me-2"></i>Задачи оценки
+                        <i class="bi bi-clipboard-data me-2"></i>{% trans "Задачи оценки" %}
                     </h2>
-                    <p class="text-muted mb-0">История и статус выполнения задач оценки</p>
+                    <p class="text-muted mb-0">{% trans "История и статус выполнения задач оценки" %}</p>
                 </div>
                 <a href="{% url 'evaluation_task_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-1"></i>Новая задача
+                    <i class="bi bi-plus-circle me-1"></i>{% trans "Новая задача" %}
                 </a>
             </div>
             
@@ -28,7 +29,7 @@
                             <form method="get" class="d-flex">
                                 <input type="text" name="q" 
                                        class="form-control me-2" 
-                                       placeholder="Поиск по названию..."
+                                       placeholder="{% trans 'Поиск по названию...' %}"
                                        value="{{ request.GET.q }}">
                                 <button type="submit" class="btn btn-outline-primary">
                                     <i class="bi bi-search"></i>
@@ -40,7 +41,7 @@
                                 <div class="btn-group ms-auto">
                                     <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}" 
                                        class="btn btn-outline-secondary {% if not request.GET.status %}active{% endif %}">
-                                        Все
+                                        {% trans "Все" %}
                                     </a>
                                     {% for status_code, status_name in status_choices %}
                                     <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}status={{ status_code }}" 
@@ -87,14 +88,14 @@
                                         <li>
                                             <a class="dropdown-item" 
                                                href="{% url 'evaluation_task_detail' task.id %}">
-                                                <i class="bi bi-eye me-2"></i>Просмотр
+                                                <i class="bi bi-eye me-2"></i>{% trans "Просмотр" %}
                                             </a>
                                         </li>
                                         {% if task.status == 'COMPLETED' %}
                                         <li>
                                             <a class="dropdown-item" 
                                                href="{% url 'evaluation_task_compare' task.id %}">
-                                                <i class="bi bi-bar-chart me-2"></i>Сравнить
+                                                <i class="bi bi-bar-chart me-2"></i>{% trans "Сравнить" %}
                                             </a>
                                         </li>
                                         {% endif %}
@@ -103,7 +104,7 @@
                                             <a class="dropdown-item text-warning" 
                                                href="#"
                                                onclick="restartTask({{ task.id }}, '{{ task.name }}')">
-                                                <i class="bi bi-arrow-clockwise me-2"></i>Перезапустить
+                                                <i class="bi bi-arrow-clockwise me-2"></i>{% trans "Перезапустить" %}
                                             </a>
                                         </li>
                                         {% endif %}
@@ -112,7 +113,7 @@
                                             <a class="dropdown-item text-danger" 
                                                href="#"
                                                onclick="deleteTask({{ task.id }}, '{{ task.name }}')">
-                                                <i class="bi bi-trash me-2"></i>Удалить
+                                                <i class="bi bi-trash me-2"></i>{% trans "Удалить" %}
                                             </a>
                                         </li>
                                     </ul>
@@ -126,7 +127,7 @@
                             
                             <div class="row small mb-3">
                                 <div class="col-6">
-                                    <div class="text-muted">Датасет</div>
+                                    <div class="text-muted">{% trans "Датасет" %}</div>
                                     <div class="fw-bold">
                                         {% if task.dataset %}
                                         <a href="{% url 'evaluation_dataset_detail' task.dataset.id %}" 
@@ -134,12 +135,12 @@
                                             {{ task.dataset.name }}
                                         </a>
                                         {% else %}
-                                        <span class="text-danger">Удален</span>
+                                        <span class="text-danger">{% trans "Удален" %}</span>
                                         {% endif %}
                                     </div>
                                 </div>
                                 <div class="col-6">
-                                    <div class="text-muted">Моделей</div>
+                                    <div class="text-muted">{% trans "Моделей" %}</div>
                                     <div class="fw-bold">{{ task.total_models }}</div>
                                 </div>
                             </div>
@@ -147,7 +148,7 @@
                             {% if task.status == 'RUNNING' %}
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between small mb-1">
-                                    <span>Прогресс</span>
+                                    <span>{% trans "Прогресс" %}</span>
                                     <span>{{ task.progress|floatformat:1 }}%</span>
                                 </div>
                                 <div class="progress" style="height: 6px;">
@@ -165,7 +166,7 @@
                             
                             {% if task.status == 'COMPLETED' and task.summary_metrics %}
                             <div class="mb-3">
-                                <h6 class="small mb-2">Лучшие модели:</h6>
+                                <h6 class="small mb-2">{% trans "Лучшие модели:" %}</h6>
                                 <div class="d-flex flex-wrap gap-1">
                                     {% for model_id, metrics in task.summary_metrics.items %}
                                     <span class="badge bg-light text-dark">
@@ -198,12 +199,12 @@
                                 <div>
                                     <a href="{% url 'evaluation_task_detail' task.id %}" 
                                        class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye me-1"></i>Подробнее
+                                        <i class="bi bi-eye me-1"></i>{% trans "Подробнее" %}
                                     </a>
                                     {% if task.status == 'COMPLETED' %}
                                     <a href="{% url 'evaluation_task_compare' task.id %}" 
                                        class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-bar-chart me-1"></i>Сравнить
+                                        <i class="bi bi-bar-chart me-1"></i>{% trans "Сравнить" %}
                                     </a>
                                     {% endif %}
                                 </div>
@@ -264,10 +265,10 @@
             {% else %}
             <div class="text-center py-5">
                 <i class="bi bi-clipboard-x display-4 text-muted mb-3"></i>
-                <h5 class="text-muted mb-3">Нет задач оценки</h5>
-                <p class="text-muted mb-4">Создайте первую задачу оценки моделей</p>
+                <h5 class="text-muted mb-3">{% trans "Нет задач оценки" %}</h5>
+                <p class="text-muted mb-4">{% trans "Создайте первую задачу оценки моделей" %}</p>
                 <a href="{% url 'evaluation_task_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-1"></i>Создать задачу
+                    <i class="bi bi-plus-circle me-1"></i>{% trans "Создать задачу" %}
                 </a>
             </div>
             {% endif %}

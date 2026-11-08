@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -119,12 +120,12 @@
         <div>
             <h2 class="mb-1">
                 <i class="bi bi-chat-dots me-2" style="color: var(--primary-color);"></i>
-                Мои чат-сессии
+                {% trans "Мои чат-сессии" %}
             </h2>
-            <p class="text-muted mb-0">Управление вашими диалогами с AI моделями</p>
+            <p class="text-muted mb-0">{% trans "Управление вашими диалогами с AI моделями" %}</p>
         </div>
         <a href="{% url 'chat_view' %}?force_new=true" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Новая сессия
+            <i class="bi bi-plus-circle me-1"></i> {% trans "Новая сессия" %}
         </a>
     </div>
 
@@ -151,7 +152,7 @@
                     {% if session.checkpoint %}
                     <div class="small">
                         <i class="bi bi-cpu me-1" style="color: var(--primary-color);"></i>
-                        Модель: <span class="text-white">{{ session.checkpoint.display_name }}</span>
+                        {% trans "Модель:" %} <span class="text-white">{{ session.checkpoint.display_name }}</span>
                     </div>
                     {% endif %}
                 </div>
@@ -162,13 +163,13 @@
                     </span>
                     <div class="session-actions">
                         <a href="{% url 'chat_view' session_id=session.session_id %}" 
-                           class="btn-icon" title="Продолжить">
+                           class="btn-icon" title="{% trans 'Продолжить' %}">
                             <i class="bi bi-play-circle-fill fs-5"></i>
                         </a>
                         <button class="btn-icon danger delete-session-btn" 
                                 data-session-id="{{ session.session_id }}"
                                 data-session-name="{{ session.display_name|default:'Сессию'|escapejs }}"
-                                title="Удалить">
+                                title="{% trans 'Удалить' %}">
                             <i class="bi bi-trash fs-5"></i>
                         </button>
                     </div>
@@ -182,11 +183,11 @@
         <div class="empty-state-icon">
             <i class="bi bi-chat-left-dots"></i>
         </div>
-        <h3>У вас пока нет чат-сессий</h3>
-        <p>Создайте первую сессию, чтобы начать общение с моделями.<br>
-        Вы сможете выбирать модели, включать RAG и сохранять историю диалогов.</p>
+        <h3>{% trans "У вас пока нет чат-сессий" %}</h3>
+        <p>{% trans "Создайте первую сессию, чтобы начать общение с моделями." %}<br>
+        {% trans "Вы сможете выбирать модели, включать RAG и сохранять историю диалогов." %}</p>
         <a href="{% url 'chat_view' %}?force_new=true" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Создать сессию
+            <i class="bi bi-plus-circle me-1"></i> {% trans "Создать сессию" %}
         </a>
     </div>
     {% endif %}
@@ -199,18 +200,18 @@
             <div class="modal-header border-bottom">
                 <h5 class="modal-title text-danger">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    Удаление сессии
+                    {% trans "Удаление сессии" %}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Вы уверены, что хотите удалить сессию <strong id="deleteSessionName"></strong>?</p>
-                <p class="text-muted small mb-0">Все сообщения будут удалены без возможности восстановления.</p>
+                <p>{% trans "Вы уверены, что хотите удалить сессию" %} <strong id="deleteSessionName"></strong>?</p>
+                <p class="text-muted small mb-0">{% trans "Все сообщения будут удалены без возможности восстановления." %}</p>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                    <i class="bi bi-trash me-1"></i> Удалить
+                    <i class="bi bi-trash me-1"></i> {% trans "Удалить" %}
                 </button>
             </div>
         </div>

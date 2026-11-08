@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load custom_filters %}
 
 {% block title %}Дашборд{% endblock %}
@@ -9,22 +10,22 @@
     <!-- Быстрые действия -->
     <div class="quick-actions-bar">
         <a href="{% url 'model_create' %}" class="action-link">
-            <i class="bi bi-cloud-upload"></i>Загрузить модель
+            <i class="bi bi-cloud-upload"></i>{% trans "Загрузить модель" %}
         </a>
         <a href="{% url 'merge_create' %}" class="action-link">
-            <i class="bi bi-arrow-left-right"></i>Слияние
+            <i class="bi bi-arrow-left-right"></i>{% trans "Слияние" %}
         </a>
         <a href="{% url 'experiment_list' %}" class="action-link">
-            <i class="bi bi-flask"></i>Эксперименты
+            <i class="bi bi-flask"></i>{% trans "Эксперименты" %}
         </a>
         <a href="{% url 'chat_sessions_management' %}" class="action-link">
-            <i class="bi bi-chat-dots"></i>Чат-сессии
+            <i class="bi bi-chat-dots"></i>{% trans "Чат-сессии" %}
         </a>
         <a href="{% url 'fine_tuning_dashboard' %}" class="action-link">
             <i class="bi bi-gear-wide-connected"></i>Fine-tuning
         </a>
         <a href="{% url 'evaluation_dashboard' %}" class="action-link">
-            <i class="bi bi-clipboard-check"></i>Оценка
+            <i class="bi bi-clipboard-check"></i>{% trans "Оценка" %}
         </a>
     </div>
 
@@ -33,7 +34,7 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-cpu"></i></div>
-                <div class="stat-title">Всего моделей</div>
+                <div class="stat-title">{% trans "Всего моделей" %}</div>
             </div>
             <div class="stat-value">{{ total_models|default:"0" }}</div>
             <div class="stat-subtitle">
@@ -54,7 +55,7 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-                <div class="stat-title">Мои задачи</div>
+                <div class="stat-title">{% trans "Мои задачи" %}</div>
             </div>
             <div class="stat-value">{{ my_evaluation_tasks_active|add:my_ft_jobs_active|default:"0" }}</div>
             <div class="stat-subtitle">
@@ -67,16 +68,16 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-flask"></i></div>
-                <div class="stat-title">Эксперименты</div>
+                <div class="stat-title">{% trans "Эксперименты" %}</div>
             </div>
             <div class="stat-value">{{ active_experiments|default:"0" }}</div>
-            <div class="stat-subtitle">активных экспериментов</div>
+            <div class="stat-subtitle">{% trans "активных экспериментов" %}</div>
         </div>
 
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
-                <div class="stat-title">Завершено</div>
+                <div class="stat-title">{% trans "Завершено" %}</div>
             </div>
             <div class="stat-value">{{ my_evaluation_tasks_completed|add:my_ft_jobs_completed|default:"0" }}</div>
             <div class="stat-subtitle">
@@ -89,7 +90,7 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-collection"></i></div>
-                <div class="stat-title">Мои RAG</div>
+                <div class="stat-title">{% trans "Мои RAG" %}</div>
             </div>
             <div class="stat-value">{{ my_collections_count|default:"0" }}</div>
             <div class="stat-subtitle">
@@ -100,7 +101,7 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>
-                <div class="stat-title">Мои чаты</div>
+                <div class="stat-title">{% trans "Мои чаты" %}</div>
             </div>
             <div class="stat-value">{{ my_chat_sessions|default:"0" }}</div>
             <div class="stat-subtitle">
@@ -111,7 +112,7 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-vector-pen"></i></div>
-                <div class="stat-title">Эмбеддинги</div>
+                <div class="stat-title">{% trans "Эмбеддинги" %}</div>
             </div>
             <div class="stat-value">{{ embedding_total|default:"0" }}</div>
             <div class="stat-subtitle">
@@ -126,7 +127,7 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-distribute-vertical"></i></div>
-                <div class="stat-title">Дистилляция</div>
+                <div class="stat-title">{% trans "Дистилляция" %}</div>
             </div>
             <div class="stat-value">{{ my_question_sets_active|add:my_answer_jobs_active|default:"0" }}</div>
             <div class="stat-subtitle">
@@ -144,17 +145,17 @@
                 <div class="section-header">
                     <h3 class="section-title">
                         <i class="bi bi-list-task"></i>
-                        Мои последние задачи
+                        {% trans "Мои последние задачи" %}
                     </h3>
                     <div class="section-actions">
                         <a href="{% url 'evaluation_task_list' %}" class="action-link">
-                            Все оценки
+                            {% trans "Все оценки" %}
                         </a>
                         <a href="{% url 'fine_tuning_jobs' %}" class="action-link">
-                            Все fine-tuning
+                            {% trans "Все fine-tuning" %}
                         </a>
                         <a href="{% url 'distillation_question_set_list' %}" class="action-link">
-                            Все наборы
+                            {% trans "Все наборы" %}
                         </a>
                     </div>
                 </div>
@@ -193,9 +194,9 @@
                     {% else %}
                         <div class="item-row text-center py-4">
                             <i class="bi bi-inboxes display-4 text-muted"></i>
-                            <p class="mt-3 text-muted">У вас нет активных задач</p>
+                            <p class="mt-3 text-muted">{% trans "У вас нет активных задач" %}</p>
                             <a href="{% url 'evaluation_task_create' %}" class="empty-action-link">
-                                <i class="bi bi-plus-circle"></i> Создать задачу оценки
+                                <i class="bi bi-plus-circle"></i> {% trans "Создать задачу оценки" %}
                             </a>
                         </div>
                     {% endif %}
@@ -211,11 +212,11 @@
                 <div class="section-header">
                     <h3 class="section-title">
                         <i class="bi bi-cloud-download"></i>
-                        Недавние загрузки эмбеддингов
+                        {% trans "Недавние загрузки эмбеддингов" %}
                     </h3>
                     <div class="section-actions">
                         <a href="{% url 'embedding_model_list' %}" class="action-link">
-                            <i class="bi bi-list"></i> Все модели
+                            <i class="bi bi-list"></i> {% trans "Все модели" %}
                         </a>
                     </div>
                 </div>
@@ -257,9 +258,9 @@
                     {% else %}
                         <div class="item-row text-center py-4">
                             <i class="bi bi-inboxes display-4 text-muted"></i>
-                            <p class="mt-3 text-muted">Нет активных загрузок эмбеддингов</p>
+                            <p class="mt-3 text-muted">{% trans "Нет активных загрузок эмбеддингов" %}</p>
                             <a href="{% url 'embedding_model_create' %}" class="empty-action-link">
-                                <i class="bi bi-plus-circle"></i> Добавить модель
+                                <i class="bi bi-plus-circle"></i> {% trans "Добавить модель" %}
                             </a>
                         </div>
                     {% endif %}
@@ -276,14 +277,14 @@
                 <div class="section-header">
                     <h3 class="section-title">
                         <i class="bi bi-clock-history"></i>
-                        Последние модели
+                        {% trans "Последние модели" %}
                     </h3>
                     <div class="section-actions">
                         <a href="{% url 'model_list' %}" class="action-link">
-                            <i class="bi bi-list"></i> Все
+                            <i class="bi bi-list"></i> {% trans "Все" %}
                         </a>
                         <a href="{% url 'model_create' %}" class="action-link">
-                            <i class="bi bi-plus-circle"></i> Добавить
+                            <i class="bi bi-plus-circle"></i> {% trans "Добавить" %}
                         </a>
                     </div>
                 </div>
@@ -313,9 +314,9 @@
                     {% else %}
                         <div class="item-row text-center py-4">
                             <i class="bi bi-inboxes display-4 text-muted"></i>
-                            <p class="mt-3 text-muted">Нет загруженных моделей</p>
+                            <p class="mt-3 text-muted">{% trans "Нет загруженных моделей" %}</p>
                             <a href="{% url 'model_create' %}" class="empty-action-link">
-                                <i class="bi bi-plus-circle"></i> Загрузить модель
+                                <i class="bi bi-plus-circle"></i> {% trans "Загрузить модель" %}
                             </a>
                         </div>
                     {% endif %}
@@ -330,7 +331,7 @@
                 <div class="section-header">
                     <h3 class="section-title">
                         <i class="bi bi-hourglass-split"></i>
-                        Активные задачи слияния
+                        {% trans "Активные задачи слияния" %}
                     </h3>
                 </div>
                 <div class="items-list">

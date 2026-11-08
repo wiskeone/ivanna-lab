@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load custom_filters %}
 
@@ -12,28 +13,28 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-cpu"></i></div>
-                <div class="stat-title">Всего моделей</div>
+                <div class="stat-title">{% trans "Всего моделей" %}</div>
             </div>
             <div class="stat-value">{{ total_models }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-                <div class="stat-title">Загружено в память</div>
+                <div class="stat-title">{% trans "Загружено в память" %}</div>
             </div>
             <div class="stat-value">{{ loaded_models }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-arrow-down-up"></i></div>
-                <div class="stat-title">Квантизировано</div>
+                <div class="stat-title">{% trans "Квантизировано" %}</div>
             </div>
             <div class="stat-value">{{ quantized_models }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon"><i class="bi bi-hdd"></i></div>
-                <div class="stat-title">Общий размер</div>
+                <div class="stat-title">{% trans "Общий размер" %}</div>
             </div>
             <div class="stat-value">{{ total_size_gb }} GB</div>
         </div>
@@ -44,19 +45,19 @@
         <div>
             <h2 class="mb-1">
                 <i class="bi bi-cpu me-2" style="color: var(--primary-color);"></i>
-                Список моделей
+                {% trans "Список моделей" %}
             </h2>
-            <p class="text-muted mb-0">Управление загруженными и доступными моделями</p>
+            <p class="text-muted mb-0">{% trans "Управление загруженными и доступными моделями" %}</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'model_local_create' %}" class="btn btn-primary">
-                </i> Добавить модель
+                </i> {% trans "Добавить модель" %}
             </a>
             <a href="{% url 'model_create' %}" class="btn btn-primary">
-                </i> Загрузить с Hugging Face
+                </i> {% trans "Загрузить с Hugging Face" %}
             </a>
             <a href="{% url 'experiment_list' %}" class="btn btn-primary">
-                <i class="bi bi-flask me-1"></i> Эксперименты
+                <i class="bi bi-flask me-1"></i> {% trans "Эксперименты" %}
             </a>
         </div>
     </div>
@@ -66,53 +67,53 @@
         <form method="get">
             <div class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label small text-muted">Тип модели</label>
+                    <label class="form-label small text-muted">{% trans "Тип модели" %}</label>
                     <select name="model_type" class="form-select">
-                        <option value="">Все типы</option>
+                        <option value="">{% trans "Все типы" %}</option>
                         {% for value, label in model_types %}
                         <option value="{{ value }}" {% if current_filters.model_type == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small text-muted">Статус</label>
+                    <label class="form-label small text-muted">{% trans "Статус" %}</label>
                     <select name="status" class="form-select">
-                        <option value="">Все статусы</option>
+                        <option value="">{% trans "Все статусы" %}</option>
                         {% for value, label in status_choices %}
                         <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small text-muted">Эксперимент</label>
+                    <label class="form-label small text-muted">{% trans "Эксперимент" %}</label>
                     <select name="experiment_id" class="form-select">
-                        <option value="">Все эксперименты</option>
+                        <option value="">{% trans "Все эксперименты" %}</option>
                         {% for exp in experiments %}
                         <option value="{{ exp.id }}" {% if current_filters.experiment_id == exp.id|stringformat:"s" %}selected{% endif %}>{{ exp.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small text-muted">Сортировка</label>
+                    <label class="form-label small text-muted">{% trans "Сортировка" %}</label>
                     <select name="sort_by" class="form-select">
-                        <option value="-created_at" {% if current_filters.sort_by == '-created_at' %}selected{% endif %}>Сначала новые</option>
-                        <option value="created_at" {% if current_filters.sort_by == 'created_at' %}selected{% endif %}>Сначала старые</option>
-                        <option value="name" {% if current_filters.sort_by == 'name' %}selected{% endif %}>По имени А-Я</option>
-                        <option value="-name" {% if current_filters.sort_by == '-name' %}selected{% endif %}>По имени Я-А</option>
-                        <option value="parameter_count" {% if current_filters.sort_by == 'parameter_count' %}selected{% endif %}>Меньше параметров</option>
-                        <option value="-parameter_count" {% if current_filters.sort_by == '-parameter_count' %}selected{% endif %}>Больше параметров</option>
+                        <option value="-created_at" {% if current_filters.sort_by == '-created_at' %}selected{% endif %}>{% trans "Сначала новые" %}</option>
+                        <option value="created_at" {% if current_filters.sort_by == 'created_at' %}selected{% endif %}>{% trans "Сначала старые" %}</option>
+                        <option value="name" {% if current_filters.sort_by == 'name' %}selected{% endif %}>{% trans "По имени А-Я" %}</option>
+                        <option value="-name" {% if current_filters.sort_by == '-name' %}selected{% endif %}>{% trans "По имени Я-А" %}</option>
+                        <option value="parameter_count" {% if current_filters.sort_by == 'parameter_count' %}selected{% endif %}>{% trans "Меньше параметров" %}</option>
+                        <option value="-parameter_count" {% if current_filters.sort_by == '-parameter_count' %}selected{% endif %}>{% trans "Больше параметров" %}</option>
                     </select>
                 </div>
                 <div class="col-md-8">
-                    <label class="form-label small text-muted">Поиск</label>
-                    <input type="text" name="q" class="form-control" placeholder="Поиск по имени, описанию..." value="{{ current_filters.q }}">
+                    <label class="form-label small text-muted">{% trans "Поиск" %}</label>
+                    <input type="text" name="q" class="form-control" placeholder="{% trans 'Поиск по имени, описанию...' %}" value="{{ current_filters.q }}">
                 </div>
                 <div class="col-md-4 d-flex gap-2 align-items-end">
                     <button type="submit" class="btn btn-filter flex-grow-1">
-                        <i class="bi bi-funnel me-1"></i> Применить
+                        <i class="bi bi-funnel me-1"></i> {% trans "Применить" %}
                     </button>
                     <a href="{% url 'model_list' %}" class="btn btn-filter flex-grow-1">
-                        <i class="bi bi-x-circle me-1"></i> Сбросить
+                        <i class="bi bi-x-circle me-1"></i> {% trans "Сбросить" %}
                     </a>
                 </div>
             </div>
@@ -134,15 +135,15 @@
                 <div class="model-body">
                     <div class="model-meta">
                         <div class="model-meta-item">
-                            <span class="model-meta-label"><i class="bi bi-hash"></i> Параметры:</span>
+                            <span class="model-meta-label"><i class="bi bi-hash"></i> {% trans "Параметры:" %}</span>
                             <span class="model-meta-value">{{ model.parameter_count|floatformat:0 }}</span>
                         </div>
                         <div class="model-meta-item">
-                            <span class="model-meta-label"><i class="bi bi-hdd"></i> Размер:</span>
+                            <span class="model-meta-label"><i class="bi bi-hdd"></i> {% trans "Размер:" %}</span>
                             <span class="model-meta-value">{{ model.size_gb }} GB</span>
                         </div>
                         <div class="model-meta-item">
-                            <span class="model-meta-label"><i class="bi bi-memory"></i> Контекст:</span>
+                            <span class="model-meta-label"><i class="bi bi-memory"></i> {% trans "Контекст:" %}</span>
                             <span class="model-meta-value">{{ model.context_length }} токенов</span>
                         </div>
                     </div>
@@ -163,7 +164,7 @@
                         </span>
                         {% if model.is_safe %}
                         <span class="badge bg-success">
-                            <i class="bi bi-shield-check me-1"></i> Безопасна
+                            <i class="bi bi-shield-check me-1"></i> {% trans "Безопасна" %}
                         </span>
                         {% endif %}
                         {% if model.is_quantized %}
@@ -197,13 +198,13 @@
                 </div>
                 <div class="model-footer">
                     <a href="{% url 'model_detail' model.pk %}" class="action-link">
-                        <i class="bi bi-info-circle"></i> Детали
+                        <i class="bi bi-info-circle"></i> {% trans "Детали" %}
                     </a>
                     <a href="{% url 'model_edit' model.pk %}" class="action-link">
-                        <i class="bi bi-pencil"></i> Изменить
+                        <i class="bi bi-pencil"></i> {% trans "Изменить" %}
                     </a>
                     <a href="{% url 'model_test' model.pk %}" class="action-link">
-                        <i class="bi bi-play-circle"></i> Тест
+                        <i class="bi bi-play-circle"></i> {% trans "Тест" %}
                     </a>
                 </div>
             </div>
@@ -214,14 +215,14 @@
                 <div class="empty-state-icon">
                     <i class="bi bi-cpu"></i>
                 </div>
-                <h3>Модели не найдены</h3>
-                <p>Попробуйте изменить параметры фильтрации или создайте новую модель</p>
+                <h3>{% trans "Модели не найдены" %}</h3>
+                <p>{% trans "Попробуйте изменить параметры фильтрации или создайте новую модель" %}</p>
                 <div class="d-flex gap-2 justify-content-center">
                     <a href="{% url 'model_create' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-1"></i> Создать модель
+                        <i class="bi bi-plus-circle me-1"></i> {% trans "Создать модель" %}
                     </a>
                     <a href="{% url 'model_create' %}" class="btn btn-primary">
-                        <i class="bi bi-cloud-upload me-1"></i> Загрузить модель
+                        <i class="bi bi-cloud-upload me-1"></i> {% trans "Загрузить модель" %}
                     </a>
                 </div>
             </div>
@@ -231,7 +232,7 @@
 
     <!-- Пагинация -->
     {% if is_paginated %}
-    <nav aria-label="Навигация по страницам" class="mt-5">
+    <nav aria-label="{% trans 'Навигация по страницам' %}" class="mt-5">
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
             <li class="page-item">

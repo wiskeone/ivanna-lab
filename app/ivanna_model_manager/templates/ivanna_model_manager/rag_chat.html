@@ -1,4 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block title %}Чат с AI моделью{% endblock %}
@@ -1062,7 +1063,7 @@
                         {% endif %}
                     </span>
                     <span id="modelStatusBadge" style="display: none; margin-left: 10px;" class="badge bg-warning">
-                        <i class="bi bi-arrow-repeat spin me-1"></i> Загрузка...
+                        <i class="bi bi-arrow-repeat spin me-1"></i> {% trans "Загрузка..." %}
                     </span>
                     <span id="ragStatusBadge" style="display: none; margin-left: 10px;" class="badge bg-primary">
                         <i class="bi bi-database me-1"></i> RAG
@@ -1073,16 +1074,16 @@
         
         <div class="chat-actions-compact">
             <a href="{% url 'chat_view' %}?force_new=true" class="btn">
-                <i class="bi bi-plus-lg me-1"></i> Новая сессия
+                <i class="bi bi-plus-lg me-1"></i> {% trans "Новая сессия" %}
             </a>
             <button class="btn" data-bs-toggle="modal" data-bs-target="#modelsModal">
-                <i class="bi bi-cpu me-1"></i> Модели
+                <i class="bi bi-cpu me-1"></i> {% trans "Модели" %}
             </button>
             <button class="btn" onclick="toggleRagPanel()" id="ragToggleBtn">
                 <i class="bi bi-database me-1"></i> RAG
             </button>
             <a href="{% url 'chat_sessions_management' %}" class="btn">
-                <i class="bi bi-clock-history me-1"></i> Сессии
+                <i class="bi bi-clock-history me-1"></i> {% trans "Сессии" %}
             </a>
         </div>
     </div>
@@ -1092,12 +1093,12 @@
         <div class="d-flex align-items-center">
             <div class="spinner-border text-warning me-3" style="width: 1.5rem; height: 1.5rem;"></div>
             <div style="flex: 1;">
-                <div class="fw-bold text-warning mb-1" id="loadingMessage">Загрузка модели...</div>
+                <div class="fw-bold text-warning mb-1" id="loadingMessage">{% trans "Загрузка модели..." %}</div>
                 <div class="progress" style="height: 6px;">
                     <div id="loadingProgressBar" class="progress-bar" style="width: 0%;"></div>
                 </div>
                 <div class="d-flex justify-content-between mt-1">
-                    <span class="small text-muted" id="loadingDetails">Инициализация...</span>
+                    <span class="small text-muted" id="loadingDetails">{% trans "Инициализация..." %}</span>
                     <span class="small text-muted" id="loadingPercent">0%</span>
                 </div>
             </div>
@@ -1112,10 +1113,10 @@
         <div class="rag-header">
             <div class="rag-title">
                 <i class="bi bi-database"></i>
-                <span>Поиск по документам (RAG)</span>
+                <span>{% trans "Поиск по документам (RAG)" %}</span>
             </div>
             <div class="rag-toggle">
-                <span class="text-muted small me-2">Автоматический поиск</span>
+                <span class="text-muted small me-2">{% trans "Автоматический поиск" %}</span>
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="ragAutoSearchToggle" checked>
                 </div>
@@ -1125,13 +1126,13 @@
         <!-- Выбор коллекций -->
         <div style="margin-bottom: 12px;">
             <label class="text-muted small mb-2">
-                <i class="bi bi-collection me-1"></i> Выберите коллекции документов:
+                <i class="bi bi-collection me-1"></i> {% trans "Выберите коллекции документов:" %}
             </label>
             <div id="collectionsList" class="rag-collections">
                 <!-- Коллекции будут загружены через JS -->
                 <div class="text-center py-3">
                     <div class="spinner-border spinner-border-sm text-primary me-2"></div>
-                    <span class="text-muted small">Загрузка коллекций...</span>
+                    <span class="text-muted small">{% trans "Загрузка коллекций..." %}</span>
                 </div>
             </div>
         </div>
@@ -1139,12 +1140,12 @@
         <!-- Быстрый поиск -->
         <div style="margin-bottom: 12px;">
             <label class="text-muted small mb-2">
-                <i class="bi bi-search me-1"></i> Быстрый поиск:
+                <i class="bi bi-search me-1"></i> {% trans "Быстрый поиск:" %}
             </label>
             <div class="rag-search-input">
-                <input type="text" id="ragQuickSearch" placeholder="Введите запрос для поиска в документах...">
+                <input type="text" id="ragQuickSearch" placeholder="{% trans 'Введите запрос для поиска в документах...' %}">
                 <button onclick="performRagSearch()">
-                    <i class="bi bi-search"></i> Найти
+                    <i class="bi bi-search"></i> {% trans "Найти" %}
                 </button>
             </div>
         </div>
@@ -1212,13 +1213,13 @@
                 {% if chat_session and chat_session.checkpoint %}
                 <div class="empty-state-actions">
                     <button class="btn btn-outline-primary" onclick="insertSample('Расскажи о своих возможностях')">
-                        <i class="bi bi-info-circle me-1"></i> О модели
+                        <i class="bi bi-info-circle me-1"></i> {% trans "О модели" %}
                     </button>
                     <button class="btn btn-outline-primary" onclick="insertSample('Напиши программу на Python для сортировки списка')">
-                        <i class="bi bi-code-slash me-1"></i> Пример кода
+                        <i class="bi bi-code-slash me-1"></i> {% trans "Пример кода" %}
                     </button>
                     <button class="btn btn-outline-primary" onclick="toggleRagPanel()">
-                        <i class="bi bi-database me-1"></i> Поиск по документам
+                        <i class="bi bi-database me-1"></i> {% trans "Поиск по документам" %}
                     </button>
                 </div>
                 {% endif %}
@@ -1232,7 +1233,7 @@
                     <div class="typing-dot"></div>
                     <div class="typing-dot"></div>
                 </div>
-                <span>Модель набирает ответ...</span>
+                <span>{% trans "Модель набирает ответ..." %}</span>
             </div>
         </div>
     </div>
@@ -1241,17 +1242,17 @@
     <div class="input-container">
         <!-- Кнопки действий над полем ввода -->
         <div class="input-actions-top">
-            <button class="btn" onclick="showSettingsModal()" title="Настройки">
-                <i class="bi bi-sliders"></i> Настройки
+            <button class="btn" onclick="showSettingsModal()" title="{% trans 'Настройки' %}">
+                <i class="bi bi-sliders"></i> {% trans "Настройки" %}
             </button>
-            <button class="btn" onclick="clearChatHistory()" title="Очистить чат">
-                <i class="bi bi-trash"></i> Очистить
+            <button class="btn" onclick="clearChatHistory()" title="{% trans 'Очистить чат' %}">
+                <i class="bi bi-trash"></i> {% trans "Очистить" %}
             </button>
-            <button class="btn" onclick="exportChat()" title="Экспорт чата">
-                <i class="bi bi-download"></i> Экспорт
+            <button class="btn" onclick="exportChat()" title="{% trans 'Экспорт чата' %}">
+                <i class="bi bi-download"></i> {% trans "Экспорт" %}
             </button>
             <button class="btn btn-warning" id="forceLoadModelBtn" onclick="loadModelAndWait(CURRENT_MODEL_ID, CURRENT_MODEL_NAME)" style="display: none;">
-                <i class="bi bi-database me-1"></i> Загрузить локально
+                <i class="bi bi-database me-1"></i> {% trans "Загрузить локально" %}
             </button>
         </div>
         
@@ -1260,7 +1261,7 @@
         <div class="message-input-wrapper">
             <textarea id="messageInput" 
                       class="chat-textarea" 
-                      placeholder="Введите сообщение..." 
+                      placeholder="{% trans 'Введите сообщение...' %}" 
                       rows="1"
                       oninput="autoResize(this); updateCharCount();"></textarea>
             <div class="input-actions">
@@ -1270,34 +1271,34 @@
                 <span id="modelLoadingIndicatorSmall" style="display: none;" class="text-warning me-2">
                     <i class="bi bi-arrow-repeat spin"></i>
                 </span>
-                <button class="btn btn-outline-light btn-sm" onclick="insertSamplePrompt()" title="Вставить пример">
+                <button class="btn btn-outline-light btn-sm" onclick="insertSamplePrompt()" title="{% trans 'Вставить пример' %}">
                     <i class="bi bi-magic"></i>
                 </button>
-                <button class="send-button" id="sendButton" onclick="sendMessage()" title="Отправить (Enter)">
+                <button class="send-button" id="sendButton" onclick="sendMessage()" title="{% trans 'Отправить (Enter)' %}">
                     <i class="bi bi-send"></i>
                 </button>
             </div>
         </div>
         <div class="input-hint">
-            <span>Shift+Enter для новой строки • Enter для отправки</span>
+            <span>{% trans "Shift+Enter для новой строки • Enter для отправки" %}</span>
             <span id="charCount">0/4000</span>
         </div>
         {% else %}
         <div class="alert alert-info bg-transparent border-info text-center">
             <i class="bi bi-info-circle me-2"></i>
-            Нажмите на кнопку "Модели" и выберите модель для начала диалога
+            {% trans "Нажмите на кнопку \"Модели\" и выберите модель для начала диалога" %}
         </div>
         {% endif %}
     </div>
 </div>
 
 <!-- Кнопка открытия RAG панели (плавающая) -->
-<button class="open-rag-btn" onclick="toggleRagPanel()" title="Поиск по документам">
+<button class="open-rag-btn" onclick="toggleRagPanel()" title="{% trans 'Поиск по документам' %}">
     <i class="bi bi-database"></i>
 </button>
 
 <!-- Кнопка открытия моделей (плавающая) -->
-<button class="open-models-btn" data-bs-toggle="modal" data-bs-target="#modelsModal" title="Выбор модели">
+<button class="open-models-btn" data-bs-toggle="modal" data-bs-target="#modelsModal" title="{% trans 'Выбор модели' %}">
     <i class="bi bi-cpu"></i>
 </button>
 
@@ -1308,7 +1309,7 @@
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="bi bi-cpu me-2"></i>
-                    Доступные модели
+                    {% trans "Доступные модели" %}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -1317,14 +1318,14 @@
                     <!-- Модели будут загружены через JS -->
                     <div class="text-center py-4">
                         <div class="spinner-border text-primary mb-3"></div>
-                        <p class="text-muted">Загрузка моделей...</p>
+                        <p class="text-muted">{% trans "Загрузка моделей..." %}</p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
                 <button type="button" class="btn btn-primary" onclick="refreshModels()">
-                    <i class="bi bi-arrow-repeat me-1"></i> Обновить
+                    <i class="bi bi-arrow-repeat me-1"></i> {% trans "Обновить" %}
                 </button>
             </div>
         </div>
@@ -1338,23 +1339,23 @@
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="bi bi-collection me-2"></i>
-                    Коллекции документов
+                    {% trans "Коллекции документов" %}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
                     <input type="text" class="form-control" id="collectionSearchInput" 
-                           placeholder="Поиск коллекций..." onkeyup="filterCollections()">
+                           placeholder="{% trans 'Поиск коллекций...' %}" onkeyup="filterCollections()">
                 </div>
                 <div id="collectionsFullList" class="collections-list">
                     <!-- Коллекции будут загружены через JS -->
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
                 <a href="{% url 'rag_collection_create' %}" class="btn btn-primary" target="_blank">
-                    <i class="bi bi-plus-lg me-1"></i> Новая коллекция
+                    <i class="bi bi-plus-lg me-1"></i> {% trans "Новая коллекция" %}
                 </a>
             </div>
         </div>
@@ -1368,7 +1369,7 @@
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="bi bi-file-text me-2"></i>
-                    <span id="previewDocumentTitle">Документ</span>
+                    <span id="previewDocumentTitle">{% trans "Документ" %}</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -1378,9 +1379,9 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
                 <a href="#" id="previewDocumentLink" class="btn btn-primary" target="_blank">
-                    <i class="bi bi-box-arrow-up-right me-1"></i> Открыть документ
+                    <i class="bi bi-box-arrow-up-right me-1"></i> {% trans "Открыть документ" %}
                 </a>
             </div>
         </div>
@@ -1394,59 +1395,59 @@
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="bi bi-sliders me-2"></i>
-                    Настройки генерации
+                    {% trans "Настройки генерации" %}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label d-flex justify-content-between">
-                        <span>Температура</span>
+                        <span>{% trans "Температура" %}</span>
                         <span id="tempValueDisplay" class="text-primary fw-bold">0.7</span>
                     </label>
                     <input type="range" class="form-range" id="temperature" min="0.1" max="1.5" step="0.1" value="0.7">
                     <div class="d-flex justify-content-between text-secondary" style="font-size: 12px;">
-                        <span>Точный</span>
-                        <span>Баланс</span>
-                        <span>Творческий</span>
+                        <span>{% trans "Точный" %}</span>
+                        <span>{% trans "Баланс" %}</span>
+                        <span>{% trans "Творческий" %}</span>
                     </div>
                 </div>
                 
                 <div class="mb-3">
                     <label class="form-label d-flex justify-content-between">
-                        <span>Макс. токенов</span>
+                        <span>{% trans "Макс. токенов" %}</span>
                         <span id="tokensValueDisplay" class="text-primary fw-bold">512</span>
                     </label>
                     <input type="range" class="form-range" id="maxTokens" min="100" max="2048" step="100" value="512">
                     <div class="d-flex justify-content-between text-secondary" style="font-size: 12px;">
-                        <span>Коротко</span>
-                        <span>Стандарт</span>
-                        <span>Подробно</span>
+                        <span>{% trans "Коротко" %}</span>
+                        <span>{% trans "Стандарт" %}</span>
+                        <span>{% trans "Подробно" %}</span>
                     </div>
                 </div>
                 
                 <div class="mb-3">
                     <label class="form-label d-flex justify-content-between">
-                        <span>Топ-P</span>
+                        <span>{% trans "Топ-P" %}</span>
                         <span id="topPValueDisplay" class="text-primary fw-bold">0.9</span>
                     </label>
                     <input type="range" class="form-range" id="topP" min="0.1" max="1.0" step="0.1" value="0.9">
                     <div class="d-flex justify-content-between text-secondary" style="font-size: 12px;">
-                        <span>Фокус</span>
-                        <span>Баланс</span>
-                        <span>Разнообразие</span>
+                        <span>{% trans "Фокус" %}</span>
+                        <span>{% trans "Баланс" %}</span>
+                        <span>{% trans "Разнообразие" %}</span>
                     </div>
                 </div>
                 
                 <!-- RAG настройки -->
                 <div class="mt-4 pt-3 border-top border-secondary">
                     <h6 class="fw-bold text-primary mb-3">
-                        <i class="bi bi-database me-2"></i>RAG настройки
+                        <i class="bi bi-database me-2"></i>{% trans "RAG настройки" %}
                     </h6>
                     
                     <div class="mb-3">
                         <label class="form-label d-flex justify-content-between">
-                            <span>Количество результатов</span>
+                            <span>{% trans "Количество результатов" %}</span>
                             <span id="ragTopKValue" class="text-info fw-bold">5</span>
                         </label>
                         <input type="range" class="form-range" id="ragTopK" min="1" max="20" step="1" value="5">
@@ -1454,7 +1455,7 @@
                     
                     <div class="mb-3">
                         <label class="form-label d-flex justify-content-between">
-                            <span>Семантический вес</span>
+                            <span>{% trans "Семантический вес" %}</span>
                             <span id="semanticWeightValue" class="text-info fw-bold">0.70</span>
                         </label>
                         <input type="range" class="form-range" id="semanticWeight" min="0" max="1" step="0.05" value="0.7">
@@ -1462,7 +1463,7 @@
                     
                     <div class="mb-3">
                         <label class="form-label d-flex justify-content-between">
-                            <span>Вес ключевых слов</span>
+                            <span>{% trans "Вес ключевых слов" %}</span>
                             <span id="keywordWeightValue" class="text-info fw-bold">0.20</span>
                         </label>
                         <input type="range" class="form-range" id="keywordWeight" min="0" max="1" step="0.05" value="0.2">
@@ -1470,7 +1471,7 @@
                     
                     <div class="mb-3">
                         <label class="form-label d-flex justify-content-between">
-                            <span>Вес свежести</span>
+                            <span>{% trans "Вес свежести" %}</span>
                             <span id="freshnessWeightValue" class="text-info fw-bold">0.10</span>
                         </label>
                         <input type="range" class="form-range" id="freshnessWeight" min="0" max="1" step="0.05" value="0.1">
@@ -1479,14 +1480,14 @@
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" id="useReranking" checked>
                         <label class="form-check-label" for="useReranking">
-                            Использовать реранжирование
+                            {% trans "Использовать реранжирование" %}
                         </label>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="saveSettings()">Сохранить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">{% trans "Сохранить" %}</button>
             </div>
         </div>
     </div>
@@ -1866,12 +1867,12 @@ function loadCollections() {
                 renderCollections(data);
                 renderFullCollections(data);
             } else {
-                container.innerHTML = `<div class="text-center py-4"><i class="bi bi-collection fa-2x text-muted mb-2"></i><p class="text-muted small">Не удалось загрузить коллекции</p></div>`;
+                container.innerHTML = `<div class="text-center py-4"><i class="bi bi-collection fa-2x text-muted mb-2"></i><p class="text-muted small">{% trans "Не удалось загрузить коллекции" %}</p></div>`;
             }
         })
         .catch(error => {
             console.error('Error loading collections:', error);
-            container.innerHTML = `<div class="text-center py-4"><i class="bi bi-exclamation-triangle text-warning mb-2"></i><p class="text-muted small">Ошибка загрузки коллекций</p></div>`;
+            container.innerHTML = `<div class="text-center py-4"><i class="bi bi-exclamation-triangle text-warning mb-2"></i><p class="text-muted small">{% trans "Ошибка загрузки коллекций" %}</p></div>`;
         });
 }
 
@@ -1881,9 +1882,9 @@ function renderCollections(collections) {
         container.innerHTML = `
             <div class="text-center py-4">
                 <i class="bi bi-collection fa-2x text-muted mb-2"></i>
-                <p class="text-muted small">У вас нет доступных коллекций</p>
+                <p class="text-muted small">{% trans "У вас нет доступных коллекций" %}</p>
                 <a href="{% url 'rag_collection_create' %}" class="btn btn-sm btn-primary mt-2" target="_blank">
-                    <i class="bi bi-plus-lg me-1"></i> Создать коллекцию
+                    <i class="bi bi-plus-lg me-1"></i> {% trans "Создать коллекцию" %}
                 </a>
             </div>
         `;
@@ -1919,8 +1920,8 @@ function renderCollections(collections) {
                 </div>
                 <div>
                     ${isReady
-                        ? '<span class="rag-index-badge rag-index-ready"><i class="bi bi-check-circle"></i> Готов</span>'
-                        : '<span class="rag-index-badge rag-index-not-ready"><i class="bi bi-exclamation-triangle"></i> Индекс</span>'
+                        ? '<span class="rag-index-badge rag-index-ready"><i class="bi bi-check-circle"></i> {% trans "Готов" %}</span>'
+                        : '<span class="rag-index-badge rag-index-not-ready"><i class="bi bi-exclamation-triangle"></i> {% trans "Индекс" %}</span>'
                     }
                 </div>
             </div>
@@ -1935,9 +1936,9 @@ function renderFullCollections(collections) {
         container.innerHTML = `
             <div class="text-center py-5">
                 <i class="bi bi-collection fa-3x text-muted mb-3"></i>
-                <p class="text-muted">У вас нет доступных коллекций</p>
+                <p class="text-muted">{% trans "У вас нет доступных коллекций" %}</p>
                 <a href="{% url 'rag_collection_create' %}" class="btn btn-primary mt-2" target="_blank">
-                    <i class="bi bi-plus-lg me-1"></i> Создать коллекцию
+                    <i class="bi bi-plus-lg me-1"></i> {% trans "Создать коллекцию" %}
                 </a>
             </div>
         `;
@@ -2056,7 +2057,7 @@ function performRagSearch() {
         resultsContainer.innerHTML = `
             <div class="alert alert-danger py-2 mb-0">
                 <i class="bi bi-exclamation-circle me-1"></i>
-                Ошибка при выполнении поиска
+                {% trans "Ошибка при выполнении поиска" %}
             </div>
         `;
     });
@@ -2072,7 +2073,7 @@ function displayRagSearchResults(data, query) {
         </div>
     `;
     if (results.length === 0) {
-        html += `<div class="text-center py-3"><p class="text-muted small mb-0">Ничего не найдено</p></div>`;
+        html += `<div class="text-center py-3"><p class="text-muted small mb-0">{% trans "Ничего не найдено" %}</p></div>`;
         container.innerHTML = html;
         return;
     }
@@ -2093,15 +2094,15 @@ function displayRagSearchResults(data, query) {
                 </div>
                 ${preview.length > 200 ? `
                     <a class="rag-result-expand" onclick="expandRagResult(${index})">
-                        <i class="bi bi-chevron-down me-1"></i>Развернуть
+                        <i class="bi bi-chevron-down me-1"></i>{% trans "Развернуть" %}
                     </a>
                 ` : ''}
                 <div class="rag-result-actions">
                     <button class="btn-sm" onclick="useInChat(${result.chunk_id}, '${escapeHtml(query)}')">
-                        <i class="bi bi-chat me-1"></i> Использовать
+                        <i class="bi bi-chat me-1"></i> {% trans "Использовать" %}
                     </button>
                     <button class="btn-sm" onclick="previewDocument(${result.document_id}, '${escapeHtml(result.document_title)}', ${result.chunk_id})">
-                        <i class="bi bi-eye me-1"></i> Предпросмотр
+                        <i class="bi bi-eye me-1"></i> {% trans "Предпросмотр" %}
                     </button>
                 </div>
             </div>
@@ -2118,8 +2119,8 @@ function expandRagResult(index) {
         const link = element.nextElementSibling;
         if (link) {
             link.innerHTML = element.classList.contains('expanded')
-                ? '<i class="bi bi-chevron-up me-1"></i>Свернуть'
-                : '<i class="bi bi-chevron-down me-1"></i>Развернуть';
+                ? '<i class="bi bi-chevron-up me-1"></i>{% trans "Свернуть'
+                : '" %}<i class="bi bi-chevron-down me-1"></i>Развернуть';
         }
     }
 }
@@ -2173,12 +2174,12 @@ function loadModels() {
             if (Array.isArray(data)) {
                 renderModels(data);
             } else {
-                container.innerHTML = `<div class="text-center py-4"><i class="bi bi-exclamation-triangle text-warning fa-2x mb-3"></i><p class="text-muted">Не удалось загрузить модели</p></div>`;
+                container.innerHTML = `<div class="text-center py-4"><i class="bi bi-exclamation-triangle text-warning fa-2x mb-3"></i><p class="text-muted">{% trans "Не удалось загрузить модели" %}</p></div>`;
             }
         })
         .catch(error => {
             console.error('Error loading models:', error);
-            container.innerHTML = `<div class="text-center py-4"><i class="bi bi-exclamation-circle text-danger fa-2x mb-3"></i><p class="text-muted">Ошибка загрузки моделей</p></div>`;
+            container.innerHTML = `<div class="text-center py-4"><i class="bi bi-exclamation-circle text-danger fa-2x mb-3"></i><p class="text-muted">{% trans "Ошибка загрузки моделей" %}</p></div>`;
         });
 }
 
@@ -2188,8 +2189,8 @@ function renderModels(models) {
         container.innerHTML = `
             <div class="text-center py-5">
                 <i class="bi bi-cpu fa-3x text-muted mb-3"></i>
-                <p class="text-muted">Нет доступных моделей</p>
-                <p class="text-muted small">Перейдите в раздел "Модели" для загрузки</p>
+                <p class="text-muted">{% trans "Нет доступных моделей" %}</p>
+                <p class="text-muted small">{% trans "Перейдите в раздел \"Модели\" для загрузки" %}</p>
             </div>
         `;
         return;
@@ -2203,7 +2204,7 @@ function renderModels(models) {
             statusClass = 'status-loaded';
             actionButtons = `
                 <button class="btn btn-primary btn-sm" onclick="selectModel(${model.id}, '${escapeHtml(model.display_name || model.name)}')">
-                    <i class="bi bi-chat me-1"></i> Выбрать для чата
+                    <i class="bi bi-chat me-1"></i> {% trans "Выбрать для чата" %}
                 </button>
             `;
         } else if (model.local_path) {
@@ -2211,7 +2212,7 @@ function renderModels(models) {
             statusClass = 'status-not-loaded';
             actionButtons = `
                 <button class="btn btn-outline-light btn-sm" onclick="forceLocalLoad(${model.id}, '${escapeHtml(model.display_name || model.name)}', function() { showNotification('Модель загружена', 'success'); refreshModels(); })">
-                    <i class="bi bi-cloud-download me-1"></i> Загрузить локально
+                    <i class="bi bi-cloud-download me-1"></i> {% trans "Загрузить локально" %}
                 </button>
             `;
         } else if (model.huggingface_id) {
@@ -2219,7 +2220,7 @@ function renderModels(models) {
             statusClass = 'status-not-loaded';
             actionButtons = `
                 <button class="btn btn-outline-light btn-sm" onclick="downloadModel(${model.id}, '${escapeHtml(model.display_name || model.name)}')">
-                    <i class="bi bi-cloud-download me-1"></i> Скачать
+                    <i class="bi bi-cloud-download me-1"></i> {% trans "Скачать" %}
                 </button>
             `;
         } else {
@@ -2675,7 +2676,7 @@ function previewDocument(documentId, title, chunkId = null) {
             } else if (data.error) {
                 content = `<div class="alert alert-warning">${escapeHtml(data.error)}</div>`;
             } else {
-                content = '<div class="text-muted">Содержимое документа недоступно</div>';
+                content = '<div class="text-muted">{% trans "Содержимое документа недоступно" %}</div>';
             }
             document.getElementById('previewContent').innerHTML = content;
             document.getElementById('previewDocumentLink').href = `/documents/${documentId}/download/`;
