@@ -5329,3 +5329,16 @@ msgstr ""
 
 msgid "Кто создал пресет"
 msgstr "Who created the preset"
+
+msgid ""
+"GPU-устройство для обучения (null = авто, -1 = CPU, 0..N = конкретный GPU)"
+msgstr "GPU device for training (null = auto, -1 = CPU, 0..N = specific GPU)"
+
+msgid "Авто (первый доступный)"
+msgstr "Auto (first available)"
+
+msgid "GPU-устройство"
+msgstr "GPU device"
+
+msgid "Авто = первый доступный GPU; CPU = обучение без GPU"
+msgstr "Auto = first available GPU; CPU = training without GPU"

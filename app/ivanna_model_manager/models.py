@@ -3586,6 +3586,12 @@ class FineTuningJob(models.Model):
         default=False,
         help_text=_("Пользователь запросил паузу: тренер остановится на ближайшем шаге")
     )
+
+    # v5.1: выбор GPU — null = авто (первый доступный), -1 = CPU, 0..N = конкретный GPU
+    gpu_device = models.IntegerField(
+        null=True, blank=True,
+        help_text=_("GPU-устройство для обучения (null = авто, -1 = CPU, 0..N = конкретный GPU)")
+    )
     progress = models.FloatField(default=0.0)
     current_step = models.CharField(max_length=255, blank=True)
     

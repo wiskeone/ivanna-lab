@@ -1550,7 +1550,9 @@ class FineTuningJobForm(forms.ModelForm):
             # Параметры RAFT
             'distractors_per_example', 'oracle_ratio', 'distractor_ratio',
             'no_context_ratio', 'use_kl_regularization', 'kl_lambda',
-            'general_instructions_ratio'
+            'general_instructions_ratio',
+            # v5.1: выбор GPU
+            'gpu_device'
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
@@ -1561,7 +1563,27 @@ class FineTuningJobForm(forms.ModelForm):
             'no_context_ratio': forms.NumberInput(attrs={'step': '0.05'}),
             'kl_lambda': forms.NumberInput(attrs={'step': '0.01'}),
             'general_instructions_ratio': forms.NumberInput(attrs={'step': '0.01'}),
+            'gpu_device': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # v5.1: выбор GPU — варианты из фактического количества устройств
+        gpu_choices = [('', _('Авто (первый доступный)')), ('-1', _('CPU'))]
+        try:
+            import torch
+            if torch.cuda.is_available():
+                for i in range(torch.cuda.device_count()):
+                    gpu_choices.append((str(i), f'GPU {i}: {torch.cuda.get_device_name(i)}'))
+        except Exception:
+            pass
+        self.fields['gpu_device'] = forms.TypedChoiceField(
+            choices=gpu_choices, coerce=lambda v: int(v) if v != '' else None,
+            required=False, empty_value=None,
+            widget=forms.Select(attrs={'class': 'form-select'}),
+            label=_('GPU-устройство'),
+            help_text=_('Авто = первый доступный GPU; CPU = обучение без GPU')
+        )
 
 class FineTuningTemplateForm(forms.ModelForm):
     """Форма для создания/редактирования шаблонов"""

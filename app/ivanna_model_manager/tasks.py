@@ -1451,7 +1451,16 @@ def run_fine_tuning_task(self, job_id, restart=False):
 def _run_training_on_device(job, device):
     """
     Выбирает нужный тренер и запускает обучение на указанном устройстве.
+    v5.1: job.gpu_device переопределяет device (0..N = cuda:N, -1 = cpu).
     """
+    # v5.1: явный выбор GPU из формы перекрывает авто-определение
+    if job.gpu_device is not None:
+        if job.gpu_device == -1:
+            device = 'cpu'
+        elif job.gpu_device >= 0 and torch.cuda.is_available():
+            device = f'cuda:{job.gpu_device}'
+        logger.info(f"🎯 v5.1: GPU выбор из формы → device={device}")
+
     if job.method == 'document':
         from .services.fine_tuning.document_trainer import DocumentTrainer
         trainer = DocumentTrainer(job, device=device)

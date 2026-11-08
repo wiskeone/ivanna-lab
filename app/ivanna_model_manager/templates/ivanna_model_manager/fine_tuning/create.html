@@ -329,6 +329,13 @@
                             </div>
                         </div>
                         
+                        <!-- v5.1: GPU-выбор -->
+                        <div class="mb-3">
+                            <label for="id_gpu_device" class="form-label">{% trans "GPU-устройство" %}</label>
+                            {{ form.gpu_device }}
+                            <div class="form-text">{% trans "Авто = первый доступный GPU; CPU = обучение без GPU" %}</div>
+                        </div>
+
                         <!-- Кнопки -->
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'fine_tuning_dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>{% trans "Назад" %}</a>
