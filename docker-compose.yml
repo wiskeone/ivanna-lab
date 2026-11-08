@@ -209,41 +209,50 @@ services:
       - --pidfile=/tmp/celerybeat.pid
     restart: unless-stopped
 
-  # vLLM сервер для высокопроизводительного инференса (Gemma 4 и другие)
-  # vLLM сервер временно отключён
-  # vllm:
-  #   image: vllm-pytorch-2.10.0:latest
-  #   container_name: ivanna_vllm
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: all
-  #             capabilities: [gpu, utility]
-  #   environment:
-  #     - NVIDIA_VISIBLE_DEVICES=all
-  #     - VLLM_LOGGING_LEVEL=${VLLM_LOG_LEVEL:-INFO}
-  #   command: >
-  #     --model ${VLLM_MODEL:-google/gemma-4-E2B}
-  #     --port 8001
-  #     --host 0.0.0.0
-  #     --trust-remote-code
-  #     --max-model-len 2048
-  #     --gpu-memory-utilization 0.4
-  #   ports:
-  #     - "${VLLM_PORT:-8001}:8001"
-  #   volumes:
-  #     - huggingface_cache:/root/.cache/huggingface
-  #     - vllm_cache:/root/.cache/vllm
-  #   networks:
-  #     - ivanna_network
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
+  # v5.0: vLLM — OpenAI-совместимый инференс-бэкенд.
+  # Опциональный сервис: запускается только через
+  #   docker compose --profile vllm up -d vllm
+  # Модель берётся из тома app/models (см. VLLM_MODEL_PATH в .env).
+  # Чекпоинт в UI переключается на бэкенд "vLLM" → инференс пойдёт сюда.
+  vllm:
+    build:
+      context: .
+      dockerfile: Dockerfile.vllm
+    container_name: ivanna_vllm
+    profiles: ["vllm"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, utility]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - VLLM_LOGGING_LEVEL=${VLLM_LOG_LEVEL:-INFO}
+      - HF_TOKEN=${HF_TOKEN:-}
+    command: >
+      --model ${VLLM_MODEL_PATH:-/models/Qwen3.5-4B-Base}
+      --served-model-name ${VLLM_SERVED_MODEL:-default}
+      --port 8001
+      --host 0.0.0.0
+      --trust-remote-code
+      --max-model-len ${VLLM_MAX_MODEL_LEN:-4096}
+      --gpu-memory-utilization ${VLLM_GPU_UTIL:-0.85}
+    ports:
+      - "${VLLM_PORT:-8001}:8001"
+    volumes:
+      - ./app/models:/models:ro
+      - huggingface_cache:/root/.cache/huggingface
+    networks:
+      - ivanna_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
 
   # Flower для мониторинга Celery (исправлена команда)
   flower:

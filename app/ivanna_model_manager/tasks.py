@@ -609,8 +609,19 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
             model_identifier = model_id
             checkpoint = None
 
+        # v5.0: роутинг бэкенда — vLLM обслуживается внешним сервером,
+        # локальная загрузка transformers не нужна
+        serving_backend = getattr(checkpoint, 'serving_backend', 'transformers') if checkpoint else 'transformers'
+        if serving_backend == 'vllm':
+            from .services.vllm_client import VLLMClient
+            from django.conf import settings as dj_settings
+            vllm = VLLMClient()
+            served = getattr(dj_settings, 'VLLM_SERVED_MODEL', '')
+            target_model = served or model_identifier
+            logger.info(f"🚀 vLLM backend: model={target_model} (checkpoint {checkpoint.id if checkpoint else model_identifier})")
+
         # Проверяем, загружена ли модель локально
-        if model_identifier not in redis_model_manager.local_models:
+        if serving_backend != 'vllm' and model_identifier not in redis_model_manager.local_models:
             # Попытка загрузить модель
             if checkpoint is None:
                 try:
@@ -621,7 +632,7 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
                 except ModelCheckpoint.DoesNotExist:
                     return {'success': False, 'error': f'Model {model_identifier} not found in DB'}
 
-            if not checkpoint.local_path or not os.path.exists(checkpoint.local_path):
+            if serving_backend != 'vllm' and (not checkpoint.local_path or not os.path.exists(checkpoint.local_path)):
                 return {'success': False, 'error': 'Model not downloaded locally'}
 
             # Определяем квантизацию
@@ -691,7 +702,13 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
                 logger.error(f"Error getting RAG context: {e}", exc_info=True)
 
         # Генерируем текст
-        result = redis_model_manager.generate_text(model_identifier, final_prompt, **kwargs)
+        if serving_backend == 'vllm':
+            from .services.vllm_client import VLLMClient
+            result = VLLMClient().generate(model=target_model, prompt=final_prompt, **kwargs)
+            if not result.get('success'):
+                return result
+        else:
+            result = redis_model_manager.generate_text(model_identifier, final_prompt, **kwargs)
         
         # Добавляем информацию об использованных RAG-источниках
         if result.get('success') and rag_sources:

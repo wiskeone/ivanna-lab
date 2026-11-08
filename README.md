@@ -84,7 +84,7 @@ prometheus/ grafana/ nginx/ scripts/
 ## Notes & limitations
 
 - **UI is in Russian** for now.
-- **vLLM** is shipped as a separate `Dockerfile.vllm` and a commented-out compose service — integration is a work in progress, the platform itself talks to models through transformers.
+- **Inference backends** — per-model choice: in-process transformers (default) or an external **vLLM** server (OpenAI-compatible API). Enable with `docker compose --profile vllm up -d vllm`, then set the checkpoint's backend to "vLLM" in the model edit form.
 - Large artifacts (HF cache, model weights, datasets, logs) are intentionally git-ignored; they live in mounted volumes (`media/`, `docker_volumes/`, `app/.cache/`, `app/models/`).
 - Log files use `RotatingFileHandler` (10 MB × 5).
 

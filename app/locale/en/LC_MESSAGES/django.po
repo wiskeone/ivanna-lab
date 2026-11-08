@@ -5288,3 +5288,16 @@ msgstr "🤗 Hugging Face datasets:"
 
 msgid "🧠 Модель эмбеддингов"
 msgstr "🧠 Embedding model"
+
+msgid "Transformers (in-process)"
+msgstr "Transformers (in-process)"
+
+msgid "vLLM (OpenAI API)"
+msgstr "vLLM (OpenAI API)"
+
+msgid ""
+"Как запускать инференс: в этом процессе (transformers) или на внешнем vLLM-"
+"сервере (OpenAI API)"
+msgstr ""
+"How to run inference: in this process (transformers) or on an external vLLM "
+"server (OpenAI API)"

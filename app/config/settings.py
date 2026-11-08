@@ -27,6 +27,12 @@ USE_I18N = True
 LANGUAGES = [('ru', _('Русский')), ('en', _('English'))]
 LOCALE_PATHS = [BASE_DIR / 'locale']
 
+# v5.0: vLLM — внешний OpenAI-совместимый инференс-бэкенд
+VLLM_BASE_URL = os.getenv('VLLM_BASE_URL', 'http://vllm:8001/v1')
+VLLM_API_KEY = os.getenv('VLLM_API_KEY', '')
+VLLM_TIMEOUT = int(os.getenv('VLLM_TIMEOUT', '300'))
+VLLM_SERVED_MODEL = os.getenv('VLLM_SERVED_MODEL', '')
+
 env_hosts = os.getenv('ALLOWED_HOSTS', '')
 if env_hosts:
     ALLOWED_HOSTS.extend([host.strip() for host in env_hosts.split(',') if host.strip()])

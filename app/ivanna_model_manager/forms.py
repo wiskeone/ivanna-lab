@@ -339,7 +339,8 @@ class LocalModelForm(forms.ModelForm):
         fields = [
             'name', 'display_name', 'model_type', 'experiment',
             'parameter_count', 'context_length', 'vocab_size',
-            'license_type', 'tags', 'is_public'
+            'license_type', 'tags', 'is_public',
+            'serving_backend',  # v5.0: transformers или vLLM
         ]
         widgets = {
             'model_type': forms.Select(attrs={'class': 'form-select'}),

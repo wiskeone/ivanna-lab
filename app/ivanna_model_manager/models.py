@@ -116,6 +116,12 @@ class ModelCheckpoint(models.Model):
         ('quanto_int4', 'Quanto INT4 (CPU)'),
         ('quanto_int8', 'Quanto INT8 (CPU)'), 
     ]
+
+    # v5.0: бэкенд инференса — in-process transformers или внешний vLLM
+    SERVING_BACKEND_CHOICES = [
+        ('transformers', _('Transformers (in-process)')),
+        ('vllm', _('vLLM (OpenAI API)')),
+    ]
     
     # Базовые поля
     name = models.CharField(
@@ -169,6 +175,14 @@ class ModelCheckpoint(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default='PENDING'
+    )
+
+    # v5.0: бэкенд инференса
+    serving_backend = models.CharField(
+        max_length=20,
+        choices=SERVING_BACKEND_CHOICES,
+        default='transformers',
+        help_text=_("Как запускать инференс: в этом процессе (transformers) или на внешнем vLLM-сервере (OpenAI API)")
     )
     error_message = models.TextField(blank=True)
     

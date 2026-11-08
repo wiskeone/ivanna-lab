@@ -169,6 +169,11 @@
                             {{ model.get_status_display }}
                         </span>
                         <span class="model-badge">{{ model.get_model_type_display }}</span>
+                        <!-- v5.0: бэкенд инференса -->
+                        <span class="model-badge">
+                            <i class="bi {% if model.serving_backend == 'vllm' %}bi-lightning-charge{% else %}bi-cpu{% endif %} me-1"></i>
+                            {% if model.serving_backend == 'vllm' %}vLLM{% else %}Transformers{% endif %}
+                        </span>
                         {% if model.is_safe %}
                         <span class="embedding-status status-downloaded">
                             <i class="bi bi-shield-check me-1"></i> {% trans "Безопасна" %}
