@@ -8,7 +8,7 @@ Working plan for future releases. Order is approximate — items move up if some
 - [x] **Test suite** — mergekit config builder (linear/TIES/DARE), validator, resource estimates (v4); trainers next
 - [x] **CI** — GitHub Actions: ruff, tests inside CPU image, compose config validation (v4)
 - [x] **Prebuilt images** — GHCR: `ghcr.io/wiskeone/ivanna-lab:latest` (docker-publish.yml, GITHUB_TOKEN)
-- [ ] **Log hygiene** — structured logging, request IDs for Celery tasks
+- [x] **Log hygiene** — `log_context.py`: корреляционный ID через middleware → Celery заголовки → formatter {task_id}; RotatingFileHandler (v5.1)
 - [x] **HTTPS profile for nginx** — `nginx/nginx.ssl.conf.template` (v4)
 
 ## v5.0 — inference & scale
@@ -33,8 +33,8 @@ Working plan for future releases. Order is approximate — items move up if some
 
 План приблизительный — приоритеты двигаются по запросам.
 
-**v4.x — качество и доверие:** ✅ тесты (mergekit-конфиг), ✅ CI, ✅ HTTPS-профиль, ✅ GHCR-образы. Осталось: трейнеры/RAG-тесты, структурные логи.
+**v4.x — качество и доверие:** ✅ тесты, ✅ CI, ✅ HTTPS, ✅ GHCR, ✅ структурные логи, ✅ миграция-политика. v4.x ЗАКРЫТ.
 
-**v5.0 — инференс и масштаб:** ✅ vLLM, ✅ пресеты, ✅ пауза/резюме файнтюна, ✅ редактор датасетов. Осталось: выбор GPU на воркера.
+**v5.0 — инференс и масштаб:** ✅ vLLM, ✅ пресеты, ✅ пауза/резюме, ✅ редактор датасетов, ✅ структурные логи. Осталось: выбор GPU на воркера.
 
 **v5.x — экосистема:** хаб оценок с экспортом отчётов, авто-карточки моделей для Hugging Face, пуш GGUF обратно в Hub, однострочные доменные пайплайны (legal/code/medical) на базе дистилляции, API-ключи.

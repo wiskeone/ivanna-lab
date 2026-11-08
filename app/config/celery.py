@@ -63,6 +63,10 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Автоматически находим задачи в установленных приложениях
 app.autodiscover_tasks()
 
+# v5.1: корреляция логов веб↔Celery
+from ivanna_model_manager.log_context import setup_celery_log_signals
+setup_celery_log_signals(app)
+
 # Конфигурация очередей
 app.conf.task_queues = {
     'gpu_tasks': {

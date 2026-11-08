@@ -65,6 +65,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
+    'ivanna_model_manager.middleware.RequestIdMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -326,22 +327,31 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
+        # v5.1: request/task id в каждом сообщении — сопоставление логов
+        # веб-запросов и Celery-задач через корреляционный ID
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {asctime} [{name}] {module} {process:d} {task_id} {message}',
             'style': '{',
         },
         'simple': {
-            'format': '{levelname} {message}',
+            'format': '{levelname} [{name}] [{task_id}] {message}',
             'style': '{',
+        },
+    },
+    'filters': {
+        'request_id': {
+            '()': 'ivanna_model_manager.log_context.RequestIdFilter',
         },
     },
     'handlers': {
         'console': {
+            'filters': ['request_id'],
             'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
         'file': {
+            'filters': ['request_id'],
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'maxBytes': 10 * 1024 * 1024,
@@ -350,6 +360,7 @@ LOGGING = {
             'formatter': 'verbose',
         },
         'celery_file': {
+            'filters': ['request_id'],
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'maxBytes': 10 * 1024 * 1024,
