@@ -78,28 +78,16 @@ RUN uv pip install bitsandbytes==0.49.2
 # 9. mergekit (последняя стабильная версия с PyPI)
 RUN uv pip install mergekit==0.1.4
 
-# ========== Сборка llama.cpp с поддержкой CUDA ==========
-RUN ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}
-
+# ========== llama.cpp: только Python-скрипт конвертации ==========
+# (C++-бинарники проект не вызывает; сборка master сломалась на линковке
+# bin/llama — дрейф CMake-таргетов upstream. convert.py в upstream удалён
+# (ныне convert_hf_to_gguf.py в корне) — восстанавливаем симлинком.)
 RUN git config --global http.postBuffer 524288000 && \
     git config --global http.lowSpeedLimit 0 && \
     git config --global http.lowSpeedTime 999999 && \
     git clone --depth 1 --single-branch https://github.com/ggerganov/llama.cpp.git /opt/llama.cpp && \
     cd /opt/llama.cpp && \
-    mkdir build && cd build && \
-    cmake .. -DLLAMA_CUDA=ON \
-             -DCMAKE_BUILD_TYPE=Release \
-             -GNinja \
-             -DLLAMA_BUILD_TESTS=OFF \
-             -DLLAMA_BUILD_EXAMPLES=OFF \
-             -DLLAMA_BUILD_SERVER=OFF \
-             -DCMAKE_EXE_LINKER_FLAGS="-L/usr/local/cuda/lib64/stubs -Wl,-rpath-link,/usr/local/cuda/lib64/stubs" && \
-    ninja -j$(nproc) && \
-    cp bin/* /usr/local/bin/ && \
-    cd / && rm -rf /opt/llama.cpp/build
-
-ENV LD_LIBRARY_PATH=
+    ln -sf convert_hf_to_gguf.py convert.py
 
 # 10. Копируем код приложения
 COPY . .
