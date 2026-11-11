@@ -13,14 +13,15 @@ import os
 from datetime import datetime, timedelta
 
 from .models import (
-    Experiment, ModelCheckpoint, ModelVersion, 
+    Experiment, ModelCheckpoint, ModelVersion,
     ModelMergeJob, InferenceSession, ModelEvaluation,
-    ChatSession, ChatMessage, ModelComparison, 
-    FineTuningJob, DocumentCollection, Document, 
+    ChatSession, ChatMessage, ModelComparison,
+    FineTuningJob, DocumentCollection, Document,
     DocumentChunk, EmbeddingModel,
     SearchQuery, SearchResult, RAGSession, RetrievedChunk,
     SearchQualityFeedback, RAGEvaluation, ProcessingPipeline,
-    DocumentProcessor, DeletedDocumentLog
+    DocumentProcessor, DeletedDocumentLog,
+    MoETheme, MoEExpertJob
 )
 
 
@@ -1860,3 +1861,18 @@ admin.site.register(ProcessingPipeline, ProcessingPipelineAdmin)
 admin.site.register(DocumentProcessor, DocumentProcessorAdmin)
 admin.site.register(RetrievedChunk)
 admin.site.register(DeletedDocumentLog)
+
+# ── Мягкий MoE (v5.2) ──
+
+@admin.register(MoETheme)
+class MoEThemeAdmin(ModelAdmin):
+    list_display = ('name', 'slug', 'validation_status', 'created_by', 'created_at')
+    list_filter = ('validation_status',)
+    search_fields = ('name', 'description')
+
+
+@admin.register(MoEExpertJob)
+class MoEExpertJobAdmin(ModelAdmin):
+    list_display = ('name', 'theme', 'base_checkpoint', 'status', 'progress', 'created_at')
+    list_filter = ('status', 'mode')
+    search_fields = ('name',)

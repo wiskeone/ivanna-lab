@@ -4351,3 +4351,224 @@ class GenerationPreset(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# ============================================================================
+# МЯГКИЙ MoE (v5.2): тематические эксперты без дообучения
+# ============================================================================
+
+class MoETheme(models.Model):
+    """Тема (домен) для мягкого MoE: наборы промптов + артефакты роутера.
+
+    Наборы — txt-файлы (1 промпт = строка) в MEDIA_ROOT/moe_themes/<slug>/.
+    Гейт валидации: cross cos(domain, contrast) < 0.5 (эмбеддинги).
+    """
+    VALIDATION_CHOICES = [
+        ('NONE', _('Не проверена')),
+        ('PENDING', _('Проверяется')),
+        ('PASSED', _('Пройдена')),
+        ('FAILED', _('Не пройдена')),
+    ]
+
+    name = models.CharField(max_length=100, unique=True, verbose_name=_("Название темы"))
+    slug = models.SlugField(max_length=120, unique=True, allow_unicode=False,
+                            verbose_name=_("Слаг (для файлов)"))
+    description = models.TextField(blank=True, verbose_name=_("Описание домена"))
+
+    # Файлы наборов (относительные пути от MEDIA_ROOT)
+    domain_prompts_file = models.CharField(max_length=500, blank=True,
+                                           verbose_name=_("Файл доменных промптов"))
+    contrast_prompts_file = models.CharField(max_length=500, blank=True,
+                                             verbose_name=_("Файл контрастных промптов"))
+    eval_domain_file = models.CharField(max_length=500, blank=True,
+                                        verbose_name=_("Файл eval-промптов домена"))
+    eval_contrast_file = models.CharField(max_length=500, blank=True,
+                                          verbose_name=_("Файл eval-общих промптов"))
+
+    # Валидация наборов (гейт Этапа 0)
+    validation_status = models.CharField(max_length=10, choices=VALIDATION_CHOICES,
+                                         default='NONE')
+    validation_report = models.JSONField(default=dict, blank=True)
+
+    # Эмбеддинг-модель для валидации и роутера
+    embedding_model = models.ForeignKey(
+        'EmbeddingModel', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='moe_themes', verbose_name=_("Модель эмбеддингов"))
+
+    # Роутер (Этап 4)
+    router_threshold = models.FloatField(default=0.08,
+                                         help_text=_("margin cos(тема)−cos(контраст) > порога → эксперт"))
+    router_report = models.JSONField(default=dict, blank=True)
+    router_built_at = models.DateTimeField(null=True, blank=True)
+
+    created_by = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Мягкий MoE: тема"
+        verbose_name_plural = "Мягкий MoE: темы"
+        indexes = [models.Index(fields=['validation_status'])]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            base = slugify(self.name, allow_unicode=False) or 'theme'
+            slug, i = base, 2
+            while MoETheme.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    # Пути к файлам наборов
+    def _media_path(self, rel):
+        from django.conf import settings
+        return os.path.join(settings.MEDIA_ROOT, rel) if rel else None
+
+    def domain_prompts_path(self):
+        return self._media_path(self.domain_prompts_file)
+
+    def contrast_prompts_path(self):
+        return self._media_path(self.contrast_prompts_file)
+
+    def eval_domain_path(self):
+        return self._media_path(self.eval_domain_file)
+
+    def eval_contrast_path(self):
+        return self._media_path(self.eval_contrast_file)
+
+    def theme_dir(self):
+        from django.conf import settings
+        return os.path.join(settings.MEDIA_ROOT, 'moe_themes', self.slug)
+
+    def get_embedding_model_id(self):
+        return self.embedding_model.pk if self.embedding_model else None
+
+
+class MoEExpertJob(models.Model):
+    """Задача создания мягкого MoE-эксперта из плотной модели (скан → патч → гейты)."""
+    STATUS_CHOICES = [
+        ('PENDING', 'В очереди'),
+        ('VALIDATING', 'Проверка входа'),
+        ('SCANNING', 'Скан активаций'),
+        ('PATCHING', 'Патч весов'),
+        ('EVALUATING', 'Eval-гейт'),
+        ('ROUTING', 'Построение роутера'),
+        ('COMPLETED', 'Завершено'),
+        ('FAILED', 'Ошибка'),
+    ]
+    MODE_CHOICES = [
+        ('steer', 'steer — усиление W += α·outer(d̂,ī)/‖ī‖² (рекомендуется)'),
+        ('amplify', 'amplify — (I+α·d̂d̂ᵀ)W (запасной)'),
+    ]
+    LOAD_MODE_CHOICES = [
+        ('auto', _('Авто (bf16 + CPU-offload при нехватке VRAM)')),
+        ('int4', _('INT4/nf4 (скан больших моделей на малой GPU)')),
+        ('cpu', _('Только CPU')),
+    ]
+
+    name = models.CharField(max_length=255, verbose_name=_("Название задачи"))
+    theme = models.ForeignKey('MoETheme', on_delete=models.CASCADE,
+                              related_name='jobs', verbose_name=_("Тема"))
+    base_checkpoint = models.ForeignKey(
+        'ModelCheckpoint', on_delete=models.CASCADE,
+        related_name='moe_expert_jobs', verbose_name=_("Базовая плотная модель"))
+
+    # Параметры патча (по умолчанию — значения, проверенные в лабе)
+    mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='steer')
+    alpha = models.FloatField(default=0.2,
+                              help_text=_("Сила патча; сетка 0.1/0.2/0.4, подбирается eval-гейтом"))
+    layers = models.CharField(max_length=255, default='auto',
+                              help_text=_("'auto' — по каузальным писателям, или CSV: 19,20,21,22,23"))
+    position = models.CharField(max_length=10, default='last', choices=[
+        ('last', 'last — последний токен (проверено в лабе)'),
+        ('mean', 'mean — среднее по токенам'),
+    ], help_text=_("Позиция скрытых состояний для направления d̂"))
+    holdout_seed = models.IntegerField(default=7)
+    load_mode = models.CharField(max_length=10, choices=LOAD_MODE_CHOICES, default='auto')
+
+    # Опциональные этапы
+    do_eval = models.BooleanField(default=True,
+                                  help_text=_("Eval-гейт: генерация base vs expert на eval-наборах темы"))
+    do_router = models.BooleanField(default=True,
+                                    help_text=_("Построить центроиды роутера и прогнать тест точности"))
+
+    # Статус и прогресс (паттерн FineTuningJob)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    progress = models.FloatField(default=0.0)
+    current_step = models.CharField(max_length=255, blank=True)
+
+    # Отчёты этапов
+    scan_report = models.JSONField(default=dict, blank=True)
+    patch_report = models.JSONField(default=dict, blank=True)
+    eval_report = models.JSONField(default=dict, blank=True)
+    router_report = models.JSONField(default=dict, blank=True)
+
+    # Выход
+    output_model = models.ForeignKey(
+        'ModelCheckpoint', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='moe_output_of', verbose_name=_("Модель-эксперт"))
+    hf_repo_id = models.CharField(max_length=300, blank=True,
+                                  verbose_name=_("HF-репозиторий (после публикации)"))
+
+    # Логи и ошибки
+    logs = models.TextField(blank=True)
+    error_message = models.TextField(blank=True)
+    error_details = models.JSONField(default=dict, blank=True)
+    celery_task_id = models.CharField(max_length=255, blank=True)
+
+    created_by = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Мягкий MoE: задача"
+        verbose_name_plural = "Мягкий MoE: задачи"
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['base_checkpoint', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_status_display()})"
+
+    def job_dir(self):
+        """Каталог артефактов джобы: scan npz/отчёт + выходная модель."""
+        from django.conf import settings
+        return os.path.join(settings.MEDIA_ROOT, 'moe_experts', str(self.pk))
+
+    def update_progress(self, progress, step=""):
+        self.progress = max(0.0, min(100.0, progress))
+        if step:
+            self.current_step = step
+        self.save(update_fields=['progress', 'current_step'])
+
+    def add_log(self, message):
+        timestamp = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.logs += f"[{timestamp}] {message}\n"
+        self.save(update_fields=['logs'])
+
+    def fail(self, error_message, error_details=None):
+        self.status = 'FAILED'
+        self.error_message = error_message
+        if error_details:
+            self.error_details = error_details
+        self.completed_at = timezone.now()
+        self.save()
+        self.add_log(f"❌ ERROR: {error_message}")
+
+    def complete(self, output_model):
+        self.status = 'COMPLETED'
+        self.output_model = output_model
+        self.progress = 100.0
+        self.completed_at = timezone.now()
+        self.save()
+        self.add_log(f"✅ Эксперт готов: {output_model.name}")
+

@@ -90,6 +90,8 @@ app.conf.task_routes = {
     'ivanna_model_manager.tasks.run_fine_tuning_task': {'queue': 'gpu_tasks'},
     'ivanna_model_manager.tasks.process_document_task': {'queue': 'gpu_tasks'},
     'ivanna_model_manager.tasks.create_embeddings_for_collection_task': {'queue': 'gpu_tasks'},
+    # v5.2: мягкий MoE — скан+патч на GPU, остальное на CPU
+    'ivanna_model_manager.tasks_moe.moe_build_expert_task': {'queue': 'gpu_tasks'},
     
     # CPU задачи (могут выполняться на любом воркере)
     'ivanna_model_manager.tasks.download_model_task': {'queue': 'cpu_tasks'},
