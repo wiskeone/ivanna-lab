@@ -1,10 +1,13 @@
 # Базовый образ с CUDA 12.8.1, cuDNN и Ubuntu 24.04
 FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
 
-# 1. Установка Python 3.13 из PPA deadsnakes
+# 1. Установка Python 3.13 из PPA deadsnakes (Launchpad бывает флакует — ретраи)
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     software-properties-common \
-    && add-apt-repository ppa:deadsnakes/ppa \
+    && ok=0; for i in 1 2 3 4 5; do \
+         if add-apt-repository -y ppa:deadsnakes/ppa; then ok=1; break; fi; \
+         echo "deadsnakes PPA недоступен (попытка $i/5), повтор через 15с"; sleep 15; \
+       done; [ "$ok" = "1" ] \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         python3.13 \
