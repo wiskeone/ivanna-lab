@@ -3,6 +3,7 @@ import logging
 import subprocess
 import tempfile
 import json
+import torch
 from typing import Dict, Any, Optional
 from pathlib import Path
 
@@ -136,9 +137,11 @@ class ModelMerger:
             if method == 'ties':
                 config['parameters']['merge_mechanism'] = 'ties'
 
-        # Добавляем дополнительные параметры из kwargs
+        # Добавляем дополнительные параметры из kwargs: скалярные ключи
+        # (dtype и т.п.) переопределяются вызывающим, структурные — защищены
+        protected = ('merge_method', 'base_model', 'models', 'parameters')
         for key, value in kwargs.items():
-            if key not in config:
+            if key not in protected:
                 config[key] = value
 
         # Преобразуем в YAML
