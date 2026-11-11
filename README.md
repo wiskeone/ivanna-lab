@@ -27,7 +27,7 @@ Self-hosted **LLM model lab**: a web platform for managing models, building data
 | Frontend | Django templates + Bootstrap 5.3 (dark) + jQuery + Plotly |
 | Database | PostgreSQL 15 |
 | Queue | Redis 7 + Celery 5 (separate **GPU** and **CPU** workers, beat, Flower) |
-| AI | transformers, bitsandbytes, mergekit, sentence-transformers, FAISS, llama.cpp (built from source) |
+| AI | transformers, bitsandbytes, mergekit, sentence-transformers, FAISS, llama.cpp (conversion scripts) |
 | Monitoring | Prometheus + Grafana + node/redis exporters |
 | Runtime | Docker, NVIDIA CUDA 12.8 base image (GPU worker); CPU worker image included |
 

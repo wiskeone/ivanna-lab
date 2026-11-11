@@ -37,4 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate docker-compose config
-        run: docker compose config -q
+        run: |
+          touch .env   # compose требует файл окружения; значения не важны для валидации синтаксиса
+          docker compose config -q

@@ -39,13 +39,14 @@ class RedisModelManager:
             'host': socket.gethostname(),
             'service': 'model_manager'
         }
-        # Проверяем соединение с Redis
+        # Проверяем соединение с Redis (неблокирующе: без redis не должны падать
+        # импорты — CI-тесты и локальные команды Django; реальная работа упадёт
+        # с ясной ошибкой на первой операции, redis-py переподключается сам)
         try:
             self.redis.ping()
             logger.info(f"✅ RedisModelManager ready. PID: {self.process_info['pid']}, Host: {self.process_info['host']}")
         except Exception as e:
-            logger.error(f"❌ Cannot connect to Redis: {e}")
-            raise
+            logger.error(f"⚠️ Redis недоступен при старте (будем ретраить на операциях): {e}")
 
     # ----------------------------------------------------------------------
     # Управление статусом загрузки (Redis)
