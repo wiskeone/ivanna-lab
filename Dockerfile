@@ -89,8 +89,9 @@ RUN git config --global http.postBuffer 524288000 && \
     cd /opt/llama.cpp && \
     ln -sf convert_hf_to_gguf.py convert.py
 
-# 10. Копируем код приложения
-COPY . .
+# 10. Копируем код приложения — Django-проект (app/) прямо в /app:
+# manage.py и config/ ожидаются там (compose: "cd /app && python manage.py migrate")
+COPY app/ .
 
 # 11. Точка входа
 RUN echo '#!/bin/bash\nset -e\necho "=== Запуск Celery ==="\nexec "$@"\n' > /entrypoint.sh && chmod +x /entrypoint.sh

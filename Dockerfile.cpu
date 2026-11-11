@@ -80,7 +80,9 @@ RUN git clone --depth 1 --single-branch https://github.com/ggerganov/llama.cpp.g
     cd /opt/llama.cpp && \
     ln -sf convert_hf_to_gguf.py convert.py
 
-COPY . .
+# Django-проект (app/) — прямо в /app: manage.py и config/ ожидаются там
+# (compose: "cd /app && python manage.py migrate"; celery -A config из WORKDIR)
+COPY app/ .
 
 RUN echo '#!/bin/bash\nset -e\necho "=== Запуск Celery ==="\nexec "$@"\n' > /entrypoint.sh && chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
