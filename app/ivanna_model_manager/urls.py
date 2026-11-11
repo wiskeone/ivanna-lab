@@ -281,7 +281,20 @@ urlpatterns = [
     
     path('api/distillation/dataset-builder-data/', api_views.distillation_dataset_builder_data, name='api_distillation_dataset_builder_data'),
     # Слияние моделей
-    path('merge/create/', views.ModelMergeView.as_view(), name='merge_create')  # FIX: был name='merge_detail', а {% url 'merge_create' %} в 4 шаблонах падал с NoReverseMatch
+    path('merge/create/', views.ModelMergeView.as_view(), name='merge_create'),  # FIX: был name='merge_detail', а {% url 'merge_create' %} в 4 шаблонах падал с NoReverseMatch
+
+    # Мягкий MoE (v5.2): тематические эксперты без дообучения
+    path('moe/', views.moe_dashboard, name='moe_dashboard'),
+    path('moe/themes/create/', views.moe_theme_create, name='moe_theme_create'),
+    path('moe/themes/<int:pk>/', views.moe_theme_detail, name='moe_theme_detail'),
+    path('moe/themes/<int:pk>/edit/', views.moe_theme_edit, name='moe_theme_edit'),
+    path('moe/themes/<int:pk>/validate/', views.moe_theme_validate, name='moe_theme_validate'),
+    path('moe/themes/<int:pk>/router/', views.moe_theme_router_build, name='moe_theme_router_build'),
+    path('moe/themes/<int:pk>/route/', views.moe_theme_route_test, name='moe_theme_route_test'),
+    path('moe/jobs/create/', views.moe_job_create, name='moe_job_create'),
+    path('moe/jobs/<int:pk>/', views.moe_job_detail, name='moe_job_detail'),
+    path('moe/jobs/<int:pk>/status/', views.moe_job_status, name='moe_job_status'),
+    path('moe/jobs/<int:pk>/push-hf/', views.moe_job_push_hf, name='moe_job_push_hf'),
 
 ]
 

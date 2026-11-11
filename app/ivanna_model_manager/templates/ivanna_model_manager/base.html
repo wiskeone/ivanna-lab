@@ -108,6 +108,29 @@
                 </div>
             </div>
 
+            <!-- ==================== МЯГКИЙ MoE (v5.2) ==================== -->
+            <div class="accordion-item nav-group">
+                <div class="accordion-header">
+                    <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSoftMoe">
+                        <i class="bi bi-diagram-3"></i>
+                        <span>Мягкий MoE</span>
+                    </button>
+                </div>
+                <div id="collapseSoftMoe" class="accordion-collapse collapse" data-bs-parent="#sidebar">
+                    <div class="accordion-body">
+                        <a href="{% url 'moe_dashboard' %}" class="nav-link-sub">
+                            <i class="bi bi-speedometer2"></i> Дашборд
+                        </a>
+                        <a href="{% url 'moe_theme_create' %}" class="nav-link-sub">
+                            <i class="bi bi-tags"></i> Новая тема
+                        </a>
+                        <a href="{% url 'moe_job_create' %}" class="nav-link-sub">
+                            <i class="bi bi-magic"></i> Собрать эксперта
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- ==================== ЧАТ ==================== -->
             <div class="accordion-item nav-group">
                 <div class="accordion-header">

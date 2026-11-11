@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import time
 import uuid
 import hashlib
@@ -4253,3 +4254,284 @@ def hf_dataset_delete(request, pk):
     dataset = get_object_or_404(HuggingFaceDataset, pk=pk, created_by=request.user.username)
     dataset.delete()
     return JsonResponse({'success': True, 'message': _('Датасет удалён')})
+
+# ═══════════════════════════ МЯГКИЙ MoE (v5.2) ═══════════════════════════
+# Тематические эксперты без дообучения: скан активаций → steer-патч → гейты.
+# Порт weight_lab Phase A; рецепт — docs/soft_moe.md.
+
+def _moe_stats(jobs):
+    return {
+        'total': jobs.count(),
+        'running': jobs.filter(status__in=['PENDING', 'VALIDATING', 'SCANNING',
+                                           'PATCHING', 'EVALUATING', 'ROUTING']).count(),
+        'completed': jobs.filter(status='COMPLETED').count(),
+        'failed': jobs.filter(status='FAILED').count(),
+    }
+
+
+@login_required
+def moe_dashboard(request):
+    from .models import MoETheme, MoEExpertJob
+
+    themes = MoETheme.objects.all()
+    jobs = MoEExpertJob.objects.select_related('theme', 'base_checkpoint', 'output_model')
+    context = {
+        'active_tab': 'soft_moe',
+        'themes': themes,
+        'jobs': jobs[:50],
+        **_moe_stats(jobs),
+    }
+    return render(request, 'ivanna_model_manager/moe/dashboard.html', context)
+
+
+def _theme_prompt_stats(theme):
+    """Статистика наборов промптов темы для карточек/деталки."""
+    from .services.soft_moe import prompts as moe_prompts
+    out = {}
+    for attr, fn in (('domain', theme.domain_prompts_path),
+                     ('contrast', theme.contrast_prompts_path),
+                     ('eval_domain', theme.eval_domain_path),
+                     ('eval_contrast', theme.eval_contrast_path)):
+        texts = moe_prompts.load_texts(fn())
+        out[attr] = {'n': len(texts), **moe_prompts.length_stats(texts)}
+    return out
+
+
+@login_required
+def moe_theme_create(request):
+    from .forms import MoEThemeForm
+
+    if request.method == 'POST':
+        form = MoEThemeForm(request.POST)
+        if form.is_valid():
+            theme = form.save()
+            messages.success(request, f'Тема «{theme.name}» создана. '
+                                      f'Проверьте наборы валидацией (гейт bge).')
+            return redirect('moe_theme_detail', pk=theme.pk)
+    else:
+        form = MoEThemeForm()
+    return render(request, 'ivanna_model_manager/moe/theme_form.html',
+                  {'form': form, 'active_tab': 'soft_moe', 'is_create': True})
+
+
+@login_required
+def moe_theme_edit(request, pk):
+    from .forms import MoEThemeForm
+    from .models import MoETheme
+
+    theme = get_object_or_404(MoETheme, pk=pk)
+    if request.method == 'POST':
+        form = MoEThemeForm(request.POST, instance=theme)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Тема «{theme.name}» обновлена '
+                                      f'(заполненные наборы перезаписаны).')
+            return redirect('moe_theme_detail', pk=theme.pk)
+    else:
+        form = MoEThemeForm(instance=theme)
+    return render(request, 'ivanna_model_manager/moe/theme_form.html',
+                  {'form': form, 'theme': theme, 'active_tab': 'soft_moe',
+                   'is_create': False})
+
+
+@login_required
+def moe_theme_detail(request, pk):
+    from .models import MoETheme
+
+    theme = get_object_or_404(MoETheme, pk=pk)
+    jobs = theme.jobs.select_related('base_checkpoint', 'output_model')[:20]
+    context = {
+        'active_tab': 'soft_moe',
+        'theme': theme,
+        'jobs': jobs,
+        'prompt_stats': _theme_prompt_stats(theme),
+        'validation_report_json': json.dumps(theme.validation_report, ensure_ascii=False,
+                                             indent=2) if theme.validation_report else '',
+        'router_report_json': json.dumps(theme.router_report, ensure_ascii=False,
+                                         indent=2) if theme.router_report else '',
+    }
+    return render(request, 'ivanna_model_manager/moe/theme_detail.html', context)
+
+
+@login_required
+@require_POST
+def moe_theme_validate(request, pk):
+    """Запуск гейта валидации наборов (CPU-задача)."""
+    from .models import MoETheme
+    from .tasks_moe import moe_validate_theme_task
+
+    theme = get_object_or_404(MoETheme, pk=pk)
+    if not theme.domain_prompts_file or not theme.contrast_prompts_file:
+        messages.error(request, 'Нужны оба набора: доменные и контрастные промпты.')
+        return redirect('moe_theme_detail', pk=pk)
+    task = moe_validate_theme_task.delay(theme.pk)
+    messages.info(request, f'Валидация наборов запущена (задача {task.id[:8]}…). '
+                           f'Обновите страницу через минуту.')
+    return redirect('moe_theme_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def moe_theme_router_build(request, pk):
+    """Центроиды роутера + тест точности (CPU-задача)."""
+    from .models import MoETheme
+    from .tasks_moe import moe_router_build_task
+
+    theme = get_object_or_404(MoETheme, pk=pk)
+    if not theme.domain_prompts_file or not theme.contrast_prompts_file:
+        messages.error(request, 'Нужны оба набора: доменные и контрастные промпты.')
+        return redirect('moe_theme_detail', pk=pk)
+    task = moe_router_build_task.delay(theme.pk)
+    messages.info(request, f'Построение роутера запущено (задача {task.id[:8]}…).')
+    return redirect('moe_theme_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def moe_theme_route_test(request, pk):
+    """Маршрут одного запроса через центроиды темы (синхронно, для проверки)."""
+    from .models import MoETheme
+    from .services.soft_moe import router as moe_router
+
+    theme = get_object_or_404(MoETheme, pk=pk)
+    text = (request.POST.get('text') or '').strip()
+    if not text:
+        messages.error(request, 'Введите текст запроса.')
+        return redirect('moe_theme_detail', pk=pk)
+    try:
+        C_d, C_c = moe_router.load_centroids(theme.theme_dir())
+        res = moe_router.route_text(text, C_d, C_c, theme.router_threshold,
+                                    embedding_model_id=theme.get_embedding_model_id())
+        verdict = 'ЭКСПЕРТ' if res['route'] == 'expert' else 'GENERAL'
+        messages.success(request, f'Маршрут: {verdict} (margin {res["margin"]:+.3f}, '
+                                  f'cos домен {res["cos_domain"]:.3f} / контраст {res["cos_contrast"]:.3f})')
+    except FileNotFoundError:
+        messages.error(request, 'Центроиды не построены — сначала запустите роутер.')
+    except Exception as e:
+        messages.error(request, f'Ошибка маршрутизации: {e}')
+    return redirect('moe_theme_detail', pk=pk)
+
+
+@login_required
+def moe_job_create(request):
+    """Создание задачи сборки эксперта: валидации → джоба → GPU-очередь."""
+    from .forms import MoEExpertJobForm
+    from .models import MoEExpertJob, MoETheme
+    from .tasks_moe import moe_build_expert_task
+
+    if request.method == 'POST':
+        form = MoEExpertJobForm(request.POST)
+        if form.is_valid():
+            theme = form.cleaned_data['theme']
+            base = form.cleaned_data['base_checkpoint']
+
+            if not base.local_path or not os.path.exists(base.local_path):
+                form.add_error('base_checkpoint', 'Базовая модель не найдена локально — сначала загрузите её.')
+            elif not theme.domain_prompts_file or not theme.contrast_prompts_file:
+                form.add_error('theme', 'У темы нет наборов промптов.')
+            elif theme.validation_status == 'FAILED':
+                form.add_error('theme', 'Валидация наборов не пройдена — исправьте наборы '
+                                        '(cross cos ≥ 0.5 говорит о пересечении домена и контраста).')
+            else:
+                job = form.save(commit=False)
+                job.created_by = request.user.username
+                job.name = job.name or f"moe_{theme.slug}_{base.name[:60]}"
+                job.save()
+                transaction.on_commit(lambda: moe_build_expert_task.delay(job.id))
+                messages.success(request, f'Задача «{job.name}» поставлена в GPU-очередь: '
+                                          f'скан → гейт AUC → патч → eval → роутер.')
+                return redirect('moe_job_detail', pk=job.pk)
+    else:
+        form = MoEExpertJobForm()
+        theme_id = request.GET.get('theme')
+        if theme_id and MoETheme.objects.filter(pk=theme_id).exists():
+            form.fields['theme'].initial = int(theme_id)
+
+    return render(request, 'ivanna_model_manager/moe/job_form.html',
+                  {'form': form, 'active_tab': 'soft_moe'})
+
+
+@login_required
+def moe_job_detail(request, pk):
+    from .models import MoEExpertJob
+
+    job = get_object_or_404(MoEExpertJob.objects.select_related(
+        'theme', 'base_checkpoint', 'output_model'), pk=pk)
+
+    def _j(d):
+        return json.dumps(d, ensure_ascii=False, indent=2) if d else ''
+
+    context = {
+        'active_tab': 'soft_moe',
+        'job': job,
+        'is_running': job.status in ['PENDING', 'VALIDATING', 'SCANNING', 'PATCHING',
+                                     'EVALUATING', 'ROUTING'],
+        'scan_report_json': _j(job.scan_report),
+        'patch_report_json': _j(job.patch_report),
+        'eval_report_json': _j(job.eval_report),
+        'router_report_json': _j(job.router_report),
+        'eval_texts': _moe_eval_texts(job),
+    }
+    return render(request, 'ivanna_model_manager/moe/job_detail.html', context)
+
+
+def _moe_eval_texts(job):
+    """Тексты eval-гейта для ручной выборочной проверки (парные base/expert)."""
+    if not job.eval_report:
+        return []
+    eval_dir = os.path.join(job.job_dir(), 'eval')
+    if not os.path.isdir(eval_dir):
+        return []
+    texts = []
+    for fname in sorted(os.listdir(eval_dir)):
+        if fname.endswith('.txt'):
+            try:
+                content = open(os.path.join(eval_dir, fname), encoding='utf-8').read()
+            except OSError:
+                continue
+            texts.append({'name': fname, 'content': content})
+    return texts[:80]
+
+
+@login_required
+@require_GET
+def moe_job_status(request, pk):
+    """JSON-статус для polling-страницы джобы."""
+    from .models import MoEExpertJob
+
+    job = get_object_or_404(MoEExpertJob, pk=pk)
+    return JsonResponse({
+        'status': job.status,
+        'status_display': job.get_status_display(),
+        'progress': job.progress,
+        'current_step': job.current_step,
+        'is_running': job.status in ['PENDING', 'VALIDATING', 'SCANNING', 'PATCHING',
+                                     'EVALUATING', 'ROUTING'],
+        'error_message': job.error_message,
+        'output_model_id': job.output_model_id,
+        'hf_repo_id': job.hf_repo_id,
+        'logs_tail': job.logs[-2000:],
+    })
+
+
+@login_required
+@require_POST
+def moe_job_push_hf(request, pk):
+    """Публикация готового эксперта на Hugging Face."""
+    from .models import MoEExpertJob
+    from .tasks_moe import moe_push_to_hf_task
+
+    job = get_object_or_404(MoEExpertJob, pk=pk)
+    if job.status != 'COMPLETED' or job.output_model is None:
+        messages.error(request, 'Публиковать можно только завершённую задачу с экспертом.')
+        return redirect('moe_job_detail', pk=pk)
+    repo_id = (request.POST.get('repo_id') or '').strip()
+    if not re.match(r'^[\w.-]+/[\w.-]+$', repo_id):
+        messages.error(request, 'Repo ID в формате username/repo-name.')
+        return redirect('moe_job_detail', pk=pk)
+    private = request.POST.get('private') == 'on'
+    notes = (request.POST.get('notes') or '').strip()
+    transaction.on_commit(lambda: moe_push_to_hf_task.delay(
+        job.pk, repo_id, private=private, notes=notes))
+    messages.info(request, f'Публикация на HF запущена: {repo_id}')
+    return redirect('moe_job_detail', pk=pk)

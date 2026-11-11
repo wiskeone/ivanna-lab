@@ -22,6 +22,7 @@ Working plan for future releases. Order is approximate — items move up if some
 
 ## v5.x — ecosystem
 
+- [x] **Soft MoE expert builder** — весовое стиринг-ядро (v5.2): тема (домен+контраст, bge-гейт) → активационный скан (d̂, hold-out AUC, писатели) → steer/amplify патч safetensors → eval-гейт → эмбеддинг-роутер → HF-публикация с авто-карточкой. GGUF-вход (dequant). Порт weight_lab Phase A; рецепт — docs/soft_moe.md
 - [ ] **Evaluation hub** — benchmark presets (MMLU-subset, domain QA), export reports (CSV/Markdown/PDF)
 - [ ] **Model cards** — auto-generated card from registry + evaluation history, publishable to HF
 - [ ] **GGUF upload to HF** — push quantized artifacts back to the Hub
@@ -38,4 +39,4 @@ Working plan for future releases. Order is approximate — items move up if some
 
 **v5.0 — инференс и масштаб:** ✅ ВСЁ ЗАКРЫТО (vLLM, пресеты, пауза/резюме, редактор датасетов, структурные логи, GPU-выбор на задачу).
 
-**v5.x — экосистема:** хаб оценок с экспортом отчётов, авто-карточки моделей для Hugging Face, пуш GGUF обратно в Hub, однострочные доменные пайплайны (legal/code/medical) на базе дистилляции, API-ключи.
+**v5.x — экосистема:** ✅ мягкий MoE (весовой стиринг: домен-эксперт из плотной модели без дообучения, docs/soft_moe.md). Далее: хаб оценок с экспортом отчётов, авто-карточки моделей для Hugging Face, пуш GGUF обратно в Hub, однострочные доменные пайплайны (legal/code/medical) на базе дистилляции, API-ключи.

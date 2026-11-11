@@ -1,0 +1,198 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ job.name }} — мягкий MoE{% endblock %}
+{% block page_title %}{{ job.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .moe-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .moe-card h6 { color: var(--primary-color); margin-bottom: 12px; }
+    .progress { height: 22px; }
+    pre.report { background: rgba(0,0,0,0.4); border: 1px solid #333; border-radius: 8px; padding: 12px; font-size: 0.8rem; max-height: 420px; overflow: auto; }
+    pre.logtail { background: rgba(0,0,0,0.4); border: 1px solid #333; border-radius: 8px; padding: 12px; font-size: 0.75rem; max-height: 260px; overflow: auto; white-space: pre-wrap; }
+    .stage { display: inline-block; padding: 4px 12px; border-radius: 16px; border: 1px solid #555; margin: 3px; font-size: 0.8rem; color: #6b7280; }
+    .stage.done { border-color: #10b981; color: #10b981; }
+    .stage.active { border-color: #3b82f6; color: #3b82f6; font-weight: 700; }
+    .eval-text summary { cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" data-job-pk="{{ job.pk }}">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5>{{ job.name }}</h5>
+            <span class="text-muted">
+                {% trans "Тема" %}: <a href="{% url 'moe_theme_detail' job.theme.pk %}">{{ job.theme.name }}</a> ·
+                {% trans "База" %}: {{ job.base_checkpoint.display_name|default:job.base_checkpoint.name }}
+            </span>
+        </div>
+        <span class="badge fs-6 bg-secondary" id="statusBadge">{{ job.get_status_display }}</span>
+    </div>
+
+    {% if job.status == 'FAILED' %}
+    <div class="alert alert-danger">{{ job.error_message|linebreaksbr }}</div>
+    {% endif %}
+
+    <div class="moe-card">
+        <div class="progress mb-2">
+            <div class="progress-bar" id="progressBar" role="progressbar"
+                 style="width: {{ job.progress }}%;" aria-valuenow="{{ job.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="d-flex justify-content-between">
+            <span class="small text-muted" id="currentStep">{{ job.current_step|default:"—" }}</span>
+            <span class="small text-muted" id="progressPct">{{ job.progress|floatformat:0 }}%</span>
+        </div>
+        <div class="mt-3">
+            <span class="stage {% if job.status == 'COMPLETED' or job.scan_report %}done{% elif job.status == 'SCANNING' or job.status == 'VALIDATING' or job.status == 'PENDING' %}active{% endif %}">1. {% trans "Скан" %}</span>
+            <span class="stage {% if job.patch_report %}done{% elif job.status == 'PATCHING' %}active{% endif %}">2. {% trans "Патч" %}</span>
+            <span class="stage {% if job.eval_report %}done{% elif job.status == 'EVALUATING' %}active{% endif %}">3. {% trans "Eval" %}</span>
+            <span class="stage {% if job.router_report %}done{% elif job.status == 'ROUTING' %}active{% endif %}">4. {% trans "Роутер" %}</span>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="moe-card">
+                <h6>{% trans "Параметры патча" %}</h6>
+                <table class="table table-sm table-borderless mb-0">
+                    <tbody>
+                    <tr><td class="text-muted">mode</td><td><code>{{ job.mode }}</code></td></tr>
+                    <tr><td class="text-muted">α</td><td><code>{{ job.alpha }}</code></td></tr>
+                    <tr><td class="text-muted">{% trans "слои" %}</td><td><code>{{ job.layers }}</code></td></tr>
+                    <tr><td class="text-muted">{% trans "позиция d̂" %}</td><td><code>{{ job.position }}</code></td></tr>
+                    <tr><td class="text-muted">{% trans "загрузка" %}</td><td><code>{{ job.load_mode }}</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            {% if job.scan_report %}
+            <div class="moe-card">
+                <h6>{% trans "Скан (Этап 1)" %}</h6>
+                <p class="mb-1">
+                    AUC-гейт: <strong class="{% if job.scan_report.gate == 'PASS' %}text-success{% else %}text-danger{% endif %}">
+                        {{ job.scan_report.gate_auc }} ({{ job.scan_report.gate }})</strong>
+                    · {% trans "слоёв" %} {{ job.scan_report.n_layers }} · {{ job.scan_report.sec }}с
+                </p>
+                <details><summary class="small text-muted">{% trans "Отчёт скана (AUC по слоям, писатели)" %}</summary>
+                    <pre class="report mt-2">{{ scan_report_json }}</pre></details>
+            </div>
+            {% endif %}
+
+            {% if job.patch_report %}
+            <div class="moe-card">
+                <h6>{% trans "Патч (Этап 2)" %}</h6>
+                <p class="mb-0">
+                    {% trans "Патчено тензоров" %}: <strong>{{ job.patch_report.patched_count }}</strong> ·
+                    {% trans "слои" %}: {{ job.patch_report.layers|join:", " }}
+                </p>
+                <details class="mt-2"><summary class="small text-muted">{% trans "Отчёт патча (delta_l1 по тензорам)" %}</summary>
+                    <pre class="report mt-2">{{ patch_report_json }}</pre></details>
+            </div>
+            {% endif %}
+
+            {% if job.output_model %}
+            <div class="moe-card">
+                <h6>{% trans "Эксперт" %}</h6>
+                <p class="mb-2">
+                    <a href="{% url 'model_detail' job.output_model.pk %}">{{ job.output_model.name }}</a>
+                    — {% trans "готов к чату и конвертации в GGUF" %}.
+                </p>
+                {% if job.hf_repo_id %}
+                <a class="btn btn-sm btn-success" href="https://huggingface.co/{{ job.hf_repo_id }}" target="_blank">
+                    <i class="bi bi-box-arrow-up-right"></i> {{ job.hf_repo_id }}</a>
+                {% else %}
+                <form method="post" action="{% url 'moe_job_push_hf' job.pk %}" class="row g-2">
+                    {% csrf_token %}
+                    <div class="col-md-7">
+                        <input type="text" name="repo_id" class="form-control form-control-sm" placeholder="username/model-name" required>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="private" id="hfPrivate" checked>
+                            <label class="form-check-label small" for="hfPrivate">{% trans "приватный" %}</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-cloud-arrow-up"></i> HF</button>
+                    </div>
+                    <input type="hidden" name="notes" value="">
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-6">
+            {% if job.eval_report %}
+            <div class="moe-card">
+                <h6>{% trans "Eval-гейт (Этап 3)" %}</h6>
+                <div class="small mb-2">
+                    {% trans "Домен" %}: {{ job.eval_report.summary.domain_len.base }} → {{ job.eval_report.summary.domain_len.expert }}
+                    ({{ job.eval_report.summary.domain_len.delta_pct }}%) ·
+                    {% trans "General" %}: {{ job.eval_report.summary.general_len.base }} → {{ job.eval_report.summary.general_len.expert }}
+                    ({{ job.eval_report.summary.general_len.delta_pct }}%) ·
+                    think-утечек: {{ job.eval_report.summary.think_leaks }}
+                </div>
+                <p class="small text-muted mb-1">{% trans "Числа — прокси (длина). Финальное решение — ручная выборочная проверка текстов:" %}</p>
+                {% if eval_texts %}
+                <details><summary class="small text-muted">{% trans "Тексты ответов (base vs expert)" %}</summary>
+                    {% for t in eval_texts %}
+                    <details class="eval-text ms-3 mt-1"><summary class="small">{{ t.name }}</summary>
+                        <pre class="report mt-1">{{ t.content }}</pre></details>
+                    {% endfor %}
+                </details>
+                {% endif %}
+                <details class="mt-2"><summary class="small text-muted">{% trans "JSON-отчёт eval" %}</summary>
+                    <pre class="report mt-2">{{ eval_report_json }}</pre></details>
+            </div>
+            {% endif %}
+
+            {% if job.router_report %}
+            <div class="moe-card">
+                <h6>{% trans "Роутер (Этап 4)" %}</h6>
+                <p class="mb-1">{% trans "Точность" %}: <strong>{{ job.router_report.accuracy }}</strong>
+                    {% if job.router_report.gate == 'PASS' %}<span class="text-success">✓ гейт ≥ 0.9</span>{% else %}<span class="text-danger">✗ гейт ≥ 0.9</span>{% endif %}
+                </p>
+                {% if job.router_report.misses %}
+                <details><summary class="small text-muted">{% trans "Промахи" %} ({{ job.router_report.misses|length }})</summary>
+                    <ul class="small mb-0 mt-1">
+                    {% for m in job.router_report.misses %}<li>[{{ m.margin }}] {{ m.text }}</li>{% endfor %}
+                    </ul></details>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="moe-card">
+                <h6>{% trans "Лог" %}</h6>
+                <pre class="logtail" id="logsTail">{% if job.logs %}{{ job.logs|linebreaksbr }}{% endif %}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Polling статуса джобы (паттерн fine_tuning/detail.html)
+    const jobPk = document.querySelector('[data-job-pk]').dataset.jobPk;
+    const statusUrl = `{% url 'moe_job_status' 0 %}`.replace('/0/', `/${jobPk}/`);
+    const runningStatuses = ['PENDING', 'VALIDATING', 'SCANNING', 'PATCHING', 'EVALUATING', 'ROUTING'];
+    let isRunning = {{ is_running|yesno:'true,false' }};
+
+    function updateProgress() {
+        fetch(statusUrl).then(r => r.json()).then(d => {
+            document.getElementById('statusBadge').textContent = d.status_display;
+            document.getElementById('progressBar').style.width = d.progress + '%';
+            document.getElementById('progressBar').setAttribute('aria-valuenow', d.progress);
+            document.getElementById('progressPct').textContent = Math.round(d.progress) + '%';
+            document.getElementById('currentStep').textContent = d.current_step || '—';
+            const tail = document.getElementById('logsTail');
+            if (d.logs_tail) tail.textContent = d.logs_tail;
+            if (!d.is_running && isRunning) { location.reload(); }
+        }).catch(() => {});
+    }
+    if (isRunning) { setInterval(updateProgress, 3000); }
+</script>
+{% endblock %}

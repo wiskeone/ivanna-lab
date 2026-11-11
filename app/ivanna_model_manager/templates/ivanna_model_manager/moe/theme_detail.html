@@ -1,0 +1,126 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}Тема «{{ theme.name }}» — мягкий MoE{% endblock %}
+{% block page_title %}Тема «{{ theme.name }}»{% endblock %}
+
+{% block extra_css %}
+<style>
+    .moe-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .moe-card h6 { color: var(--primary-color); margin-bottom: 12px; }
+    .stat-chip { display: inline-block; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 6px 12px; margin: 3px; font-size: 0.85rem; }
+    pre.report { background: rgba(0,0,0,0.4); border: 1px solid #333; border-radius: 8px; padding: 12px; font-size: 0.8rem; max-height: 420px; overflow: auto; }
+    .val-passed { color: #10b981; font-weight: 700; } .val-failed { color: #ef4444; font-weight: 700; }
+    .val-none { color: #6b7280; } .val-pending { color: #f59e0b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5>{{ theme.name }}</h5>
+            {% if theme.description %}<p class="text-muted mb-0">{{ theme.description }}</p>{% endif %}
+        </div>
+        <div>
+            <a href="{% url 'moe_theme_edit' theme.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> {% trans "Редактировать" %}</a>
+            <a href="{% url 'moe_job_create' %}?theme={{ theme.pk }}" class="btn btn-primary btn-sm"><i class="bi bi-magic"></i> {% trans "Собрать эксперта" %}</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="moe-card">
+                <h6>{% trans "Наборы промптов" %}</h6>
+                <div>
+                    <span class="stat-chip" title="{% trans 'скан + центроиды' %}">{% trans "Домен" %}: <strong>{{ prompt_stats.domain.n }}</strong></span>
+                    <span class="stat-chip">{% trans "Контраст" %}: <strong>{{ prompt_stats.contrast.n }}</strong></span>
+                    <span class="stat-chip" title="{% trans 'eval-гейт и тест роутера' %}">{% trans "Eval домен" %}: <strong>{{ prompt_stats.eval_domain.n }}</strong></span>
+                    <span class="stat-chip">{% trans "Eval общие" %}: <strong>{{ prompt_stats.eval_contrast.n }}</strong></span>
+                </div>
+                {% if prompt_stats.domain.median and prompt_stats.contrast.median %}
+                <div class="small text-muted mt-2">
+                    {% trans "Медианы длин" %}: домен {{ prompt_stats.domain.median }} / контраст {{ prompt_stats.contrast.median }}
+                    {% if prompt_stats.domain.median != prompt_stats.contrast.median %}
+                    — ⚠ {% trans "выровняйте длины, иначе длина протечёт в направление" %}
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="moe-card">
+                <h6>{% trans "Валидация наборов (гейт Этапа 0)" %}</h6>
+                <p>
+                    {% trans "Статус" %}:
+                    <span class="val-{{ theme.validation_status|lower }}">{{ theme.get_validation_status_display }}</span>
+                </p>
+                {% if theme.validation_report.cross_mean is not None %}
+                <div class="small mb-2">
+                    cross cos: <strong>{{ theme.validation_report.cross_mean }}</strong> (гейт &lt; 0.5) ·
+                    intra: {{ theme.validation_report.intra_domain }} / {{ theme.validation_report.intra_contrast }}
+                    {% if theme.validation_report.warning %}<div class="text-warning mt-1">{{ theme.validation_report.warning }}</div>{% endif %}
+                    {% if theme.validation_report.gate_reason %}<div class="text-danger mt-1">{{ theme.validation_report.gate_reason }}</div>{% endif %}
+                </div>
+                {% endif %}
+                <form method="post" action="{% url 'moe_theme_validate' theme.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-check2-circle"></i> {% trans "Запустить валидацию" %}</button>
+                </form>
+                {% if validation_report_json %}
+                <details class="mt-2"><summary class="small text-muted">{% trans "Полный отчёт" %}</summary>
+                    <pre class="report mt-2">{{ validation_report_json }}</pre></details>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="moe-card">
+                <h6>{% trans "Роутер тем" %}</h6>
+                <p class="small text-muted mb-2">
+                    {% trans "Центроиды = mean-эмбеддинги скановых наборов. Правило: margin cos(домен)−cos(контраст) >" %} {{ theme.router_threshold }} → {% trans "эксперт" %}.
+                </p>
+                {% if theme.router_report.accuracy %}
+                <p class="mb-2">{% trans "Точность теста" %}:
+                    <strong>{{ theme.router_report.accuracy|floatformat:2 }}</strong>
+                    {% if theme.router_report.gate == 'PASS' %}<span class="text-success">✓</span>{% else %}<span class="text-danger">✗ (гейт ≥ 0.9)</span>{% endif %}
+                </p>
+                {% endif %}
+                <form method="post" action="{% url 'moe_theme_router_build' theme.pk %}" class="mb-2">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-diagram-3"></i> {% trans "Построить / обновить" %}</button>
+                </form>
+                {% if theme.router_built_at %}
+                <form method="post" action="{% url 'moe_theme_route_test' theme.pk %}" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <input type="text" name="text" class="form-control form-control-sm" placeholder="{% trans 'Текст запроса для маршрута…' %}" required>
+                    <button class="btn btn-sm btn-outline-secondary">{% trans "Маршрут" %}</button>
+                </form>
+                {% endif %}
+                {% if router_report_json %}
+                <details class="mt-2"><summary class="small text-muted">{% trans "Отчёт роутера" %}</summary>
+                    <pre class="report mt-2">{{ router_report_json }}</pre></details>
+                {% endif %}
+            </div>
+
+            <div class="moe-card">
+                <h6>{% trans "Задачи сборки по теме" %}</h6>
+                {% if jobs %}
+                <table class="table table-sm table-dark table-borderless mb-0">
+                    <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td><a href="{% url 'moe_job_detail' job.pk %}">{{ job.name }}</a></td>
+                        <td>{{ job.base_checkpoint.display_name|truncatechars:24 }}</td>
+                        <td><span class="badge bg-secondary">{{ job.get_status_display }}</span></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted small mb-0">{% trans "Пока нет задач" %}.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

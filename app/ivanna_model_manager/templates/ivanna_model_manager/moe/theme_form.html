@@ -1,0 +1,81 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{% if is_create %}Новая тема{% else %}Редактирование темы{% endif %} — мягкий MoE{% endblock %}
+{% block page_title %}{% if is_create %}{% trans "Новая тема мягкого MoE" %}{% else %}{% trans "Редактирование темы" %} «{{ theme.name }}»{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .moe-form-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .moe-form-card h6 { color: var(--primary-color); margin-bottom: 16px; }
+    textarea.form-control { font-family: monospace; font-size: 0.85rem; }
+    .hint-box { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 12px 16px; font-size: 0.9rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 980px;">
+    <div class="hint-box mb-3">
+        <strong>{% trans "Рецепт (проверен в weight_lab):" %}</strong>
+        {% trans "25–30 реальных промптов домена + 25–30 контрастных (быт/код/кулинария/право/спорт), длины выровнены. Гейт валидации: средний cross-cos < 0.5. Патч усиливает только доменно-специфичное направление." %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="moe-form-card">
+            <h6>{% trans "Тема" %}</h6>
+            {% for field in form.visible_fields %}
+            {% if 'prompts_text' not in field.name %}
+            <div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="form-text text-muted">{{ field.help_text }}</div>{% endif %}
+                {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="moe-form-card">
+            <h6>{% trans "Наборы промптов (перезаписываются при сохранении, если заполнены)" %}</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.domain_prompts_text.label }}</label>
+                        {{ form.domain_prompts_text }}
+                        <div class="form-text text-muted">{{ form.domain_prompts_text.help_text }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.contrast_prompts_text.label }}</label>
+                        {{ form.contrast_prompts_text }}
+                        <div class="form-text text-muted">{{ form.contrast_prompts_text.help_text }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.eval_domain_prompts_text.label }}</label>
+                        {{ form.eval_domain_prompts_text }}
+                        <div class="form-text text-muted">{{ form.eval_domain_prompts_text.help_text }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.eval_contrast_prompts_text.label }}</label>
+                        {{ form.eval_contrast_prompts_text }}
+                        <div class="form-text text-muted">{{ form.eval_contrast_prompts_text.help_text }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">{% trans "Сохранить тему" %}</button>
+            <a href="{% if theme %}{% url 'moe_theme_detail' theme.pk %}{% else %}{% url 'moe_dashboard' %}{% endif %}" class="btn btn-outline-secondary">{% trans "Отмена" %}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

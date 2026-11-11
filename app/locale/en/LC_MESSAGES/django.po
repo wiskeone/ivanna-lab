@@ -5342,3 +5342,410 @@ msgstr "GPU device"
 
 msgid "Авто = первый доступный GPU; CPU = обучение без GPU"
 msgstr "Auto = first available GPU; CPU = training without GPU"
+
+msgid "Мягкий MoE: тематические эксперты"
+msgstr "Soft MoE: domain experts"
+
+
+msgid "Темы (домены)"
+msgstr "Themes (domains)"
+
+
+msgid "Новая тема"
+msgstr "New theme"
+
+
+msgid "Собрать эксперта"
+msgstr "Build expert"
+
+
+msgid "валидация"
+msgstr "validation"
+
+
+msgid "Нет тем"
+msgstr "No themes yet"
+
+
+msgid "Тема = доменные промпты + контрастные промпты. Из темы и плотной модели собирается эксперт."
+msgstr "A theme = domain prompts + contrast prompts. An expert is built from the theme and a dense model."
+
+
+msgid "Создать тему"
+msgstr "Create theme"
+
+
+msgid "Задачи сборки экспертов"
+msgstr "Expert build jobs"
+
+
+msgid "Эксперт"
+msgstr "Expert"
+
+
+msgid "Новая тема мягкого MoE"
+msgstr "New soft MoE theme"
+
+
+msgid "Редактирование темы"
+msgstr "Edit theme"
+
+
+msgid "Рецепт (проверен в weight_lab):"
+msgstr "Recipe (verified in weight_lab):"
+
+
+msgid "25–30 реальных промптов домена + 25–30 контрастных (быт/код/кулинария/право/спорт), длины выровнены. Гейт валидации: средний cross-cos < 0.5. Патч усиливает только доменно-специфичное направление."
+msgstr "25–30 real domain prompts + 25–30 contrast prompts (household/code/cuisine/law/sport), lengths aligned. Validation gate: mean cross-cos < 0.5. The patch amplifies only the domain-specific direction."
+
+
+msgid "Наборы промптов (перезаписываются при сохранении, если заполнены)"
+msgstr "Prompt sets (overwritten on save when filled in)"
+
+
+msgid "Доменные промпты"
+msgstr "Domain prompts"
+
+
+msgid "Контрастные промпты"
+msgstr "Contrast prompts"
+
+
+msgid "Eval: доменные (свежие)"
+msgstr "Eval: domain (fresh)"
+
+
+msgid "Eval: общие (свежие)"
+msgstr "Eval: general (fresh)"
+
+
+msgid "НЕ пересекаются со скановыми наборами — на них честный eval-гейт и тест роутера (10 шт)"
+msgstr "Must NOT overlap the scan sets — used for the honest eval gate and router test (10 items)"
+
+
+msgid "НЕ пересекаются со скановыми наборами (10 шт)"
+msgstr "Must NOT overlap the scan sets (10 items)"
+
+
+msgid "Реальные запросы/тексты домена, по одному на строку"
+msgstr "Real domain requests/texts, one per line"
+
+
+msgid "Быт/код/кулинария/право/спорт — всё НЕ из домена"
+msgstr "Household/code/cuisine/law/sport — anything outside the domain"
+
+
+msgid "По одному промпту на строку. Рекомендуется 25–30 промптов; длины доменных и контрастных наборов должны быть выровнены (иначе длина протечёт в направление)."
+msgstr "One prompt per line. 25–30 prompts recommended; domain and contrast sets should be length-balanced (otherwise length leaks into the direction)."
+
+
+msgid "Название минимум 2 символа"
+msgstr "Name must be at least 2 characters"
+
+
+msgid "Сохранить тему"
+msgstr "Save theme"
+
+
+msgid "Наборы промптов"
+msgstr "Prompt sets"
+
+
+msgid "Домен"
+msgstr "Domain"
+
+
+msgid "Контраст"
+msgstr "Contrast"
+
+
+msgid "Eval домен"
+msgstr "Eval domain"
+
+
+msgid "Eval общие"
+msgstr "Eval general"
+
+
+msgid "Медианы длин"
+msgstr "Median lengths"
+
+
+msgid "домен"
+msgstr "domain"
+
+
+msgid "контраст"
+msgstr "contrast"
+
+
+msgid "выровняйте длины, иначе длина протечёт в направление"
+msgstr "align lengths, otherwise length leaks into the direction"
+
+
+msgid "Валидация наборов (гейт Этапа 0)"
+msgstr "Prompt set validation (Stage 0 gate)"
+
+
+msgid "Запустить валидацию"
+msgstr "Run validation"
+
+
+msgid "Полный отчёт"
+msgstr "Full report"
+
+
+msgid "Роутер тем"
+msgstr "Theme router"
+
+
+msgid "Центроиды = mean-эмбеддинги скановых наборов. Правило: margin cos(домен)−cos(контраст) >"
+msgstr "Centroids = mean embeddings of the scan sets. Rule: margin cos(domain)−cos(contrast) >"
+
+
+msgid "эксперт"
+msgstr "expert"
+
+
+msgid "Точность теста"
+msgstr "Test accuracy"
+
+
+msgid "Построить / обновить"
+msgstr "Build / update"
+
+
+msgid "Текст запроса для маршрута…"
+msgstr "Request text to route…"
+
+
+msgid "Маршрут"
+msgstr "Route"
+
+
+msgid "Отчёт роутера"
+msgstr "Router report"
+
+
+msgid "Задачи сборки по теме"
+msgstr "Build jobs for this theme"
+
+
+msgid "Пока нет задач"
+msgstr "No jobs yet"
+
+
+msgid "Сборка мягкого MoE-эксперта"
+msgstr "Build a soft MoE expert"
+
+
+msgid "Пайплайн (значения по умолчанию — проверенные в weight_lab на Qwen3.5-2B): скан активаций → гейт AUC > 0.85 → steer-патч α=0.2 на слоях по писателям → eval-гейт → роутер. Гейт не пройден — патч не делается."
+msgstr "Pipeline (defaults verified in weight_lab on Qwen3.5-2B): activation scan → AUC gate > 0.85 → steer patch α=0.2 on writer layers → eval gate → router. If the gate fails, no patch is applied."
+
+
+msgid "Запустить сборку"
+msgstr "Start build"
+
+
+msgid "Параметры патча"
+msgstr "Patch parameters"
+
+
+msgid "слои"
+msgstr "layers"
+
+
+msgid "позиция d̂"
+msgstr "d̂ position"
+
+
+msgid "загрузка"
+msgstr "loading"
+
+
+msgid "Скан"
+msgstr "Scan"
+
+
+msgid "Патч"
+msgstr "Patch"
+
+
+msgid "Скан (Этап 1)"
+msgstr "Scan (Stage 1)"
+
+
+msgid "слоёв"
+msgstr "layers"
+
+
+msgid "Отчёт скана (AUC по слоям, писатели)"
+msgstr "Scan report (per-layer AUC, writers)"
+
+
+msgid "Патч (Этап 2)"
+msgstr "Patch (Stage 2)"
+
+
+msgid "Патчено тензоров"
+msgstr "Tensors patched"
+
+
+msgid "Отчёт патча (delta_l1 по тензорам)"
+msgstr "Patch report (delta_l1 per tensor)"
+
+
+msgid "готов к чату и конвертации в GGUF"
+msgstr "ready for chat and GGUF conversion"
+
+
+msgid "приватный"
+msgstr "private"
+
+
+msgid "Eval-гейт (Этап 3)"
+msgstr "Eval gate (Stage 3)"
+
+
+msgid "Числа — прокси (длина). Финальное решение — ручная выборочная проверка текстов:"
+msgstr "Numbers are a proxy (length). Final decision — manual spot-check of the saved texts:"
+
+
+msgid "Тексты ответов (base vs expert)"
+msgstr "Answer texts (base vs expert)"
+
+
+msgid "JSON-отчёт eval"
+msgstr "Eval JSON report"
+
+
+msgid "Роутер (Этап 4)"
+msgstr "Router (Stage 4)"
+
+
+msgid "Точность"
+msgstr "Accuracy"
+
+
+msgid "Промахи"
+msgstr "Misses"
+
+
+msgid "Лог"
+msgstr "Log"
+
+
+msgid "Название темы"
+msgstr "Theme name"
+
+
+msgid "Слаг (для файлов)"
+msgstr "Slug (for files)"
+
+
+msgid "Описание домена"
+msgstr "Domain description"
+
+
+msgid "Файл доменных промптов"
+msgstr "Domain prompts file"
+
+
+msgid "Файл контрастных промптов"
+msgstr "Contrast prompts file"
+
+
+msgid "Файл eval-промптов домена"
+msgstr "Domain eval prompts file"
+
+
+msgid "Файл eval-общих промптов"
+msgstr "General eval prompts file"
+
+
+msgid "Не проверена"
+msgstr "Not validated"
+
+
+msgid "Проверяется"
+msgstr "Validating"
+
+
+msgid "Пройдена"
+msgstr "Passed"
+
+
+msgid "margin cos(тема)−cos(контраст) > порога → эксперт"
+msgstr "margin cos(theme)−cos(contrast) > threshold → expert"
+
+
+msgid "Базовая плотная модель"
+msgstr "Base dense model"
+
+
+msgid "Сила патча; сетка 0.1/0.2/0.4, подбирается eval-гейтом"
+msgstr "Patch strength; grid 0.1/0.2/0.4, tuned by the eval gate"
+
+
+msgid "'auto' — по каузальным писателям, или CSV: 19,20,21,22,23"
+msgstr "'auto' — from causal writers, or CSV: 19,20,21,22,23"
+
+
+msgid "last — последний токен (проверено в лабе)"
+msgstr "last — last token (verified in the lab)"
+
+
+msgid "mean — среднее по токенам"
+msgstr "mean — average over tokens"
+
+
+msgid "Позиция скрытых состояний для направления d̂"
+msgstr "Hidden-state position for the d̂ direction"
+
+
+msgid "Eval-гейт: генерация base vs expert на eval-наборах темы"
+msgstr "Eval gate: base vs expert generation on the theme eval sets"
+
+
+msgid "Построить центроиды роутера и прогнать тест точности"
+msgstr "Build router centroids and run the accuracy test"
+
+
+msgid "Авто (bf16 + CPU-offload при нехватке VRAM)"
+msgstr "Auto (bf16 + CPU-offload when VRAM is short)"
+
+
+msgid "INT4/nf4 (скан больших моделей на малой GPU)"
+msgstr "INT4/nf4 (scan big models on a small GPU)"
+
+
+msgid "Только CPU"
+msgstr "CPU only"
+
+
+msgid "Модель-эксперт"
+msgstr "Expert model"
+
+
+msgid "HF-репозиторий (после публикации)"
+msgstr "HF repo (after publishing)"
+
+
+msgid "Укажите 'auto' или номера слоёв через запятую"
+msgstr "Specify 'auto' or comma-separated layer numbers"
+
+
+msgid "Слои — целые числа через запятую или 'auto'"
+msgstr "Layers — comma-separated integers or 'auto'"
+
+
+msgid "Номера слоёв неотрицательны"
+msgstr "Layer numbers are non-negative"
+
+
+msgid "α в диапазоне 0.01–2.0 (сетка лабы: 0.1/0.2/0.4)"
+msgstr "α in range 0.01–2.0 (lab grid: 0.1/0.2/0.4)"
+
+
+msgid "Сетка 0.1/0.2/0.4"
+msgstr "Grid 0.1/0.2/0.4"

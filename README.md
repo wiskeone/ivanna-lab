@@ -13,6 +13,7 @@ Self-hosted **LLM model lab**: a web platform for managing models, building data
 - **Inference & chat** — chat sessions with any registered model, model-vs-model comparison, inference testing
 - **Fine-tuning** — instruction / RAFT / document trainers (LoRA-class adapters via transformers+bitsandbytes), templates, task queue with progress
 - **Model merging** — mergekit-powered linear / SLERP / TIES / DARE merges with a web UI
+- **Soft MoE experts** — turn any dense model into a domain expert *without training*: activation scan extracts the domain direction, a rank-one steer patch bakes it into the weights, an embedding router picks the variant per request (weight-space steering, verified on Qwen3.5-2B)
 - **Datasets & evaluation** — dataset builder, upload/import/export (incl. Hugging Face datasets), evaluation tasks, answer ratings and leaderboards
 - **Distillation** — generate Q&A with teacher checkpoints, assemble instruction datasets
 - **RAG** — document collections (PDF/DOCX/HTML/CSV/Excel), chunking, FAISS + BM25 hybrid search, RAG-grounded chat
@@ -80,6 +81,15 @@ celery_worker/              worker entrypoints
 vllm/                       reserved for a future vLLM service (not wired yet)
 prometheus/ grafana/ nginx/ scripts/
 ```
+
+## Soft MoE in one minute
+
+Create a **theme** (25–30 domain prompts + 25–30 length-matched contrast prompts),
+run the validation gate, then start a **build job** on a dense checkpoint:
+activation scan → hold-out AUC gate → rank-one steer patch on output matrices of
+writer-selected layers → (optional) eval gate → embedding router. The result is a
+regular checkpoint you can chat with, convert to GGUF, or publish to Hugging Face
+with an auto-generated model card. Full recipe and knobs: [docs/soft_moe.md](docs/soft_moe.md).
 
 ## Notes & limitations
 
