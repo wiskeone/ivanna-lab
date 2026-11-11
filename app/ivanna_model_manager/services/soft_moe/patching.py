@@ -160,11 +160,12 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
                 if i_bar is None:
                     report["tensors"].append({"name": name, "skipped": "нет mean-входа"})
                     continue
-                n_i = float(torch.norm(i_bar))
+                i_t = torch.from_numpy(np.ascontiguousarray(i_bar))
+                n_i = float(torch.norm(i_t))
                 if n_i < 1e-9:
                     report["tensors"].append({"name": name, "skipped": "нулевой mean-вход"})
                     continue
-                W2 = W32 + alpha * torch.outer(d, i_bar) / (n_i ** 2)
+                W2 = W32 + alpha * torch.outer(d, i_t) / (n_i ** 2)
             delta_l1 = float((W2 - W32).abs().sum())
             tensors[name] = W2.to(orig_dtype)
             report["tensors"].append({"name": name, "delta_l1": delta_l1,

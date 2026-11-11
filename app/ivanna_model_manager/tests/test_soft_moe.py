@@ -102,7 +102,8 @@ class PatchMathTests(SimpleTestCase):
         os.makedirs(scan_dir, exist_ok=True)
 
         tensors = {
-            self.LAYER0: torch.randn(self.FFN, self.HID),
+            # down_proj: [hidden, ffn] (out-строки = hid — конвенция патча)
+            self.LAYER0: torch.randn(self.HID, self.FFN),
             "model.layers.1.self_attn.o_proj.weight": torch.randn(self.HID, self.HID),
             self.OTHER: torch.randn(self.HID, self.FFN),
         }
@@ -177,6 +178,23 @@ class PatchMathTests(SimpleTestCase):
                                      layers="auto")
         patched = load_file(os.path.join(out, "model.safetensors"))
         self.assertEqual(patched[self.LAYER0].dtype, torch.float16)
+
+    def test_wrong_orientation_skipped(self):
+        """Тензор out-модуля поперёк ориентации (ffn, hidden) не патчится вовсе."""
+        import torch
+        from safetensors.torch import load_file, save_file
+
+        tmp = tempfile.mkdtemp()
+        src, npz, report, _, _, _ = self._make_fixture(tmp)
+        st = os.path.join(src, "model.safetensors")
+        t = load_file(st)
+        t[self.LAYER0] = torch.randn(self.FFN, self.HID)  # транспонированная down_proj
+        save_file(t, st, metadata={"format": "pt"})
+        out = os.path.join(tmp, "out")
+        moe_patching.patch_model_dir(src, out, npz, report, mode="steer", alpha=0.2,
+                                     layers="auto")
+        patched = load_file(os.path.join(out, "model.safetensors"))
+        self.assertTrue(torch.equal(patched[self.LAYER0], t[self.LAYER0]))
 
 
 class PromptSetTests(SimpleTestCase):
