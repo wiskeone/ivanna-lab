@@ -32,3 +32,7 @@ app/0
 docker-compose.yml.patch
 *.patch
 app/fix_document_paths.py
+.zcode/
+
+# архив weight_lab (референс мягкого MoE, локальный)
+weight_lab_wsp_2026-11-12/

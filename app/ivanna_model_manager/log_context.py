@@ -14,6 +14,8 @@ import logging
 import threading
 import uuid
 
+logger = logging.getLogger(__name__)
+
 _local = threading.local()
 
 
