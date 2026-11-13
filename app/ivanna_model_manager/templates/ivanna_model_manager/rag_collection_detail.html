@@ -1276,4 +1276,46 @@ function confirmDeleteDocument(docId, docTitle) {
     }
 }
 </script>
+
+<!-- v5.2: выбор реранкера коллекции -->
+<div class="modal fade" id="rerankerModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark">
+      <div class="modal-header"><h5 class="modal-title">{% trans "Реранкер коллекции" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p class="text-muted small">{% trans "Пересортировка гибридной выдачи cross-encoder'ом. «Авто» — выбор модели по языку запроса." %}</p>
+        <div class="list-group" id="rerankersList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+let selectedRerankerId = {% if collection.reranker_model %}{{ collection.reranker_model.id }}{% else %}null{% endif %};
+function loadRerankers() {
+  const list = document.getElementById('rerankersList');
+  fetch('/api/rerankers/').then(r => r.json()).then(data => {
+    let html = `<div class="list-group-item bg-transparent text-white border-secondary" style="cursor:pointer; ${selectedRerankerId===null?'background-color: rgba(107,70,193,0.2)!important;':''}">` +
+      `<div class="form-check"><input class="form-check-input" type="radio" name="reranker" ${selectedRerankerId===null?'checked':''} onchange="pickReranker(null)"><label class="form-check-label">Авто (по языку запроса)</label></div></div>`;
+    (data.results || data || []).forEach(m => {
+      const sel = m.id === selectedRerankerId;
+      html += `<div class="list-group-item bg-transparent text-white border-secondary" style="cursor:pointer; ${sel?'background-color: rgba(107,70,193,0.2)!important;':''}">` +
+        `<div class="d-flex justify-content-between align-items-center"><div class="form-check"><input class="form-check-input" type="radio" name="reranker" ${sel?'checked':''} onchange="pickReranker(${m.id})">` +
+        `<label class="form-check-label">${m.display_name || m.name}</label></div>` +
+        `<span class="badge ${m.is_downloaded ? 'bg-success' : 'bg-secondary'}">${m.is_downloaded ? 'скачана' : 'не скачана'}</span></div>` +
+        `<div class="small text-muted ms-4">${m.model_id}</div></div>`;
+    });
+    list.innerHTML = html;
+  });
+}
+function pickReranker(id) {
+  fetch('/collections/{{ collection.pk }}/change-reranker/', {
+    method: 'POST',
+    headers: {'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken')},
+    body: new URLSearchParams({reranker_id: id === null ? 'auto' : id})
+  }).then(r => r.json()).then(d => { if (d.success) location.reload(); });
+}
+document.getElementById('rerankerModal').addEventListener('show.bs.modal', loadRerankers);
+</script>
+
 {% endblock %}
