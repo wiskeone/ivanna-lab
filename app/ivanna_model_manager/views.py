@@ -4451,7 +4451,6 @@ def moe_job_create(request):
                   {'form': form, 'active_tab': 'soft_moe'})
 
 
-@login_required
 def _moe_charts(job):
     """Данные для Plotly-визуализации страницы джобы (v5.2)."""
     import numpy as np
@@ -4545,6 +4544,7 @@ def _moe_hints(job):
     return hints
 
 
+@login_required
 def moe_job_detail(request, pk):
     from .models import MoEExpertJob
 
