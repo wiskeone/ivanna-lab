@@ -1,0 +1,47 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Реранкеры" %}{% endblock %}
+{% block page_title %}{% trans "Модели реранкинга (cross-encoders)" %}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="moe-card">
+                <h6>{% trans "Добавить реранкер" %}</h6>
+                <form method="post">
+                    {% csrf_token %}
+                    {% for f in form %}
+                    <div class="mb-2"><label class="form-label small">{{ f.label }}</label>{{ f }}
+                        {% for e in f.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+                    {% endfor %}
+                    <button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> {% trans "Добавить" %}</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <table class="jobs-table">
+                <thead><tr><th>{% trans "Модель" %}</th><th>HF repo</th><th>{% trans "Статус" %}</th><th></th></tr></thead>
+                <tbody>
+                {% for r in rerankers %}
+                <tr>
+                    <td>{{ r.display_name|default:r.name }} {% if r.is_default %}<span class="badge bg-success">default</span>{% endif %}</td>
+                    <td class="small text-muted">{{ r.model_id }}</td>
+                    <td><span class="status-badge status-{{ r.download_status|lower }}">{{ r.get_download_status_display }} {{ r.download_progress }}%</span></td>
+                    <td class="text-nowrap">
+                        {% if not r.is_downloaded %}
+                        <form method="post" action="{% url 'reranker_download' r.pk %}" class="d-inline">{% csrf_token %}
+                            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-cloud-download"></i></button></form>
+                        {% endif %}
+                        <form method="post" action="{% url 'reranker_delete' r.pk %}" class="d-inline">{% csrf_token %}
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">{% trans "Реранкеры не добавлены. В поиске используется авто-выбор по языку." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

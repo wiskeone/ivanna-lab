@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import (
+    RerankerModel,
     Experiment, ModelCheckpoint, ModelVersion,
     ModelMergeJob, InferenceSession, ModelEvaluation,
     ChatSession, ChatMessage, ModelComparison,
@@ -1103,3 +1104,8 @@ class HuggingFaceDatasetSerializer(serializers.ModelSerializer):
         model = HuggingFaceDataset
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
+
+class RerankerModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RerankerModel
+        fields = '__all__'

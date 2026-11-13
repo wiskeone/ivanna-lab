@@ -207,3 +207,39 @@ def download_embedding_model_task(self, model_id, user_id=None):
     finally:
         stop_event.set()
         monitor.join(timeout=2)
+
+# ── v5.2: скачивание моделей реранкинга (cross-encoders) ──────────────────
+@shared_task(bind=True, queue='cpu_tasks', name='ivanna_model_manager.tasks_embedding.download_reranker_model_task')
+def download_reranker_model_task(self, reranker_id, user_id=None):
+    """Скачивание RerankerModel (cross-encoder) в каталог реранкеров."""
+    from .models import RerankerModel
+    reranker = RerankerModel.objects.get(id=reranker_id)
+    if reranker.download_status == 'downloading':
+        return {'success': False, 'error': 'Already downloading'}
+    reranker.download_status = 'downloading'
+    reranker.download_error = ''
+    reranker.download_progress = 0
+    reranker.save(update_fields=['download_status', 'download_error', 'download_progress'])
+    try:
+        token = None
+        if user_id:
+            profile = UserProfile.objects.filter(user_id=user_id).first()
+            token = profile.huggingface_token or None
+        import huggingface_hub
+        if token:
+            huggingface_hub.login(token=token, add_to_git_credential=False)
+        dest_dir = os.path.join(EMBEDDING_MODELS_DIR, 'rerankers',
+                                reranker.model_id.replace('/', '_'))
+        os.makedirs(dest_dir, exist_ok=True)
+        huggingface_hub.snapshot_download(
+            repo_id=reranker.model_id, local_dir=dest_dir, resume_download=True)
+        reranker.is_downloaded = True
+        reranker.download_status = 'completed'
+        reranker.download_progress = 100
+        reranker.save(update_fields=['is_downloaded', 'download_status', 'download_progress'])
+        return {'success': True, 'path': dest_dir}
+    except Exception as e:
+        reranker.download_status = 'failed'
+        reranker.download_error = str(e)[:500]
+        reranker.save(update_fields=['download_status', 'download_error'])
+        return {'success': False, 'error': str(e)}

@@ -808,16 +808,18 @@ function displaySearchResults(data) {
 }
 
 function previewChunk(chunkId) {
-    fetch(`/api/document-chunks/${chunkId}/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showToast('error', 'Ошибка', data.error);
-                return;
-            }
-            alert(`Содержимое чанка:\n\n${data.content}`);
-        })
-        .catch(err => showToast('error', 'Ошибка', 'Не удалось загрузить чанк'));
+  fetch(`/api/document-chunks/${chunkId}/`).then(r => r.json()).then(d => {
+    document.getElementById('chunkPreviewBody').textContent = d.content || '';
+    const img = document.getElementById('chunkPreviewImg');
+    const cap = document.getElementById('chunkPreviewCap');
+    img.style.display = 'none'; cap.textContent = '';
+    if (d.page_number && d.document) {
+      img.src = `/documents/${d.document}/page/${d.page_number}/render/`;
+      img.style.display = 'block';
+      cap.textContent = 'Страница ' + d.page_number;
+    }
+    new bootstrap.Modal(document.getElementById('chunkPreviewModal')).show();
+  });
 }
 
 function useInRag(chunkId, query) {

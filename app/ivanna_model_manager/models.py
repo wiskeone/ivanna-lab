@@ -1940,6 +1940,11 @@ class DocumentCollection(models.Model):
     is_public = models.BooleanField(default=False, help_text=_("Доступна ли коллекция другим пользователям"))
     
     # Модель эмбеддингов
+    # v5.2: реранкер коллекции (cross-encoder); null → авто по языку
+    reranker_model = models.ForeignKey(
+        'RerankerModel', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='collections',
+        help_text=_('Реранкер для гибридного поиска (пусто = авто по языку запроса)'))
     embedding_model = models.ForeignKey(
         'EmbeddingModel',
         on_delete=models.SET_NULL,
@@ -2484,6 +2489,8 @@ class DocumentChunk(models.Model):
     )
     
     # Содержимое и позиция
+    # v5.2: страница источника (для PDF-превью чанка)
+    page_number = models.IntegerField(null=True, blank=True, help_text=_('Номер страницы источника'))
     chunk_index = models.IntegerField(help_text=_("Порядковый номер чанка в документе"))
     content = models.TextField(help_text=_("Текстовое содержимое чанка"))
     token_count = models.IntegerField(default=0, help_text=_("Количество токенов в чанке"))
@@ -2687,6 +2694,38 @@ class EmbeddingModel(models.Model):
 # ============================================================================
 # 2. МОДЕЛИ ДЛЯ ПОИСКА И ИНФЕРЕНСА
 # ============================================================================
+
+
+# v5.2: реестр реранкеров (cross-encoders) — по образцу EmbeddingModel
+class RerankerModel(models.Model):
+    """Модель реранкинга (cross-encoder) для гибридного поиска RAG."""
+    name = models.CharField(max_length=255, unique=True, help_text=_("Название модели"))
+    display_name = models.CharField(max_length=255, blank=True)
+    model_id = models.CharField(max_length=500, help_text=_("Идентификатор на HF (например, DiTy/cross-encoder-russian-msmarco)"))
+    max_length = models.IntegerField(default=512, help_text=_("Максимальная длина пары запрос/документ"))
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False)
+    is_downloaded = models.BooleanField(default=False)
+    download_progress = models.IntegerField(default=0)
+    download_status = models.CharField(max_length=20, default='not_started', choices=[
+        ('not_started', _('Не начата')), ('downloading', _('Загружается')),
+        ('completed', _('Завершена')), ('failed', _('Ошибка')),
+    ])
+    download_error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-is_default', '-is_active', 'name']
+        verbose_name = 'Модель реранкинга'
+        verbose_name_plural = 'Модели реранкинга'
+
+    def __str__(self):
+        return self.display_name or self.name
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.is_default:
+            RerankerModel.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
 
 class SearchQuery(models.Model):
     """

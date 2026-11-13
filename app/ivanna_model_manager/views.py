@@ -1,3 +1,4 @@
+import io
 import os
 import json
 import re
@@ -12,7 +13,7 @@ from huggingface_hub import HfApi
 from django.db.models import Q, Count, Sum
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.translation import gettext as _
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -4630,3 +4631,85 @@ def moe_job_push_hf(request, pk):
         job.pk, repo_id, private=private, notes=notes))
     messages.info(request, f'Публикация на HF запущена: {repo_id}')
     return redirect('moe_job_detail', pk=pk)
+
+
+# ═════════════════ МЯГКИЙ MoE+ / RAG v5.2: реранкеры и превью ═════════════════
+
+@login_required
+def reranker_list(request):
+    """Реестр реранкеров: список + создание + скачивание (по образцу эмбеддингов)."""
+    from .models import RerankerModel
+    from .forms import RerankerModelForm
+
+    if request.method == 'POST':
+        form = RerankerModelForm(request.POST)
+        if form.is_valid():
+            r = form.save()
+            messages.success(request, f'Реранкер «{r.name}» добавлен.')
+            return redirect('reranker_list')
+    else:
+        form = RerankerModelForm()
+    return render(request, 'ivanna_model_manager/embedding_models/rerankers.html',
+                  {'form': form, 'rerankers': RerankerModel.objects.all(),
+                   'active_tab': 'rag'})
+
+
+@login_required
+@require_POST
+def reranker_download(request, pk):
+    from .models import RerankerModel
+    from .tasks_embedding import download_reranker_model_task
+    r = get_object_or_404(RerankerModel, pk=pk)
+    download_reranker_model_task.delay(r.pk, request.user.id)
+    messages.info(request, f'Скачивание «{r.name}» запущено.')
+    return redirect('reranker_list')
+
+
+@login_required
+@require_POST
+def reranker_delete(request, pk):
+    from .models import RerankerModel
+    get_object_or_404(RerankerModel, pk=pk).delete()
+    return redirect('reranker_list')
+
+
+@login_required
+@require_POST
+def change_collection_reranker(request, pk):
+    """Выбор реранкера коллекции (null = авто по языку)."""
+    from .models import DocumentCollection, RerankerModel
+
+    coll = get_object_or_404(DocumentCollection, pk=pk)
+    rid = request.POST.get('reranker_id')
+    if rid in (None, '', 'auto'):
+        coll.reranker_model = None
+    else:
+        coll.reranker_model = get_object_or_404(RerankerModel, pk=rid)
+    coll.save(update_fields=['reranker_model'])
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True,
+                             'reranker': coll.reranker_model.name if coll.reranker_model else 'auto'})
+    messages.success(request, 'Реранкер коллекции обновлён.')
+    return redirect('rag_collection_detail', pk=pk)
+
+
+@login_required
+def document_page_render(request, pk, page):
+    """PNG-рендер страницы PDF для превью чанков (PyMuPDF)."""
+    from .models import Document
+
+    doc = get_object_or_404(Document, pk=pk)
+    path = doc.full_file_path
+    if not path.lower().endswith('.pdf') or not os.path.exists(path):
+        raise Http404('Не PDF или файл отсутствует')
+    import fitz
+    d = fitz.open(path)
+    if not (1 <= page <= d.page_count):
+        d.close()
+        raise Http404('Страница вне диапазона')
+    pix = d[page - 1].get_pixmap(dpi=110)
+    d.close()
+    buf = io.BytesIO(pix.tobytes('png'))
+    resp = HttpResponse(buf.getvalue(), content_type='image/png')
+    resp['Cache-Control'] = 'max-age=86400'
+    return resp

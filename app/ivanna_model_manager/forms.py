@@ -1814,3 +1814,13 @@ class MoEExpertJobForm(forms.ModelForm):
         if not (0.01 <= alpha <= 2.0):
             raise ValidationError(_("α в диапазоне 0.01–2.0 (сетка лабы: 0.1/0.2/0.4)"))
         return alpha
+
+
+class RerankerModelForm(forms.ModelForm):
+    class Meta:
+        model = RerankerModel
+        fields = ['name', 'display_name', 'model_id', 'max_length', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'dipty-russian-crossencoder'}),
+            'model_id': forms.TextInput(attrs={'placeholder': 'DiTy/cross-encoder-russian-msmarco'}),
+        }

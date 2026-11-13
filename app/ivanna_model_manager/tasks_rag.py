@@ -1,6 +1,7 @@
 import os
 import logging
 import hashlib
+import re
 import json
 from datetime import datetime
 from typing import Dict, Any, List, Optional
@@ -108,6 +109,190 @@ def extract_text_from_markdown(file_path: str) -> str:
     except Exception as e:
         logger.error(f"Markdown extraction error: {e}")
         return ""
+
+
+
+# v5.2: постраничное извлечение и расширенный чанкинг ------------------------
+def extract_pdf_pages(file_path: str):
+    """Текст PDF постранично (pdfplumber → fallback PyMuPDF)."""
+    try:
+        import pdfplumber
+        pages = []
+        with pdfplumber.open(file_path) as pdf:
+            for p in pdf.pages:
+                pages.append(p.extract_text() or "")
+        if any(t.strip() for t in pages):
+            return pages
+    except Exception as e:
+        logger.debug(f"pdfplumber pages failed: {e}")
+    try:
+        import fitz  # PyMuPDF
+        doc = fitz.open(file_path)
+        pages = [p.get_text() for p in doc]
+        doc.close()
+        return pages
+    except Exception as e:
+        logger.debug(f"PyMuPDF pages failed: {e}")
+    return []
+
+
+def _page_of(offset: int, page_map):
+    for start, end, no in page_map:
+        if start <= offset < end:
+            return no
+    return page_map[-1][2] if page_map else None
+
+
+def create_chunks_v2(document, content: str, chunk_size: int = 1000,
+                     chunk_overlap: int = 200, strategy: str = 'semantic',
+                     page_map=None, extra_chunks=None) -> list:
+    """v5.2: чанкинг с поддержкой абзацев, страниц и готовых чанков (таблицы/изображения).
+
+    strategy: 'paragraph' — блоки по пустым строкам, мелкие склеиваются до chunk_size;
+              'semantic'/'fixed'/'recursive' — по предложениям (старая логика create_chunks).
+    page_map: [(start_char, end_char, page_no)] — привязка чанков к страницам PDF.
+    """
+    page_map = page_map or []
+    if strategy == 'paragraph':
+        chunks = []
+
+        def _mk(text, start, idx):
+            c = DocumentChunk.objects.create(
+                document=document, chunk_index=idx, content=text,
+                token_count=len(text.split()),
+                start_char=start, end_char=start + len(text),
+                chunk_strategy='paragraph',
+                page_number=_page_of(start, page_map) if page_map else None,
+                metadata={'chunk_size': chunk_size, 'chunk_overlap': 0,
+                          'char_length': len(text), 'word_count': len(text.split())})
+            return c
+
+        idx = 0
+        buf, buf_len, buf_start, pos = [], 0, None, 0
+        for p in (p.strip() for p in re.split(r'\n\s*\n', content)):
+            if not p:
+                continue
+            start = content.find(p, pos)
+            if start < 0:
+                start = pos
+            pos = start + len(p)
+            if not buf or buf_len + len(p) + 2 <= chunk_size:
+                if buf_start is None:
+                    buf_start = start
+                buf.append(p)
+                buf_len += len(p) + 2
+            else:
+                chunks.append(_mk('\n\n'.join(buf), buf_start, idx))
+                idx += 1
+                buf, buf_len, buf_start = [p], len(p) + 2, start
+        if buf:
+            chunks.append(_mk('\n\n'.join(buf), buf_start, idx))
+        return chunks
+
+    # semantic/fixed/recursive — проверенная логика create_chunks + страницы
+    chunks = create_chunks(document, content, chunk_size, chunk_overlap)
+    if page_map:
+        for c in chunks:
+            c.page_number = _page_of(c.start_char, page_map)
+            c.save(update_fields=['page_number'])
+    return chunks
+
+
+def _pdf_extra_chunks(file_path: str, document) -> list:
+    """Таблицы (pdfplumber) и изображения (PyMuPDF) PDF как отдельные чанки."""
+    extra = []
+    try:
+        import pdfplumber
+        with pdfplumber.open(file_path) as pdf:
+            tno = 0
+            for i, page in enumerate(pdf.pages, start=1):
+                for tb in (page.extract_tables() or [])[:10]:
+                    rows = ['\t'.join(str(c or '') for c in row) for row in tb]
+                    t = '\n'.join(r for r in rows if r.strip())
+                    if len(t) >= 30:
+                        extra.append({'content': f'[Таблица, стр. {i}]\n{t}',
+                                      'strategy': 'table',
+                                      'metadata': {'is_table': True, 'page': i}})
+                        tno += 1
+                if tno >= 50:
+                    break
+    except Exception as e:
+        logger.debug(f"PDF tables: {e}")
+    try:
+        import fitz
+        doc = fitz.open(file_path)
+        img_rel = f'documents/{document.id}/images'
+        img_dir = os.path.join(settings.MEDIA_ROOT, img_rel)
+        os.makedirs(img_dir, exist_ok=True)
+        n_img = 0
+        for i, page in enumerate(doc, start=1):
+            for j, img in enumerate(page.get_images(full=True)[:5]):
+                try:
+                    pix = fitz.Pixmap(doc, img[0])
+                    if pix.n - pix.alpha > 3:
+                        pix = fitz.Pixmap(fitz.csRGB, pix)
+                    fname = f'page-{i}-{j}.png'
+                    pix.save(os.path.join(img_dir, fname))
+                    extra.append({'content': f'[Изображение, стр. {i}] сохранено: {img_rel}/{fname}',
+                                  'strategy': 'table',
+                                  'metadata': {'is_image': True, 'page': i,
+                                               'image_path': f'{img_rel}/{fname}'}})
+                    n_img += 1
+                except Exception as e:
+                    logger.debug(f"image {i}-{j}: {e}")
+            if n_img >= 20:
+                break
+        doc.close()
+    except Exception as e:
+        logger.debug(f"PDF images: {e}")
+    return extra
+
+
+def _tabular_chunks_csv(file_path: str) -> list:
+    """CSV → чанки-таблицы (шапка повторяется в каждом чанке)."""
+    import csv as _csv
+    extra = []
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='ignore', newline='') as f:
+            rows = list(_csv.reader(f, delimiter=';'))
+        if not rows:
+            return extra
+        header = rows[0]
+        step = 50
+        for i in range(1, len(rows), step):
+            block = rows[i:i + step]
+            t = '\n'.join('\t'.join(str(c or '') for c in r) for r in block)
+            extra.append({'content': f'[CSV, строки {i}–{i + len(block) - 1}]\n'
+                                     f'\t'.join(str(h) for h in header) + '\n' + t,
+                          'strategy': 'table', 'metadata': {'is_table': True, 'rows': len(block)}})
+    except Exception as e:
+        logger.debug(f"CSV: {e}")
+    return extra
+
+
+def _tabular_chunks_xlsx(file_path: str) -> list:
+    """XLSX → чанки-таблицы по листам."""
+    extra = []
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+        for ws in wb.worksheets:
+            rows = [[c.value for c in row] for row in ws.iter_rows(max_row=500)]
+            rows = [r for r in rows if any(v is not None for v in r)]
+            if not rows:
+                continue
+            header = rows[0]
+            step = 50
+            for i in range(1, len(rows), step):
+                block = rows[i:i + step]
+                t = '\n'.join('\t'.join('' if v is None else str(v) for v in r) for r in block)
+                extra.append({'content': f'[XLSX «{ws.title}», строки {i + 1}–{i + len(block)}]\n'
+                                         f'\t'.join(str(h) for h in header) + '\n' + t,
+                              'strategy': 'table', 'metadata': {'is_table': True, 'sheet': ws.title}})
+        wb.close()
+    except Exception as e:
+        logger.debug(f"XLSX: {e}")
+    return extra
 
 
 def get_file_hash(file_path: str) -> str:
@@ -322,32 +507,58 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
             raise FileNotFoundError(f"File not found: {document.original_filename}")
 
         ext = os.path.splitext(file_path)[1].lower()
+        page_map = []       # v5.2: [(start, end, page_no)] для привязки чанков к страницам
+        extra_chunks = []   # v5.2: таблицы/изображения/CSV-блоки как отдельные чанки
+
         if ext == '.pdf':
-            raw_text = extract_text_from_pdf(file_path)
+            pages = extract_pdf_pages(file_path)
+            raw_text = "\n".join(pages)
+            offset = 0
+            for i, pt in enumerate(pages, start=1):
+                if offset:
+                    offset += 1  # \n-разделитель
+                page_map.append((offset, offset + len(pt), i))
+                offset += len(pt)
+            extra_chunks = _pdf_extra_chunks(file_path, document)
         elif ext in ['.docx', '.doc']:
             raw_text = extract_text_from_docx(file_path)
         elif ext in ['.html', '.htm']:
             raw_text = extract_text_from_html(file_path)
         elif ext == '.md':
             raw_text = extract_text_from_markdown(file_path)
+        elif ext == '.csv':
+            raw_text = extract_text_from_txt(file_path)
+            extra_chunks = _tabular_chunks_csv(file_path)
+        elif ext == '.xlsx':
+            raw_text = ''
+            extra_chunks = _tabular_chunks_xlsx(file_path)
         else:
             raw_text = extract_text_from_txt(file_path)
 
-        if not raw_text.strip():
+        if not raw_text.strip() and not extra_chunks:
             raise ValueError("No extractable text found")
 
         document.raw_content = raw_text
         document.content_hash = get_file_hash(file_path)
+        document.metadata['page_map'] = page_map
         document.save()
 
         processor.status = 'EXTRACTING'
         processor.progress = 30
         processor.save()
 
-        # 2. Создаём чанки
-        chunk_size = document.metadata.get('chunk_size', 1000)
-        chunk_overlap = document.metadata.get('chunk_overlap', 200)
-        chunks = create_chunks(document, raw_text, chunk_size, chunk_overlap)
+        # 2. Создаём чанки: v5.2 — настройки берём из коллекции (метаданные
+        # документа остаются точкой переопределения)
+        collection = document.collection
+        chunk_size = document.metadata.get(
+            'chunk_size', getattr(collection, 'chunk_size', 1000) or 1000)
+        chunk_overlap = document.metadata.get(
+            'chunk_overlap', getattr(collection, 'chunk_overlap', 200) or 200)
+        strategy = document.metadata.get(
+            'chunking_strategy', getattr(collection, 'chunking_strategy', '') or 'semantic')
+        chunks = create_chunks_v2(document, raw_text, chunk_size, chunk_overlap,
+                                  strategy=strategy, page_map=page_map,
+                                  extra_chunks=extra_chunks)
 
         if not chunks:
             raise ValueError("No chunks created")

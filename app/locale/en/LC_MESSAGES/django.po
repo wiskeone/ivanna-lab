@@ -5908,3 +5908,30 @@ msgstr "6. Evaluation"
 
 msgid "Сервисы"
 msgstr "Services"
+
+msgid "Реранкеры"
+msgstr "Rerankers"
+
+
+msgid "Модели реранкинга (cross-encoders)"
+msgstr "Reranking models (cross-encoders)"
+
+
+msgid "Добавить реранкер"
+msgstr "Add reranker"
+
+
+msgid "Реранкеры не добавлены. В поиске используется авто-выбор по языку."
+msgstr "No rerankers yet. Search falls back to language-based auto-selection."
+
+
+msgid "Реранкер коллекции"
+msgstr "Collection reranker"
+
+
+msgid "Пересортировка гибридной выдачи cross-encoder'ом. «Авто» — выбор модели по языку запроса."
+msgstr "Re-sorts hybrid search results with a cross-encoder. 'Auto' picks the model by query language."
+
+
+msgid "Чанк и страница источника"
+msgstr "Chunk and source page"

@@ -26,6 +26,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import (
+    RerankerModel,
     Experiment, ModelCheckpoint, ModelMergeJob, InferenceSession,
     ModelEvaluation, ChatSession, ModelComparison, FineTuningJob,
     ModelDownloadJob, EvaluationDataset, ModelEvaluationTask, EvaluationResult,
@@ -3212,3 +3213,16 @@ def api_fine_tuning_resume(request, job_id):
     task = resume_fine_tuning_task.delay(job.id)
     return JsonResponse({'success': True, 'task_id': task.id,
                          'status': job.status})
+
+
+# ── v5.2: реестр реранкеров ───────────────────────────────────────────────
+class RerankerModelViewSet(viewsets.ModelViewSet):
+    """CRUD моделей реранкинга (cross-encoders) для RAG-поиска."""
+    queryset = RerankerModel.objects.all()
+    serializer_class = RerankerModelSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        if instance.is_default:
+            RerankerModel.objects.exclude(pk=instance.pk).update(is_default=False)

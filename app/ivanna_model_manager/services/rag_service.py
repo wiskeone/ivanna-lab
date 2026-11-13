@@ -111,12 +111,25 @@ class EnhancedSearchService:
         logger.error(f"Giving up after {max_retries} attempts")
         return None
 
-    def _get_reranker(self, query: str):
+    def _get_reranker(self, query: str, reranker_model=None):
         """
-        Определяет язык запроса и возвращает соответствующий кросс-энкодер.
-        Для русского языка использует DiTy/cross-encoder-russian-msmarco.
-        Для всех остальных случаев — английскую модель.
+        v5.2: если у коллекции выбран реранкер (RerankerModel) — загружаем его.
+        Иначе — авто по языку запроса (DiTy/cross-encoder-russian-msmarco для ru).
         """
+        if reranker_model is not None:
+            mid = reranker_model.model_id
+            if mid not in self._rerankers:
+                logger.info(f"Loading collection reranker: {mid}")
+                model = self._load_cross_encoder_with_retry(mid)
+                if model is not None:
+                    self._rerankers[mid] = model
+            if mid in self._rerankers:
+                try:
+                    lang = langdetect.detect(query)
+                except Exception:
+                    lang = 'en'
+                return self._rerankers[mid], lang
+            logger.warning(f"Collection reranker {mid} недоступен — fallback на авто-выбор")
         try:
             lang = langdetect.detect(query)
         except:
@@ -370,8 +383,15 @@ class EnhancedSearchService:
 
         # Реранжирование по общему пулу
         if use_reranking and unique_results:
-            logger.info("Applying reranking")
-            unique_results = self._rerank_results(query, unique_results)
+            reranker_obj = None
+            for c in collections:
+                r = getattr(c, 'reranker_model', None)
+                if r is not None and getattr(r, 'is_active', True):
+                    reranker_obj = r
+                    break
+            logger.info("Applying reranking" + (f" ({reranker_obj.model_id})" if reranker_obj else " (auto)"))
+            unique_results = self._rerank_results(query, unique_results,
+                                                  reranker_model=reranker_obj)
             logger.info(f"After reranking: {len(unique_results)} results")
 
         unique_results.sort(key=lambda x: x['final_score'], reverse=True)
@@ -465,9 +485,9 @@ class EnhancedSearchService:
                 r['final_score'] += freshness * weight
         return results
 
-    def _rerank_results(self, query: str, results: List[Dict]) -> List[Dict]:
-        """Реренжирование результатов с использованием кросс-энкодера."""
-        reranker, lang = self._get_reranker(query)
+    def _rerank_results(self, query: str, results: List[Dict], reranker_model=None) -> List[Dict]:
+        """Реренжирование результатов кросс-энкодером (v5.2: выбор коллекции)."""
+        reranker, lang = self._get_reranker(query, reranker_model=reranker_model)
         if reranker is None:
             logger.warning("No reranker available, skipping reranking")
             return results
