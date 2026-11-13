@@ -4466,6 +4466,15 @@ class MoEExpertJob(models.Model):
 
     # Параметры патча (по умолчанию — значения, проверенные в лабе)
     mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='steer')
+    # v5.2: цель весовой операции — усилить тему (мягкий MoE) или подавить
+    # (WSP-абляция, как Эксп.1 с think-направлением: W ← (I−α·d̂d̂ᵀ)W)
+    goal = models.CharField(max_length=10, choices=[
+        ('amplify', _('amplify — усилить тему (мягкий MoE)')),
+        ('ablate', _('ablate — подавить тему (WSP-абляция, как Эксп. 1)')),
+    ], default='amplify', verbose_name=_("Цель операции"))
+    # v5.2: режим анализа — только скан и отчёты (основа решения «до сборки»)
+    do_patch = models.BooleanField(default=True,
+                                   help_text=_("Снять флажок = только скан и визуализация, без патча и чекпойнта"))
     alpha = models.FloatField(default=0.2,
                               help_text=_("Сила патча; сетка 0.1/0.2/0.4, подбирается eval-гейтом"))
     layers = models.CharField(max_length=255, default='auto',

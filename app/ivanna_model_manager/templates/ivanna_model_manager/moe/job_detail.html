@@ -52,13 +52,39 @@
         </div>
     </div>
 
+    {% if hints %}
+    <div class="moe-card">
+        <h6><i class="bi bi-lightbulb"></i> {% trans "Интерпретация: куда смотреть и что делать" %}</h6>
+        {% for level, text in hints %}
+        <div class="alert alert-{{ level }} py-2 small mb-2">{{ text }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if charts_json %}
+    <div class="moe-card" id="vizCard">
+        <h6><i class="bi bi-graph-up"></i> {% trans "Визуализация эксперимента" %}</h6>
+        <div id="chartAuc" style="height:300px"></div>
+        <div id="chartWriters" style="height:260px"></div>
+        <div id="chartDirHeat" style="height:360px"></div>
+        <div id="chartDeltas" style="height:300px"></div>
+        <div id="chartHeatmaps"></div>
+        <div id="chartEval" style="height:300px"></div>
+    </div>
+    {% endif %}
+
     <div class="row">
         <div class="col-md-6">
             <div class="moe-card">
                 <h6>{% trans "Параметры патча" %}</h6>
                 <table class="table table-sm table-borderless mb-0">
                     <tbody>
+                    <tr><td class="text-muted">{% trans "цель" %}</td><td><code>{{ job.goal }}</code>
+                        {% if job.goal == 'ablate' %}<span class="badge bg-warning text-dark">WSP-абляция</span>{% else %}<span class="badge bg-success">мягкий MoE</span>{% endif %}
+                    </td></tr>
                     <tr><td class="text-muted">mode</td><td><code>{{ job.mode }}</code></td></tr>
+                    <tr><td class="text-muted">do_patch</td><td><code>{{ job.do_patch }}</code>
+                        {% if not job.do_patch %}<span class="badge bg-info">{% trans "только анализ" %}</span>{% endif %}</td></tr>
                     <tr><td class="text-muted">α</td><td><code>{{ job.alpha }}</code></td></tr>
                     <tr><td class="text-muted">{% trans "слои" %}</td><td><code>{{ job.layers }}</code></td></tr>
                     <tr><td class="text-muted">{% trans "позиция d̂" %}</td><td><code>{{ job.position }}</code></td></tr>
@@ -174,6 +200,49 @@
 {% endblock %}
 
 {% block extra_js %}
+<script type="application/json" id="charts-data">{{ charts_json }}</script>
+<script>
+    // v5.2: визуализация эксперимента (Plotly глобально в base.html)
+    (function() {
+        const el = document.getElementById('charts-data');
+        if (!el) return;
+        let C = {};
+        try { C = JSON.parse(el.textContent); } catch (e) { return; }
+        const DARK = {paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+                      font: {color: '#bbb'}, margin: {l: 50, r: 20, t: 36, b: 44}};
+        const CFG = {displayModeBar: false, responsive: true};
+        try {
+            if (C.auc) Plotly.newPlot('chartAuc', [
+                {x: C.auc.layers, y: C.auc.train, name: 'train', mode: 'lines+markers', line: {color: '#6b7280'}},
+                {x: C.auc.layers, y: C.auc.test, name: 'test', mode: 'lines+markers', line: {color: '#10b981'}},
+            ], Object.assign({title: 'AUC проекции на d̂ по слоям (гейт > 0.85)', yaxis: {range: [0, 1.02]}}, DARK), CFG);
+            if (C.writers) Plotly.newPlot('chartWriters', [
+                {x: C.writers.layers, y: C.writers.proj, type: 'bar', marker: {color: '#3b82f6'}}],
+                Object.assign({title: 'Каузальные писатели: Σ|proj| по слоям'}, DARK), CFG);
+            if (C.dir_heat) Plotly.newPlot('chartDirHeat', [
+                {z: C.dir_heat, type: 'heatmap', colorscale: 'Viridis'}],
+                Object.assign({title: 'Теплокарта |d̂|: слои × бакеты скрытых размерностей',
+                               xaxis: {title: 'бакеты dim'}, yaxis: {title: 'слой (0=embedding)'}}, DARK), CFG);
+            if (C.deltas) Plotly.newPlot('chartDeltas', [
+                {x: C.deltas.map(d => d.name), y: C.deltas.map(d => d.delta), type: 'bar', marker: {color: '#10b981'}}],
+                Object.assign({title: '|ΔW| (L1) по тензорам патча'}, DARK), CFG);
+            if (C.heatmaps) {
+                const box = document.getElementById('chartHeatmaps');
+                C.heatmaps.forEach((hm, i) => {
+                    const d = document.createElement('div');
+                    d.id = 'hm' + i; d.style.height = '300px';
+                    box.appendChild(d);
+                    Plotly.newPlot(d, [{z: hm.z, type: 'heatmap', colorscale: 'Inferno'}],
+                        Object.assign({title: 'Теплокарта |ΔW|: ' + hm.name, yaxis: {title: 'out (hid)'}, xaxis: {title: 'in'}}, DARK), CFG);
+                });
+            }
+            if (C.eval) Plotly.newPlot('chartEval', [
+                {x: C.eval.labels, y: C.eval.values, type: 'bar',
+                 marker: {color: ['#6b7280', '#10b981', '#6b7280', '#3b82f6']}}],
+                Object.assign({title: 'Eval-гейт: средняя длина ответов (прокси полноты)'}, DARK), CFG);
+        } catch (e) { console.error('viz', e); }
+    })();
+</script>
 <script>
     // Polling статуса джобы (паттерн fine_tuning/detail.html)
     const jobPk = document.querySelector('[data-job-pk]').dataset.jobPk;

@@ -112,18 +112,37 @@ def moe_build_expert_task(self, job_id):
                 f"направление темы не выделяется. Проверьте наборы промптов "
                 f"(валидацию темы) и их длину — патч не делается.")
 
+        # ── Режим анализа: только скан и отчёты, без патча (основа решения) ──
+        if not job.do_patch:
+            job.add_log("📊 Режим анализа: скан и отчёты готовы, патч не выполнялся (do_patch=False). "
+                        "Смотрите визуализацию на странице задачи.")
+            job.status = 'COMPLETED'
+            job.progress = 100.0
+            job.completed_at = timezone.now()
+            job.save()
+            return {'success': True, 'analysis_only': True, 'scan_gate': scan_report['gate']}
+
         # ── Этап 2: патч (прогресс 55–75%) ──
         job.status = 'PATCHING'
         job.save(update_fields=['status'])
         out_dir = os.path.join(job_dir, 'expert')
         job.update_progress(55, "Патч весов")
 
+        # v5.2: цель операции. ablate = WSP-абляция (Эксп.1): направление темы
+        # ВЫЧИТАЕТСЯ из весов — (I−α·d̂d̂ᵀ)W, реализуется amplify с α<0.
+        eff_mode, eff_alpha = job.mode, job.alpha
+        if job.goal == 'ablate':
+            eff_mode, eff_alpha = 'amplify', -abs(job.alpha)
+            job.add_log(f"⚖ WSP-абляция: направление «{theme.name}» подавляется "
+                        f"((I−α·d̂d̂ᵀ)W, α={eff_alpha}); доменные промпты темы = поведение, "
+                        f"которое убираем")
+
         def patch_progress(done, total, step):
             job.update_progress(55 + 20 * done / max(1, total), f"Патч: {step}")
 
         patch_report = moe_patching.patch_model_dir(
             src, out_dir, npz_path, scan_report,
-            mode=job.mode, alpha=job.alpha, layers=job.layers, position=job.position,
+            mode=eff_mode, alpha=eff_alpha, layers=job.layers, position=job.position,
             progress_cb=patch_progress)
         job.patch_report = patch_report
         job.save(update_fields=['patch_report'])

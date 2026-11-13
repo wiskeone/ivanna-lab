@@ -30,6 +30,19 @@ TENSOR_RE = re.compile(
     r"^(?P<pre>.*?)(?P<lk>layers|h|blocks|layer)\.(?P<li>\d+)\.(?P<tail>.+)\.weight$")
 
 
+def bucket_matrix(arr, n=24):
+    """|ΔW| [out, in] → средние по бакетам [n, n] — компактная теплокарта."""
+    a = np.abs(np.asarray(arr, dtype=np.float32))
+    oh, ih = a.shape
+    out = np.zeros((min(n, oh) or 1, min(n, ih) or 1), dtype=np.float32)
+    ob = np.array_split(np.arange(oh), out.shape[0])
+    ib = np.array_split(np.arange(ih), out.shape[1])
+    for i, rows in enumerate(ob):
+        for j, cols in enumerate(ib):
+            out[i, j] = float(a[np.ix_(rows, cols)].mean())
+    return [[round(float(v), 6) for v in row] for row in out]
+
+
 def match_out_tensor(name, suffixes=OUT_MODULE_SUFFIXES):
     """'model.layers.23.mlp.down_proj.weight' → (23, 'mlp.down_proj') | None."""
     m = TENSOR_RE.match(name)
@@ -169,7 +182,8 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
             delta_l1 = float((W2 - W32).abs().sum())
             tensors[name] = W2.to(orig_dtype)
             report["tensors"].append({"name": name, "delta_l1": delta_l1,
-                                      "orig_l1": float(W32.abs().sum())})
+                                      "orig_l1": float(W32.abs().sum()),
+                                      "heatmap": bucket_matrix((W2 - W32).numpy())})
             n_patched_file += 1
         save_file(tensors, str(out / st.name), metadata={"format": "pt"})
         report["patched_count"] += n_patched_file

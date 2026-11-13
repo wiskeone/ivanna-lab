@@ -4452,6 +4452,99 @@ def moe_job_create(request):
 
 
 @login_required
+def _moe_charts(job):
+    """Данные для Plotly-визуализации страницы джобы (v5.2)."""
+    import numpy as np
+
+    charts = {}
+    scan = job.scan_report or {}
+    auc = scan.get('auc') or {}
+    if auc.get('last'):
+        charts['auc'] = {
+            'layers': list(range(scan.get('n_layers', 0) + 1)),
+            'train': auc['last'].get('train', []),
+            'test': auc['last'].get('test', []),
+            'gate': scan.get('gate_auc'),
+        }
+    writers = scan.get('writers') or {}
+    if writers:
+        per_layer = {}
+        for w in writers.values():
+            per_layer[w['layer']] = per_layer.get(w['layer'], 0.0) + abs(w['proj'])
+        ls = sorted(per_layer)
+        charts['writers'] = {'layers': ls, 'proj': [round(per_layer[l], 2) for l in ls]}
+
+    # направления из npz: нормы по слоям + теплокарта |d̂| (слои × бакеты)
+    try:
+        npz_path = os.path.join(job.job_dir(), 'scan_dirs.npz')
+        if os.path.exists(npz_path):
+            Z = np.load(npz_path)
+            D = np.abs(Z['d_last'])
+            charts['dir_norms'] = [round(float(np.linalg.norm(D[l])), 2)
+                                   for l in range(D.shape[0])]
+            buckets = np.array_split(np.arange(D.shape[1]), 32)
+            charts['dir_heat'] = [[round(float(D[l, b].mean()), 4) for b in buckets]
+                                  for l in range(D.shape[0])]
+    except Exception:
+        pass
+
+    patch = job.patch_report or {}
+    ts = [t for t in (patch.get('tensors') or []) if 'delta_l1' in t]
+    if ts:
+        charts['deltas'] = [{'name': t['name'], 'delta': round(t['delta_l1'], 2)} for t in ts]
+    heatmaps = [t for t in (patch.get('tensors') or []) if t.get('heatmap')]
+    if heatmaps:
+        charts['heatmaps'] = [{'name': t['name'], 'z': t['heatmap']} for t in heatmaps]
+
+    sets = (job.eval_report or {}).get('sets') or {}
+    if sets:
+        agg = lambda k: sets.get(k, {}).get('agg', {}).get('mean_len', 0)
+        charts['eval'] = {
+            'labels': ['domain/base', 'domain/expert', 'general/base', 'general/expert'],
+            'values': [agg('base/eval_domain'), agg('expert/eval_domain'),
+                       agg('base/eval_general'), agg('expert/eval_general')],
+        }
+    return charts
+
+
+def _moe_hints(job):
+    """Интерпретация результатов — «что с этим делать» (v5.2)."""
+    hints = []
+    scan = job.scan_report or {}
+    if scan:
+        if scan.get('gate') != 'PASS':
+            hints.append(('danger', 'AUC низкий — направление темы не выделяется. '
+                          'Проверьте валидацию темы (cross cos, баланс длин), добавьте промптов. Патч в таком случае бесполезен.'))
+        else:
+            top = max(scan.get('auc', {}).get('last', {}).get('test', [0]))
+            if top >= 0.98:
+                hints.append(('success', f'AUC {top} — направление выражено очень чётко; '
+                              'α=0.2 обычно безопасна, при деградации general снижайте.'))
+        late = [w for w in (scan.get('top_writers') or []) if w['layer'] >= scan.get('n_layers', 24) * 0.5]
+        if late:
+            hints.append(('info', f'Писатели сосредоточены в поздних слоях (например L{late[0]["layer"]}) — '
+                          'это ожидаемо: доменное поведение записывается в конце residual stream.'))
+    patch = job.patch_report or {}
+    if patch and patch.get('patched_count', 0) == 0:
+        hints.append(('danger', 'Ни один тензор не патчился: проверьте mean-входы (для steer) и слои.'))
+    er = (job.eval_report or {}).get('summary') or {}
+    g = er.get('general_len', {}).get('delta_pct')
+    d = er.get('domain_len', {}).get('delta_pct')
+    if g is not None and g < -15:
+        hints.append(('warning', f'General просел на {abs(g)}% — уменьшите α (сетка 0.1/0.05) '
+                      'или сузьте список слоёв; патч слишком широкий.'))
+    if d is not None and d < -15:
+        hints.append(('warning', 'Доменные ответы заметно короче базы — числовые метрики — это прокси: '
+                      'обязательно просмотрите тексты ответов ниже руками.'))
+    rr = job.router_report or {}
+    if rr.get('accuracy') is not None and rr.get('gate') != 'PASS':
+        hints.append(('warning', 'Роутер путает темы — добавьте контрастных negative-примеров '
+                      'в scan-наборы или поднимите порог margin.'))
+    if not hints:
+        hints.append(('info', 'Гейты пройдены: результаты в отчётах ниже; тексты eval — для ручной проверки.'))
+    return hints
+
+
 def moe_job_detail(request, pk):
     from .models import MoEExpertJob
 
@@ -4471,6 +4564,8 @@ def moe_job_detail(request, pk):
         'eval_report_json': _j(job.eval_report),
         'router_report_json': _j(job.router_report),
         'eval_texts': _moe_eval_texts(job),
+        'charts_json': json.dumps(_moe_charts(job), ensure_ascii=False),
+        'hints': _moe_hints(job),
     }
     return render(request, 'ivanna_model_manager/moe/job_detail.html', context)
 

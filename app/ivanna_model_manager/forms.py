@@ -1779,8 +1779,8 @@ class MoEExpertJobForm(forms.ModelForm):
 
     class Meta:
         model = MoEExpertJob
-        fields = ['name', 'theme', 'base_checkpoint', 'mode', 'alpha', 'layers',
-                  'position', 'holdout_seed', 'load_mode', 'do_eval', 'do_router']
+        fields = ['name', 'theme', 'base_checkpoint', 'goal', 'mode', 'alpha', 'layers',
+                  'position', 'holdout_seed', 'load_mode', 'do_patch', 'do_eval', 'do_router']
         widgets = {
             'alpha': forms.NumberInput(attrs={'step': '0.05',
                                               'help_text': _('Сетка 0.1/0.2/0.4')}),
