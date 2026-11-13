@@ -5749,3 +5749,162 @@ msgstr "α in range 0.01–2.0 (lab grid: 0.1/0.2/0.4)"
 
 msgid "Сетка 0.1/0.2/0.4"
 msgstr "Grid 0.1/0.2/0.4"
+
+msgid "Дашборд"
+msgstr "Dashboard"
+
+
+msgid "Конвертация в GGUF"
+msgstr "GGUF conversion"
+
+
+msgid "Дашборд конвертации"
+msgstr "Conversion dashboard"
+
+
+msgid "Эксперименты и мягкий MoE"
+msgstr "Experiments & soft MoE"
+
+
+msgid "Мягкий MoE — дашборд"
+msgstr "Soft MoE — dashboard"
+
+
+msgid "Мягкий MoE — новая тема"
+msgstr "Soft MoE — new theme"
+
+
+msgid "Мягкий MoE — собрать эксперта"
+msgstr "Soft MoE — build expert"
+
+
+msgid "Классические эксперименты"
+msgstr "Classic experiments"
+
+
+msgid "Обучение и оценка"
+msgstr "Training & evaluation"
+
+
+msgid "Сгенерированные датасеты"
+msgstr "Generated datasets"
+
+
+msgid "Собственноручные датасеты"
+msgstr "Manual datasets"
+
+
+msgid "Датасеты Hugging Face"
+msgstr "Hugging Face datasets"
+
+
+msgid "Оценка моделей"
+msgstr "Model evaluation"
+
+
+msgid "Система"
+msgstr "System"
+
+
+msgid "Админ-панель"
+msgstr "Admin panel"
+
+
+msgid "Метрики системы"
+msgstr "System metrics"
+
+
+msgid "Профиль"
+msgstr "Profile"
+
+
+msgid "Выйти"
+msgstr "Log out"
+
+
+msgid "ОСНОВНОЕ"
+msgstr "MAIN"
+
+
+msgid "Модели и веса"
+msgstr "Models & weights"
+
+
+msgid "Стек"
+msgstr "Stack"
+
+
+msgid "Ссылки"
+msgstr "Links"
+
+
+msgid "Мониторинг"
+msgstr "Monitoring"
+
+
+msgid "метрики системы"
+msgstr "system metrics"
+
+
+msgid "Исходный код"
+msgstr "Source code"
+
+
+msgid "лицензия MIT"
+msgstr "MIT license"
+
+
+msgid "Self-hosted LLM model lab — всё вокруг цикла «сделай свою модель», в Docker для одной GPU-машины."
+msgstr "A self-hosted LLM model lab — everything around the 'make my own model' loop, Dockerized for a single GPU machine."
+
+
+msgid "Реестр моделей · инференс и чат · fine-tuning (LoRA/RAFT/документы) · слияния (mergekit) · датасеты и дистилляция · RAG · оценка · GGUF · мягкий MoE без дообучения."
+msgstr "Model registry · inference & chat · fine-tuning (LoRA/RAFT/documents) · merges (mergekit) · datasets & distillation · RAG · evaluation · GGUF · training-free soft MoE."
+
+
+msgid "Модели и веса: импорт с Hugging Face и локальных путей, версии и чекпойнты, квантизация, конвертация в GGUF, слияния (linear/SLERP/TIES/DARE). Мягкий MoE — доменные эксперты из плотной модели без градиентов: активационный скан → steer-патч → гейты → роутер."
+msgstr "Models & weights: HF and local-path import, versions and checkpoints, quantization, GGUF conversion, merges (linear/SLERP/TIES/DARE). Soft MoE — domain experts from a dense model without gradients: activation scan → steer patch → gates → router."
+
+
+msgid "Инференс: чат-сессии с любой моделью реестра, сравнения моделей, пресеты генерации. Бэкенд на выбор: transformers в процессе или внешний vLLM (OpenAI-совместимый API)."
+msgstr "Inference: chat sessions with any registry model, model comparisons, generation presets. Backend of choice: in-process transformers or external vLLM (OpenAI-compatible API)."
+
+
+msgid "Обучение: Instruction / RAFT / document trainers на transformers+bitsandbytes, дистилляция Q&A учителями, ручные датасеты, импорт с HF Hub, очередь задач GPU/CPU воркеров."
+msgstr "Training: instruction / RAFT / document trainers on transformers+bitsandbytes, teacher-driven Q&A distillation, manual datasets, HF Hub import, GPU/CPU worker task queue."
+
+
+msgid "Качество: задачи оценки, сравнение моделей по датасетам, рейтинги ответов. RAG: коллекции PDF/DOCX/HTML/CSV, чанкинг, FAISS + BM25 гибрид."
+msgstr "Quality: evaluation tasks, model comparison over datasets, answer ratings. RAG: PDF/DOCX/HTML/CSV collections, chunking, FAISS + BM25 hybrid."
+
+
+msgid "Метод «мягкого MoE» отработан в weight_lab (проект СУБП) на Qwen3.5-2B; вдохновлено Weight-Space Programming (Takeyama et al., MIT CSAIL, 2026)"
+msgstr "The soft MoE method was validated in the weight_lab project on Qwen3.5-2B; inspired by Weight-Space Programming (Takeyama et al., MIT CSAIL, 2026)"
+
+
+msgid "1. Модели"
+msgstr "1. Models"
+
+
+msgid "2. Мягкий MoE — эксперт домена без дообучения"
+msgstr "2. Soft MoE — domain expert without training"
+
+
+msgid "3. Обучение"
+msgstr "3. Training"
+
+
+msgid "4. Инференс и сравнение"
+msgstr "4. Inference & comparison"
+
+
+msgid "5. RAG"
+msgstr "5. RAG"
+
+
+msgid "6. Оценка"
+msgstr "6. Evaluation"
+
+
+msgid "Сервисы"
+msgstr "Services"

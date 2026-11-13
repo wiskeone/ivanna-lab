@@ -44,7 +44,7 @@
                 <div class="nav-group-title">Основное</div>
                 <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="bi bi-speedometer2"></i>
-                    <span>Дашборд</span>
+                    <span>{% trans "Дашборд" %}</span>
                 </a>
             </div>
 
@@ -53,31 +53,31 @@
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseModels">
                         <i class="bi bi-cpu"></i>
-                        <span>Модели</span>
+                        <span>{% trans "Модели" %}</span>
                     </button>
                 </div>
                 <div id="collapseModels" class="accordion-collapse collapse" data-bs-parent="#sidebar">
                     <div class="accordion-body">
                         <a href="{% url 'model_list' %}" class="nav-link-sub">
-                            <i class="bi bi-list-ul"></i> Список моделей
+                            <i class="bi bi-list-ul"></i> {% trans "Список моделей" %}
                         </a>
                         <a href="{% url 'model_create' %}" class="nav-link-sub">
-                            <i class="bi bi-cloud-upload"></i> Загрузить модель
+                            <i class="bi bi-cloud-upload"></i> {% trans "Загрузить модель" %}
                         </a>
-                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">Эмбеддинги</div>
+                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">{% trans "Эмбеддинги" %}</div>
                         <a href="{% url 'embedding_model_list' %}" class="nav-link-sub">
-                            <i class="bi bi-list-ul"></i> Список моделей
+                            <i class="bi bi-list-ul"></i> {% trans "Список моделей" %}
                         </a>
                         <a href="{% url 'embedding_model_create' %}" class="nav-link-sub">
                             <i class="bi bi-cloud-upload"></i> Загрузить эмбеддинг
                         </a>
-                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">Конвертация в GGUF</div>
+                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">{% trans "Конвертация в GGUF" %}</div>
                         <a href="{% url 'conversion_dashboard' %}" class="nav-link-sub">
-                            <i class="bi bi-arrow-left-right"></i> Дашборд конвертации
+                            <i class="bi bi-arrow-left-right"></i> {% trans "Дашборд конвертации" %}
                         </a>
-                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">Слияние</div>
+                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">{% trans "Слияние" %}</div>
                         <a href="{% url 'merge_create' %}" class="nav-link-sub">
-                            <i class="bi bi-arrow-left-right"></i> Слияние моделей
+                            <i class="bi bi-arrow-left-right"></i> {% trans "Слияние моделей" %}
                         </a>
                     </div>
                 </div>
@@ -88,23 +88,23 @@
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExperiments">
                         <i class="bi bi-tools"></i>
-                        <span>Эксперименты и мягкий MoE</span>
+                        <span>{% trans "Эксперименты и мягкий MoE" %}</span>
                     </button>
                 </div>
                 <div id="collapseExperiments" class="accordion-collapse collapse" data-bs-parent="#sidebar">
                     <div class="accordion-body">
                         <a href="{% url 'moe_dashboard' %}" class="nav-link-sub">
-                            <i class="bi bi-diagram-3"></i> Мягкий MoE — дашборд
+                            <i class="bi bi-diagram-3"></i> {% trans "Мягкий MoE — дашборд" %}
                         </a>
                         <a href="{% url 'moe_theme_create' %}" class="nav-link-sub">
-                            <i class="bi bi-tags"></i> Мягкий MoE — новая тема
+                            <i class="bi bi-tags"></i> {% trans "Мягкий MoE — новая тема" %}
                         </a>
                         <a href="{% url 'moe_job_create' %}" class="nav-link-sub">
-                            <i class="bi bi-magic"></i> Мягкий MoE — собрать эксперта
+                            <i class="bi bi-magic"></i> {% trans "Мягкий MoE — собрать эксперта" %}
                         </a>
-                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">Классические эксперименты</div>
+                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">{% trans "Классические эксперименты" %}</div>
                         <a href="{% url 'experiment_list' %}" class="nav-link-sub">
-                            <i class="bi bi-flask"></i> Эксперименты
+                            <i class="bi bi-flask"></i> {% trans "Эксперименты" %}
                         </a>
                     </div>
                 </div>
@@ -115,13 +115,13 @@
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseChat">
                         <i class="bi bi-chat-dots"></i>
-                        <span>Чат</span>
+                        <span>{% trans "Чат" %}</span>
                     </button>
                 </div>
                 <div id="collapseChat" class="accordion-collapse collapse" data-bs-parent="#sidebar">
                     <div class="accordion-body">
                         <a href="{% url 'chat_sessions_management' %}" class="nav-link-sub">
-                            <i class="bi bi-chat-dots"></i> Чат-сессии
+                            <i class="bi bi-chat-dots"></i> {% trans "Чат-сессии" %}
                         </a>
                     </div>
                 </div>
@@ -132,37 +132,37 @@
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTraining">
                         <i class="bi bi-gear-wide-connected"></i>
-                        <span>Обучение и оценка</span>
+                        <span>{% trans "Обучение и оценка" %}</span>
                     </button>
                 </div>
                 <div id="collapseTraining" class="accordion-collapse collapse" data-bs-parent="#sidebar">
                     <div class="accordion-body">
                         <div class="fw-bold text-muted small mt-2 mb-1 ps-3">Fine-Tuning</div>
                         <a href="{% url 'fine_tuning_dashboard' %}" class="nav-link-sub">
-                            <i class="bi bi-speedometer2"></i> Дашборд
+                            <i class="bi bi-speedometer2"></i> {% trans "Дашборд" %}
                         </a>
                         <a href="{% url 'fine_tuning_create' %}" class="nav-link-sub">
-                            <i class="bi bi-plus-circle"></i> Создать задачу
+                            <i class="bi bi-plus-circle"></i> {% trans "Создать задачу" %}
                         </a>
                         <div class="dropdown-divider my-2 mx-3"></div>
-                        <div class="fw-bold text-muted small mt-1 mb-1 ps-3">Дистилляция</div>
+                        <div class="fw-bold text-muted small mt-1 mb-1 ps-3">{% trans "Дистилляция" %}</div>
                         <a href="{% url 'distillation_question_set_list' %}" class="nav-link-sub">
-                            <i class="bi bi-files"></i> Генерация вопросов
+                            <i class="bi bi-files"></i> {% trans "Генерация вопросов" %}
                         </a>
                         <a href="{% url 'distillation_answer_job_list' %}" class="nav-link-sub">
-                            <i class="bi bi-play-circle"></i> Генерация ответов
+                            <i class="bi bi-play-circle"></i> {% trans "Генерация ответов" %}
                         </a>
                         <a href="{% url 'distillation_dataset_list' %}" class="nav-link-sub">
-                            <i class="bi bi-database"></i> Сгенерированные Датасеты
+                            <i class="bi bi-database"></i> {% trans "Сгенерированные датасеты" %}
                         </a>
                         <a href="{% url 'manual_instruction_builder' %}" class="nav-link-sub">
-                            <i class="bi bi-pencil-square"></i> Собственноручные Датасеты
+                            <i class="bi bi-pencil-square"></i> {% trans "Собственноручные датасеты" %}
                         </a>
                         <a href="{% url 'hf_dataset_list' %}" class="nav-link-sub">
-                            <i class="bi bi-cloud-download"></i> Hugging Face Датасеты
+                            <i class="bi bi-cloud-download"></i> {% trans "Датасеты Hugging Face" %}
                         </a>
                         <a href="{% url 'evaluation_dashboard' %}" class="nav-link-sub">
-                            <i class="bi bi-clipboard-check"></i> Оценка моделей
+                            <i class="bi bi-clipboard-check"></i> {% trans "Оценка моделей" %}
                         </a>
                     </div>
                 </div>
@@ -173,19 +173,19 @@
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRAG">
                         <i class="bi bi-database"></i>
-                        <span>RAG</span>
+                        <span>{% trans "RAG" %}</span>
                     </button>
                 </div>
                 <div id="collapseRAG" class="accordion-collapse collapse" data-bs-parent="#sidebar">
                     <div class="accordion-body">
                         <a href="{% url 'document_list' %}" class="nav-link-sub">
-                            <i class="bi bi-files"></i> Документы
+                            <i class="bi bi-files"></i> {% trans "Документы" %}
                         </a>
                         <a href="{% url 'rag_collection_list' %}" class="nav-link-sub">
-                            <i class="bi bi-collection"></i> Коллекции
+                            <i class="bi bi-collection"></i> {% trans "Коллекции" %}
                         </a>
                         <a href="{% url 'rag_search_page' %}" class="nav-link-sub">
-                            <i class="bi bi-search-heart"></i> Поиск по документам
+                            <i class="bi bi-search-heart"></i> {% trans "Поиск по документам" %}
                         </a>
                     </div>
                 </div>
@@ -196,22 +196,22 @@
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdmin">
                         <i class="bi bi-gear"></i>
-                        <span>Система</span>
+                        <span>{% trans "Система" %}</span>
                     </button>
                 </div>
                 <div id="collapseAdmin" class="accordion-collapse collapse" data-bs-parent="#sidebar">
                     <div class="accordion-body">
                         <a href="/admin/" class="nav-link-sub" target="_blank">
-                            <i class="bi bi-gear"></i> Админ-панель
+                            <i class="bi bi-gear"></i> {% trans "Админ-панель" %}
                         </a>
                         <a href="{% url 'system_metrics_view' %}" class="nav-link-sub">
-                            <i class="bi bi-graph-up"></i> Метрики системы
+                            <i class="bi bi-graph-up"></i> {% trans "Метрики системы" %}
                         </a>
                         <a href="{% url 'docs' %}" class="nav-link-sub">
-                            <i class="bi bi-book"></i> Документация
+                            <i class="bi bi-book"></i> {% trans "Документация" %}
                         </a>
                         <a href="{% url 'about' %}" class="nav-link-sub">
-                            <i class="bi bi-info-circle"></i> О проекте
+                            <i class="bi bi-info-circle"></i> {% trans "О проекте" %}
                         </a>
                     </div>
                 </div>
@@ -227,13 +227,13 @@
                     <span>{{ user.username }}</span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person me-2"></i>Профиль</a></li>
+                    <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person me-2"></i>{% trans "Профиль" %}</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="post" action="{% url 'logout' %}">
                             {% csrf_token %}
                             <button type="submit" class="dropdown-item">
-                                <i class="bi bi-box-arrow-right me-2"></i>Выйти
+                                <i class="bi bi-box-arrow-right me-2"></i>{% trans "Выйти" %}
                             </button>
                         </form>
                     </li>
@@ -264,7 +264,7 @@
             {% else %}
             <a href="{% url 'login' %}" class="nav-link flex-grow-1">
                 <i class="bi bi-box-arrow-in-right"></i>
-                <span>Войти</span>
+                <span>{% trans "Войти" %}</span>
             </a>
             {% endif %}
         </div>

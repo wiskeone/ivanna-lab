@@ -1,47 +1,47 @@
 {% extends 'ivanna_model_manager/base.html' %}
 {% load i18n %}
 
-{% block title %}О проекте{% endblock %}
-{% block page_title %}О проекте{% endblock %}
+{% block title %}{% trans "О проекте" %}{% endblock %}
+{% block page_title %}{% trans "О проекте" %}{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 920px;">
 
     <div class="p-4 mb-3 rounded" style="background: linear-gradient(135deg, rgba(30,30,30,0.9), rgba(40,40,40,0.9)); border: 1px solid #444;">
         <h3 class="mb-2">Ivanna Lab</h3>
-        <p class="text-muted mb-1">Self-hosted LLM model lab — всё вокруг цикла «сделай свою модель», в Docker для одной GPU-машины.</p>
-        <p class="small text-muted mb-0">Реестр моделей · инференс и чат · fine-tuning (LoRA/RAFT/документы) · слияния (mergekit) · датасеты и дистилляция · RAG · оценка · GGUF · мягкий MoE без дообучения.</p>
+        <p class="text-muted mb-1">{% trans "Self-hosted LLM model lab — всё вокруг цикла «сделай свою модель», в Docker для одной GPU-машины." %}</p>
+        <p class="small text-muted mb-0">{% trans "Реестр моделей · инференс и чат · fine-tuning (LoRA/RAFT/документы) · слияния (mergekit) · датасеты и дистилляция · RAG · оценка · GGUF · мягкий MoE без дообучения." %}</p>
     </div>
 
     <div class="row g-3 mb-3">
         <div class="col-md-6">
             <div class="moe-card h-100">
-                <h6><i class="bi bi-cpu"></i> Модели и веса</h6>
-                <p class="small text-muted mb-0">Импорт с Hugging Face и локальных путей, версии и чекпойнты, квантизация, конвертация в GGUF, слияния (linear/SLERP/TIES/DARE). Мягкий MoE — доменные эксперты из плотной модели без градиентов: активационный скан → steer-патч → гейты → роутер.</p>
+                <h6><i class="bi bi-cpu"></i> {% trans "Модели и веса" %}</h6>
+                <p class="small text-muted mb-0">{% trans "Модели и веса: импорт с Hugging Face и локальных путей, версии и чекпойнты, квантизация, конвертация в GGUF, слияния (linear/SLERP/TIES/DARE). Мягкий MoE — доменные эксперты из плотной модели без градиентов: активационный скан → steer-патч → гейты → роутер." %}</p>
             </div>
         </div>
         <div class="col-md-6">
             <div class="moe-card h-100">
-                <h6><i class="bi bi-chat-dots"></i> Инференс</h6>
-                <p class="small text-muted mb-0">Чат-сессии с любой моделью реестра, сравнения моделей, пресеты генерации. Бэкенд на выбор: transformers в процессе или внешний vLLM (OpenAI-совместимый API).</p>
+                <h6><i class="bi bi-chat-dots"></i> {% trans "Инференс" %}</h6>
+                <p class="small text-muted mb-0">{% trans "Инференс: чат-сессии с любой моделью реестра, сравнения моделей, пресеты генерации. Бэкенд на выбор: transformers в процессе или внешний vLLM (OpenAI-совместимый API)." %}</p>
             </div>
         </div>
         <div class="col-md-6">
             <div class="moe-card h-100">
-                <h6><i class="bi bi-gear-wide-connected"></i> Обучение</h6>
-                <p class="small text-muted mb-0">Instruction / RAFT / document trainers на transformers+bitsandbytes, дистилляция Q&A учителями, ручные датасеты, импорт с HF Hub, очередь задач GPU/CPU воркеров.</p>
+                <h6><i class="bi bi-gear-wide-connected"></i> {% trans "Обучение" %}</h6>
+                <p class="small text-muted mb-0">{% trans "Обучение: Instruction / RAFT / document trainers на transformers+bitsandbytes, дистилляция Q&A учителями, ручные датасеты, импорт с HF Hub, очередь задач GPU/CPU воркеров." %}</p>
             </div>
         </div>
         <div class="col-md-6">
             <div class="moe-card h-100">
-                <h6><i class="bi bi-clipboard-check"></i> Качество</h6>
-                <p class="small text-muted mb-0">Задачи оценки, сравнение моделей по датасетам, рейтинги ответов. RAG: коллекции PDF/DOCX/HTML/CSV, чанкинг, FAISS + BM25 гибрид.</p>
+                <h6><i class="bi bi-clipboard-check"></i> {% trans "Качество" %}</h6>
+                <p class="small text-muted mb-0">{% trans "Качество: задачи оценки, сравнение моделей по датасетам, рейтинги ответов. RAG: коллекции PDF/DOCX/HTML/CSV, чанкинг, FAISS + BM25 гибрид." %}</p>
             </div>
         </div>
     </div>
 
     <div class="moe-card mb-3">
-        <h6><i class="bi bi-stack"></i> Стек</h6>
+        <h6><i class="bi bi-stack"></i> {% trans "Стек" %}</h6>
         <table class="table table-sm table-borderless mb-0 small text-muted">
             <tbody>
             <tr><td style="width:140px">Backend</td><td>Django 5 + DRF, Gunicorn</td></tr>
@@ -55,12 +55,12 @@
     </div>
 
     <div class="moe-card">
-        <h6><i class="bi bi-link-45deg"></i> Ссылки</h6>
+        <h6><i class="bi bi-link-45deg"></i> {% trans "Ссылки" %}</h6>
         <ul class="small mb-0">
-            <li>Документация: <a href="{% url 'docs' %}">{% trans "Документация" %}</a> · API: <a href="/swagger/" target="_blank">Swagger</a> / <a href="/redoc/" target="_blank">Redoc</a></li>
-            <li>Мониторинг: <a href="{% url 'system_metrics_view' %}">метрики системы</a> · Grafana (:3000) · Prometheus (:9090)</li>
-            <li>Исходный код: <a href="https://github.com/wiskeone/ivanna-lab" target="_blank">github.com/wiskeone/ivanna-lab</a> · лицензия MIT</li>
-            <li>Метод «мягкого MoE» отработан в weight_lab (проект СУБП) на Qwen3.5-2B; вдохновлено Weight-Space Programming (Takeyama et al., MIT CSAIL, 2026)</li>
+            <li>{% trans "Документация" %}: <a href="{% url 'docs' %}">{% trans "Документация" %}</a> · API: <a href="/swagger/" target="_blank">Swagger</a> / <a href="/redoc/" target="_blank">Redoc</a></li>
+            <li>{% trans "Мониторинг" %}: <a href="{% url 'system_metrics_view' %}">{% trans "метрики системы" %}</a> · Grafana (:3000) · Prometheus (:9090)</li>
+            <li>{% trans "Исходный код" %}: <a href="https://github.com/wiskeone/ivanna-lab" target="_blank">github.com/wiskeone/ivanna-lab</a> · {% trans "лицензия MIT" %}</li>
+            <li>{% trans "Метод «мягкого MoE» отработан в weight_lab (проект СУБП) на Qwen3.5-2B; вдохновлено Weight-Space Programming (Takeyama et al., MIT CSAIL, 2026)" %}</li>
         </ul>
     </div>
 
