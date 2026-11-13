@@ -35,6 +35,9 @@ from .services.download_service import download_service
 from .services.redis_model_service import redis_model_manager
 from .services.quantization_router import QuantizationRouter
 from .tasks_rag import (
+    _build_faiss_index_impl,
+    _create_embeddings_for_collection_impl,
+    _update_faiss_index_impl,
     process_document_task,
     create_embeddings_for_collection_task,
     rebuild_embeddings_and_index_task,
