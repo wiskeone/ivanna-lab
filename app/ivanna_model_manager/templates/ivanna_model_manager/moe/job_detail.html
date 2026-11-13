@@ -124,6 +124,10 @@
                 <p class="mb-2">
                     <a href="{% url 'model_detail' job.output_model.pk %}">{{ job.output_model.name }}</a>
                     — {% trans "готов к чату и конвертации в GGUF" %}.
+                    <a class="btn btn-sm btn-outline-primary ms-2"
+                       href="{% url 'evaluation_task_create' %}?models={{ job.output_model.pk }},{{ job.base_checkpoint.pk }}">
+                        <i class="bi bi-clipboard-check"></i> {% trans "Оценить в Evaluation (base vs expert)" %}
+                    </a>
                 </p>
                 {% if job.hf_repo_id %}
                 <a class="btn btn-sm btn-success" href="https://huggingface.co/{{ job.hf_repo_id }}" target="_blank">
