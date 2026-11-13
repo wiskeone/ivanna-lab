@@ -2181,6 +2181,9 @@ class Document(models.Model):
         ('CODE', 'Исходный код'),
         ('CSV', 'Таблица CSV'),
         ('EXCEL', 'Excel'),
+        ('RTF', 'RTF'),
+        ('PPTX', 'Презентация'),
+        ('EPUB', 'EPUB'),
         ('UNKNOWN', 'Неизвестный'),
     ]
     

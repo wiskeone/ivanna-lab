@@ -2185,7 +2185,8 @@ def document_reload(request, pk):
     allowed_extensions = getattr(settings, 'ALLOWED_DOCUMENT_EXTENSIONS', {
         '.pdf': 'PDF', '.docx': 'DOCX', '.doc': 'DOCX',
         '.txt': 'TXT', '.html': 'HTML', '.htm': 'HTML',
-        '.md': 'MARKDOWN', '.csv': 'CSV', '.xlsx': 'EXCEL', '.xls': 'EXCEL'
+        '.md': 'MARKDOWN', '.csv': 'CSV', '.xlsx': 'EXCEL', '.xls': 'EXCEL',
+        '.rtf': 'RTF', '.pptx': 'PPTX', '.ppt': 'PPTX', '.epub': 'EPUB'
     })
     if ext not in allowed_extensions:
         return JsonResponse({'success': False, 'error': f'File type {ext} not allowed'}, status=400)

@@ -295,6 +295,172 @@ def _tabular_chunks_xlsx(file_path: str) -> list:
     return extra
 
 
+
+# v5.2: форматы DOCX(таблицы/картинки)/RTF/PPTX/EPUB -------------------------
+def extract_text_from_rtf(file_path: str) -> str:
+    """RTF → текст (striprtf)."""
+    try:
+        from striprtf.main import rtf_to_text
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            return rtf_to_text(f.read()) or ""
+    except Exception as e:
+        logger.error(f"RTF extraction error: {e}")
+        return ""
+
+
+def extract_text_from_doc_legacy(file_path: str) -> str:
+    """Бинарный .doc: античные конвертеры, если есть в системе."""
+    import subprocess
+    for cmd in (['antiword', file_path], ['catdoc', file_path]):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            if r.returncode == 0 and r.stdout.strip():
+                return r.stdout
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            continue
+    return ""
+
+
+def extract_pptx_pages(file_path: str):
+    """PPTX → список страниц (текст слайдов + заметки). Таблицы — отдельно."""
+    pages = []
+    try:
+        from pptx import Presentation
+        prs = Presentation(file_path)
+        for slide in prs.slides:
+            parts = []
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    t = shape.text_frame.text.strip()
+                    if t:
+                        parts.append(t)
+            if getattr(slide, 'has_notes_slide', False) and slide.notes_slide:
+                nt = slide.notes_slide.notes_text_frame.text.strip()
+                if nt:
+                    parts.append(f"[Заметки]\n{nt}")
+            pages.append("\n\n".join(parts))
+    except Exception as e:
+        logger.error(f"PPTX extraction error: {e}")
+    return pages
+
+
+def extract_epub_chapters(file_path: str):
+    """EPUB → главы как «страницы» (zipfile + BeautifulSoup, без внешних зависимостей)."""
+    pages = []
+    try:
+        import zipfile
+        from bs4 import BeautifulSoup
+        with zipfile.ZipFile(file_path) as z:
+            names = sorted(n for n in z.namelist()
+                           if n.lower().endswith(('.xhtml', '.html', '.htm')))
+            for n in names:
+                soup = BeautifulSoup(z.read(n), 'html.parser')
+                for tag in soup(["script", "style"]):
+                    tag.decompose()
+                t = soup.get_text(separator="\n").strip()
+                if t:
+                    pages.append(t)
+    except Exception as e:
+        logger.error(f"EPUB extraction error: {e}")
+    return pages
+
+
+def _html_tables_chunks(file_path: str) -> list:
+    """HTML-таблицы как табличные чанки."""
+    extra = []
+    try:
+        from bs4 import BeautifulSoup
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            soup = BeautifulSoup(f.read(), 'html.parser')
+        for i, tb in enumerate(soup.find_all('table')[:50], start=1):
+            rows = []
+            for tr in tb.find_all('tr')[:200]:
+                cells = [c.get_text(' ', strip=True) for c in tr.find_all(['td', 'th'])]
+                if cells:
+                    rows.append('\t'.join(cells))
+            if len(rows) >= 2:
+                extra.append({'content': f'[HTML-таблица #{i}]\n' + '\n'.join(rows),
+                              'strategy': 'table', 'metadata': {'is_table': True, 'source': 'html'}})
+    except Exception as e:
+        logger.debug(f"HTML tables: {e}")
+    return extra
+
+
+def _zip_media_chunks(file_path: str, document, media_dir_in_zip: str, kind: str) -> list:
+    """Картинки из офисных контейнеров (word/media, ppt/media) в media + чанк-заглушки."""
+    extra = []
+    try:
+        import zipfile
+        img_rel = f'documents/{document.id}/images'
+        img_dir = os.path.join(settings.MEDIA_ROOT, img_rel)
+        os.makedirs(img_dir, exist_ok=True)
+        n = 0
+        with zipfile.ZipFile(file_path) as z:
+            for name in z.namelist():
+                if not name.startswith(media_dir_in_zip):
+                    continue
+                if not name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
+                    continue
+                fname = name.rsplit('/', 1)[-1]
+                with open(os.path.join(img_dir, fname), 'wb') as out:
+                    out.write(z.read(name))
+                extra.append({'content': f'[{kind}: {fname}] сохранено: {img_rel}/{fname}',
+                              'strategy': 'table',
+                              'metadata': {'is_image': True,
+                                           'image_path': f'{img_rel}/{fname}'}})
+                n += 1
+                if n >= 20:
+                    break
+    except Exception as e:
+        logger.debug(f"{kind} media: {e}")
+    return extra
+
+
+def _docx_tables_chunks(file_path: str) -> list:
+    """Таблицы DOCX как табличные чанки."""
+    extra = []
+    try:
+        from docx import Document as DocxDocument
+        doc = DocxDocument(file_path)
+        for i, tb in enumerate(doc.tables[:50], start=1):
+            rows = []
+            for tr in tb.rows[:200]:
+                cells = [c.text.strip() for c in tr.cells]
+                if any(cells):
+                    rows.append('\t'.join(cells))
+            if len(rows) >= 2:
+                extra.append({'content': f'[DOCX-таблица #{i}]\n' + '\n'.join(rows),
+                              'strategy': 'table', 'metadata': {'is_table': True, 'source': 'docx'}})
+    except Exception as e:
+        logger.debug(f"DOCX tables: {e}")
+    return extra
+
+
+def _pptx_tables_chunks(file_path: str) -> list:
+    """Таблицы PPTX как табличные чанки (с номером слайда)."""
+    extra = []
+    try:
+        from pptx import Presentation
+        prs = Presentation(file_path)
+        for i, slide in enumerate(prs.slides, start=1):
+            for shape in slide.shapes:
+                if getattr(shape, 'has_table', False):
+                    rows = []
+                    for tr in shape.table.rows:  # rows не поддерживает срезы
+                        cells = [c.text.strip() for c in tr.cells]
+                        if any(cells):
+                            rows.append('\t'.join(cells))
+                        if len(rows) >= 200:
+                            break
+                    if len(rows) >= 2:
+                        extra.append({'content': f'[PPTX-таблица, слайд {i}]\n' + '\n'.join(rows),
+                                      'strategy': 'table',
+                                      'metadata': {'is_table': True, 'source': 'pptx', 'page': i}})
+    except Exception as e:
+        logger.debug(f"PPTX tables: {e}")
+    return extra
+
+
 def get_file_hash(file_path: str) -> str:
     """SHA256 хеш файла."""
     sha256 = hashlib.sha256()
@@ -520,10 +686,41 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
                 page_map.append((offset, offset + len(pt), i))
                 offset += len(pt)
             extra_chunks = _pdf_extra_chunks(file_path, document)
-        elif ext in ['.docx', '.doc']:
+        elif ext == '.docx':
             raw_text = extract_text_from_docx(file_path)
+            extra_chunks = _docx_tables_chunks(file_path) + \
+                _zip_media_chunks(file_path, document, 'word/media/', 'DOCX-изображение')
+        elif ext == '.doc':
+            raw_text = extract_text_from_doc_legacy(file_path)
+            if not raw_text.strip():
+                raise ValueError(
+                    "Бинарный .doc не распознан (в образе нет antiword/catdoc/soffice). "
+                    "Пересохраните документ как DOCX или PDF — пайплайн поддерживает их полностью.")
+        elif ext == '.rtf':
+            raw_text = extract_text_from_rtf(file_path)
+        elif ext == '.pptx':
+            pages = extract_pptx_pages(file_path)
+            raw_text = "\n\n".join(f'[Слайд {i}]\n{t}' for i, t in enumerate(pages, start=1) if t.strip())
+            offset = 0
+            for i, pt in enumerate(pages, start=1):
+                if offset:
+                    offset += 2  # \n\n
+                page_map.append((offset, offset + len(pt), i))
+                offset += len(pt)
+            extra_chunks = _pptx_tables_chunks(file_path) + \
+                _zip_media_chunks(file_path, document, 'ppt/media/', 'PPTX-изображение')
+        elif ext == '.epub':
+            pages = extract_epub_chapters(file_path)
+            raw_text = "\n\n".join(pages)
+            offset = 0
+            for i, pt in enumerate(pages, start=1):
+                if offset:
+                    offset += 2
+                page_map.append((offset, offset + len(pt), i))
+                offset += len(pt)
         elif ext in ['.html', '.htm']:
             raw_text = extract_text_from_html(file_path)
+            extra_chunks = _html_tables_chunks(file_path)
         elif ext == '.md':
             raw_text = extract_text_from_markdown(file_path)
         elif ext == '.csv':
