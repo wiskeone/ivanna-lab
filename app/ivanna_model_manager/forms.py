@@ -19,7 +19,7 @@ from .models import (
     FineTuningJob, FineTuningTemplate, UserProfile,
     ModelConversionJob, EmbeddingModel, DistillationAnswerJob, DistillationQuestionSet,
     DistillationDataset, ManualInstructionSet, HuggingFaceDataset,
-    MoETheme, MoEExpertJob,
+    MoETheme, MoEExpertJob, RerankerModel,
 )
 
 class UserProfileForm(forms.ModelForm):
