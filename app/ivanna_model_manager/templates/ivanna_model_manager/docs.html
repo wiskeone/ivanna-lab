@@ -1,0 +1,92 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}Документация{% endblock %}
+{% block page_title %}Документация{% endblock %}
+
+{% block extra_css %}
+<style>
+    .doc-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 20px; margin-bottom: 18px; }
+    .doc-card h6 { color: var(--primary-color); margin-bottom: 10px; }
+    .doc-flow { font-size: 0.9rem; }
+    .doc-flow .step { color: var(--accent-color); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px;">
+
+    <p class="text-muted">Краткие рецепты основных сценариев платформы. Полные инструкции и методы —
+        в <code>docs/</code> репозитория и <a href="/swagger/" target="_blank">Swagger</a> /
+        <a href="/redoc/" target="_blank">Redoc</a> по REST API.</p>
+
+    <div class="doc-card">
+        <h6><i class="bi bi-cpu"></i> 1. Модели</h6>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Модели → Загрузить модель</span>: импорт с Hugging Face (repo-id, ревизия, токен в Профиле)
+            или регистрация локального пути. Скачивание идёт фоном (CPU-воркер), статус — в карточке модели.
+        </p>
+        <p class="doc-flow small text-muted mb-0">
+            <span class="step">GGUF</span>: конвертация чекпойнта в GGUF (llama.cpp-скрипты) — «Модели → Конвертация в GGUF».
+            GGUF-чекпойнт можно импортировать и как обычную модель — MoE-скан деквантует его автоматически.
+        </p>
+    </div>
+
+    <div class="doc-card">
+        <h6><i class="bi bi-magic"></i> 2. Мягкий MoE — эксперт домена без дообучения</h6>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Тема</span>: 25–30 доменных промптов + столько же контрастных (длины выровнять),
+            опционально 10+10 свежих eval-промптов → гейт валидации (cross cos &lt; 0.5).
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Сборка</span>: скан активаций → гейт AUC &gt; 0.85 → steer-патч (α=0.2, слои auto)
+            → eval-гейт → эмбеддинг-роутер. Гейт не пройден — патч не применяется.
+        </p>
+        <p class="small text-muted mb-0">Рецепт целиком, α-сетка и ограничения — <code>docs/soft_moe.md</code> в репозитории.
+            Результат — обычный чекпойнт: чат, GGUF, публикация на Hugging Face кнопкой.</p>
+    </div>
+
+    <div class="doc-card">
+        <h6><i class="bi bi-gear-wide-connected"></i> 3. Обучение</h6>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Fine-tuning</span>: instruction (LoRA), RAFT (по коллекциям документов), document-тренер.
+            Датасеты — из дистилляции, ручные или с HF Hub. GPU-воркер, выбор устройства, пауза/резюме.
+        </p>
+        <p class="doc-flow small text-muted mb-0">
+            <span class="step">Дистилляция</span>: генерация вопросов и ответов учительскими чекпойнтами → датасет инструкций.
+        </p>
+    </div>
+
+    <div class="doc-card">
+        <h6><i class="bi bi-chat-dots"></i> 4. Инференс и сравнение</h6>
+        <p class="small text-muted mb-0">Чат-сессии с любым чекпойнтом (transformers in-process или vLLM),
+            сравнение моделей бок о бок, пресеты параметров генерации. Слияния — mergekit
+            (linear/SLERP/TIES/DARE) в «Модели → Слияние».</p>
+    </div>
+
+    <div class="doc-card">
+        <h6><i class="bi bi-database"></i> 5. RAG</h6>
+        <p class="small text-muted mb-0">Коллекции документов (PDF/DOCX/HTML/CSV/Excel) → чанкинг →
+            эмбеддинги → FAISS + BM25 гибрид → RAG-чат с привязкой к источникам.</p>
+    </div>
+
+    <div class="doc-card">
+        <h6><i class="bi bi-clipboard-check"></i> 6. Оценка</h6>
+        <p class="small text-muted mb-0">Задачи оценки: несколько моделей × один датасет, сравнение ответов,
+            рейтинги, REST-эндпоинты для программного прогона.</p>
+    </div>
+
+    <div class="doc-card">
+        <h6><i class="bi bi-gear"></i> Сервисы</h6>
+        <table class="table table-sm table-borderless mb-0 small text-muted">
+            <tbody>
+            <tr><td style="width:180px">Веб / API</td><td>http://localhost · /swagger/ · /redoc/</td></tr>
+            <tr><td>Flower (задачи)</td><td>порт из <code>.env</code> (FLOWER_PORT)</td></tr>
+            <tr><td>Grafana / Prometheus</td><td>:3000 / :9090</td></tr>
+            <tr><td>pgAdmin</td><td>:5050</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

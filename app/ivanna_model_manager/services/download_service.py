@@ -10,7 +10,7 @@ import traceback
 from ..models import ModelCheckpoint, ModelDownloadJob
 
 # Устанавливаем зеркало по умолчанию, если не задано в окружении
-HF_ENDPOINT = os.environ.get('HF_ENDPOINT', 'https://hf-mirror.com')
+HF_ENDPOINT = os.environ.get('HF_ENDPOINT', 'https://huggingface.co')
 os.environ['HF_ENDPOINT'] = HF_ENDPOINT  # для snapshot_download и HfApi
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,13 @@ class DownloadService:
 
             progress_cb(10, "Начало загрузки...")
 
-            # Список файлов для игнорирования (чтобы не качать лишнее)
+            # Список файлов для игнорирования (чтобы не качать лишнее).
+            # GGUF/GGML режем только если в репо есть другие веса: GGUF-репо
+            # (например, квантованные сборки) иначе скачивалось бы пустым.
+            repo_files = [s.rfilename for s in (model_info.siblings or [])] \
+                if (model_info is not None and getattr(model_info, 'siblings', None)) else []
+            has_other_weights = any(
+                f.endswith(('.safetensors', '.bin')) for f in repo_files)
             ignore_patterns = [
                 "*.msgpack",
                 "*.h5",
@@ -118,10 +124,13 @@ class DownloadService:
                 "*.pdf",
                 "*.onnx",
                 "*.tflite",
-                "*.gguf",
-                "*.ggml",
                 "pytorch_model.bin",  # если есть safetensors, игнорируем bin
             ]
+            if has_other_weights:
+                ignore_patterns += ["*.gguf", "*.ggml"]
+            elif repo_files:
+                # GGUF-only репо: не тащим лишние стандартные файлы
+                ignore_patterns += ["*.md", "*.gitattributes"]
 
             # Используем snapshot_download с явным endpoint
             local_path = snapshot_download(

@@ -11,8 +11,11 @@ from huggingface_hub import snapshot_download, HfFileSystem
 from .models import EmbeddingModel
 from django.contrib.auth import get_user_model
 
-# Явно задаём endpoint зеркала
-HF_ENDPOINT = os.environ.get('HF_ENDPOINT', 'https://hf-mirror.com')
+# HF endpoint: официальный Hub по умолчанию; зеркало — только явно через env.
+# ВАЖНО: не дефолтить на hf-mirror.com — этот модуль импортируется раньше
+# download_service и через os.environ перебивал его endpoint (скачивание
+# моделей падало FileMetadataError на редиректах зеркала).
+HF_ENDPOINT = os.environ.get('HF_ENDPOINT', 'https://huggingface.co')
 os.environ['HF_ENDPOINT'] = HF_ENDPOINT  # на всякий случай
 
 # Включаем hf_transfer для ускорения (если установлено)

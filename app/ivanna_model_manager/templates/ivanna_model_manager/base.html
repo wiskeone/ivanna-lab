@@ -48,12 +48,12 @@
                 </a>
             </div>
 
-            <!-- ==================== ЯЗЫКОВЫЕ МОДЕЛИ (аккордеон) ==================== -->
+            <!-- ==================== МОДЕЛИ (аккордеон) ==================== -->
             <div class="accordion-item nav-group">
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseModels">
                         <i class="bi bi-cpu"></i>
-                        <span>Языковые модели</span>
+                        <span>Модели</span>
                     </button>
                 </div>
                 <div id="collapseModels" class="accordion-collapse collapse" data-bs-parent="#sidebar">
@@ -64,43 +64,18 @@
                         <a href="{% url 'model_create' %}" class="nav-link-sub">
                             <i class="bi bi-cloud-upload"></i> Загрузить модель
                         </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ==================== ЭМБЕДДИНГИ ==================== -->
-            <div class="accordion-item nav-group">
-                <div class="accordion-header">
-                    <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEmbeddings">
-                        <i class="bi bi-vector-pen"></i>
-                        <span>Эмбеддинги</span>
-                    </button>
-                </div>
-                <div id="collapseEmbeddings" class="accordion-collapse collapse" data-bs-parent="#sidebar">
-                    <div class="accordion-body">
+                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">Эмбеддинги</div>
                         <a href="{% url 'embedding_model_list' %}" class="nav-link-sub">
                             <i class="bi bi-list-ul"></i> Список моделей
                         </a>
                         <a href="{% url 'embedding_model_create' %}" class="nav-link-sub">
                             <i class="bi bi-cloud-upload"></i> Загрузить эмбеддинг
                         </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ==================== ЭКСПЕРИМЕНТЫ И СЛИЯНИЕ ==================== -->
-            <div class="accordion-item nav-group">
-                <div class="accordion-header">
-                    <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExperiments">
-                        <i class="bi bi-tools"></i>
-                        <span>Эксперименты и слияние</span>
-                    </button>
-                </div>
-                <div id="collapseExperiments" class="accordion-collapse collapse" data-bs-parent="#sidebar">
-                    <div class="accordion-body">
-                        <a href="{% url 'experiment_list' %}" class="nav-link-sub">
-                            <i class="bi bi-flask"></i> Эксперименты
+                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">Конвертация в GGUF</div>
+                        <a href="{% url 'conversion_dashboard' %}" class="nav-link-sub">
+                            <i class="bi bi-arrow-left-right"></i> Дашборд конвертации
                         </a>
+                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">Слияние</div>
                         <a href="{% url 'merge_create' %}" class="nav-link-sub">
                             <i class="bi bi-arrow-left-right"></i> Слияние моделей
                         </a>
@@ -108,24 +83,28 @@
                 </div>
             </div>
 
-            <!-- ==================== МЯГКИЙ MoE (v5.2) ==================== -->
+            <!-- ==================== ЭКСПЕРИМЕНТЫ И МЯГКИЙ MoE ==================== -->
             <div class="accordion-item nav-group">
                 <div class="accordion-header">
-                    <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSoftMoe">
-                        <i class="bi bi-diagram-3"></i>
-                        <span>Мягкий MoE</span>
+                    <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExperiments">
+                        <i class="bi bi-tools"></i>
+                        <span>Эксперименты и мягкий MoE</span>
                     </button>
                 </div>
-                <div id="collapseSoftMoe" class="accordion-collapse collapse" data-bs-parent="#sidebar">
+                <div id="collapseExperiments" class="accordion-collapse collapse" data-bs-parent="#sidebar">
                     <div class="accordion-body">
                         <a href="{% url 'moe_dashboard' %}" class="nav-link-sub">
-                            <i class="bi bi-speedometer2"></i> Дашборд
+                            <i class="bi bi-diagram-3"></i> Мягкий MoE — дашборд
                         </a>
                         <a href="{% url 'moe_theme_create' %}" class="nav-link-sub">
-                            <i class="bi bi-tags"></i> Новая тема
+                            <i class="bi bi-tags"></i> Мягкий MoE — новая тема
                         </a>
                         <a href="{% url 'moe_job_create' %}" class="nav-link-sub">
-                            <i class="bi bi-magic"></i> Собрать эксперта
+                            <i class="bi bi-magic"></i> Мягкий MoE — собрать эксперта
+                        </a>
+                        <div class="fw-bold text-muted small mt-2 mb-1 ps-3">Классические эксперименты</div>
+                        <a href="{% url 'experiment_list' %}" class="nav-link-sub">
+                            <i class="bi bi-flask"></i> Эксперименты
                         </a>
                     </div>
                 </div>
@@ -153,7 +132,7 @@
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTraining">
                         <i class="bi bi-gear-wide-connected"></i>
-                        <span>Обучение и дистилляция</span>
+                        <span>Обучение и оценка</span>
                     </button>
                 </div>
                 <div id="collapseTraining" class="accordion-collapse collapse" data-bs-parent="#sidebar">
@@ -212,35 +191,12 @@
                 </div>
             </div>
 
-            <!-- ==================== КОНВЕРТАЦИЯ В GGUF ==================== -->
-            <div class="accordion-item nav-group">
-                <div class="accordion-header">
-                    <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConversion">
-                        <i class="bi bi-arrow-left-right"></i>
-                        <span>Конвертация в GGUF</span>
-                    </button>
-                </div>
-                <div id="collapseConversion" class="accordion-collapse collapse" data-bs-parent="#sidebar">
-                    <div class="accordion-body">
-                        <a href="{% url 'conversion_dashboard' %}" class="nav-link-sub">
-                            <i class="bi bi-speedometer2"></i> Дашборд
-                        </a>
-                        <a href="{% url 'conversion_create' %}" class="nav-link-sub">
-                            <i class="bi bi-plus-circle"></i> Создать задачу
-                        </a>
-                        <a href="{% url 'conversion_dashboard' %}" class="nav-link-sub">
-                            <i class="bi bi-list-task"></i> Все задачи
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ==================== АДМИНИСТРИРОВАНИЕ ==================== -->
+            <!-- ==================== СИСТЕМА ==================== -->
             <div class="accordion-item nav-group">
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdmin">
                         <i class="bi bi-gear"></i>
-                        <span>Администрирование</span>
+                        <span>Система</span>
                     </button>
                 </div>
                 <div id="collapseAdmin" class="accordion-collapse collapse" data-bs-parent="#sidebar">
@@ -262,10 +218,10 @@
             </div>
         </div>
 
-        <!-- Профиль внизу -->
-        <div class="sidebar-footer">
+        <!-- Профиль и язык внизу -->
+        <div class="sidebar-footer d-flex align-items-center gap-1">
             {% if user.is_authenticated %}
-            <div class="dropdown">
+            <div class="dropdown flex-grow-1">
                 <a href="#" class="nav-link user-menu-link" data-bs-toggle="dropdown">
                     <i class="bi bi-person-circle"></i>
                     <span>{{ user.username }}</span>
@@ -274,21 +230,6 @@
                     <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person me-2"></i>Профиль</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <!-- v61.5: переключатель языка RU/EN -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="langMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">🌐</a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                {% get_current_language as CURR_LANG %}
-                                {% for lang_code, lang_name in LANGUAGES %}
-                                <li>
-                                    <form method="post" action="{% url 'set_language' %}">{% csrf_token %}
-                                        <input type="hidden" name="language" value="{{ lang_code }}">
-                                        <button type="submit" class="dropdown-item {% if lang_code == CURR_LANG %}active{% endif %}">{{ lang_name }}</button>
-                                    </form>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </li>
                         <form method="post" action="{% url 'logout' %}">
                             {% csrf_token %}
                             <button type="submit" class="dropdown-item">
@@ -298,8 +239,30 @@
                     </li>
                 </ul>
             </div>
+            <!-- v5.2: переключатель языка RU/EN — отдельная кнопка рядом с профилем -->
+            {% get_current_language as CURR_LANG %}
+            <div class="dropdown">
+                <a href="#" class="nav-link" data-bs-toggle="dropdown" aria-expanded="false"
+                   title="Язык интерфейса / Interface language">
+                    <i class="bi bi-globe2"></i>
+                    <span class="text-uppercase small">{{ CURR_LANG }}</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    {% for lang_code, lang_name in LANGUAGES %}
+                    <li>
+                        <form method="post" action="{% url 'set_language' %}">{% csrf_token %}
+                            <input type="hidden" name="language" value="{{ lang_code }}">
+                            <button type="submit" class="dropdown-item {% if lang_code == CURR_LANG %}active{% endif %}">
+                                {% if lang_code == CURR_LANG %}<i class="bi bi-check-lg me-1"></i>{% else %}<span class="d-inline-block" style="width:1.25rem"></span>{% endif %}
+                                {{ lang_name }}
+                            </button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
             {% else %}
-            <a href="{% url 'login' %}" class="nav-link">
+            <a href="{% url 'login' %}" class="nav-link flex-grow-1">
                 <i class="bi bi-box-arrow-in-right"></i>
                 <span>Войти</span>
             </a>

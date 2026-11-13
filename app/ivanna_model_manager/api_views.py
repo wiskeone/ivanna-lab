@@ -2,6 +2,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 
+import requests
 import torch
 import time
 

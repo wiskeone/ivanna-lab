@@ -22,8 +22,10 @@ from ..models import (
 
 logger = logging.getLogger(__name__)
 
-# Устанавливаем зеркало для загрузки моделей
-os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+# HF endpoint: не перебивать окружение зеркалом жёстко — этот модуль
+# импортируется первым через services/__init__ и отравлял os.environ
+# для download_service (скачивание моделей падало FileMetadataError).
+os.environ.setdefault('HF_ENDPOINT', 'https://huggingface.co')
 
 # ----------------------------------------------------------------------
 # Вспомогательная функция очистки кэша для указанной модели

@@ -1,4 +1,5 @@
 import os
+import re
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
@@ -335,37 +336,21 @@ class ModelCheckpoint(models.Model):
             self.tags = []
     
     def _validate_huggingface_id(self) -> bool:
-        """Проверяет, что Hugging Face ID безопасен и в белом списке"""
+        """Проверяет формат Hugging Face ID: owner/name из безопасных символов.
+
+        v5.2: организационный белый список снят — self-hosted лаборатория
+        предполагает собственные репозитории (в т.ч. свои выкладки на HF).
+        Формат: 'owner/name', безопасные символы, без path-traversal.
+        """
         if not self.huggingface_id:
             return True
-        
-        # Обновленный белый список разрешенных репозиториев с новыми типами моделей
-        ALLOWED_PATTERNS = [
-            "Qwen/*",
-            "qwen/*",
-            "meta-llama/*",
-            "mistralai/*",
-            "google/*",
-            "microsoft/*",
-            "bigcode/*",
-            "codellama/*",
-            "NousResearch/*",
-            "OpenHermes/*",
-            "deepseek-ai/*",
-            "01-ai/*",
-        ]
-        
-        # Проверка по шаблонам
-        for pattern in ALLOWED_PATTERNS:
-            if fnmatch.fnmatch(self.huggingface_id, pattern):
-                return True
-        
-        # Дополнительная проверка формата
+
         parts = self.huggingface_id.split('/')
         if len(parts) != 2:
             return False
-        
-        return False
+        owner, name = parts
+        safe = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,60}$')
+        return bool(safe.match(owner) and safe.match(name))
     
     def _validate_loader_config(self):
         """Валидация конфигурации загрузки - теперь только заполняет недостающие поля"""
