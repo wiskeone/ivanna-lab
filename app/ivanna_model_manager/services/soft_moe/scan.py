@@ -246,7 +246,7 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
         for i, ids in enumerate(inputs):
             state.current_key = (name, i)
             with torch.no_grad():
-                out = model(ids, output_hidden_states=True)
+                out = model(ids.to(model.device), output_hidden_states=True)
             seq = torch.stack([h[0] for h in out.hidden_states], dim=0)  # [L+1, seq, hid]
             state.h_last[(name, i)] = seq[:, -1, :].to(torch.float32).cpu().numpy()
             state.h_mean[(name, i)] = seq.mean(dim=1).to(torch.float32).cpu().numpy()

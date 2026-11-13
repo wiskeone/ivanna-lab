@@ -62,6 +62,9 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Автоматически находим задачи в установленных приложениях
 app.autodiscover_tasks()
+# v5.2: задачи мягкого MoE живут в отдельном модуле — autodiscover грузит
+# только <app>.tasks
+app.conf.imports = ('ivanna_model_manager.tasks_moe',)
 
 # v5.1: корреляция логов веб↔Celery
 from ivanna_model_manager.log_context import setup_celery_log_signals
