@@ -964,4 +964,20 @@ window.addEventListener('beforeunload', function() {
     localStorage.setItem('search_settings', JSON.stringify(settings));
 });
 </script>
+
+<div class="modal fade" id="chunkPreviewModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content bg-dark">
+      <div class="modal-header"><h5 class="modal-title">{% trans "Чанк и страница источника" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <pre id="chunkPreviewBody" class="small text-wrap" style="white-space:pre-wrap"></pre>
+        <hr class="border-secondary">
+        <img id="chunkPreviewImg" class="img-fluid border rounded d-none" alt="page">
+        <div id="chunkPreviewCap" class="small text-muted mt-1"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

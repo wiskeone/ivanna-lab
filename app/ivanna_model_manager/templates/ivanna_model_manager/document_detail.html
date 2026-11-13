@@ -616,4 +616,30 @@ document.addEventListener('DOMContentLoaded', function() {
     {% endif %}
 });
 </script>
+
+<script>
+// v5.2: превью страницы источника в модалке чанка (PDF)
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.btn-view-chunk');
+  if (!btn) return;
+  const chunkId = btn.dataset.chunkId || btn.getAttribute('data-chunk-id');
+  const docId = {{ document.id }};
+  const docIsPdf = '{{ document.document_type|lower }}' === 'pdf';
+  if (!chunkId || !docIsPdf) return;
+  fetch(`/api/document-chunks/${chunkId}/`).then(r => r.json()).then(d => {
+    if (!d.page_number) return;
+    let img = document.getElementById('chunkPageImg');
+    if (!img) {
+      const body = document.querySelector('#chunkModal .modal-body');
+      img = document.createElement('img');
+      img.id = 'chunkPageImg';
+      img.className = 'img-fluid border rounded mt-2';
+      body.appendChild(img);
+    }
+    img.src = `/documents/${docId}/page/${d.page_number}/render/`;
+    img.style.display = 'block';
+  });
+});
+</script>
+
 {% endblock %}
