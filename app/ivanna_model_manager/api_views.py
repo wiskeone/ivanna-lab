@@ -38,6 +38,7 @@ from .models import (
     ManualInstruction, HuggingFaceDataset, 
 )
 from .serializers import (
+    RerankerModelSerializer,
     ExperimentSerializer, ModelCheckpointSerializer, ModelMergeJobSerializer,
     InferenceSessionSerializer, ModelEvaluationSerializer,
     ChatSessionSerializer, ModelComparisonSerializer, FineTuningJobSerializer,
