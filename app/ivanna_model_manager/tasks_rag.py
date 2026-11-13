@@ -300,7 +300,10 @@ def _tabular_chunks_xlsx(file_path: str) -> list:
 def extract_text_from_rtf(file_path: str) -> str:
     """RTF → текст (striprtf)."""
     try:
-        from striprtf.main import rtf_to_text
+        try:  # striprtf 0.0.x — функция в striprtf.striprtf; старые сборки — striprtf.main
+            from striprtf.striprtf import rtf_to_text
+        except ImportError:
+            from striprtf.main import rtf_to_text
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             return rtf_to_text(f.read()) or ""
     except Exception as e:
