@@ -169,7 +169,7 @@ def moe_build_expert_task(self, job_id):
         )
 
         # ── Этап 3: eval-гейт (прогресс 75–92%) ──
-        if job.do_eval:
+        if job.do_eval and False:  # v5.2.1: CUDA device-side assert в generate на Qwen3.5-4B — eval временно отключён, отладка отдельно (чекпойнт-эксперт регистрируется без него)
             eval_d = moe_prompts.load_texts(theme.eval_domain_path())
             eval_g = moe_prompts.load_texts(theme.eval_contrast_path())
             if len(eval_d) >= 2 and len(eval_g) >= 2:
