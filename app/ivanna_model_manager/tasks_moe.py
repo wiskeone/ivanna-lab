@@ -52,9 +52,6 @@ def moe_validate_theme_task(self, theme_id):
 
 # ─────────────────────────── Этапы 1–4: сборка эксперта ───────────────────────────
 
-@shared_task(bind=True, queue='gpu_tasks', time_limit=86400, soft_time_limit=None,
-             name='ivanna_model_manager.tasks_moe.moe_build_expert_task')
-
 def _json_safe(d):
     """PG JSON rejects NaN/Inf (python json.dump emits them) — replace with None."""
     import math
@@ -70,6 +67,8 @@ def _json_safe(d):
     return clean(d)
 
 
+@shared_task(bind=True, queue='gpu_tasks', time_limit=86400, soft_time_limit=None,
+             name='ivanna_model_manager.tasks_moe.moe_build_expert_task')
 def moe_build_expert_task(self, job_id):
     """Скан активаций → гейт AUC → steer/amplify патч → eval-гейт → роутер."""
     job = MoEExpertJob.objects.get(pk=job_id)
