@@ -193,6 +193,7 @@ def moe_build_expert_task(self, job_id):
                 max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
                 if quant:
                     eval_report = {}
+                    job.add_log("Eval: пропущен для модели ≥2.5B (ограничение bnb↔transformers)")
                 else:
                     eval_report = moe_evalgate.run_eval_gate(
                         base.local_path, out_dir, eval_d, eval_g,
@@ -200,9 +201,10 @@ def moe_build_expert_task(self, job_id):
                         quantized=False, progress_cb=eval_progress)
                 job.eval_report = eval_report
                 job.save(update_fields=['eval_report'])
-                job.add_log(f"Eval: домен Δ{eval_report['summary']['domain_len']['delta_pct']}%, "
-                            f"general Δ{eval_report['summary']['general_len']['delta_pct']}%, "
-                            f"think-утечек {eval_report['summary']['think_leaks']}")
+                if eval_report:
+                    job.add_log(f"Eval: домен Δ{eval_report['summary']['domain_len']['delta_pct']}%, "
+                                f"general Δ{eval_report['summary']['general_len']['delta_pct']}%, "
+                                f"think-утечек {eval_report['summary']['think_leaks']}")
             else:
                 job.add_log("Eval-гейт пропущен: eval-наборы темы пусты (нужно ≥2+2)")
 
