@@ -3,8 +3,8 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Датасеты дистилляции{% endblock %}
-{% block page_title %}Датасеты дистилляции{% endblock %}
+{% block title %}{% trans "Датасеты дистилляции" %}{% endblock %}
+{% block page_title %}{% trans "Датасеты дистилляции" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -62,15 +62,15 @@
                             </h6>
                             <div>
                                 <span class="badge {% if dataset.type == 'manual' %}bg-secondary{% else %}bg-info{% endif %}">
-                                    {% if dataset.type == 'manual' %}Ручной{% else %}Собранный{% endif %}
+                                    {% if dataset.type == 'manual' %}{% trans "Ручной" %}{% else %}{% trans "Собранный" %}{% endif %}
                                 </span>
-                                <span class="badge bg-secondary ms-1">{{ dataset.item_count }} записей</span>
+                                <span class="badge bg-secondary ms-1">{% blocktrans with n=dataset.item_count %}{{ n }} записей{% endblocktrans %}</span>
                             </div>
                         </div>
                         <div class="card-body">
                             <p class="card-text small text-muted">{{ dataset.description|truncatechars:150 }}</p>
                             <div class="small text-muted">
-                                <div>Создан: {{ dataset.created_at|date:"d.m.Y H:i" }}</div>
+                                <div>{% blocktrans with d=dataset.created_at|date:"d.m.Y H:i" %}Создан: {{ d }}{% endblocktrans %}</div>
                             </div>
                         </div>
                         <div class="card-footer bg-transparent border-top">

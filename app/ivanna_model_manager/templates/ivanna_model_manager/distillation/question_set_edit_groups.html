@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Редактирование групп: {{ question_set.name }}{% endblock %}
+{% block title %}{% blocktrans with name=question_set.name %}Редактирование групп: {{ name }}{% endblocktrans %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -91,7 +91,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3>Редактирование групп: {{ question_set.name }}</h3>
+                    <h3>{% blocktrans with name=question_set.name %}Редактирование групп: {{ name }}{% endblocktrans %}</h3>
                     <p class="text-muted">{% trans "Создавайте группы чанков, для каждой группы будут сгенерированы вопросы" %}</p>
                 </div>
                 <div>
@@ -117,9 +117,9 @@
                         <div class="text-end">
                             <span class="badge {% if question_set.collection.vector_index_created %}bg-success{% else %}bg-warning{% endif %}">
                                 {% if question_set.collection.vector_index_created %}
-                                <i class="bi bi-check-circle"></i> Индекс создан
+                                <i class="bi bi-check-circle"></i> {% trans "Индекс создан" %}
                                 {% else %}
-                                <i class="bi bi-exclamation-triangle"></i> Индекс не создан
+                                <i class="bi bi-exclamation-triangle"></i> {% trans "Индекс не создан" %}
                                 {% endif %}
                             </span>
                         </div>
@@ -157,7 +157,7 @@
                     </div>
                     <div class="row mt-2">
                         <div class="col-md-12">
-                            <div class="text-muted small">Размер чанков: {{ question_set.collection.chunk_size }} | Перекрытие: {{ question_set.collection.chunk_overlap }}</div>
+                            <div class="text-muted small">{% blocktrans with cs=question_set.collection.chunk_size co=question_set.collection.chunk_overlap %}Размер чанков: {{ cs }} | Перекрытие: {{ co }}{% endblocktrans %}</div>
                         </div>
                     </div>
                 </div>

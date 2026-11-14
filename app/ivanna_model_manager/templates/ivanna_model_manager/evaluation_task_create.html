@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Создание задачи оценки{% endblock %}
-{% block page_title %}Создание задачи оценки{% endblock %}
+{% block title %}{% trans "Создание задачи оценки" %}{% endblock %}
+{% block page_title %}{% trans "Создание задачи оценки" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -54,7 +54,7 @@
                                         {% for dataset in available_datasets %}
                                         <option value="{{ dataset.id }}" 
                                                 data-questions="{{ dataset.total_questions }}">
-                                            {{ dataset.name }} ({{ dataset.total_questions }} вопросов)
+                                            {% blocktrans with name=dataset.name q=dataset.total_questions %}{{ name }} ({{ q }} вопросов){% endblocktrans %}
                                         </option>
                                         {% endfor %}
                                     </select>
@@ -104,7 +104,7 @@
                                                 </label>
                                             </div>
                                             <small class="text-muted ms-4">
-                                                {{ model.parameter_count|floatformat:0 }} параметров
+                                                {% blocktrans with pc=model.parameter_count|floatformat:0 %}{{ pc }} параметров{% endblocktrans %}
                                             </small>
                                         </div>
                                         {% endfor %}
@@ -148,7 +148,7 @@
                                                     <label class="form-check-label" for="collection_{{ collection.id }}">
                                                         {{ collection.name }}
                                                         <small class="text-muted d-block">
-                                                            {{ collection.total_documents }} док., {{ collection.total_vectors }} векторов
+                                                            {% blocktrans with docs=collection.total_documents vecs=collection.total_vectors %}{{ docs }} док., {{ vecs }} векторов{% endblocktrans %}
                                                         </small>
                                                     </label>
                                                 </div>

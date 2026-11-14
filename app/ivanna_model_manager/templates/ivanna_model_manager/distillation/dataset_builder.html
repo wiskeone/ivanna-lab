@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Сборка итогового датасета{% endblock %}
-{% block page_title %}Сборка итогового датасета{% endblock %}
+{% block title %}{% trans "Сборка итогового датасета" %}{% endblock %}
+{% block page_title %}{% trans "Сборка итогового датасета" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -165,7 +165,7 @@
                                        type="checkbox" value="{{ job.id }}" data-job-name="{{ job.name }}">
                                 <div>
                                     <div class="small fw-medium">{{ job.name }}</div>
-                                    <div class="small text-muted">{{ job.planned_count }} вопросов, {{ job.processed_count }} ответов</div>
+                                    <div class="small text-muted">{% blocktrans with q=job.planned_count a=job.processed_count %}{{ q }} вопросов, {{ a }} ответов{% endblocktrans %}</div>
                                 </div>
                             </label>
                         </li>

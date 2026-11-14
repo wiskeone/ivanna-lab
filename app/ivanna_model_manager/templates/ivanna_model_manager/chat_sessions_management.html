@@ -179,7 +179,7 @@
                         <span id="session-name-{{ session.session_id }}">{{ session.notes }}</span>
                         <span class="embedding-status {% if session.model_loaded %}status-downloaded{% else %}status-failed{% endif %}">
                             <i class="bi {% if session.model_loaded %}bi-check-circle{% else %}bi-exclamation-triangle{% endif %}"></i>
-                            {% if session.model_loaded %}Модель загружена{% else %}Модель не загружена{% endif %}
+                            {% if session.model_loaded %}{% trans "Модель загружена" %}{% else %}{% trans "Модель не загружена" %}{% endif %}
                         </span>
                     </div>
                     <div class="session-meta">
@@ -217,7 +217,7 @@
                         <option value="">{% trans "-- Выберите модель --" %}</option>
                         {% for model in available_models %}
                             <option value="{{ model.id }}" {% if session.model_id == model.id %}selected{% endif %} {% if not model.is_loaded_in_memory_cache %}disabled{% endif %}>
-                                {{ model.display_name }} {% if model.is_loaded_in_memory_cache %}✓{% else %}(не загружена){% endif %}
+                                {{ model.display_name }} {% if model.is_loaded_in_memory_cache %}✓{% else %}({% trans "не загружена" %}){% endif %}
                             </option>
                         {% endfor %}
                     </select>

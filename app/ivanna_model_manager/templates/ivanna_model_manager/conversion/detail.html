@@ -3,7 +3,7 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Конвертация: {{ job.name }}{% endblock %}
+{% block title %}{% blocktrans with name=job.name %}Конвертация: {{ name }}{% endblocktrans %}{% endblock %}
 {% block page_title %}{{ job.name }}{% endblock %}
 
 {% block extra_css %}
@@ -45,7 +45,7 @@
                 <span class="badge bg-primary ms-3">{{ job.get_quantization_display }}</span>
             </div>
             <div class="text-muted small">
-                Создана: {{ job.created_at|date:"d.m.Y H:i" }}
+                {% blocktrans with d=job.created_at|date:"d.m.Y H:i" %}Создана: {{ d }}{% endblocktrans %}
             </div>
         </div>
         <div class="job-meta">

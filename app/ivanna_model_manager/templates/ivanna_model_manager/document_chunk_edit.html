@@ -8,7 +8,7 @@
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'rag_collection_list' %}">RAG</a></li>
             <li class="breadcrumb-item"><a href="{% url 'document_detail' chunk.document.id %}">{{ chunk.document.title|truncatechars:30 }}</a></li>
-            <li class="breadcrumb-item active">Редактирование чанка #{{ chunk.chunk_index }}</li>
+            <li class="breadcrumb-item active">{% blocktrans with idx=chunk.chunk_index %}Редактирование чанка #{{ idx }}{% endblocktrans %}</li>
         </ol>
     </nav>
 
@@ -16,7 +16,7 @@
         <div class="card-header">
             <h5 class="mb-0">
                 <i class="bi bi-pencil-square"></i>
-                Редактирование чанка #{{ chunk.chunk_index }}
+                {% blocktrans with idx=chunk.chunk_index %}Редактирование чанка #{{ idx }}{% endblocktrans %}
             </h5>
         </div>
         <div class="card-body">
@@ -37,8 +37,8 @@
         <div class="card-footer text-muted">
             <small>
                 <i class="bi bi-info-circle"></i>
-                Чанк ID: {{ chunk.id }} | Документ: {{ chunk.document.title }} |
-                Токенов: {{ chunk.token_count }} | Эмбеддинг: {% if chunk.has_embedding %}✅{% else %}❌{% endif %}
+                {% blocktrans with cid=chunk.id doc=chunk.document.title %}Чанк ID: {{ cid }} | Документ: {{ doc }} |{% endblocktrans %}
+                {% blocktrans with tc=chunk.token_count %}Токенов: {{ tc }}{% endblocktrans %} | {% trans "Эмбеддинг:" %} {% if chunk.has_embedding %}✅{% else %}❌{% endif %}
             </small>
         </div>
     </div>

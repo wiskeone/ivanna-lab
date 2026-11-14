@@ -2,9 +2,9 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Шаблоны fine-tuning{% endblock %}
+{% block title %}{% trans "Шаблоны fine-tuning" %}{% endblock %}
 
-{% block page_title %}Шаблоны fine-tuning{% endblock %}
+{% block page_title %}{% trans "Шаблоны fine-tuning" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -233,7 +233,7 @@
             
             <div class="template-footer">
                 <span class="usage-count">
-                    <i class="bi bi-person"></i> {{ template.usage_count }} использований
+                        <i class="bi bi-person"></i> {% blocktrans with n=template.usage_count %}{{ n }} использований{% endblocktrans %}
                 </span>
                 <a href="{% url 'fine_tuning_template_apply' template.id %}" class="btn-apply">
                     <i class="bi bi-play-circle me-1"></i> {% trans "Применить" %}

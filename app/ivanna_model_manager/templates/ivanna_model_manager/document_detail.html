@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load custom_filters %}
 
-{% block title %}{{ document.title }} - Документ{% endblock %}
+{% block title %}{% blocktrans with t=document.title %}{{ t }} - Документ{% endblocktrans %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -51,7 +51,7 @@
     <div class="mb-4">
         <a href="{% if document.collection %}{% url 'rag_collection_detail' document.collection.id %}{% else %}{% url 'document_list' %}{% endif %}" class="action-link">
             <i class="bi bi-arrow-left me-1"></i> 
-            {% if document.collection %}Назад к коллекции «{{ document.collection.name|truncatechars:30 }}»{% else %}Назад к списку документов{% endif %}
+            {% if document.collection %}{% blocktrans with n=document.collection.name|truncatechars:30 %}Назад к коллекции «{{ n }}»{% endblocktrans %}{% else %}{% trans "Назад к списку документов" %}{% endif %}
         </a>
     </div>
 
@@ -166,7 +166,7 @@
                             {% if document.has_embeddings %}
                             <span class="status-badge-doc status-indexed"><i class="bi bi-check-circle"></i> {% trans "Созданы" %}</span>
                             {% if not document.has_complete_embeddings %}
-                            <div class="small text-warning mt-1">{{ document.chunks_with_embeddings }}/{{ document.chunk_count }} чанков</div>
+                            <div class="small text-warning mt-1">{% blocktrans with a=document.chunks_with_embeddings b=document.chunk_count %}{{ a }}/{{ b }} чанков{% endblocktrans %}</div>
                             {% endif %}
                             {% else %}
                             <span class="status-badge-doc status-pending"><i class="bi bi-exclamation-triangle"></i> {% trans "Не созданы" %}</span>
@@ -202,7 +202,7 @@
                             {% if document.collection %}
                                 {% if document.collection.vector_index_created %}
                                 <span class="status-badge-doc status-indexed"><i class="bi bi-check-circle"></i> {% trans "Создан" %} </span>
-                                <span class="small text-muted">{{ document.collection.total_vectors }} векторов</span>
+                                <span class="small text-muted">{% blocktrans with v=document.collection.total_vectors %}{{ v }} векторов{% endblocktrans %}</span>
                                 {% else %}
                                 <span class="status-badge-doc status-pending"><i class="bi bi-exclamation-triangle"></i> {% trans "Не создан" %}</span>
                                 <div><a href="{% url 'rag_collection_detail' document.collection.id %}" class="action-link">{% trans "Построить индекс" %}</a></div>
@@ -246,7 +246,7 @@
                         <span class="document-meta-value">
                             {% if document.collection %}
                             <a href="{% url 'rag_collection_detail' document.collection.id %}" class="action-link">{{ document.collection.name }}</a>
-                            <div class="small text-muted">{% if document.collection.is_public %}Публичная{% else %}Приватная{% endif %} • {{ document.collection.total_documents }} док.</div>
+                            <div class="small text-muted">{% if document.collection.is_public %}{% trans "Публичная" %}{% else %}{% trans "Приватная" %}{% endif %} • {{ document.collection.total_documents }} {% trans "док." %}</div>
                             {% else %}
                             <span class="text-muted">{% trans "Без коллекции" %}</span>
                             <div><a href="{% url 'document_edit' document.id %}" class="action-link">{% trans "Назначить коллекцию" %}</a></div>
@@ -324,7 +324,7 @@
     <div class="card mt-4">
         <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
             <h6 class="mb-0"><i class="bi bi-grid-3x3-gap-fill me-2"></i> {% trans "Фрагменты документа (чанки)" %}</h6>
-            <span class="badge bg-secondary">{{ chunks|length }} чанков</span>
+            <span class="badge bg-secondary">{% blocktrans with n=chunks|length %}{{ n }} чанков{% endblocktrans %}</span>
         </div>
         <div class="card-body p-0">
             {% if chunks %}
@@ -380,7 +380,7 @@
                     {% if chunks.has_previous %}
                     <li class="page-item"><a class="page-link" href="?page={{ chunks.previous_page_number }}">{% trans "Назад" %}</a></li>
                     {% endif %}
-                    <li class="page-item disabled"><span class="page-link">Страница {{ chunks.number }} из {{ chunks.paginator.num_pages }}</span></li>
+                    <li class="page-item disabled"><span class="page-link">{% blocktrans with pn=chunks.number tp=chunks.paginator.num_pages %}Страница {{ pn }} из {{ tp }}{% endblocktrans %}</span></li>
                     {% if chunks.has_next %}
                     <li class="page-item"><a class="page-link" href="?page={{ chunks.next_page_number }}">{% trans "Вперед" %}</a></li>
                     {% endif %}

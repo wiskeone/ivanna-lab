@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Датасет: {{ dataset.name }}{% endblock %}
+{% block title %}{% blocktrans with name=dataset.name %}Датасет: {{ name }}{% endblocktrans %}{% endblock %}
 {% block page_title %}{{ dataset.name }}{% endblock %}
 
 {% block extra_css %}

@@ -3,8 +3,8 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Вопросы дистилляции{% endblock %}
-{% block page_title %}Вопросы дистилляции{% endblock %}
+{% block title %}{% trans "Вопросы дистилляции" %}{% endblock %}
+{% block page_title %}{% trans "Вопросы дистилляции" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -60,7 +60,7 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
                             <div class="mb-2">
-                                <span class="badge bg-secondary me-2">Набор: {{ q.group.question_set.name }}</span>
+                                <span class="badge bg-secondary me-2">{% blocktrans with name=q.group.question_set.name %}Набор: {{ name }}{% endblocktrans %}</span>
                                 <span class="badge 
                                     {% if q.status == 'answered' %}bg-success
                                     {% elif q.status == 'reviewed' %}bg-info
@@ -78,8 +78,8 @@
                             {% endif %}
                             <div class="mt-2">
                                 <small class="text-muted">
-                                    Группа #{{ q.group.order }} | Чанков: {{ q.group.chunk_ids|length }} | 
-                                    Создан: {{ q.created_at|date:"d.m.Y H:i" }}
+                                    {% blocktrans with num=q.group.order c=q.group.chunk_ids|length %}Группа #{{ num }} | Чанков: {{ c }} | {% endblocktrans %}
+                                    {% blocktrans with d=q.created_at|date:"d.m.Y H:i" %}Создан: {{ d }}{% endblocktrans %}
                                 </small>
                             </div>
                         </div>

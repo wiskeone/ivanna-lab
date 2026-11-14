@@ -1,7 +1,7 @@
 {% extends 'ivanna_model_manager/base.html' %}
 {% load i18n %}
 
-{% block title %}Список экспериментов - Ivanna Lab{% endblock %}
+{% block title %}{% trans "Список экспериментов - Ivanna Lab" %}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -21,7 +21,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">{{ experiment.name }}</h5>
                         <span class="badge {% if experiment.is_active %}bg-success{% else %}bg-secondary{% endif %}">
-                            {% if experiment.is_active %}Активен{% else %}Неактивен{% endif %}
+                            {% if experiment.is_active %}{% trans "Активен" %}{% else %}{% trans "Неактивен" %}{% endif %}
                         </span>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
                     
                     <p class="card-text">
                         <small class="text-muted">
-                            <i class="bi bi-calendar"></i> Создан: {{ experiment.created_at|date:"d.m.Y H:i" }}
+                            <i class="bi bi-calendar"></i> {% blocktrans with d=experiment.created_at|date:"d.m.Y H:i" %}Создан: {{ d }}{% endblocktrans %}
                         </small>
                     </p>
                 </div>

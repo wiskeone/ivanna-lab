@@ -3,10 +3,10 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Загрузка документов - RAG | Ivanna Lab{% endblock %}
+{% block title %}{% trans "Загрузка документов - RAG | Ivanna Lab" %}{% endblock %}
 
 {% block page_title %}
-    <i class="bi bi-cloud-upload me-2" style="color: var(--primary-color);"></i> Загрузка документов
+    <i class="bi bi-cloud-upload me-2" style="color: var(--primary-color);"></i> {% trans "Загрузка документов" %}
 {% endblock %}
 
 {% block extra_css %}
@@ -285,7 +285,7 @@
                                             <option value="{{ collection.id }}" 
                                                 {% if request.GET.collection == collection.id|stringformat:"s" %}selected{% endif %}>
                                                 {{ collection.name }}
-                                                {% if not collection.is_public %} (личная){% endif %}
+                                                {% if not collection.is_public %} ({% trans "личная" %}){% endif %}
                                             </option>
                                             {% endfor %}
                                         </select>
@@ -377,7 +377,7 @@
                                             <option value="{{ collection.id }}" 
                                                 {% if request.GET.collection == collection.id|stringformat:"s" %}selected{% endif %}>
                                                 {{ collection.name }}
-                                                {% if not collection.is_public %} (личная){% endif %}
+                                                {% if not collection.is_public %} ({% trans "личная" %}){% endif %}
                                             </option>
                                             {% endfor %}
                                         </select>
@@ -506,7 +506,7 @@
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">{% trans "личная" %}</span>
                                 {% endif %}
                             </span>
-                            <span class="text-muted small">{{ collection.documents.count }} док.</span>
+                            <span class="text-muted small">{{ collection.documents.count }} {% trans "док." %}</span>
                         </div>
                         {% endfor %}
                     </div>

@@ -3,8 +3,8 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Набор: {{ question_set.name }}{% endblock %}
-{% block page_title %}Набор: {{ question_set.name }}{% endblock %}
+{% block title %}{% blocktrans with name=question_set.name %}Набор: {{ name }}{% endblocktrans %}{% endblock %}
+{% block page_title %}{% blocktrans with name=question_set.name %}Набор: {{ name }}{% endblocktrans %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -224,8 +224,8 @@
             <div class="alert alert-info mt-3 mb-0">
                 <i class="bi bi-info-circle me-2"></i>
                 <strong>{% trans "Чекпоинт доступен!" %}</strong>
-                Задача прервана после обработки 
-                {{ question_set.checkpoint_data.last_group_idx|add:1 }} из {{ question_set.checkpoint_data.total_groups }} групп.
+                {% trans "Задача прервана после обработки" %}
+                {% blocktrans with gi=question_set.checkpoint_data.last_group_idx|add:1 tg=question_set.checkpoint_data.total_groups %}{{ gi }} из {{ tg }} групп.{% endblocktrans %}
                 <form method="post" action="{% url 'distillation_resume_question_generation' question_set.id %}" class="d-inline ms-3">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-outline-primary">
@@ -257,7 +257,7 @@
     <div class="card">
         <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
             <h5 class="mb-0">{% trans "Сгенерированные вопросы" %}</h5>
-            <span class="badge bg-secondary">{{ page_obj.paginator.count }} вопросов</span>
+            <span class="badge bg-secondary">{% blocktrans with n=page_obj.paginator.count %}{{ n }} вопросов{% endblocktrans %}</span>
         </div>
         <div class="card-body">
             {% if page_obj %}
@@ -283,7 +283,7 @@
                     </div>
                     {% endif %}
                     <div class="meta-info">
-                        <span><i class="bi bi-folder"></i> Группа #{{ q.group.order }}</span>
+                        <span><i class="bi bi-folder"></i> {% blocktrans with num=q.group.order %}Группа #{{ num }}{% endblocktrans %}</span>
                         <span><i class="bi bi-calendar"></i> {{ q.created_at|date:"d.m.Y H:i" }}</span>
                     </div>
                 </div>
@@ -401,17 +401,17 @@
                     <div class="group-card">
                         <div class="group-header">
                             <div>
-                                <span class="group-name">Группа #{{ group.order }}</span>
+                                <span class="group-name">{% blocktrans with num=group.order %}Группа #{{ num }}{% endblocktrans %}</span>
                                 {% if group.name %}<span class="text-muted ms-2">({{ group.name }})</span>{% endif %}
                             </div>
                             <div>
                                 <span class="badge {% if group.questions.exists %}bg-success{% else %}bg-secondary{% endif %}">
-                                    {% if group.questions.exists %}{{ group.questions.count }} вопросов{% else %}ожидает{% endif %}
+                                    {% if group.questions.exists %}{% blocktrans with n=group.questions.count %}{{ n }} вопросов{% endblocktrans %}{% else %}{% trans "ожидает" %}{% endif %}
                                 </span>
                             </div>
                         </div>
                         <div class="small text-muted">
-                            Чанки: {{ group.chunk_ids|length }} шт., вопросов: {{ group.num_questions }}
+                            {% blocktrans with c=group.chunk_ids|length nq=group.num_questions %}Чанки: {{ c }} шт., вопросов: {{ nq }}{% endblocktrans %}
                         </div>
                         {% if group.logs %}
                         <div class="small text-muted mt-2">{{ group.logs }}</div>

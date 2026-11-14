@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block title %}{{ title }}{% endblock %}
-{% block page_title %}Система оценки моделей{% endblock %}
+{% block page_title %}{% trans "Система оценки моделей" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -35,7 +35,7 @@
                                 </div>
                                 <i class="bi bi-database display-6 opacity-50"></i>
                             </div>
-                            <small>Вопросов: {{ total_questions|default:"0" }}</small>
+                            <small>{% blocktrans with q=total_questions|default:"0" %}Вопросов: {{ q }}{% endblocktrans %}</small>
                         </div>
                     </div>
                 </div>
@@ -50,7 +50,7 @@
                                 </div>
                                 <i class="bi bi-clipboard-data display-6 opacity-50"></i>
                             </div>
-                            <small>Завершено: {{ completed_tasks }}</small>
+                            <small>{% blocktrans %}Завершено: {{ completed_tasks }}{% endblocktrans %}</small>
                         </div>
                     </div>
                 </div>
@@ -168,10 +168,10 @@
                                         <small class="text-muted">
                                             <i class="bi bi-calendar me-1"></i>{{ task.created_at|date:"d.m.Y H:i" }}
                                             {% if task.total_models %}
-                                            <i class="bi bi-cpu ms-3 me-1"></i>{{ task.total_models }} моделей
+                                            <i class="bi bi-cpu ms-3 me-1"></i>{% blocktrans with tm=task.total_models %}{{ tm }} моделей{% endblocktrans %}
                                             {% endif %}
                                             {% if task.total_questions %}
-                                            <i class="bi bi-question-circle ms-3 me-1"></i>{{ task.total_questions }} вопросов
+                                            <i class="bi bi-question-circle ms-3 me-1"></i>{% blocktrans with tq=task.total_questions %}{{ tq }} вопросов{% endblocktrans %}
                                             {% endif %}
                                         </small>
                                     </div>
@@ -216,7 +216,7 @@
                                             {% endif %}
                                         </div>
                                         <span class="badge bg-primary">
-                                            {{ dataset.total_questions }} вопросов
+                                            {% blocktrans with dq=dataset.total_questions %}{{ dq }} вопросов{% endblocktrans %}
                                         </span>
                                     </div>
                                     <div class="mt-2">
@@ -294,7 +294,7 @@
                                                 {{ model.parameter_count|floatformat:0|slice:":-6" }}M
                                                 {% else %}
                                                 {{ model.parameter_count|floatformat:0 }}
-                                                {% endif %} параметров
+                                                {% endif %} {% trans "параметров" %}
                                             </p>
                                             <div class="d-flex justify-content-between">
                                                 <small class="text-muted">

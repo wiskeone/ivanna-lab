@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}{{ model.display_name|default:model.name }} — Модель эмбеддингов{% endblock %}
+{% block title %}{% blocktrans with name=model.display_name|default:model.name %}{{ name }} — Модель эмбеддингов{% endblocktrans %}{% endblock %}
 {% block page_title %}{{ model.display_name|default:model.name }}{% endblock %}
 
 {% block content %}
@@ -33,13 +33,13 @@
                     {% elif model.download_status == 'failed' %}status-failed
                     {% else %}status-not-downloaded{% endif %}">
                     {% if model.is_downloaded %}
-                        <i class="bi bi-check-circle"></i> Скачана
+                        <i class="bi bi-check-circle"></i> {% trans "Скачана" %}
                     {% elif model.download_status == 'downloading' %}
-                        <i class="bi bi-arrow-repeat spin"></i> Загрузка...
+                        <i class="bi bi-arrow-repeat spin"></i> {% trans "Загрузка..." %}
                     {% elif model.download_status == 'failed' %}
-                        <i class="bi bi-exclamation-triangle"></i> Ошибка
+                        <i class="bi bi-exclamation-triangle"></i> {% trans "Ошибка" %}
                     {% else %}
-                        <i class="bi bi-cloud"></i> Не скачана
+                        <i class="bi bi-cloud"></i> {% trans "Не скачана" %}
                     {% endif %}
                 </span>
                 <span class="model-badge ms-2">{{ model.get_model_type_display }}</span>
@@ -82,7 +82,7 @@
                     </div>
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
                         <span class="model-meta-label"><i class="bi bi-translate me-1"></i> {% trans "Мультиязычная" %}</span>
-                        <span class="model-meta-value">{% if model.is_multilingual %}Да{% else %}Нет{% endif %}</span>
+                        <span class="model-meta-value">{% if model.is_multilingual %}{% trans "Да" %}{% else %}{% trans "Нет" %}{% endif %}</span>
                     </div>
                     <div class="model-meta-item mb-3 pb-2 border-bottom">
                         <span class="model-meta-label"><i class="bi bi-file-text me-1"></i> {% trans "Лицензия" %}</span>
@@ -90,7 +90,7 @@
                     </div>
                     <div class="model-meta-item">
                         <span class="model-meta-label"><i class="bi bi-check-circle me-1"></i> {% trans "Активна" %}</span>
-                        <span class="model-meta-value">{% if model.is_active %}Да{% else %}Нет{% endif %}</span>
+                        <span class="model-meta-value">{% if model.is_active %}{% trans "Да" %}{% else %}{% trans "Нет" %}{% endif %}</span>
                     </div>
                 </div>
             </div>

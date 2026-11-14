@@ -1,7 +1,7 @@
 {% extends 'ivanna_model_manager/base.html' %}
 {% load i18n %}
 
-{% block title %}Создание коллекции - RAG - Ivanna Lab{% endblock %}
+{% block title %}{% trans "Создание коллекции - RAG - Ivanna Lab" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -182,7 +182,7 @@
                         <div class="col-md-6 text-end">
                             <small class="text-muted">
                                 <i class="bi bi-collection"></i>
-                                Коллекций у вас: {{ user_collections.count }}
+                                {% blocktrans with n=user_collections.count %}Коллекций у вас: {{ n }}{% endblocktrans %}
                             </small>
                         </div>
                     </div>

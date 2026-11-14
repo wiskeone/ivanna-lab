@@ -6,8 +6,169 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid " из %(n)s,"
+msgstr " of %(n)s,"
+
+msgid "%(a)s/%(b)s чанков"
+msgstr "%(a)s/%(b)s chunks"
+
+msgid "%(count)s рез."
+msgstr "%(count)s results"
+
+msgid "%(counter)s оценка"
+msgid_plural "%(counter)s оценки"
+msgstr[0] "%(counter)s evaluation"
+msgstr[1] "%(counter)s evaluations"
+
+msgid "%(dq)s вопросов"
+msgstr "%(dataset.total_questions)s questions"
+
+msgid "%(docs)s док., %(vecs)s векторов"
+msgstr "%(docs)s docs, %(vecs)s vectors"
+
+msgid "%(downloading_models)s скачивается"
+msgstr "%(downloading_models)s downloading"
+
+msgid "%(gi)s из %(tg)s групп."
+msgstr "%(gi)s of %(tg)s groups."
+
+msgid "%(gt)s сек"
+msgstr "%(gt)s sec"
+
+msgid "%(mt)s | %(pc)s параметров | %(sg)s GB"
+msgstr "%(mt)s | %(pc)s parameters | %(sg)s GB"
+
+msgid "%(n)s вопросов"
+msgstr "%(n)s questions"
+
+msgid "%(n)s инструкций"
+msgstr "%(ds.instructions.count)s instructions"
+
+msgid "%(embedding_downloaded)s скачано"
+msgstr "%(embedding_downloaded)s downloaded"
+
+msgid "%(embedding_downloading)s загружается"
+msgstr "%(embedding_downloading)s downloading"
+
+msgid "%(embedding_failed)s ошибок"
+msgstr "%(embedding_failed)s errors"
+
+msgid "%(error_models)s ошибок"
+msgstr "%(error_models)s errors"
+
+msgid "%(loaded_models)s загружено"
+msgstr "%(loaded_models)s loaded"
+
+msgid "%(cl)s токенов"
+msgstr "%(model.context_length)s tokens"
+
+msgid "%(my_answer_jobs_active)s ответов"
+msgstr "%(my_answer_jobs_active)s answers"
+
+msgid "%(my_documents_count)s документов"
+msgstr "%(my_documents_count)s documents"
+
+msgid "%(my_evaluation_tasks_completed)s оценок"
+msgstr "%(my_evaluation_tasks_completed)s evaluations"
+
+msgid "%(my_question_sets_active)s наборов"
+msgstr "%(my_question_sets_active)s sets"
+
+msgid "%(n)s записей"
+msgstr "%(n)s records"
+
+msgid "%(n)s метрик"
+msgstr "%(n)s metrics"
+
+msgid "%(n)s моделей"
+msgstr "%(n)s models"
+
+msgid "%(n)s промптов"
+msgstr "%(n)s prompts"
+
+msgid "%(n)s сообщений • "
+msgstr "%(n)s messages • "
+
+msgid "%(n)s токенов/сек"
+msgstr "%(n)s tok/s"
+
+msgid "%(n)s чанков"
+msgstr "%(n)s chunks"
+
+msgid "%(name)s (%(n)s вопросов)"
+msgstr "%(name)s (%(n)s questions)"
+
+msgid "%(name)s (%(q)s вопросов)"
+msgstr "%(name)s (%(q)s questions)"
+
+msgid "%(name)s - Документы"
+msgstr "%(name)s - Documents"
+
+msgid "%(name)s — Модель эмбеддингов"
+msgstr "%(name)s — Embedding model"
+
+msgid "%(name)s — детали модели"
+msgstr "%(name)s — model details"
+
+msgid "%(pc)s параметров"
+msgstr "%(pc)s parameters"
+
+msgid "%(q)s вопросов, %(a)s ответов"
+msgstr "%(q)s questions, %(a)s answers"
+
+msgid "%(qi)s из %(tq)s вопросов."
+msgstr "%(qi)s of %(tq)s questions."
+
+msgid "%(t)s - Документ"
+msgstr "%(t)s - Document"
+
+msgid "%(tk)s токенов"
+msgstr "%(result.tokens_used)s tokens"
+
+msgid "%(n)s сообщ."
+msgstr "%(session.total_messages)s msgs"
+
+msgid "%(t)s токенов"
+msgstr "%(session.total_tokens)s tokens"
+
+msgid "%(since)s назад"
+msgstr "%(since)s ago"
+
+msgid "%(t)s с"
+msgstr "%(t)s s"
+
+msgid "%(t)sс"
+msgstr "%(t)ss"
+
+msgid "%(tm)s моделей"
+msgstr "%(task.total_models)s models"
+
+msgid "%(tq)s вопросов"
+msgstr "%(task.total_questions)s questions"
+
+msgid "%(n)s использований"
+msgstr "%(template.usage_count)s uses"
+
+msgid "%(tokens)s токенов"
+msgstr "%(tokens)s tokens"
+
+msgid "%(v)s векторов"
+msgstr "%(v)s vectors"
+
+msgid "(завершено)"
+msgstr "(completed)"
+
 msgid "(или"
 msgstr "(or"
+
+msgid "(обучение...)"
+msgstr "(training...)"
+
+msgid "(отменено)"
+msgstr "(cancelled)"
+
+msgid "(ошибка)"
+msgstr "(error)"
 
 msgid "- по абзацам"
 msgstr "- by paragraphs"
@@ -87,6 +248,9 @@ msgstr ": failed to load"
 msgid ": ошибка загрузки"
 msgstr ": download error"
 
+msgid "AI Модель"
+msgstr "AI Model"
+
 msgid "Alpha параметр LoRA"
 msgstr "LoRA alpha parameter"
 
@@ -117,6 +281,12 @@ msgstr "FP16 (half precision)"
 msgid "FP32 / FP16 (оригинальная точность)"
 msgstr "FP32 / FP16 (original precision)"
 
+msgid "Fine-Tuning - дашборд"
+msgstr "Fine-Tuning - dashboard"
+
+msgid "Fine-Tuning моделей"
+msgstr "Model Fine-Tuning"
+
 msgid "GPU Система"
 msgstr "GPU System"
 
@@ -146,6 +316,9 @@ msgstr "Question IDs (comma-separated)"
 
 msgid "ID воркера"
 msgstr "Worker ID"
+
+msgid "ID документа не указан"
+msgstr "Document ID not specified"
 
 msgid "ID задачи Celery"
 msgstr "Celery task ID"
@@ -264,6 +437,9 @@ msgstr "instructions must be a list"
 msgid "name и items обязательны"
 msgstr "name and items are required"
 
+msgid "| Параметры: %(gc)s"
+msgstr "| Parameters: %(gc)s"
+
 msgid "~1.2× размера модели"
 msgstr "~1.2× of model size"
 
@@ -316,8 +492,14 @@ msgstr "Automatic search when sending a message"
 msgid "Автообновление"
 msgstr "Auto-refresh"
 
+msgid "Автор: %(author)s"
+msgstr "Author: %(job.created_by)s"
+
 msgid "Автор:"
 msgstr "Author:"
+
+msgid "Активен"
+msgstr "Active"
 
 msgid "Активировать"
 msgstr "Activate"
@@ -351,6 +533,9 @@ msgstr "Active sessions"
 
 msgid "Активные сессии:"
 msgstr "Active sessions:"
+
+msgid "Активных сессий: %(n)s"
+msgstr "Active sessions: %(n)s"
 
 msgid "Анализ ответа..."
 msgstr "Analyzing response..."
@@ -523,6 +708,15 @@ msgstr "Back to set"
 msgid "Вернуться к списку"
 msgstr "Back to list"
 
+msgid "Версии (%(count)s)"
+msgstr "Versions (%(count)s)"
+
+msgid "Версий: %(n)s"
+msgstr "Versions: %(n)s"
+
+msgid "Версия от %(d)s"
+msgstr "Version from %(d)s"
+
 msgid "Версия"
 msgstr "Version"
 
@@ -568,6 +762,9 @@ msgstr "Resume execution"
 msgid "Войти"
 msgstr "Sign in"
 
+msgid "Вопрос %(qid)s:"
+msgstr "Question %(result.question_id)s:"
+
 msgid "Вопрос"
 msgstr "Question"
 
@@ -588,6 +785,12 @@ msgstr "Questions per group"
 
 msgid "Вопросов обработано"
 msgstr "Questions processed"
+
+msgid "Вопросов: %(q)s"
+msgstr "Questions: %(q)s"
+
+msgid "Вопросы дистилляции"
+msgstr "Distillation questions"
 
 msgid "Вопросы"
 msgstr "Questions"
@@ -714,6 +917,9 @@ msgstr "All experiments"
 msgid "Все языки"
 msgstr "All languages"
 
+msgid "Всего вопросов: %(total_questions)s"
+msgstr "Total questions: %(total_questions)s"
+
 msgid "Всего"
 msgstr "Total"
 
@@ -753,8 +959,14 @@ msgstr "Total tokens:"
 msgid "Всего чанков"
 msgstr "Total chunks"
 
+msgid "Всего: %(total)s"
+msgstr "Total: %(total)s"
+
 msgid "Вставить пример"
 msgstr "Insert example"
+
+msgid "Вход в систему - Ivanna Lab"
+msgstr "Sign in - Ivanna Lab"
 
 msgid "Вход в систему"
 msgstr "Sign in"
@@ -785,11 +997,20 @@ msgstr "Are you sure you want to make"
 msgid "Вы уверены, что хотите удалить документ"
 msgstr "Are you sure you want to delete the document"
 
+msgid "Вы уверены, что хотите удалить модель \"%(name)s\"?"
+msgstr "Are you sure you want to delete model \"%(name)s\"?"
+
 msgid "Вы уверены, что хотите удалить набор"
 msgstr "Are you sure you want to delete the set"
 
 msgid "Вы уверены, что хотите удалить сессию"
 msgstr "Are you sure you want to delete the session"
+
+msgid "Вы уверены, что хотите удалить эту модель?"
+msgstr "Are you sure you want to delete this model?"
+
+msgid "Вы"
+msgstr "You"
 
 msgid "Выберите датасет..."
 msgstr "Select a dataset..."
@@ -823,6 +1044,9 @@ msgstr "Select a collection for the documents"
 
 msgid "Выберите коллекцию..."
 msgstr "Select a collection..."
+
+msgid "Выберите модель в меню \"Модели\" и начните диалог."
+msgstr "Select a model in the \"Models\" menu and start a conversation."
 
 msgid "Выберите модель"
 msgstr "Select a model"
@@ -1004,6 +1228,12 @@ msgstr "Ready-made configuration templates"
 msgid "Групп / Вопросов"
 msgstr "Groups / Questions"
 
+msgid "Группа #%(num)s | Чанков: %(c)s | "
+msgstr "Group #%(num)s | Chunks: %(c)s | "
+
+msgid "Группа #%(num)s"
+msgstr "Group #%(num)s"
+
 msgid "Группы чанков"
 msgstr "Chunk groups"
 
@@ -1058,6 +1288,9 @@ msgstr "Dataset is already being processed"
 msgid "Датасет уже обрабатывается или завершён"
 msgstr "Dataset is already being processed or finished"
 
+msgid "Датасет: %(name)s"
+msgstr "Dataset: %(name)s"
+
 msgid "Датасет:"
 msgstr "Dataset:"
 
@@ -1066,6 +1299,12 @@ msgstr "Datasets"
 
 msgid "Датасетов инструкций:"
 msgstr "Instruction datasets:"
+
+msgid "Датасеты для оценки моделей"
+msgstr "Evaluation datasets"
+
+msgid "Датасеты для оценки"
+msgstr "Evaluation datasets"
 
 msgid "Датасеты"
 msgstr "Datasets"
@@ -1112,6 +1351,12 @@ msgstr "Detailed results per query"
 msgid "Дисковое пространство"
 msgstr "Disk space"
 
+msgid "Дистилляция (вопросы)"
+msgstr "Distillation (questions)"
+
+msgid "Дистилляция (ответы)"
+msgstr "Distillation (answers)"
+
 msgid "Дистилляция"
 msgstr "Distillation"
 
@@ -1142,6 +1387,9 @@ msgstr "To run an evaluation, first download models in the models section"
 msgid "Для пересоздания чанков укажите размер чанка и перекрытие"
 msgstr "To recreate chunks, specify the chunk size and overlap"
 
+msgid "Добавить модель (локально)"
+msgstr "Add model (local)"
+
 msgid "Добавить"
 msgstr "Add"
 
@@ -1168,8 +1416,20 @@ msgid ""
 "текста"
 msgstr "Add questions with the \"Add question\" button or import from text"
 
+msgid "Добавление модели"
+msgstr "Add model"
+
+msgid "Добавление новой модели эмбеддингов"
+msgstr "Add new embedding model"
+
+msgid "Добавление"
+msgstr "Add"
+
 msgid "Добавьте первую модель, чтобы начать работу."
 msgstr "Add the first model to get started."
+
+msgid "Добро пожаловать в чат с AI"
+msgstr "Welcome to AI chat"
 
 msgid "Документ"
 msgstr "Document"
@@ -1197,6 +1457,9 @@ msgstr "No documents found"
 
 msgid "Документы не найдены или нет прав"
 msgstr "Documents not found or no access"
+
+msgid "Документы: %(name)s"
+msgstr "Documents: %(name)s"
 
 msgid "Доля merge_model в результате (0 = только base, 1 = только merge)"
 msgstr "Share of merge_model in the result (0 = base only, 1 = merge only)"
@@ -1313,6 +1576,9 @@ msgstr "Completed:"
 msgid "Завершено"
 msgstr "Completed"
 
+msgid "Завершено: %(completed_tasks)s"
+msgstr "Completed: %(completed_tasks)s"
+
 msgid "Загружаем популярные датасеты..."
 msgstr "Loading popular datasets..."
 
@@ -1337,6 +1603,9 @@ msgstr "Loaded model for fine-tuning"
 msgid "Загруженных моделей"
 msgstr "Downloaded models"
 
+msgid "Загружено моделей: %(n)s"
+msgstr "Models loaded: %(n)s"
+
 msgid "Загружено"
 msgstr "Downloaded"
 
@@ -1345,6 +1614,9 @@ msgstr "Loaded into memory"
 
 msgid "Загрузите первую модель"
 msgstr "Download the first model"
+
+msgid "Загрузите первый документ, чтобы начать работу с RAG системой"
+msgstr "Upload your first document to start working with the RAG system"
 
 msgid "Загрузите первый документ, чтобы начать работу с RAG."
 msgstr "Upload the first document to start working with RAG."
@@ -1381,6 +1653,21 @@ msgstr "Download a model from Hugging Face"
 
 msgid "Загрузить с Hugging Face"
 msgstr "Download from Hugging Face"
+
+msgid "Загрузка датасета"
+msgstr "Upload dataset"
+
+msgid "Загрузка документов - RAG | Ivanna Lab"
+msgstr "Document upload - RAG | Ivanna Lab"
+
+msgid "Загрузка документов"
+msgstr "Upload documents"
+
+msgid "Загрузка модели с Hugging Face"
+msgstr "Upload model from Hugging Face"
+
+msgid "Загрузка модели — Ivanna Lab"
+msgstr "Model upload — Ivanna Lab"
 
 msgid "Загрузка"
 msgstr "Download"
@@ -1464,6 +1751,12 @@ msgstr "Downloads"
 msgid "Загрузки:"
 msgstr "Downloads:"
 
+msgid "Задайте вопрос, попросите что-то написать или обсудить.\n                            Включите RAG режим для поиска по вашим документам."
+msgstr "Ask a question, request something to write, or discuss a topic.\n                            Enable RAG mode to search your documents."
+
+msgid "Задайте вопрос, попросите что-то написать или обсудить.\n                        Включите RAG режим для поиска по вашим документам."
+msgstr "Ask a question, request something to write, or discuss a topic.\n                        Enable RAG mode to search your documents."
+
 msgid "Задач оценки"
 msgstr "Evaluation tasks"
 
@@ -1477,20 +1770,41 @@ msgstr ""
 msgid "Задача была прервана на"
 msgstr "The task was interrupted at"
 
+msgid "Задача генерации ответов: %(name)s"
+msgstr "Answer generation task: %(name)s"
+
 msgid "Задача ещё не завершена"
 msgstr "Task is not finished yet"
 
 msgid "Задача не содержит результатов или не завершена"
 msgstr "The task has no results or is not finished"
 
+msgid "Задача оценки: %(name)s"
+msgstr "Evaluation task: %(name)s"
+
 msgid "Задача перестройки эмбеддингов запущена"
 msgstr "Embedding rebuild task started"
+
+msgid "Задача прервана после обработки"
+msgstr "Task interrupted after processing"
 
 msgid "Задача уже выполняется"
 msgstr "Task is already running"
 
+msgid "Задача"
+msgstr "Task"
+
+msgid "Задача: %(name)s"
+msgstr "Task: %(name)s"
+
 msgid "Задачи генерации ответов"
 msgstr "Answer generation tasks"
+
+msgid "Задачи ответов: %(n)s"
+msgstr "Answer jobs: %(n)s"
+
+msgid "Задачи оценки моделей"
+msgstr "Model evaluation tasks"
 
 msgid "Задачи оценки"
 msgstr "Evaluation tasks"
@@ -1507,11 +1821,17 @@ msgstr "Replace and reprocess"
 msgid "Заменить файл документа"
 msgstr "Replace document file"
 
+msgid "Заменить файл? Документ будет переобработан."
+msgstr "Replace the file? The document will be reprocessed."
+
 msgid "Заметки по обработке"
 msgstr "Processing notes"
 
 msgid "Занято (подозрительно)"
 msgstr "Used (suspiciously)"
+
+msgid "Записей: %(n)s"
+msgstr "Entries: %(n)s"
 
 msgid "Записи датасета"
 msgstr "Dataset records"
@@ -1723,6 +2043,9 @@ msgstr "Memory usage (MB)"
 msgid "Использованные документы"
 msgstr "Documents used"
 
+msgid "Использовано %(n)s чанков из этого документа"
+msgstr "Used %(n)s chunks from this document"
+
 msgid "Использовано"
 msgstr "Used"
 
@@ -1758,6 +2081,9 @@ msgstr "Use reranking"
 
 msgid "Используется CPU для вычислений"
 msgstr "CPU is used for computation"
+
+msgid "Используйте {context} и {question} как переменные."
+msgstr "Use {context} and {question} as variables."
 
 msgid "Исправьте ошибки в форме"
 msgstr "Fix the errors in the form"
@@ -1804,6 +2130,9 @@ msgstr "Model source:"
 msgid "Источник модели"
 msgstr "Model source"
 
+msgid "Источники (%(count)s)"
+msgstr "Sources (%(count)s)"
+
 msgid "Источники данных"
 msgstr "Data sources"
 
@@ -1848,6 +2177,12 @@ msgid ""
 "игнорируются."
 msgstr "Each line becomes a separate question. Empty lines are ignored."
 
+msgid "Как работают трансформеры?"
+msgstr "How do transformers work?"
+
+msgid "Какие преимущества у квантизации моделей?"
+msgstr "What are the advantages of model quantization?"
+
 msgid "Какой документ ожидался"
 msgstr "Which document was expected"
 
@@ -1882,6 +2217,9 @@ msgstr "Quantization reduces memory usage but may slightly reduce quality."
 
 msgid "Квантизация:"
 msgstr "Quantization:"
+
+msgid "Квантизирована"
+msgstr "Quantized"
 
 msgid "Квантизировано"
 msgstr "Quantized"
@@ -1940,6 +2278,9 @@ msgstr "Tokens in the chunk"
 msgid "Количество токенов должно быть положительным"
 msgstr "Token count must be positive"
 
+msgid "Коллекции документов - RAG | Ivanna Lab"
+msgstr "Document collections - RAG | Ivanna Lab"
+
 msgid "Коллекции"
 msgstr "Collections"
 
@@ -1951,6 +2292,9 @@ msgstr "Document collections"
 
 msgid "Коллекции документов:"
 msgstr "Document collections:"
+
+msgid "Коллекций у вас: %(n)s"
+msgstr "Your collections: %(n)s"
 
 msgid "Коллекций"
 msgstr "Collections"
@@ -1995,11 +2339,29 @@ msgstr "Rating comment"
 msgid "Комментарий пользователя"
 msgstr "User comment"
 
+msgid "Конвертация в GGUF - дашборд"
+msgstr "GGUF conversion - dashboard"
+
+msgid "Конвертация моделей в GGUF"
+msgstr "Model GGUF conversion"
+
+msgid "Конвертация модели в GGUF"
+msgstr "Convert model to GGUF"
+
+msgid "Конвертация"
+msgstr "Conversion"
+
+msgid "Конвертация: %(name)s"
+msgstr "Conversion: %(name)s"
+
 msgid "Конечная позиция в исходном тексте"
 msgstr "End position in the source text"
 
 msgid "Конечная строка (если применимо)"
 msgstr "End line (if applicable)"
+
+msgid "Контекст (%(n)s чанков):"
+msgstr "Context (%(n)s chunks):"
 
 msgid "Контекст"
 msgstr "Context"
@@ -2015,6 +2377,9 @@ msgstr "Context before the chunk"
 
 msgid "Контекст после чанка"
 msgstr "Context after the chunk"
+
+msgid "Контекст: %(cl)s токенов"
+msgstr "Context: %(cl)s tokens"
 
 msgid "Контекст:"
 msgstr "Context:"
@@ -2118,6 +2483,9 @@ msgstr "License"
 msgid "Лицензия:"
 msgstr "License:"
 
+msgid "Личный кабинет"
+msgstr "My profile"
+
 msgid "Лог ошибок при генерации"
 msgstr "Error log from generation"
 
@@ -2129,6 +2497,9 @@ msgstr "Logs are empty so far..."
 
 msgid "Логи пусты..."
 msgstr "Logs are empty..."
+
+msgid "Локальная модель"
+msgstr "Local model"
 
 msgid "Локальный путь"
 msgstr "Local path"
@@ -2269,6 +2640,12 @@ msgstr "No models found"
 msgid "Моделей:"
 msgstr "Models:"
 
+msgid "Модели - Ivanna Lab"
+msgstr "Models - Ivanna Lab"
+
+msgid "Модели эмбеддингов — Ivanna Lab"
+msgstr "Embedding models — Ivanna Lab"
+
 msgid "Модели"
 msgstr "Models"
 
@@ -2298,6 +2675,9 @@ msgstr "Models are incompatible"
 
 msgid "Модели эмбеддингов"
 msgstr "Embedding models"
+
+msgid "Модель загружена"
+msgstr "Model loaded"
 
 msgid "Модель"
 msgstr "Model"
@@ -2411,6 +2791,15 @@ msgstr "Question set"
 msgid "Набор вопросов не найден"
 msgstr "Question set not found"
 
+msgid "Набор вопросов:"
+msgstr "Question set:"
+
+msgid "Набор: %(name)s"
+msgstr "Set: %(name)s"
+
+msgid "Наборы вопросов — Дистилляция"
+msgstr "Question sets — Distillation"
+
 msgid "Наборы вопросов"
 msgstr "Question sets"
 
@@ -2422,6 +2811,12 @@ msgstr "Page navigation"
 
 msgid "Нажмите на кнопку \"Модели\" и выберите модель для начала диалога"
 msgstr "Click \"Models\" and pick a model to start a conversation"
+
+msgid "Назад к коллекции «%(n)s»"
+msgstr "Back to collection \"%(n)s\""
+
+msgid "Назад к списку документов"
+msgstr "Back to document list"
 
 msgid "Назад"
 msgstr "Back"
@@ -2518,6 +2913,12 @@ msgstr "Find a model in the catalog"
 
 msgid "Найти"
 msgstr "Find"
+
+msgid "Напиши программу на Python для сортировки списка"
+msgstr "Write a Python program to sort a list"
+
+msgid "Напиши список шагов для обучения нейросети"
+msgstr "Write a list of steps for training a neural network"
 
 msgid "Например: \"Дообучение Qwen на юридических документах\""
 msgstr "E.g.: \"Fine-tuning Qwen on legal documents\""
@@ -2627,6 +3028,9 @@ msgstr "Not started"
 msgid "Не оценена"
 msgstr "Not evaluated"
 
+msgid "Не скачана"
+msgstr "Not downloaded"
+
 msgid "Не создан"
 msgstr "Not created"
 
@@ -2654,8 +3058,14 @@ msgstr "Model ID not specified"
 msgid "Не указана модель-учитель в чекпоинте"
 msgstr "No teacher model specified in the checkpoint"
 
+msgid "Не указана"
+msgstr "Not specified"
+
 msgid "Не указаны repo_id и token"
 msgstr "repo_id and token are not specified"
+
+msgid "Неактивен"
+msgstr "Inactive"
 
 msgid "Неактивна"
 msgstr "Inactive"
@@ -2863,6 +3273,9 @@ msgstr "New task"
 msgid "Новая коллекция"
 msgstr "New collection"
 
+msgid "Новая конвертация в GGUF"
+msgstr "New GGUF conversion"
+
 msgid "Новая конвертация"
 msgstr "New conversion"
 
@@ -2925,6 +3338,9 @@ msgstr "Updated"
 
 msgid "Обновлена:"
 msgstr "Updated:"
+
+msgid "Обновлено: %(updated)s"
+msgstr "Updated: %(updated)s"
 
 msgid "Обрабатывается"
 msgstr "Processing"
@@ -2992,6 +3408,9 @@ msgstr "Object not found"
 
 msgid "Объяснение концепции"
 msgstr "Concept explanation"
+
+msgid "Объясни концепцию внимания в трансформерах простыми словами"
+msgstr "Explain the concept of attention in transformers in simple terms"
 
 msgid "Ограничение словаря (1-100)"
 msgstr "Vocabulary limit (1–100)"
@@ -3061,6 +3480,9 @@ msgstr "Leave a comment (optional)"
 
 msgid "Оставьте пустым для использования шаблона по умолчанию"
 msgstr "Leave empty to use the default template"
+
+msgid "Ответ основан на %(n)s документах"
+msgstr "Answer based on %(n)s documents"
 
 msgid "Ответ"
 msgstr "Answer"
@@ -3182,6 +3604,9 @@ msgstr "Test accuracy"
 
 msgid "Оценки"
 msgstr "Ratings"
+
+msgid "Оценок: %(n)s"
+msgstr "Evaluations: %(n)s"
 
 msgid "Очистить"
 msgstr "Clear"
@@ -3307,8 +3732,14 @@ msgstr "Model parameters:"
 msgid "Параметры сборки"
 msgstr "Build parameters"
 
+msgid "Параметры: %(p)s"
+msgstr "Parameters: %(p)s"
+
 msgid "Параметры:"
 msgstr "Parameters:"
+
+msgid "Пароль изменен - Ivanna Lab"
+msgstr "Password changed - Ivanna Lab"
 
 msgid "Пароль"
 msgstr "Password"
@@ -3534,6 +3965,9 @@ msgstr "Position in search results"
 msgid "Позиция при извлечении"
 msgstr "Retrieval position"
 
+msgid "Поиск в коллекции \"%(name)s\""
+msgstr "Search in collection \"%(name)s\""
+
 msgid "Поиск"
 msgstr "Search"
 
@@ -3621,8 +4055,14 @@ msgstr "Mark as safe"
 msgid "Попробуйте изменить запрос или фильтры"
 msgstr "Try changing the query or filters"
 
+msgid "Попробуйте изменить параметры поиска"
+msgstr "Try changing the search filters"
+
 msgid "Попробуйте изменить параметры фильтрации или создайте новую модель"
 msgstr "Try changing the filters or create a new model"
+
+msgid "Попробуйте изменить параметры фильтрации"
+msgstr "Try changing the filter settings"
 
 msgid "Попробуйте обновить страницу"
 msgstr "Try refreshing the page"
@@ -3806,6 +4246,9 @@ msgstr "Progress by models:"
 msgid "Прогресс эмбеддингов"
 msgstr "Embedding progress"
 
+msgid "Прогресс: %(progress)s%"
+msgstr "Progress: %(progress)s%"
+
 msgid "Прогресс:"
 msgstr "Progress:"
 
@@ -3887,8 +4330,14 @@ msgstr "Expand all"
 msgid "Раздел"
 msgstr "Section"
 
+msgid "Раздел: %(s)s"
+msgstr "Split: %(s)s"
+
 msgid "Разделы (train, validation, test)"
 msgstr "Splits (train, validation, test)"
+
+msgid "Размер чанков: %(cs)s | Перекрытие: %(co)s"
+msgstr "Chunk size: %(cs)s | Overlap: %(co)s"
 
 msgid "Размер"
 msgstr "Size"
@@ -3929,6 +4378,9 @@ msgstr "Chunk size: 1500"
 msgid "Размер чанка: 2000"
 msgstr "Chunk size: 2000"
 
+msgid "Размер: %(s)s GB"
+msgstr "Size: %(s)s GB"
+
 msgid "Размер:"
 msgstr "Size:"
 
@@ -3953,11 +4405,20 @@ msgstr "Diversity"
 msgid "Ранг LoRA (рекомендуется 8-32)"
 msgstr "LoRA rank (8–32 recommended)"
 
+msgid "Расскажи о своих возможностях"
+msgstr "Tell me about your capabilities"
+
+msgid "Расскажи о себе и своих возможностях"
+msgstr "Tell me about yourself and your capabilities"
+
 msgid "Рассуждение модели:"
 msgstr "Model reasoning:"
 
 msgid "Расширенные метрики оценки {'mmlu': 0.75, 'hellaswag': 0.82}"
 msgstr "Extended evaluation metrics {'mmlu': 0.75, 'hellaswag': 0.82}"
+
+msgid "Расширенный поиск RAG | Ivanna Lab"
+msgstr "Advanced RAG search | Ivanna Lab"
 
 msgid "Ревизия"
 msgstr "Revision"
@@ -3967,6 +4428,33 @@ msgstr "Revision/branch"
 
 msgid "Ревизия/ветка на Hugging Face"
 msgstr "Revision/branch on Hugging Face"
+
+msgid "Редактирование %(name)s - Ivanna Lab"
+msgstr "Edit %(name)s - Ivanna Lab"
+
+msgid "Редактирование групп: %(name)s"
+msgstr "Edit groups: %(name)s"
+
+msgid "Редактирование датасета"
+msgstr "Edit dataset"
+
+msgid "Редактирование датасета: %(name)s"
+msgstr "Edit dataset: %(name)s"
+
+msgid "Редактирование документа — %(t)s"
+msgstr "Edit document — %(t)s"
+
+msgid "Редактирование модели эмбеддингов"
+msgstr "Edit embedding model"
+
+msgid "Редактирование модели"
+msgstr "Edit model"
+
+msgid "Редактирование набора"
+msgstr "Edit instruction set"
+
+msgid "Редактирование чанка #%(idx)s"
+msgstr "Edit chunk #%(idx)s"
 
 msgid "Редактирование"
 msgstr "Editing"
@@ -3985,6 +4473,9 @@ msgstr "Edit document"
 
 msgid "Редактирование конфигурации"
 msgstr "Edit configuration"
+
+msgid "Редактирование: %(name)s"
+msgstr "Edit: %(name)s"
 
 msgid "Редактировать"
 msgstr "Edit"
@@ -4073,6 +4564,9 @@ msgstr "Recursive"
 msgid "Релевантность для этого запроса"
 msgstr "Relevance for this query"
 
+msgid "Релевантность"
+msgstr "Relevance"
+
 msgid "Ресурсы и лимиты"
 msgstr "Resources and limits"
 
@@ -4102,6 +4596,9 @@ msgstr "With a downloaded model"
 
 msgid "Сбалансированный"
 msgstr "Balanced"
+
+msgid "Сборка итогового датасета"
+msgstr "Build final dataset"
 
 msgid "Сбросить"
 msgstr "Reset"
@@ -4140,6 +4637,9 @@ msgstr "Generated answer"
 
 msgid "Сгенерировано токенов"
 msgstr "Tokens generated"
+
+msgid "Сгенерируй Python код для загрузки модели с Hugging Face"
+msgstr "Generate Python code to download a model from Hugging Face"
 
 msgid "Сделать модель публичной"
 msgstr "Make model public"
@@ -4189,6 +4689,9 @@ msgstr "Model evaluation system"
 msgid "Системная информация"
 msgstr "System information"
 
+msgid "Системные метрики - Ivanna Lab"
+msgstr "System metrics - Ivanna Lab"
+
 msgid "Системные метрики"
 msgstr "System metrics"
 
@@ -4212,6 +4715,9 @@ msgstr "Dot product"
 
 msgid "Скачана ли модель локально"
 msgstr "Whether the model is downloaded locally"
+
+msgid "Скачана"
+msgstr "Downloaded"
 
 msgid "Скачано"
 msgstr "Downloads"
@@ -4279,6 +4785,9 @@ msgstr "Difficulty:"
 msgid "Случайность ответа (ниже = более детерминированный)"
 msgstr "Answer randomness (lower = more deterministic)"
 
+msgid "Смена пароля - Ivanna Lab"
+msgstr "Change password - Ivanna Lab"
+
 msgid "Смена пароля"
 msgstr "Change password"
 
@@ -4299,6 +4808,9 @@ msgstr "Oldest first"
 
 msgid "Собранные датасеты для дообучения моделей"
 msgstr "Collected datasets for model fine-tuning"
+
+msgid "Собранный"
+msgstr "Collected"
 
 msgid "Содержимое"
 msgstr "Content"
@@ -4327,6 +4839,9 @@ msgstr "Create or download a dataset to start evaluating models"
 
 msgid "Создайте новую сессию для начала диалога"
 msgstr "Create a new session to start a conversation"
+
+msgid "Создайте новую сессию"
+msgstr "Create a new session"
 
 msgid "Создайте первое сравнение моделей"
 msgstr "Create the first model comparison"
@@ -4369,8 +4884,14 @@ msgstr "Whether a vector index was created"
 msgid "Создан ли эмбеддинг для чанка"
 msgstr "Whether an embedding exists for the chunk"
 
+msgid "Создан: %(d)s"
+msgstr "Created: %(d)s"
+
 msgid "Создана"
 msgstr "Created"
+
+msgid "Создана: %(d)s |"
+msgstr "Created: %(d)s |"
 
 msgid "Создана:"
 msgstr "Created:"
@@ -4378,11 +4899,26 @@ msgstr "Created:"
 msgid "Создание датасета вручную"
 msgstr "Create a dataset manually"
 
+msgid "Создание датасета"
+msgstr "Create dataset"
+
+msgid "Создание задачи fine-tuning"
+msgstr "Create fine-tuning job"
+
 msgid "Создание задачи генерации ответов"
 msgstr "Create an answer generation task"
 
 msgid "Создание задачи конвертации"
 msgstr "Create a conversion task"
+
+msgid "Создание задачи оценки"
+msgstr "Create evaluation task"
+
+msgid "Создание коллекции - RAG - Ivanna Lab"
+msgstr "Create collection - RAG - Ivanna Lab"
+
+msgid "Создание набора для дистилляции"
+msgstr "Create distillation question set"
 
 msgid "Создание новой задачи fine-tuning"
 msgstr "Create a new fine-tuning task"
@@ -4393,6 +4929,9 @@ msgstr "Create a new evaluation task"
 msgid "Создание новой коллекции документов"
 msgstr "Create a new document collection"
 
+msgid "Создание ручного набора инструкций"
+msgstr "Create manual instruction set"
+
 msgid "Создание сравнения моделей"
 msgstr "Create a model comparison"
 
@@ -4402,8 +4941,14 @@ msgstr "Chunks created"
 msgid "Создано эмбеддингов"
 msgstr "Embeddings created"
 
+msgid "Создано: %(d)s"
+msgstr "Created: %(d)s"
+
 msgid "Созданы"
 msgstr "Created"
+
+msgid "Создать сравнение - Ivanna Lab"
+msgstr "Create comparison - Ivanna Lab"
 
 msgid "Создать"
 msgstr "Create"
@@ -4507,6 +5052,9 @@ msgstr "List of chunk IDs used as context"
 msgid "Список вопросов в формате [{'id': 1, 'text': '...'}]"
 msgstr "Question list as [{'id': 1, 'text': '...'}]"
 
+msgid "Список моделей - Ivanna Lab"
+msgstr "Model list - Ivanna Lab"
+
 msgid "Список моделей"
 msgstr "Model list"
 
@@ -4522,6 +5070,9 @@ msgstr "Comparison prompt list [{'id': 1, 'text': '...'}]"
 
 msgid "Список рекомендуемых моделей (HF IDs)"
 msgstr "List of recommended models (HF IDs)"
+
+msgid "Список экспериментов - Ivanna Lab"
+msgstr "Experiments - Ivanna Lab"
 
 msgid "Список экспериментов"
 msgstr "Experiment list"
@@ -4543,8 +5094,14 @@ msgstr ""
 msgid "Справка по конфигурации"
 msgstr "Configuration help"
 
+msgid "Сравнение моделей - Ivanna Lab"
+msgstr "Model comparison - Ivanna Lab"
+
 msgid "Сравнение моделей"
 msgstr "Model comparison"
+
+msgid "Сравнение моделей: %(name)s"
+msgstr "Model comparison: %(name)s"
 
 msgid "Сравнение ответов по вопросам"
 msgstr "Answer comparison by questions"
@@ -4630,6 +5187,9 @@ msgstr "Cost per 1000 tokens (if API)"
 msgid "Столбцы: text, category, difficulty"
 msgstr "Columns: text, category, difficulty"
 
+msgid "Страница %(pn)s из %(tp)s"
+msgstr "Page %(pn)s of %(tp)s"
+
 msgid "Страница 1"
 msgstr "Page 1"
 
@@ -4659,6 +5219,9 @@ msgstr "Execution timeout in minutes"
 
 msgid "Творческий"
 msgstr "Creative"
+
+msgid "Тег: %(tag)s"
+msgstr "Tag: %(request.GET.tag)s"
 
 msgid "Теги"
 msgstr "Tags"
@@ -4738,14 +5301,23 @@ msgstr "Generation temperature"
 msgid "Температура должна быть в диапазоне 0.0-2.0"
 msgstr "Temperature must be in the range 0.0–2.0"
 
+msgid "Тест выполнен в %(name)s"
+msgstr "Test run on %(name)s"
+
 msgid "Тест"
 msgstr "Test"
+
+msgid "Тестирование %(name)s - Ivanna Lab"
+msgstr "Testing %(name)s - Ivanna Lab"
 
 msgid "Тестирование моделей"
 msgstr "Model testing"
 
 msgid "Тестирование модели"
 msgstr "Model testing"
+
+msgid "Тестирование модели: %(name)s"
+msgstr "Model testing: %(name)s"
 
 msgid "Тестировать"
 msgstr "Test"
@@ -4820,6 +5392,9 @@ msgstr "Tokens/s (total)"
 msgid "Токенов/сек (генерация)"
 msgstr "Tokens/s (generation)"
 
+msgid "Токенов: %(tc)s"
+msgstr "Tokens: %(tc)s"
+
 msgid "Токены"
 msgstr "Tokens"
 
@@ -4843,6 +5418,9 @@ msgstr "Top-5 most downloaded models"
 
 msgid "Топ-P"
 msgstr "Top-P"
+
+msgid "Точность: %(a)s"
+msgstr "Accuracy: %(a)s"
 
 msgid "Точность:"
 msgstr "Accuracy:"
@@ -4898,6 +5476,12 @@ msgstr ""
 
 msgid "Удаление документа"
 msgstr "Delete document"
+
+msgid "Удаление модели - Ivanna Lab"
+msgstr "Delete model - Ivanna Lab"
+
+msgid "Удаление модели эмбеддингов"
+msgstr "Delete embedding model"
 
 msgid "Удаление набора"
 msgstr "Delete set"
@@ -5073,6 +5657,9 @@ msgstr "Model file hash for integrity check"
 msgid "Целевые метрики {'recall@5': 0.8, 'precision@3': 0.9}"
 msgstr "Target metrics {'recall@5': 0.8, 'precision@3': 0.9}"
 
+msgid "Чанк ID: %(cid)s | Документ: %(doc)s |"
+msgstr "Chunk ID: %(cid)s | Document: %(doc)s |"
+
 msgid "Чанк"
 msgstr "Chunk"
 
@@ -5100,17 +5687,29 @@ msgstr "Chunks not created"
 msgid "Чанки с эмбеддингами"
 msgstr "Chunks with embeddings"
 
+msgid "Чанки: %(c)s шт., вопросов: %(nq)s"
+msgstr "Chunks: %(c)s pcs., questions: %(nq)s"
+
 msgid "Чанков"
 msgstr "Chunks"
 
 msgid "Чанков с эмбеддингами"
 msgstr "Chunks with embeddings"
 
+msgid "Чат с %(name)s"
+msgstr "Chat with %(chat_session.checkpoint.display_name)s"
+
+msgid "Чат с AI моделью"
+msgstr "Chat with AI model"
+
 msgid "Чат"
 msgstr "Chat"
 
 msgid "Чат-сессии"
 msgstr "Chat sessions"
+
+msgid "Чат-сессий: %(n)s"
+msgstr "Chat sessions: %(n)s"
 
 msgid "Чекпоинт доступен!"
 msgstr "Checkpoint available!"
@@ -5133,11 +5732,20 @@ msgstr "Comma-separated: ru, code, instruct"
 msgid "Что изменилось?"
 msgstr "What changed?"
 
+msgid "Что такое ИИ?"
+msgstr "What is AI?"
+
 msgid "Что такое коллекция документов?"
 msgstr "What is a document collection?"
 
 msgid "Шаблон промпта (опционально)"
 msgstr "Prompt template (optional)"
+
+msgid "Шаблоны fine-tuning"
+msgstr "Fine-tuning templates"
+
+msgid "Шаг %(step)s"
+msgstr "Step %(cp.step)s"
 
 msgid "Штраф за повторения (0.0-2.0)"
 msgstr "Repetition penalty (0.0–2.0)"
@@ -5199,8 +5807,17 @@ msgstr "This may take a few seconds"
 msgid "активных экспериментов"
 msgstr "active experiments"
 
+msgid "вект."
+msgstr "vecs"
+
+msgid "векторов"
+msgstr "vectors"
+
 msgid "версий"
 msgstr "versions"
+
+msgid "вопросе %(q)s"
+msgstr "question %(q)s"
 
 msgid "вопросов"
 msgstr "questions"
@@ -5214,6 +5831,9 @@ msgstr "groups"
 msgid "детальную страницу модели"
 msgstr "detailed model page"
 
+msgid "док."
+msgstr "docs"
+
 msgid "и"
 msgstr "and"
 
@@ -5226,6 +5846,12 @@ msgstr "personal"
 msgid "моделей"
 msgstr "models"
 
+msgid "модели %(m)s"
+msgstr "model %(m)s"
+
+msgid "модели эмбеддингов"
+msgstr "embedding model"
+
 msgid "моделью эмбеддингов по умолчанию?"
 msgstr "the default embedding model?"
 
@@ -5235,14 +5861,29 @@ msgstr "e.g.: contracts"
 msgid "не выбрана"
 msgstr "not selected"
 
+msgid "не загружена"
+msgstr "not loaded"
+
 msgid "нет тегов"
 msgstr "no tags"
+
+msgid "ожидает"
+msgstr "pending"
 
 msgid "осталось"
 msgstr "remaining"
 
+msgid "параметров"
+msgstr "parameters"
+
 msgid "при редактировании набора"
 msgstr "when editing the set"
+
+msgid "размерность: %(d)sd"
+msgstr "dimension: %(d)sd"
+
+msgid "релевантность: %(r)s"
+msgstr "relevance: %(r)s"
 
 msgid "символов"
 msgstr "characters"

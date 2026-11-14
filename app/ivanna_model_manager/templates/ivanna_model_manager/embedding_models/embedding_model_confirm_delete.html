@@ -1,11 +1,11 @@
 {% extends 'ivanna_model_manager/base.html' %}
 {% load i18n %}
-{% block title %}Удаление модели эмбеддингов{% endblock %}
+{% block title %}{% trans "Удаление модели эмбеддингов" %}{% endblock %}
 {% block content %}
 <div class="container">
     <div class="alert alert-danger">
         <h3>{% trans "Подтверждение удаления" %}</h3>
-        <p>Вы уверены, что хотите удалить модель "{{ model.name }}"?</p>
+        <p>{% blocktrans with name=model.name %}Вы уверены, что хотите удалить модель "{{ name }}"?{% endblocktrans %}</p>
         <form method="post">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">{% trans "Удалить" %}</button>

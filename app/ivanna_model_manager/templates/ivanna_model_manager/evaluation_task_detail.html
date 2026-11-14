@@ -3,7 +3,7 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Задача оценки: {{ task.name }}{% endblock %}
+{% block title %}{% blocktrans with name=task.name %}Задача оценки: {{ name }}{% endblocktrans %}{% endblock %}
 
 {% block page_title %}{{ task.name }}{% endblock %}
 
@@ -443,9 +443,9 @@
                         <i class="bi bi-save me-2"></i>{% trans "Чекпоинт доступен!" %}
                     </div>
                     <div class="checkpoint-details">
-                        {% trans "Задача была прервана на" %} 
-                        <span>модели {{ task.metadata.checkpoint.last_model_idx|add:1 }}</span> из {{ task.evaluation_models.count }},
-                        <span>вопросе {{ task.metadata.checkpoint.last_question_idx|add:1 }}</span>
+                        {% trans "Задача была прервана на" %}
+                        <span>{% blocktrans with m=task.metadata.checkpoint.last_model_idx|add:1 %}модели {{ m }}{% endblocktrans %}</span>{% blocktrans with n=task.evaluation_models.count %} из {{ n }},{% endblocktrans %}
+                        <span>{% blocktrans with q=task.metadata.checkpoint.last_question_idx|add:1 %}вопросе {{ q }}{% endblocktrans %}</span>
                         {% if task.metadata.checkpoint.timestamp %}
                         ({{ task.metadata.checkpoint.timestamp|slice:":16" }})
                         {% endif %}
@@ -463,7 +463,7 @@
                 <div class="info-card">
                     <div class="info-label">{% trans "Датасет" %}</div>
                     <div class="info-value">{{ task.dataset.name }}</div>
-                    <small class="text-muted">{{ task.dataset.total_questions }} вопросов</small>
+                    <small class="text-muted">{% blocktrans with dq=task.dataset.total_questions %}{{ dq }} вопросов{% endblocktrans %}</small>
                 </div>
                 
                 <div class="info-card">
@@ -568,7 +568,7 @@
                         <div class="question-item" id="question-{{ result.id }}">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="question-text">
-                                    <strong>Вопрос {{ result.question_id }}:</strong> {{ result.question_text }}
+                                    <strong>{% blocktrans with qid=result.question_id %}Вопрос {{ qid }}:{% endblocktrans %}</strong> {{ result.question_text }}
                                 </div>
                                 <div class="rating-stars" data-result-id="{{ result.id }}">
                                     {% for i in "12345"|make_list %}
@@ -586,7 +586,7 @@
                             {% if result.metadata.rag_used and result.metadata.rag_sources %}
                             <div class="rag-sources mt-2">
                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                    <button class="btn-action btn-outline-secondary btn-sm" type="button" aria-expanded="false"></i> Источники ({{ result.metadata.rag_sources|length }})</button>
+                                    <button class="btn-action btn-outline-secondary btn-sm" type="button" aria-expanded="false"></i> {% blocktrans with count=result.metadata.rag_sources|length %}Источники ({{ count }}){% endblocktrans %}</button>
                                     <button class="btn-action btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#sources-{{ result.id }}" aria-expanded="false">
                                         <i class="bi bi-chevron-down"></i> {% trans "Показать" %}
                                     </button>
@@ -596,7 +596,7 @@
                                     <div class="source-item mb-2 p-2 border rounded">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <strong>{{ source.title }}</strong>
-                                            <span class="badge bg-success">релевантность: {{ source.relevance|floatformat:2 }}</span>
+                                            <span class="badge bg-success">{% blocktrans with r=source.relevance|floatformat:2 %}релевантность: {{ r }}{% endblocktrans %}</span>
                                         </div>
                                         <div class="source-preview small text-muted mt-1">{{ source.preview }}</div>
                                         <div class="mt-1">
@@ -614,10 +614,10 @@
                             
                             <div class="d-flex justify-content-end mt-2">
                                 <small class="text-muted me-3">
-                                    <i class="bi bi-clock"></i> {{ result.response_time|floatformat:2 }}с
+                                    <i class="bi bi-clock"></i> {% blocktrans with t=result.response_time|floatformat:2 %}{{ t }}с{% endblocktrans %}
                                 </small>
                                 <small class="text-muted">
-                                    <i class="bi bi-fonts"></i> {{ result.tokens_used }} токенов
+                                    <i class="bi bi-fonts"></i> {% blocktrans with tk=result.tokens_used %}{{ tk }} токенов{% endblocktrans %}
                                 </small>
                             </div>
                         </div>

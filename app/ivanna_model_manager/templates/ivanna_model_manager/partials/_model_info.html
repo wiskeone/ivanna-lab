@@ -66,13 +66,13 @@
                                 </tr>
                                 <tr>
                                     <th><i class="bi bi-textarea-t"></i> {% trans "Контекст:" %}</th>
-                                    <td>{{ model.context_length }} токенов</td>
+                                    <td>{% blocktrans with cl=model.context_length %}{{ cl }} токенов{% endblocktrans %}</td>
                                 </tr>
                                 <tr>
                                     <th><i class="bi bi-speedometer2"></i> {% trans "Скорость:" %}</th>
                                     <td>
                                         {% if model.inference_speed %}
-                                            {{ model.inference_speed|floatformat:1 }} токенов/сек
+                                            {% blocktrans with sp=model.inference_speed|floatformat:1 %}{{ sp }} токенов/сек{% endblocktrans %}
                                         {% else %}
                                             <span class="text-muted">{% trans "Не измерена" %}</span>
                                         {% endif %}

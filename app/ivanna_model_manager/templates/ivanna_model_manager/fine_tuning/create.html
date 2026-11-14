@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Создание задачи fine-tuning{% endblock %}
-{% block page_title %}Создание задачи fine-tuning{% endblock %}
+{% block title %}{% trans "Создание задачи fine-tuning" %}{% endblock %}
+{% block page_title %}{% trans "Создание задачи fine-tuning" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -133,7 +133,7 @@
                                                 <input class="form-check-input collection-checkbox" type="checkbox" name="document_collections" value="{{ collection.id }}" id="collection_{{ collection.id }}" {% if collection.id in form.document_collections.value %}checked{% endif %}>
                                                 <label class="form-check-label" for="collection_{{ collection.id }}">
                                                     {{ collection.name }}
-                                                    <small class="text-muted d-block">{{ collection.total_documents }} док., {% if collection.total_vectors %}{{ collection.total_vectors }} векторов{% endif %}</small>
+                                                    <small class="text-muted d-block">{{ collection.total_documents }} {% trans "док." %}, {% if collection.total_vectors %}{{ collection.total_vectors }} {% trans "векторов" %}{% endif %}</small>
                                                 </label>
                                             </div>
                                         </div>
@@ -157,7 +157,7 @@
                                                     <input class="form-check-input distillation-dataset-checkbox" type="checkbox" name="distillation_datasets" value="{{ ds.id }}" id="distillation_{{ ds.id }}">
                                                     <label class="form-check-label" for="distillation_{{ ds.id }}">
                                                         {{ ds.name }}
-                                                        <small class="text-muted d-block">{{ ds.items|length }} записей</small>
+                                                        <small class="text-muted d-block">{% blocktrans with n=ds.items|length %}{{ n }} записей{% endblocktrans %}</small>
                                                     </label>
                                                 </div>
                                             </div>
@@ -179,7 +179,7 @@
                                                     <input class="form-check-input manual-dataset-checkbox" type="checkbox" name="manual_datasets" value="{{ ds.id }}" id="manual_{{ ds.id }}">
                                                     <label class="form-check-label" for="manual_{{ ds.id }}">
                                                         {{ ds.name }}
-                                                        <small class="text-muted d-block">{{ ds.instructions.count }} инструкций</small>
+                                                        <small class="text-muted d-block">{% blocktrans with n=ds.instructions.count %}{{ n }} инструкций{% endblocktrans %}</small>
                                                     </label>
                                                 </div>
                                             </div>
@@ -201,7 +201,7 @@
                                                     <input class="form-check-input hf-dataset-checkbox" type="checkbox" name="hf_datasets" value="{{ ds.id }}" id="hf_{{ ds.id }}">
                                                     <label class="form-check-label" for="hf_{{ ds.id }}">
                                                         {{ ds.name|default:ds.repo_id }}
-                                                        <small class="text-muted d-block">{{ ds.total_entries }} записей</small>
+                                                        <small class="text-muted d-block">{% blocktrans with n=ds.total_entries %}{{ n }} записей{% endblocktrans %}</small>
                                                     </label>
                                                 </div>
                                             </div>

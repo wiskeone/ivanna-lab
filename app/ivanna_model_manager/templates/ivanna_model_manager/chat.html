@@ -3,7 +3,7 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Чат с AI моделью{% endblock %}
+{% block title %}{% trans "Чат с AI моделью" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -697,20 +697,20 @@
             <div style="flex: 1; min-width: 0;">
                 <h2 id="currentModelName">
                     {% if chat_session and chat_session.checkpoint %}
-                        {{ chat_session.checkpoint.display_name|default:"AI Модель" }}
+                        {% trans "AI Модель" as ai_model_default %}{{ chat_session.checkpoint.display_name|default:ai_model_default }}
                     {% elif session_data %}
-                        Новая сессия
+                        {% trans "Новая сессия" %}
                     {% else %}
-                        Выберите модель
+                        {% trans "Выберите модель" %}
                     {% endif %}
                 </h2>
                 <div class="chat-subtitle-compact">
                     <span id="sessionStats">
                         {% if session_data %}
                             <span id="messageCount">{{ messages|length }}</span> {% trans "сообщений •" %}
-                            <span id="tokenCount">{{ chat_session.total_tokens|default:0 }}</span> токенов
+                            <span id="tokenCount">{{ chat_session.total_tokens|default:0 }}</span> {% trans "токенов" %}
                         {% else %}
-                            Создайте новую сессию
+                            {% trans "Создайте новую сессию" %}
                         {% endif %}
                     </span>
                     <span id="modelStatusBadge" style="display: none;" class="info-badge">
@@ -758,7 +758,7 @@
                             <i class="bi {% if msg.role == 'user' %}bi-person{% else %}bi-robot{% endif %}"></i>
                         </div>
                         <div class="message-sender">
-                            {% if msg.role == 'user' %}Вы{% else %}Ассистент{% endif %}
+                            {% if msg.role == 'user' %}{% trans "Вы" %}{% else %}{% trans "Ассистент" %}{% endif %}
                         </div>
                         <div class="message-timestamp">
                             {{ msg.timestamp|slice:":16" }}
@@ -769,7 +769,7 @@
                     <div class="rag-sources" data-message-index="{{ forloop.counter0 }}">
                         <div class="message-rag-context" onclick="showMessageChunks({{ forloop.counter0 }})">
                             <i class="bi bi-database"></i>
-                            Ответ основан на {{ msg.metadata.rag_sources|length }} документах
+                            {% blocktrans with n=msg.metadata.rag_sources|length %}Ответ основан на {{ n }} документах{% endblocktrans %}
                             <i class="bi bi-chevron-right ms-1"></i>
                         </div>
                         {% regroup msg.metadata.rag_sources by title as source_list %}
@@ -779,13 +779,13 @@
                                       {% if group.list.0.document_id %}
                                       onclick="previewDocument({{ group.list.0.document_id }}, '{{ group.grouper|escapejs }}', {{ group.list.0.chunk_id }})"
                                       {% else %}
-                                      onclick="showToast('ID документа не указан', 'warning')"
+                                      onclick="showToast('{% trans "ID документа не указан" %}', 'warning')"
                                       {% endif %}
-                                      title="Релевантность: {% widthratio group.list.0.relevance 1 100 %}%">
+                                      title="{% trans "Релевантность" %}: {% widthratio group.list.0.relevance 1 100 %}%">
                                     {{ group.grouper|truncatechars:20 }}
                                 </span>
                                 {% if group.list|length > 1 %}
-                                    <span class="rag-source-count" title="Использовано {{ group.list|length }} чанков из этого документа">
+                                    <span class="rag-source-count" title="{% blocktrans with n=group.list|length %}Использовано {{ n }} чанков из этого документа{% endblocktrans %}">
                                         +{{ group.list|length|add:"-1" }}
                                     </span>
                                 {% endif %}
@@ -800,25 +800,25 @@
                     <div class="empty-state-icon"><i class="bi bi-robot"></i></div>
                     <h3 id="emptyStateTitle">
                         {% if chat_session and chat_session.checkpoint %}
-                            Чат с {{ chat_session.checkpoint.display_name }}
+                            {% blocktrans with name=chat_session.checkpoint.display_name %}Чат с {{ name }}{% endblocktrans %}
                         {% else %}
-                            Добро пожаловать в чат с AI
+                            {% trans "Добро пожаловать в чат с AI" %}
                         {% endif %}
                     </h3>
                     <p id="emptyStateMessage">
                         {% if chat_session and chat_session.checkpoint %}
-                            Задайте вопрос, попросите что-то написать или обсудить.
-                            Включите RAG режим для поиска по вашим документам.
+                            {% blocktrans %}Задайте вопрос, попросите что-то написать или обсудить.
+                            Включите RAG режим для поиска по вашим документам.{% endblocktrans %}
                         {% else %}
-                            Выберите модель в меню "Модели" и начните диалог.
+                            {% trans "Выберите модель в меню \"Модели\" и начните диалог." %}
                         {% endif %}
                     </p>
                     {% if chat_session and chat_session.checkpoint %}
                     <div class="empty-state-actions">
-                        <button class="btn btn-outline-primary" onclick="insertSample('Расскажи о себе и своих возможностях')">
+                        <button class="btn btn-outline-primary" onclick="insertSample('{% trans "Расскажи о себе и своих возможностях" %}')">
                             <i class="bi bi-info-circle me-1"></i> {% trans "О модели" %}
                         </button>
-                        <button class="btn btn-outline-primary" onclick="insertSample('Напиши программу на Python для сортировки списка')">
+                        <button class="btn btn-outline-primary" onclick="insertSample('{% trans "Напиши программу на Python для сортировки списка" %}')">
                             <i class="bi bi-code-slash me-1"></i> {% trans "Пример кода" %}
                         </button>
                         <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#ragModal">

@@ -3,10 +3,10 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Расширенный поиск RAG | Ivanna Lab{% endblock %}
+{% block title %}{% trans "Расширенный поиск RAG | Ivanna Lab" %}{% endblock %}
 
 {% block page_title %}
-    <i class="bi bi-search-heart me-2" style="color: var(--primary-color);"></i> Поиск по документам
+    <i class="bi bi-search-heart me-2" style="color: var(--primary-color);"></i> {% trans "Поиск по документам" %}
 {% endblock %}
 
 {% block extra_css %}
@@ -375,7 +375,7 @@
                         <option value="{{ collection.id }}" 
                                 {% if selected_collection and selected_collection.id == collection.id %}selected{% endif %}>
                             {{ collection.name }}
-                            {% if not collection.is_public %} (личная){% endif %}
+                            {% if not collection.is_public %} ({% trans "личная" %}){% endif %}
                         </option>
                         {% endfor %}
                     </select>
@@ -524,7 +524,7 @@
                             <span>{{ item.query_text|truncatechars:50 }}</span>
                         </div>
                         <div class="history-meta">
-                            <span>{{ item.results_count }} рез.</span>
+                            <span>{% blocktrans with count=item.results_count %}{{ count }} рез.{% endblocktrans %}</span>
                             <span>{{ item.created_at|date:"d.m.Y H:i" }}</span>
                         </div>
                     </div>

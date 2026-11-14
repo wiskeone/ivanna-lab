@@ -65,8 +65,8 @@
                             </div>
                             <hr>
                             <div class="small text-muted">
-                                <div>Набор вопросов: {% if dataset.source_question_set %}{{ dataset.source_question_set.name }}{% else %}—{% endif %}</div>
-                                <div>Задачи ответов: {{ dataset.source_answer_jobs.count }}</div>
+                                <div>{% trans "Набор вопросов:" %} {% if dataset.source_question_set %}{{ dataset.source_question_set.name }}{% else %}—{% endif %}</div>
+                                <div>{% blocktrans with n=dataset.source_answer_jobs.count %}Задачи ответов: {{ n }}{% endblocktrans %}</div>
                             </div>
                         </div>
                     </div>
@@ -103,7 +103,7 @@
                         </div>
                         {% if item.context_chunks %}
                         <div class="mt-2">
-                            <small class="text-muted">Контекст ({{ item.context_chunks|length }} чанков):</small>
+                            <small class="text-muted">{% blocktrans with n=item.context_chunks|length %}Контекст ({{ n }} чанков):{% endblocktrans %}</small>
                             <details class="mt-1">
                                 <summary class="small">{% trans "Показать" %}</summary>
                                 {% for chunk in item.context_chunks %}
@@ -113,7 +113,7 @@
                         </div>
                         {% endif %}
                         <div class="small text-muted mt-2">
-                            {% if item.selected_model_id %}Модель: {{ item.selected_model_id }}{% endif %}
+                            {% if item.selected_model_id %}{% trans "Модель:" %} {{ item.selected_model_id }}{% endif %}
                         </div>
                     </div>
                     {% empty %}

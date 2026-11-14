@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Слияние моделей{% endblock %}
-{% block page_title %}Слияние моделей{% endblock %}
+{% block title %}{% trans "Слияние моделей" %}{% endblock %}
+{% block page_title %}{% trans "Слияние моделей" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -72,7 +72,7 @@
                                             <div>
                                                 <strong>{{ model.display_name }}</strong>
                                                 <div class="small text-muted">
-                                                    {{ model.model_type }} | {{ model.parameter_count|floatformat:0 }} параметров | {{ model.size_gb }} GB
+                                                    {% blocktrans with mt=model.model_type pc=model.parameter_count|floatformat:0 sg=model.size_gb %}{{ mt }} | {{ pc }} параметров | {{ sg }} GB{% endblocktrans %}
                                                 </div>
                                             </div>
                                             <span class="badge bg-secondary">{{ model.quantization|default:"—" }}</span>
@@ -97,7 +97,7 @@
                                             <div>
                                                 <strong>{{ model.display_name }}</strong>
                                                 <div class="small text-muted">
-                                                    {{ model.model_type }} | {{ model.parameter_count|floatformat:0 }} параметров | {{ model.size_gb }} GB
+                                                    {% blocktrans with mt=model.model_type pc=model.parameter_count|floatformat:0 sg=model.size_gb %}{{ mt }} | {{ pc }} параметров | {{ sg }} GB{% endblocktrans %}
                                                 </div>
                                             </div>
                                             <span class="badge bg-secondary">{{ model.quantization|default:"—" }}</span>

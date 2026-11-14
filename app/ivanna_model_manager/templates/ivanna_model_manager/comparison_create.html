@@ -1,7 +1,7 @@
 {% extends 'ivanna_model_manager/base.html' %}
 {% load i18n %}
 
-{% block title %}Создать сравнение - Ivanna Lab{% endblock %}
+{% block title %}{% trans "Создать сравнение - Ivanna Lab" %}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -59,8 +59,8 @@
                                             {{ model.display_name }} ({{ model.get_model_type_display }})
                                             <br>
                                             <small class="text-muted">
-                                                {{ model.parameter_count|floatformat:0 }} параметров • 
-                                                {{ model.context_length }} токенов
+                                                {{ model.parameter_count|floatformat:0 }} {% trans "параметров" %} •
+                                                {{ model.context_length }} {% trans "токенов" %}
                                             </small>
                                         </label>
                                     </div>

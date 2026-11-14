@@ -3,9 +3,9 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Fine-Tuning - дашборд{% endblock %}
+{% block title %}{% trans "Fine-Tuning - дашборд" %}{% endblock %}
 
-{% block page_title %}Fine-Tuning моделей{% endblock %}
+{% block page_title %}{% trans "Fine-Tuning моделей" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -363,8 +363,8 @@
                 </td>
                 <td>
                     <span class="method-badge">
-                        {% if job.method == 'document' %}📄 Документы
-                        {% elif job.method == 'instruction' %}📋 Инструкции
+                            {% if job.method == 'document' %}📄 {% trans "Документы" %}
+                            {% elif job.method == 'instruction' %}📋 {% trans "Инструкции" %}
                         {% elif job.method == 'raft' %}🎯 RAFT
                         {% endif %}
                     </span>

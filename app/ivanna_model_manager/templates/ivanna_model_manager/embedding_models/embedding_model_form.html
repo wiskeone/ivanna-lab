@@ -2,11 +2,11 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}{% if object.pk %}Редактирование{% else %}Добавление{% endif %} модели эмбеддингов{% endblock %}
+{% block title %}{% if object.pk %}{% trans "Редактирование" %}{% else %}{% trans "Добавление" %}{% endif %} {% trans "модели эмбеддингов" %}{% endblock %}
 
 {% block page_title %}
     <i class="bi bi-vector-pen me-2" style="color: var(--primary-color);"></i>
-    {% if object.pk %}Редактирование модели{% else %}Добавление модели{% endif %}
+    {% if object.pk %}{% trans "Редактирование модели" %}{% else %}{% trans "Добавление модели" %}{% endif %}
 {% endblock %}
 
 {% block extra_css %}
@@ -117,7 +117,7 @@
     <div class="card-header bg-transparent border-bottom">
         <h4 class="mb-0">
             <i class="bi bi-vector-pen me-2" style="color: var(--primary-color);"></i>
-            {% if object.pk %}Редактирование модели эмбеддингов{% else %}Добавление новой модели эмбеддингов{% endif %}
+            {% if object.pk %}{% trans "Редактирование модели эмбеддингов" %}{% else %}{% trans "Добавление новой модели эмбеддингов" %}{% endif %}
         </h4>
     </div>
     <div class="card-body">
@@ -304,7 +304,7 @@
                     <i class="bi bi-arrow-left me-2"></i> {% trans "Отмена" %}
                 </a>
                 <button type="submit" class="btn btn-primary btn-lg px-5">
-                    <i class="bi bi-cloud-arrow-up me-2"></i> {% if object.pk %}Сохранить изменения{% else %}Добавить модель{% endif %}
+                    <i class="bi bi-cloud-arrow-up me-2"></i> {% if object.pk %}{% trans "Сохранить изменения" %}{% else %}{% trans "Добавить модель" %}{% endif %}
                 </button>
             </div>
         </form>

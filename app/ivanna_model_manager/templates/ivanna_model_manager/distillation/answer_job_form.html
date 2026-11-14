@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Создание задачи генерации ответов{% endblock %}
-{% block page_title %}Создание задачи генерации ответов{% endblock %}
+{% block title %}{% trans "Создание задачи генерации ответов" %}{% endblock %}
+{% block page_title %}{% trans "Создание задачи генерации ответов" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -51,7 +51,7 @@
                                 <option value="">{% trans "--- Выберите набор (будут взяты все вопросы) ---" %}</option>
                                 {% for qset in question_sets %}
                                 <option value="{{ qset.id }}" {% if form.question_set.value|stringformat:"s" == qset.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ qset.name }} ({{ qset.questions.count }} вопросов)
+                                    {% blocktrans with name=qset.name n=qset.questions.count %}{{ name }} ({{ n }} вопросов){% endblocktrans %}
                                 </option>
                                 {% endfor %}
                             </select>
@@ -105,7 +105,7 @@
                                 <div class="mb-3">
                                     <label for="prompt_template" class="form-label">{% trans "Шаблон промпта (опционально)" %}</label>
                                     <textarea name="prompt_template" id="prompt_template" class="form-control" rows="4" placeholder="{% trans 'Ответь на вопрос, используя только информацию из контекста.\n\nКонтекст:\n{context}\n\nВопрос: {question}\n\nОтвет:' %}"></textarea>
-                                    <div class="form-text">Используйте {context} и {question} как переменные.</div>
+                                    <div class="form-text">{% trans "Используйте {context} и {question} как переменные." %}</div>
                                 </div>
                             </div>
                         </div>

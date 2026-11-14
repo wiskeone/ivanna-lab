@@ -3,7 +3,7 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}{{ model.display_name }} — детали модели{% endblock %}
+{% block title %}{% blocktrans with name=model.display_name %}{{ name }} — детали модели{% endblocktrans %}{% endblock %}
 {% block page_title %}{{ model.display_name }}{% endblock %}
 
 {% block extra_css %}
@@ -265,13 +265,13 @@
                             </div>
                             <div class="model-meta-item">
                                 <span class="model-meta-label">{% trans "Контекст" %}</span>
-                                <span class="model-meta-value">{{ model.context_length }} токенов</span>
+                                <span class="model-meta-value">{% blocktrans with cl=model.context_length %}{{ cl }} токенов{% endblocktrans %}</span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="model-meta-item">
                                 <span class="model-meta-label">{% trans "Лицензия" %}</span>
-                                <span class="model-meta-value">{{ model.license_type|default:"Не указана" }}</span>
+                                <span class="model-meta-value">{% trans "Не указана" as lic_default %}{{ model.license_type|default:lic_default }}</span>
                             </div>
                             <div class="model-meta-item">
                                 <span class="model-meta-label">{% trans "Безопасность" %}</span>
@@ -281,7 +281,7 @@
                                         {{ model.safety_score|floatformat:2 }}
                                     </span>
                                     {% else %}
-                                    Не оценена
+                                    {% trans "Не оценена" %}
                                     {% endif %}
                                 </span>
                             </div>
@@ -289,9 +289,9 @@
                                 <span class="model-meta-label">{% trans "Публичный доступ" %}</span>
                                 <span class="model-meta-value">
                                     {% if model.is_public %}
-                                    <i class="bi bi-check-circle text-success"></i> Да
+                                    <i class="bi bi-check-circle text-success"></i> {% trans "Да" %}
                                     {% else %}
-                                    <i class="bi bi-x-circle text-danger"></i> Нет
+                                    <i class="bi bi-x-circle text-danger"></i> {% trans "Нет" %}
                                     {% endif %}
                                 </span>
                             </div>
@@ -299,9 +299,9 @@
                                 <span class="model-meta-label">{% trans "Активность" %}</span>
                                 <span class="model-meta-value">
                                     {% if model.is_active %}
-                                    <i class="bi bi-check-circle text-success"></i> Активна
+                                    <i class="bi bi-check-circle text-success"></i> {% trans "Активна" %}
                                     {% else %}
-                                    <i class="bi bi-x-circle text-danger"></i> Неактивна
+                                    <i class="bi bi-x-circle text-danger"></i> {% trans "Неактивна" %}
                                     {% endif %}
                                 </span>
                             </div>
@@ -364,7 +364,7 @@
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <strong>{{ session.session_id|truncatechars:30 }}</strong>
-                                        <small class="d-block text-muted">{{ session.last_activity|timesince }} назад</small>
+                                        <small class="d-block text-muted">{% blocktrans with since=session.last_activity|timesince %}{{ since }} назад{% endblocktrans %}</small>
                                     </div>
                                     <span class="badge bg-primary">{{ session.total_requests }}</span>
                                 </div>
@@ -423,7 +423,7 @@
                     <div class="mb-3">
                         <small class="text-muted d-block">{% trans "Локальный путь" %}</small>
                         <div class="text-truncate" title="{{ model.local_path }}">
-                            <i class="bi bi-folder2 me-1"></i> {{ model.local_path|default:"Не скачана"|truncatechars:40 }}
+                            <i class="bi bi-folder2 me-1"></i> {% trans "Не скачана" as not_downloaded_default %}{{ model.local_path|default:not_downloaded_default|truncatechars:40 }}
                         </div>
                     </div>
 
@@ -446,7 +446,7 @@
 
                     {% if perms.ivanna_model_manager.can_delete_protected %}
                     <a href="{% url 'model_delete' model.pk %}" class="action-link danger"
-                       onclick="return confirm('Вы уверены, что хотите удалить эту модель?')">
+                       onclick="return confirm('{% trans "Вы уверены, что хотите удалить эту модель?" %}')">
                         <i class="bi bi-trash me-1"></i> {% trans "Удалить модель" %}
                     </a>
                     {% endif %}
@@ -456,7 +456,7 @@
             <!-- Управление версиями -->
             <div class="card mt-4">
                 <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-collection me-2"></i> Версии ({{ versions|length }})</h5>
+                    <h5 class="mb-0"><i class="bi bi-collection me-2"></i> {% blocktrans with count=versions|length %}Версии ({{ count }}){% endblocktrans %}</h5>
                     <button class="action-link" data-bs-toggle="modal" data-bs-target="#createVersionModal">
                         <i class="bi bi-plus-lg"></i> {% trans "Создать" %}
                     </button>

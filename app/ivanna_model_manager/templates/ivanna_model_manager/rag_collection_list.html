@@ -3,10 +3,10 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Коллекции документов - RAG | Ivanna Lab{% endblock %}
+{% block title %}{% trans "Коллекции документов - RAG | Ivanna Lab" %}{% endblock %}
 
 {% block page_title %}
-    <i class="bi bi-folder me-2" style="color: var(--primary-color);"></i> Коллекции документов
+    <i class="bi bi-folder me-2" style="color: var(--primary-color);"></i> {% trans "Коллекции документов" %}
 {% endblock %}
 
 {% block extra_css %}
@@ -338,11 +338,11 @@
                         <div class="collection-stats">
                             <span class="stat-item">
                                 <i class="bi bi-file-text"></i>
-                                {{ collection.doc_count|default:0 }} док.
+                                {{ collection.doc_count|default:0 }} {% trans "док." %}
                             </span>
                             <span class="stat-item">
                                 <i class="bi bi-grid-3x3-gap"></i>
-                                {{ collection.chunk_count|default:0 }} чанков
+                                {% blocktrans with n=collection.chunk_count|default:0 %}{{ n }} чанков{% endblocktrans %}
                             </span>
                         </div>
 
@@ -353,7 +353,7 @@
                                 </span>
                                 <span class="stat-item" style="background: transparent; padding-left: 0;">
                                     <i class="bi bi-database"></i>
-                                    {{ collection.total_vectors|default:0 }} вект.
+                                    {{ collection.total_vectors|default:0 }} {% trans "вект." %}
                                 </span>
                             {% else %}
                                 <span class="index-badge not-created">

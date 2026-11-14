@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Редактирование {{ model.name }} - Ivanna Lab{% endblock %}
+{% block title %}{% blocktrans with name=model.name %}Редактирование {{ name }} - Ivanna Lab{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <div class="container">

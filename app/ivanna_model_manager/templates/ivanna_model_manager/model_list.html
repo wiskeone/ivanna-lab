@@ -3,8 +3,8 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Список моделей - Ivanna Lab{% endblock %}
-{% block page_title %}Список моделей{% endblock %}
+{% block title %}{% trans "Список моделей - Ivanna Lab" %}{% endblock %}
+{% block page_title %}{% trans "Список моделей" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -144,7 +144,7 @@
                         </div>
                         <div class="model-meta-item">
                             <span class="model-meta-label"><i class="bi bi-memory"></i> {% trans "Контекст:" %}</span>
-                            <span class="model-meta-value">{{ model.context_length }} токенов</span>
+                            <span class="model-meta-value">{% blocktrans with cl=model.context_length %}{{ cl }} токенов{% endblocktrans %}</span>
                         </div>
                     </div>
 
@@ -169,7 +169,7 @@
                         {% endif %}
                         {% if model.is_quantized %}
                         <span class="badge bg-info">
-                            <i class="bi bi-arrow-down-up me-1"></i> {{ model.get_quantization_display|default:"Квантизирована" }}
+                            <i class="bi bi-arrow-down-up me-1"></i> {% trans "Квантизирована" as quant_default %}{{ model.get_quantization_display|default:quant_default }}
                         </span>
                         {% endif %}
                     </div>

@@ -1,7 +1,7 @@
 {% extends 'ivanna_model_manager/base.html' %}
 {% load i18n %}
 
-{% block title %}Тестирование {{ model.name }} - Ivanna Lab{% endblock %}
+{% block title %}{% blocktrans with name=model.name %}Тестирование {{ name }} - Ivanna Lab{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -66,16 +66,16 @@
                                     <i class="bi bi-collection"></i> {% trans "Примеры" %}
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('Напиши список шагов для обучения нейросети')">
+                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('{% trans "Напиши список шагов для обучения нейросети" %}')">
                                         {% trans "Обучение нейросети" %}
                                     </button></li>
-                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('Объясни концепцию внимания в трансформерах простыми словами')">
+                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('{% trans "Объясни концепцию внимания в трансформерах простыми словами" %}')">
                                         {% trans "Объяснение концепции" %}
                                     </button></li>
-                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('Сгенерируй Python код для загрузки модели с Hugging Face')">
+                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('{% trans "Сгенерируй Python код для загрузки модели с Hugging Face" %}')">
                                         {% trans "Генерация кода" %}
                                     </button></li>
-                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('Какие преимущества у квантизации моделей?')">
+                                    <li><button type="button" class="dropdown-item" onclick="setPrompt('{% trans "Какие преимущества у квантизации моделей?" %}')">
                                         {% trans "Вопрос о моделях" %}
                                     </button></li>
                                 </ul>
@@ -111,9 +111,9 @@
                     </div>
                 </div>
                 <div class="card-footer text-muted small">
-                    <i class="bi bi-clock"></i> Тест выполнен в {{ model.name }}
+                    <i class="bi bi-clock"></i> {% blocktrans with name=model.name %}Тест выполнен в {{ name }}{% endblocktrans %}
                     {% if generation_config %}
-                    | Параметры: {{ generation_config }}
+                    {% blocktrans with gc=generation_config %}| Параметры: {{ gc }}{% endblocktrans %}
                     {% endif %}
                 </div>
             </div>
@@ -142,11 +142,11 @@
                     <div class="mb-3">
                         <h6>{% trans "Параметры:" %}</h6>
                         <ul class="small mb-0">
-                            <li>Параметры: {{ model.parameter_count|default:"Неизвестно"|floatformat:"0" }}</li>
-                            <li>Размер: {{ model.size_gb|default:"?" }} GB</li>
-                            <li>Контекст: {{ model.context_length }} токенов</li>
+                            <li>{% blocktrans with p=model.parameter_count|default:"Неизвестно"|floatformat:"0" %}Параметры: {{ p }}{% endblocktrans %}</li>
+                            <li>{% blocktrans with s=model.size_gb|default:"?" %}Размер: {{ s }} GB{% endblocktrans %}</li>
+                            <li>{% blocktrans with cl=model.context_length %}Контекст: {{ cl }} токенов{% endblocktrans %}</li>
                             {% if model.accuracy_score %}
-                            <li>Точность: {{ model.accuracy_score|floatformat:3 }}</li>
+                            <li>{% blocktrans with a=model.accuracy_score|floatformat:3 %}Точность: {{ a }}{% endblocktrans %}</li>
                             {% endif %}
                         </ul>
                     </div>

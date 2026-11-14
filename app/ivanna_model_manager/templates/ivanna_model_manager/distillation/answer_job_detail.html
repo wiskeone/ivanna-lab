@@ -3,8 +3,8 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Задача: {{ job.name }}{% endblock %}
-{% block page_title %}Задача генерации ответов: {{ job.name }}{% endblock %}
+{% block title %}{% blocktrans with name=job.name %}Задача: {{ name }}{% endblocktrans %}{% endblock %}
+{% block page_title %}{% blocktrans with name=job.name %}Задача генерации ответов: {{ name }}{% endblocktrans %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -177,8 +177,8 @@
             <div class="alert alert-info mt-3 mb-0">
                 <i class="bi bi-info-circle me-2"></i>
                 <strong>{% trans "Чекпоинт доступен!" %}</strong>
-                Задача прервана после обработки 
-                {{ job.checkpoint_data.last_processed_question_index|add:1 }} из {{ job.checkpoint_data.total_questions }} вопросов.
+                {% trans "Задача прервана после обработки" %}
+                {% blocktrans with qi=job.checkpoint_data.last_processed_question_index|add:1 tq=job.checkpoint_data.total_questions %}{{ qi }} из {{ tq }} вопросов.{% endblocktrans %}
                 <form method="post" action="{% url 'distillation_resume_answer_generation' job.id %}" class="d-inline ms-3">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-outline-primary">
@@ -221,7 +221,7 @@
                     <div>
                         <span class="badge bg-secondary me-2">ID: {{ pair.question.id }}</span>
                         <span class="status-badge {% if pair.answer %}status-answered{% else %}status-pending{% endif %}" id="status-badge-{{ pair.question.id }}">
-                            {% if pair.answer %}Ответ получен{% else %}Ожидает ответа{% endif %}
+                            {% if pair.answer %}{% trans "Ответ получен" %}{% else %}{% trans "Ожидает ответа" %}{% endif %}
                         </span>
                         <span class="version-badge" id="version-badge-{{ pair.question.id }}">
                             <i class="bi bi-layers"></i> <span id="version-count-{{ pair.question.id }}">{{ pair.all_answers|length }}</span> {% trans "версий" %}
@@ -266,7 +266,7 @@
                              data-version-index="{{ forloop.counter0 }}">
                             <div class="d-flex justify-content-between">
                                 <span class="version-label">
-                                    Версия от {{ ans.created_at|date:"d.m.Y H:i" }}
+                                    {% blocktrans with d=ans.created_at|date:"d.m.Y H:i" %}Версия от {{ d }}{% endblocktrans %}
                                 </span>
                                 {% if ans.id == pair.answer.id %}
                                 <span class="badge bg-success current-version-badge">{% trans "Текущая" %}</span>

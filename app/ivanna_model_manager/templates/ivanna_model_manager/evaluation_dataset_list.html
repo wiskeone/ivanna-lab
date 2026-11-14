@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Датасеты для оценки{% endblock %}
-{% block page_title %}Датасеты для оценки моделей{% endblock %}
+{% block title %}{% trans "Датасеты для оценки" %}{% endblock %}
+{% block page_title %}{% trans "Датасеты для оценки моделей" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -48,8 +48,8 @@
                                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
                                             data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="bi bi-tags me-1"></i>
-                                        {% if request.GET.tag %}Тег: {{ request.GET.tag }}
-                                        {% else %}Все теги{% endif %}
+                                        {% if request.GET.tag %}{% blocktrans with tag=request.GET.tag %}Тег: {{ tag }}{% endblocktrans %}
+                                        {% else %}{% trans "Все теги" %}{% endif %}
                                     </button>
                                     <ul class="dropdown-menu">
                                         <li><a class="dropdown-item" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}">{% trans "Все теги" %}</a></li>

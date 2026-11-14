@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Редактирование датасета{% endblock %}
-{% block page_title %}Редактирование датасета{% endblock %}
+{% block title %}{% trans "Редактирование датасета" %}{% endblock %}
+{% block page_title %}{% trans "Редактирование датасета" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -31,14 +31,14 @@
 
     <div class="card">
         <div class="card-header bg-transparent border-bottom">
-            <h5 class="mb-0">Редактирование датасета: {{ dataset.name }}</h5>
+            <h5 class="mb-0">{% blocktrans with name=dataset.name %}Редактирование датасета: {{ name }}{% endblocktrans %}</h5>
         </div>
         <div class="card-body">
             {% if total_questions > 1000 %}
                 <!-- Большой датасет – пагинация -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <span class="badge bg-info">Всего вопросов: {{ total_questions }}</span>
+                        <span class="badge bg-info">{% blocktrans %}Всего вопросов: {{ total_questions }}{% endblocktrans %}</span>
                         <span class="badge bg-secondary ms-2" id="currentPageInfo">{% trans "Страница 1" %}</span>
                     </div>
                     <div>

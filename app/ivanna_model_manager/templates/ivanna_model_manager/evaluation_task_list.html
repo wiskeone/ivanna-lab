@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Задачи оценки{% endblock %}
-{% block page_title %}Задачи оценки моделей{% endblock %}
+{% block title %}{% trans "Задачи оценки" %}{% endblock %}
+{% block page_title %}{% trans "Задачи оценки моделей" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -194,7 +194,7 @@
                             <div class="d-flex justify-content-between">
                                 <small class="text-muted">
                                     <i class="bi bi-question-circle me-1"></i>
-                                    {{ task.total_questions }} вопросов
+                                    {% blocktrans with tq=task.total_questions %}{{ tq }} вопросов{% endblocktrans %}
                                 </small>
                                 <div>
                                     <a href="{% url 'evaluation_task_detail' task.id %}" 

@@ -3,7 +3,7 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Наборы вопросов — Дистилляция{% endblock %}
+{% block title %}{% trans "Наборы вопросов — Дистилляция" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -275,17 +275,17 @@
                         <div class="value mb-2">{{ qset.collection.name }}</div>
                         <div class="stat-grid" style="margin-bottom: 0; gap: 8px;">
                             <div class="stat-item" style="background: rgba(0,0,0,0.2);">
-                                <i class="bi bi-file-text"></i> {{ qset.collection.total_documents }} док.
+                                <i class="bi bi-file-text"></i> {{ qset.collection.total_documents }} {% trans "док." %}
                             </div>
                             <div class="stat-item" style="background: rgba(0,0,0,0.2);">
-                                <i class="bi bi-layout-text-window"></i> {{ qset.collection.total_chunks }} чанков
+                                <i class="bi bi-layout-text-window"></i> {% blocktrans with n=qset.collection.total_chunks %}{{ n }} чанков{% endblocktrans %}
                             </div>
                         </div>
                         {% if qset.collection.embedding_model %}
                         <div class="mt-2">
                             <div class="label">{% trans "🧠 Модель эмбеддингов" %}</div>
                             <div class="value small">{{ qset.collection.embedding_model.display_name|default:qset.collection.embedding_model.name }}</div>
-                            <div class="small text-muted">размерность: {{ qset.collection.embedding_model.embedding_dim }}d</div>
+                            <div class="small text-muted">{% blocktrans with d=qset.collection.embedding_model.embedding_dim %}размерность: {{ d }}d{% endblocktrans %}</div>
                         </div>
                         {% else %}
                         <div class="small text-warning mt-1">

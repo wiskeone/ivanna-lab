@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Чат с AI моделью{% endblock %}
+{% block title %}{% trans "Чат с AI моделью" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -1046,20 +1046,20 @@
             <div style="flex: 1; min-width: 0;">
                 <h2 id="currentModelName">
                     {% if chat_session and chat_session.checkpoint %}
-                        {{ chat_session.checkpoint.display_name|default:"AI Модель" }}
+                        {% trans "AI Модель" as ai_model_default %}{{ chat_session.checkpoint.display_name|default:ai_model_default }}
                     {% elif session_data %}
-                        Новая сессия
+                        {% trans "Новая сессия" %}
                     {% else %}
-                        Выберите модель
+                        {% trans "Выберите модель" %}
                     {% endif %}
                 </h2>
                 <div class="chat-subtitle-compact">
                     <span id="sessionStats">
                         {% if session_data %}
-                            {{ messages|length }} сообщений • 
-                            {% if chat_session %}{{ chat_session.total_tokens|default:0 }} токенов{% endif %}
+                            {% blocktrans with n=messages|length %}{{ n }} сообщений • {% endblocktrans %}
+                            {% if chat_session %}{% blocktrans with t=chat_session.total_tokens|default:0 %}{{ t }} токенов{% endblocktrans %}{% endif %}
                         {% else %}
-                            Создайте новую сессию
+                            {% trans "Создайте новую сессию" %}
                         {% endif %}
                     </span>
                     <span id="modelStatusBadge" style="display: none; margin-left: 10px;" class="badge bg-warning">
@@ -1165,7 +1165,7 @@
                             <i class="bi {% if msg.role == 'user' %}bi-person{% else %}bi-robot{% endif %}"></i>
                         </div>
                         <div class="message-sender">
-                            {% if msg.role == 'user' %}Вы{% else %}Ассистент{% endif %}
+                            {% if msg.role == 'user' %}{% trans "Вы" %}{% else %}{% trans "Ассистент" %}{% endif %}
                         </div>
                         <div class="message-timestamp">
                             {{ msg.timestamp|slice:":16" }}
@@ -1177,10 +1177,10 @@
                     <div class="rag-sources">
                         <div class="message-rag-context">
                             <i class="bi bi-database"></i> 
-                            Ответ основан на {{ msg.metadata.rag_sources|length }} документах
+                            {% blocktrans with n=msg.metadata.rag_sources|length %}Ответ основан на {{ n }} документах{% endblocktrans %}
                         </div>
                         {% for source in msg.metadata.rag_sources %}
-                        <span class="rag-source-item" title="Релевантность: {{ source.relevance|floatformat:2 }}">
+                        <span class="rag-source-item" title="{% trans "Релевантность" %}: {{ source.relevance|floatformat:2 }}">
                             <i class="bi bi-file-text me-1"></i>{{ source.title|truncatechars:30 }}
                         </span>
                         {% endfor %}
@@ -1196,26 +1196,26 @@
                 </div>
                 <h3 id="emptyStateTitle">
                     {% if chat_session and chat_session.checkpoint %}
-                        Чат с {{ chat_session.checkpoint.display_name }}
+                        {% blocktrans with name=chat_session.checkpoint.display_name %}Чат с {{ name }}{% endblocktrans %}
                     {% else %}
-                        Добро пожаловать в чат с AI
+                        {% trans "Добро пожаловать в чат с AI" %}
                     {% endif %}
                 </h3>
                 <p id="emptyStateMessage">
                     {% if chat_session and chat_session.checkpoint %}
-                        Задайте вопрос, попросите что-то написать или обсудить.
-                        Включите RAG режим для поиска по вашим документам.
+                        {% blocktrans %}Задайте вопрос, попросите что-то написать или обсудить.
+                        Включите RAG режим для поиска по вашим документам.{% endblocktrans %}
                     {% else %}
-                        Выберите модель в меню "Модели" и начните диалог.
+                        {% trans "Выберите модель в меню \"Модели\" и начните диалог." %}
                     {% endif %}
                 </p>
                 
                 {% if chat_session and chat_session.checkpoint %}
                 <div class="empty-state-actions">
-                    <button class="btn btn-outline-primary" onclick="insertSample('Расскажи о своих возможностях')">
+                    <button class="btn btn-outline-primary" onclick="insertSample('{% trans "Расскажи о своих возможностях" %}')">
                         <i class="bi bi-info-circle me-1"></i> {% trans "О модели" %}
                     </button>
-                    <button class="btn btn-outline-primary" onclick="insertSample('Напиши программу на Python для сортировки списка')">
+                    <button class="btn btn-outline-primary" onclick="insertSample('{% trans "Напиши программу на Python для сортировки списка" %}')">
                         <i class="bi bi-code-slash me-1"></i> {% trans "Пример кода" %}
                     </button>
                     <button class="btn btn-outline-primary" onclick="toggleRagPanel()">

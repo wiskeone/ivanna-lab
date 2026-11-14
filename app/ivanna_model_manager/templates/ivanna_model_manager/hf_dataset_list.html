@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Датасеты Hugging Face{% endblock %}
-{% block page_title %}Датасеты Hugging Face{% endblock %}
+{% block title %}{% trans "Датасеты Hugging Face" %}{% endblock %}
+{% block page_title %}{% trans "Датасеты Hugging Face" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -41,9 +41,9 @@
                     <p class="card-text small">{{ dataset.description|truncatechars:120 }}</p>
                     {% endif %}
                     <div class="small text-muted">
-                        <div>Раздел: {{ dataset.split }}</div>
+                        <div>{% blocktrans with s=dataset.split %}Раздел: {{ s }}{% endblocktrans %}</div>
                         {% if dataset.total_entries %}
-                        <div>Записей: {{ dataset.total_entries }}</div>
+                        <div>{% blocktrans with n=dataset.total_entries %}Записей: {{ n }}{% endblocktrans %}</div>
                         {% endif %}
                     </div>
                 </div>

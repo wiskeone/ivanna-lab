@@ -352,15 +352,15 @@
                     <span id="jobStatusText">{{ job.get_status_display }}</span>
                 </span>
                 <span class="badge bg-primary ms-3">
-                    {% if job.method == 'document' %}📄 Документы
-                    {% elif job.method == 'instruction' %}📋 Инструкции
+                            {% if job.method == 'document' %}📄 {% trans "Документы" %}
+                            {% elif job.method == 'instruction' %}📋 {% trans "Инструкции" %}
                     {% elif job.method == 'raft' %}🎯 RAFT
                     {% endif %}
                 </span>
             </div>
             <div class="text-muted small">
-                Создана: {{ job.created_at|date:"d.m.Y H:i" }} | 
-                Автор: {{ job.created_by }}
+                        {% blocktrans with d=job.created_at|date:"d.m.Y H:i" %}Создана: {{ d }} |{% endblocktrans %}
+                        {% blocktrans with author=job.created_by %}Автор: {{ author }}{% endblocktrans %}
             </div>
         </div>
         
@@ -510,10 +510,10 @@
                     <div>
                         <i class="bi bi-journal-text me-2"></i>{% trans "Логи выполнения" %}
                         <span class="log-status ms-2" id="logStatus">
-                            {% if job.status == 'TRAINING' %} (обучение...)
-                            {% elif job.status == 'COMPLETED' %} (завершено)
-                            {% elif job.status == 'FAILED' %} (ошибка)
-                            {% elif job.status == 'CANCELLED' %} (отменено)
+                            {% if job.status == 'TRAINING' %} {% trans "(обучение...)" %}
+                            {% elif job.status == 'COMPLETED' %} {% trans "(завершено)" %}
+                            {% elif job.status == 'FAILED' %} {% trans "(ошибка)" %}
+                            {% elif job.status == 'CANCELLED' %} {% trans "(отменено)" %}
                             {% endif %}
                         </span>
                     </div>
@@ -553,7 +553,7 @@
         {% for cp in checkpoints %}
         <div class="checkpoint-item">
             <div class="checkpoint-info">
-                <span class="checkpoint-step">Шаг {{ cp.step }}</span>
+                            <span class="checkpoint-step">{% blocktrans with step=cp.step %}Шаг {{ step }}{% endblocktrans %}</span>
                 <span class="checkpoint-time">{{ cp.created_at|date:"d.m.Y H:i" }}</span>
             </div>
             <div class="checkpoint-metrics">
@@ -563,7 +563,7 @@
                 {% if cp.grad_norm %}
                 <span><i class="bi bi-rulers"></i> grad: {{ cp.grad_norm|floatformat:4 }}</span>
                 {% endif %}
-                <span class="badge bg-secondary">{{ cp.metrics|length }} метрик</span>
+                            <span class="badge bg-secondary">{% blocktrans with n=cp.metrics|length %}{{ n }} метрик{% endblocktrans %}</span>
             </div>
         </div>
         {% endfor %}

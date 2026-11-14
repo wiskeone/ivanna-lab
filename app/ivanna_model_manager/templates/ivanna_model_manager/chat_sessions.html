@@ -3,7 +3,7 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Мои чат-сессии{% endblock %}
+{% block title %}{% trans "Мои чат-сессии" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -140,8 +140,8 @@
                         {{ session.display_name|default:"Чат-сессия" }}
                     </div>
                     <div class="session-meta">
-                        <span><i class="bi bi-chat-text"></i> {{ session.total_messages }} сообщ.</span>
-                        <span><i class="bi bi-hash"></i> {{ session.total_tokens|default:0 }} токенов</span>
+                        <span><i class="bi bi-chat-text"></i> {% blocktrans with n=session.total_messages %}{{ n }} сообщ.{% endblocktrans %}</span>
+                        <span><i class="bi bi-hash"></i> {% blocktrans with t=session.total_tokens|default:0 %}{{ t }} токенов{% endblocktrans %}</span>
                         <span><i class="bi bi-clock"></i> {{ session.last_activity|time_ago }}</span>
                     </div>
                 </div>

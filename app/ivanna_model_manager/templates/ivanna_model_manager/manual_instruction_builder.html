@@ -1,8 +1,8 @@
 {% extends 'ivanna_model_manager/base.html' %}
 {% load i18n %}
 {% load static %}
-{% block title %}{% if instruction_set %}Редактирование: {{ instruction_set.name }}{% else %}Создание ручного набора инструкций{% endif %}{% endblock %}
-{% block page_title %}{% if instruction_set %}Редактирование набора{% else %}Создание ручного набора инструкций{% endif %}{% endblock %}
+{% block title %}{% if instruction_set %}{% blocktrans with name=instruction_set.name %}Редактирование: {{ name }}{% endblocktrans %}{% else %}{% trans "Создание ручного набора инструкций" %}{% endif %}{% endblock %}
+{% block page_title %}{% if instruction_set %}{% trans "Редактирование набора" %}{% else %}{% trans "Создание ручного набора инструкций" %}{% endif %}{% endblock %}
 {% block extra_css %}
 <style>
 .instruction-card {
@@ -63,7 +63,7 @@
             </div>
             <div class="card mb-4">
                 <div class="card-header bg-transparent border-bottom">
-                    <h5 class="mb-0">{% if instruction_set %}Редактирование набора{% else %}Создание ручного набора инструкций{% endif %}</h5>
+                    <h5 class="mb-0">{% if instruction_set %}{% trans "Редактирование набора" %}{% else %}{% trans "Создание ручного набора инструкций" %}{% endif %}</h5>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">

@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Модели эмбеддингов — Ivanna Lab{% endblock %}
-{% block page_title %}Модели эмбеддингов{% endblock %}
+{% block title %}{% trans "Модели эмбеддингов — Ivanna Lab" %}{% endblock %}
+{% block page_title %}{% trans "Модели эмбеддингов" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -91,13 +91,13 @@
                             {% elif model.download_status == 'failed' %}status-failed
                             {% else %}status-not-downloaded{% endif %}">
                             {% if model.is_downloaded %}
-                                <i class="bi bi-check-circle"></i> Скачана
+                                <i class="bi bi-check-circle"></i> {% trans "Скачана" %}
                             {% elif model.download_status == 'downloading' %}
-                                <i class="bi bi-arrow-repeat spin"></i> Загрузка...
+                                <i class="bi bi-arrow-repeat spin"></i> {% trans "Загрузка..." %}
                             {% elif model.download_status == 'failed' %}
-                                <i class="bi bi-exclamation-triangle"></i> Ошибка
+                                <i class="bi bi-exclamation-triangle"></i> {% trans "Ошибка" %}
                             {% else %}
-                                <i class="bi bi-cloud"></i> Не скачана
+                                <i class="bi bi-cloud"></i> {% trans "Не скачана" %}
                             {% endif %}
                         </span>
                         {% if model.is_default %}

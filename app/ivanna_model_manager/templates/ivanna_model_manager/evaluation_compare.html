@@ -3,8 +3,8 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Сравнение моделей: {{ task.name }}{% endblock %}
-{% block page_title %}Сравнение моделей{% endblock %}
+{% block title %}{% blocktrans with name=task.name %}Сравнение моделей: {{ name }}{% endblocktrans %}{% endblock %}
+{% block page_title %}{% trans "Сравнение моделей" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -222,12 +222,12 @@
                                             <div class="mt-3 small text-muted">
                                                 {% if response.response_time %}
                                                 <span class="me-3">
-                                                    <i class="bi bi-clock"></i> {{ response.response_time|floatformat:2 }} с
+                                                    <i class="bi bi-clock"></i> {% blocktrans with t=response.response_time|floatformat:2 %}{{ t }} с{% endblocktrans %}
                                                 </span>
                                                 {% endif %}
                                                 {% if response.tokens_used %}
                                                 <span>
-                                                    <i class="bi bi-hash"></i> {{ response.tokens_used }} токенов
+                                                    <i class="bi bi-hash"></i> {% blocktrans with tk=response.tokens_used %}{{ tk }} токенов{% endblocktrans %}
                                                 </span>
                                                 {% endif %}
                                             </div>

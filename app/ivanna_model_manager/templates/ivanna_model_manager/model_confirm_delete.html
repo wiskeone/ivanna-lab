@@ -1,7 +1,7 @@
 {% extends 'ivanna_model_manager/base.html' %}
 {% load i18n %}
 
-{% block title %}Удаление модели - Ivanna Lab{% endblock %}
+{% block title %}{% trans "Удаление модели - Ivanna Lab" %}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -64,25 +64,25 @@
                                 {% if related_count.sessions > 0 %}
                                 <li class="mb-2">
                                     <i class="fas fa-video text-info"></i>
-                                    Активных сессий: {{ related_count.sessions }}
+                                    {% blocktrans with n=related_count.sessions %}Активных сессий: {{ n }}{% endblocktrans %}
                                 </li>
                                 {% endif %}
                                 {% if related_count.evaluations > 0 %}
                                 <li class="mb-2">
                                     <i class="fas fa-chart-bar text-success"></i>
-                                    Оценок: {{ related_count.evaluations }}
+                                    {% blocktrans with n=related_count.evaluations %}Оценок: {{ n }}{% endblocktrans %}
                                 </li>
                                 {% endif %}
                                 {% if related_count.versions > 0 %}
                                 <li class="mb-2">
                                     <i class="fas fa-code-branch text-warning"></i>
-                                    Версий: {{ related_count.versions }}
+                                    {% blocktrans with n=related_count.versions %}Версий: {{ n }}{% endblocktrans %}
                                 </li>
                                 {% endif %}
                                 {% if related_count.chat_sessions > 0 %}
                                 <li>
                                     <i class="fas fa-comments text-primary"></i>
-                                    Чат-сессий: {{ related_count.chat_sessions }}
+                                    {% blocktrans with n=related_count.chat_sessions %}Чат-сессий: {{ n }}{% endblocktrans %}
                                 </li>
                                 {% endif %}
                             </ul>

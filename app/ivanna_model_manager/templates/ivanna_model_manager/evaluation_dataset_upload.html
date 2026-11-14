@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}Загрузка датасета{% endblock %}
-{% block page_title %}Загрузка датасета{% endblock %}
+{% block title %}{% trans "Загрузка датасета" %}{% endblock %}
+{% block page_title %}{% trans "Загрузка датасета" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -181,13 +181,13 @@
                             <pre class="bg-dark p-2 rounded small" style="height: 150px; overflow: auto;">[
   {
     "id": 1,
-    "text": "Что такое ИИ?",
+    "text": "{% trans "Что такое ИИ?" %}",
     "category": "AI",
     "difficulty": "easy"
   },
   {
     "id": 2,
-    "text": "Как работают трансформеры?",
+    "text": "{% trans "Как работают трансформеры?" %}",
     "category": "NLP",
     "difficulty": "hard"
   }

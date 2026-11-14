@@ -27,7 +27,7 @@
                 {% if model.huggingface_id %}
                 <i class="bi bi-box"></i> {{ model.huggingface_id|truncatechars:30 }}
                 {% else %}
-                <i class="bi bi-hdd"></i> Локальная модель
+                <i class="bi bi-hdd"></i> {% trans "Локальная модель" %}
                 {% endif %}
             </p>
             
@@ -38,7 +38,7 @@
                         {% if model.parameter_count %}
                             {{ model.parameter_count|floatformat:"0" }}
                         {% else %}
-                            Неизвестно
+                            {% trans "Неизвестно" %}
                         {% endif %}
                     </strong>
                 </div>
@@ -48,7 +48,7 @@
                         {% if model.size_gb %}
                             {{ model.size_gb }} GB
                         {% else %}
-                            Неизвестно
+                            {% trans "Неизвестно" %}
                         {% endif %}
                     </strong>
                 </div>
@@ -58,7 +58,7 @@
                 <i class="bi bi-calendar"></i> 
                 {{ model.created_at|date:"d.m.Y" }}
                 {% if model.accuracy_score %}
-                <br><i class="bi bi-graph-up"></i> Точность: {{ model.accuracy_score|floatformat:3 }}
+                <br><i class="bi bi-graph-up"></i> {% blocktrans with a=model.accuracy_score|floatformat:3 %}Точность: {{ a }}{% endblocktrans %}
                 {% endif %}
             </div>
         </div>

@@ -3,7 +3,7 @@
 {% load custom_filters %}
 
 {% block title %}
-{% if collection %}{{ collection.name }} - Документы{% else %}Все документы{% endif %}
+{% if collection %}{% blocktrans with name=collection.name %}{{ name }} - Документы{% endblocktrans %}{% else %}{% trans "Все документы" %}{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -14,9 +14,9 @@
             <h2 class="mb-1">
                 <i class="bi bi-files me-2" style="color: var(--primary-color);"></i>
                 {% if collection %}
-                Документы: {{ collection.name }}
+                {% blocktrans with name=collection.name %}Документы: {{ name }}{% endblocktrans %}
                 {% else %}
-                Все документы
+                {% trans "Все документы" %}
                 {% endif %}
             </h2>
             {% if collection %}
@@ -208,7 +208,7 @@
                         <span class="embedding-status status-not-downloaded">{{ document.get_status_display }}</span>
                         {% endif %}
                         {% if document.chunk_count > 0 %}
-                        <div class="small text-muted mt-1">{{ document.chunk_count }} чанков</div>
+                        <div class="small text-muted mt-1">{% blocktrans with n=document.chunk_count %}{{ n }} чанков{% endblocktrans %}</div>
                         {% endif %}
                     </div>
                 </div>
@@ -247,7 +247,7 @@
     <div class="empty-state">
         <div class="empty-state-icon"><i class="bi bi-files"></i></div>
         <h3>{% trans "Документы не найдены" %}</h3>
-        <p>{% if filters.q or filters.status or filters.type %}Попробуйте изменить параметры поиска{% else %}Загрузите первый документ, чтобы начать работу с RAG системой{% endif %}</p>
+        <p>{% if filters.q or filters.status or filters.type %}{% trans "Попробуйте изменить параметры поиска" %}{% else %}{% trans "Загрузите первый документ, чтобы начать работу с RAG системой" %}{% endif %}</p>
         <a href="{% url 'rag_upload_documents' %}" class="btn btn-primary mt-2"><i class="bi bi-upload me-1"></i> {% trans "Загрузить документы" %}</a>
     </div>
     {% endif %}

@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load custom_filters %}
 
-{% block title %}Дашборд{% endblock %}
-{% block page_title %}Дашборд{% endblock %}
+{% block title %}{% trans "Дашборд" %}{% endblock %}
+{% block page_title %}{% trans "Дашборд" %}{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
@@ -39,15 +39,15 @@
             <div class="stat-value">{{ total_models|default:"0" }}</div>
             <div class="stat-subtitle">
                 {% if loaded_models %}
-                    <span>{{ loaded_models }} загружено</span>
+                    <span>{% blocktrans %}{{ loaded_models }} загружено{% endblocktrans %}</span>
                 {% endif %}
                 {% if downloading_models %}
                     {% if loaded_models %}<span class="separator">•</span>{% endif %}
-                    <span>{{ downloading_models }} скачивается</span>
+                    <span>{% blocktrans %}{{ downloading_models }} скачивается{% endblocktrans %}</span>
                 {% endif %}
                 {% if error_models %}
                     {% if loaded_models or downloading_models %}<span class="separator">•</span>{% endif %}
-                    <span>{{ error_models }} ошибок</span>
+                    <span>{% blocktrans %}{{ error_models }} ошибок{% endblocktrans %}</span>
                 {% endif %}
             </div>
         </div>
@@ -59,7 +59,7 @@
             </div>
             <div class="stat-value">{{ my_evaluation_tasks_active|add:my_ft_jobs_active|default:"0" }}</div>
             <div class="stat-subtitle">
-                <span>{{ my_evaluation_tasks_active }} оценка{{ my_evaluation_tasks_active|pluralize:",и" }}</span>
+                <span>{% blocktrans count counter=my_evaluation_tasks_active %}{{ counter }} оценка{% plural %}{{ counter }} оценки{% endblocktrans %}</span>
                 <span class="separator">•</span>
                 <span>{{ my_ft_jobs_active }} fine-tuning</span>
             </div>
@@ -81,7 +81,7 @@
             </div>
             <div class="stat-value">{{ my_evaluation_tasks_completed|add:my_ft_jobs_completed|default:"0" }}</div>
             <div class="stat-subtitle">
-                <span>{{ my_evaluation_tasks_completed }} оценок</span>
+                <span>{% blocktrans %}{{ my_evaluation_tasks_completed }} оценок{% endblocktrans %}</span>
                 <span class="separator">•</span>
                 <span>{{ my_ft_jobs_completed }} fine-tuning</span>
             </div>
@@ -94,7 +94,7 @@
             </div>
             <div class="stat-value">{{ my_collections_count|default:"0" }}</div>
             <div class="stat-subtitle">
-                <span>{{ my_documents_count }} документов</span>
+                <span>{% blocktrans %}{{ my_documents_count }} документов{% endblocktrans %}</span>
             </div>
         </div>
 
@@ -105,7 +105,7 @@
             </div>
             <div class="stat-value">{{ my_chat_sessions|default:"0" }}</div>
             <div class="stat-subtitle">
-                <span>{{ user_total_tokens|default:"0" }} токенов</span>
+                <span>{% blocktrans with tokens=user_total_tokens|default:"0" %}{{ tokens }} токенов{% endblocktrans %}</span>
             </div>
         </div>
 
@@ -116,11 +116,11 @@
             </div>
             <div class="stat-value">{{ embedding_total|default:"0" }}</div>
             <div class="stat-subtitle">
-                <span>{{ embedding_downloaded }} скачано</span>
+                <span>{% blocktrans %}{{ embedding_downloaded }} скачано{% endblocktrans %}</span>
                 <span class="separator">•</span>
-                <span>{{ embedding_downloading }} загружается</span>
+                <span>{% blocktrans %}{{ embedding_downloading }} загружается{% endblocktrans %}</span>
                 <span class="separator">•</span>
-                <span>{{ embedding_failed }} ошибок</span>
+                <span>{% blocktrans %}{{ embedding_failed }} ошибок{% endblocktrans %}</span>
             </div>
         </div>
 
@@ -131,9 +131,9 @@
             </div>
             <div class="stat-value">{{ my_question_sets_active|add:my_answer_jobs_active|default:"0" }}</div>
             <div class="stat-subtitle">
-                <span>{{ my_question_sets_active }} наборов</span>
+                <span>{% blocktrans %}{{ my_question_sets_active }} наборов{% endblocktrans %}</span>
                 <span class="separator">•</span>
-                <span>{{ my_answer_jobs_active }} ответов</span>
+                <span>{% blocktrans %}{{ my_answer_jobs_active }} ответов{% endblocktrans %}</span>
             </div>
         </div>
     </div>
@@ -170,15 +170,15 @@
                             <div class="item-details">
                                 <span>
                                     <i class="bi bi-tag"></i> 
-                                    {% if task.type == 'evaluation' %}Оценка
+                                    {% if task.type == 'evaluation' %}{% trans "Оценка" %}
                                     {% elif task.type == 'fine_tuning' %}Fine-tuning
-                                    {% elif task.type == 'conversion' %}Конвертация
-                                    {% elif task.type == 'distillation_questions' %}Дистилляция (вопросы)
-                                    {% elif task.type == 'distillation_answers' %}Дистилляция (ответы)
-                                    {% else %}Задача{% endif %}
+                                    {% elif task.type == 'conversion' %}{% trans "Конвертация" %}
+                                    {% elif task.type == 'distillation_questions' %}{% trans "Дистилляция (вопросы)" %}
+                                    {% elif task.type == 'distillation_answers' %}{% trans "Дистилляция (ответы)" %}
+                                    {% else %}{% trans "Задача" %}{% endif %}
                                 </span>
                                 <span>
-                                    <i class="bi bi-hourglass-split"></i> Прогресс: {{ task.progress|floatformat:0 }}%
+                                    <i class="bi bi-hourglass-split"></i> {% blocktrans with progress=task.progress|floatformat:0 %}Прогресс: {{ progress }}%{% endblocktrans %}
                                 </span>
                             </div>
                             {% if task.progress > 0 and task.progress < 100 %}
@@ -231,10 +231,10 @@
                                     {% elif emb.download_status == 'downloading' %}bg-info
                                     {% elif emb.download_status == 'failed' %}bg-danger
                                     {% else %}bg-secondary{% endif %}">
-                                    {% if emb.is_downloaded %}Скачана
-                                    {% elif emb.download_status == 'downloading' %}Загружается
-                                    {% elif emb.download_status == 'failed' %}Ошибка
-                                    {% else %}Не начата{% endif %}
+                                    {% if emb.is_downloaded %}{% trans "Скачана" %}
+                                    {% elif emb.download_status == 'downloading' %}{% trans "Загружается" %}
+                                    {% elif emb.download_status == 'failed' %}{% trans "Ошибка" %}
+                                    {% else %}{% trans "Не начата" %}{% endif %}
                                 </span>
                             </div>
                             <div class="item-details">
@@ -246,11 +246,11 @@
                                 <div class="progress-bar" style="width: {{ emb.download_progress }}%"></div>
                             </div>
                             <div class="item-footer mt-2">
-                                <span>Прогресс: {{ emb.download_progress }}%</span>
+                                <span>{% blocktrans with progress=emb.download_progress %}Прогресс: {{ progress }}%{% endblocktrans %}</span>
                             </div>
                             {% else %}
                             <div class="item-footer">
-                                <span>Обновлено: {{ emb.updated_at|time_ago }}</span>
+                                <span>{% blocktrans with updated=emb.updated_at|time_ago %}Обновлено: {{ updated }}{% endblocktrans %}</span>
                             </div>
                             {% endif %}
                         </a>
@@ -354,7 +354,7 @@
                             <div class="progress-bar" style="width: {{ job.progress }}%"></div>
                         </div>
                         <div class="item-footer mt-2">
-                            <span>Прогресс: {{ job.progress }}%</span>
+                            <span>{% blocktrans with progress=job.progress %}Прогресс: {{ progress }}%{% endblocktrans %}</span>
                             <span>{{ job.created_at|short_date }}</span>
                         </div>
                     </div>

@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load static %}
 
-{% block page_title %}Тестирование модели: {{ model.display_name }}{% endblock %}
+{% block page_title %}{% blocktrans with name=model.display_name %}Тестирование модели: {{ name }}{% endblocktrans %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -179,7 +179,7 @@
             <!-- Метрики -->
             <div class="metrics-grid">
                 <div class="metric-card">
-                    <div class="metric-value">{{ response_metadata.generation_time }} сек</div>
+                    <div class="metric-value">{% blocktrans with gt=response_metadata.generation_time %}{{ gt }} сек{% endblocktrans %}</div>
                     <div class="metric-label">{% trans "Время генерации" %}</div>
                 </div>
                 

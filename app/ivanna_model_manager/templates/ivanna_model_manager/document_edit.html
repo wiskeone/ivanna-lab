@@ -3,7 +3,7 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Редактирование документа — {{ document.title }}{% endblock %}
+{% block title %}{% blocktrans with t=document.title %}Редактирование документа — {{ t }}{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -139,7 +139,7 @@
                             <div class="form-text">{% trans "Поддерживаемые форматы: PDF, DOCX, TXT, HTML, MD, CSV, Excel" %}</div>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-warning" onclick="return confirm('Заменить файл? Документ будет переобработан.')">
+                            <button type="submit" class="btn btn-warning" onclick="return confirm('{% trans "Заменить файл? Документ будет переобработан." %}')">
                                 <i class="bi bi-arrow-repeat me-1"></i> {% trans "Заменить и переобработать" %}
                             </button>
                         </div>
