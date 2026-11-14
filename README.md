@@ -84,6 +84,8 @@ prometheus/ grafana/ nginx/ scripts/
 
 ## Soft MoE in one minute
 
+> Live examples published from this lab: [Qwen3.5-4B-SMS-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-4B-SMS-SoftMoE) (aviation/ICAO domain), [Qwen3.5-0.8B-HTML-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-0.8B-HTML-SoftMoE), [Qwen3.5-0.8B-Python-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-0.8B-Python-SoftMoE). All three: scan gate AUC 1.0, no training. Deep dive: [docs/soft_moe_en.md](docs/soft_moe_en.md).
+
 Create a **theme** (25–30 domain prompts + 25–30 length-matched contrast prompts),
 run the validation gate, then start a **build job** on a dense checkpoint:
 activation scan → hold-out AUC gate → rank-one steer patch on output matrices of
