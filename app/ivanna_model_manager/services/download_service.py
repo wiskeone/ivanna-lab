@@ -101,10 +101,15 @@ class DownloadService:
             logger.info(f"⬇️ Загрузка {checkpoint.huggingface_id} -> {local_dir} (через {HF_ENDPOINT})")
 
             # Получаем информацию о модели (размеры, файлы) для прогресса
+            param_count = 0
             try:
                 model_info = self.api.model_info(checkpoint.huggingface_id)
                 total_size = sum(s.size for s in model_info.siblings if s.size) if hasattr(model_info, 'siblings') else 0
                 logger.info(f"Общий размер модели: {total_size / (1024**3):.2f} GB")
+                # v5.2: число параметров — из метаданных safetensors (иначе size_gb в реестре = 0)
+                st = getattr(model_info, 'safetensors', None)
+                if st and getattr(st, 'total_params', None):
+                    param_count = int(st.total_params)
             except Exception:
                 total_size = 0
 
@@ -152,6 +157,8 @@ class DownloadService:
             checkpoint.relative_path = f"models/{safe_name}"
             checkpoint.status = 'DOWNLOADED'
             checkpoint.error_message = ''
+            if param_count and not checkpoint.parameter_count:
+                checkpoint.parameter_count = param_count
             checkpoint.save()
 
             # Обновляем задачу
