@@ -181,7 +181,7 @@ class _ScanState:
                     return
                 t = out[0] if isinstance(out, tuple) else out
                 self.mod_out[(*self.current_key, li, tail)] = \
-                    t[0, -1, :].detach().to(torch.float32).cpu()
+                    torch.nan_to_num(t[0, -1, :].detach().to(torch.float32).cpu())
             return hook
 
         def mk_pre_hook(li, tail):
@@ -190,7 +190,7 @@ class _ScanState:
                     return
                 x = args[0]
                 self.mod_in[(*self.current_key, li, tail)] = \
-                    x[0, -1, :].detach().to(torch.float32).cpu()
+                    torch.nan_to_num(x[0, -1, :].detach().to(torch.float32).cpu())
             return pre_hook
 
         for li, tail, m in out_modules:
@@ -248,7 +248,7 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
             state.current_key = (name, i)
             with torch.no_grad():
                 out = model(ids.to(model.device), output_hidden_states=True)
-            seq = torch.stack([h[0] for h in out.hidden_states], dim=0)  # [L+1, seq, hid]
+            seq = torch.stack([torch.nan_to_num(h[0]) for h in out.hidden_states], dim=0)  # [L+1, seq, hid]
             state.h_last[(name, i)] = seq[:, -1, :].to(torch.float32).cpu().numpy()
             state.h_mean[(name, i)] = seq.mean(dim=1).to(torch.float32).cpu().numpy()
             done += 1
@@ -332,7 +332,8 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
             "proj": round(proj, 2),
             "norm": round(nrm, 2),
         }
-    top_writers = sorted(writers.values(), key=lambda w: -abs(w["proj"]))[:16]
+    top_writers = sorted((w for w in writers.values() if w["proj"] is not None),
+                         key=lambda w: -abs(w["proj"]))[:16]
 
     report = {
         **info,
