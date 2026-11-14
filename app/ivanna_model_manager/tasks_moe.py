@@ -169,7 +169,7 @@ def moe_build_expert_task(self, job_id):
         )
 
         # ── Этап 3: eval-гейт (прогресс 75–92%) ──
-        if job.do_eval and False:  # v5.2.1: CUDA device-side assert в generate на Qwen3.5-4B — eval временно отключён, отладка отдельно (чекпойнт-эксперт регистрируется без него)
+        if job.do_eval:
             eval_d = moe_prompts.load_texts(theme.eval_domain_path())
             eval_g = moe_prompts.load_texts(theme.eval_contrast_path())
             if len(eval_d) >= 2 and len(eval_g) >= 2:
@@ -183,10 +183,11 @@ def moe_build_expert_task(self, job_id):
                 # v5.2: большие модели на малых GPU — nf4-генерация в eval
                 param_b = base.parameter_count or 0
                 quant = param_b >= 2_500_000_000
+                max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
                 eval_report = moe_evalgate.run_eval_gate(
                     base.local_path, out_dir, eval_d, eval_g,
-                    os.path.join(job_dir, 'eval'), quantized=quant,
-                    progress_cb=eval_progress)
+                    os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
+                    quantized=quant, progress_cb=eval_progress)
                 job.eval_report = eval_report
                 job.save(update_fields=['eval_report'])
                 job.add_log(f"Eval: домен Δ{eval_report['summary']['domain_len']['delta_pct']}%, "
