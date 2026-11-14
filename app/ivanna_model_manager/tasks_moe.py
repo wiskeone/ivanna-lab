@@ -54,6 +54,22 @@ def moe_validate_theme_task(self, theme_id):
 
 @shared_task(bind=True, queue='gpu_tasks', time_limit=86400, soft_time_limit=None,
              name='ivanna_model_manager.tasks_moe.moe_build_expert_task')
+
+def _json_safe(d):
+    """PG JSON rejects NaN/Inf (python json.dump emits them) — replace with None."""
+    import math
+
+    def clean(v):
+        if isinstance(v, float):
+            return None if (math.isnan(v) or math.isinf(v)) else v
+        if isinstance(v, dict):
+            return {k: clean(x) for k, x in v.items()}
+        if isinstance(v, (list, tuple)):
+            return [clean(x) for x in v]
+        return v
+    return clean(d)
+
+
 def moe_build_expert_task(self, job_id):
     """Скан активаций → гейт AUC → steer/amplify патч → eval-гейт → роутер."""
     job = MoEExpertJob.objects.get(pk=job_id)
@@ -109,7 +125,7 @@ def moe_build_expert_task(self, job_id):
         scan_report = moe_scan.scan_theme(
             src, domain, contrast, npz_path, load_mode=job.load_mode,
             seed=job.holdout_seed, progress_cb=scan_progress)
-        job.scan_report = scan_report
+        job.scan_report = _json_safe(scan_report)
         job.save(update_fields=['scan_report'])
         job.add_log(f"Scan: AUC gate = {scan_report['gate_auc']} ({scan_report['gate']}), "
                     f"layers {scan_report['n_layers']}, {scan_report['sec']}s")
@@ -151,7 +167,7 @@ def moe_build_expert_task(self, job_id):
             src, out_dir, npz_path, scan_report,
             mode=eff_mode, alpha=eff_alpha, layers=job.layers, position=job.position,
             progress_cb=patch_progress)
-        job.patch_report = patch_report
+        job.patch_report = _json_safe(patch_report)
         job.save(update_fields=['patch_report'])
         job.add_log(f"Patch: {patch_report['patched_count']} tensors, "
                     f"layers {patch_report['layers']}, α={job.alpha}")
@@ -192,7 +208,8 @@ def moe_build_expert_task(self, job_id):
                 # на повторной nf4-загрузке (Params4bit/_is_hf_initialized) — для
                 # моделей ≥2.5B eval временно пропускается, эксперт регистрируется
                 param_b = base.parameter_count or 0
-                quant = param_b >= 2_500_000_000
+                quant = param_b >= 1_500_000_000
+                eval_device = 'cuda:0' if param_b < 2_500_000_000 else 'cpu'
                 max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
                 if quant:
                     # KNOWN ISSUE (v5.2, final for 4GB GPUs): eval generation for
@@ -210,8 +227,8 @@ def moe_build_expert_task(self, job_id):
                     eval_report = moe_evalgate.run_eval_gate(
                         base.local_path, out_dir, eval_d, eval_g,
                         os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
-                        quantized=False, progress_cb=eval_progress)
-                job.eval_report = eval_report
+                        quantized=False, eval_device=eval_device, progress_cb=eval_progress)
+                job.eval_report = _json_safe(eval_report)
                 job.save(update_fields=['eval_report'])
                 if eval_report:
                     job.add_log(f"Eval: domain Δ{eval_report['summary']['domain_len']['delta_pct']}%, "
@@ -238,7 +255,7 @@ def moe_build_expert_task(self, job_id):
                 theme.router_report = router_report
                 theme.router_built_at = timezone.now()
                 theme.save(update_fields=['router_report', 'router_built_at'])
-                job.router_report = router_report
+                job.router_report = _json_safe(router_report)
                 job.save(update_fields=['router_report'])
                 job.add_log(f"Router: accuracy {router_report['accuracy']:.0%} "
                             f"({router_report['gate']})")
