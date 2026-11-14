@@ -289,8 +289,11 @@ def moe_push_to_hf_task(self, job_id, repo_id, private=True, notes=""):
         profile = UserProfile.objects.filter(user__username=job.created_by).first()
         token = profile.huggingface_token if profile else ""
     if not token:
-        raise ValueError("HF-токен не найден в профиле пользователя "
-                         "(Профиль → Hugging Face token).")
+        # fallback: общий HF_TOKEN из окружения (.env) — валиден для аккаунта,
+        # под которым настроена платформа
+        token = os.environ.get('HF_TOKEN', '')
+    if not token:
+        raise ValueError("HF-токен не найден ни в профиле, ни в HF_TOKEN окружения.")
 
     result = moe_hf_push.push_expert(job, job.theme, repo_id, token,
                                      private=private, notes=notes)
