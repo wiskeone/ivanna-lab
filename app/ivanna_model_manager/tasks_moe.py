@@ -63,7 +63,7 @@ def moe_build_expert_task(self, job_id):
         job.started_at = job.started_at or timezone.now()
         job.celery_task_id = self.request.id
         job.save(update_fields=['status', 'started_at', 'celery_task_id'])
-        job.add_log("🚀 Старт сборки мягкого MoE-эксперта")
+        job.add_log("🚀 Soft MoE expert build started")
 
         base = job.base_checkpoint
         src = base.local_path
@@ -74,7 +74,7 @@ def moe_build_expert_task(self, job_id):
         contrast = moe_prompts.load_texts(theme.contrast_prompts_path())
         if len(domain) < 3 or len(contrast) < 3:
             raise ValueError("Наборы промптов темы пусты (нужно ≥3+3).")
-        job.add_log(f"Промпты: домен {len(domain)}, контраст {len(contrast)}")
+        job.add_log(f"Prompts: domain {len(domain)}, contrast {len(contrast)}")
 
         job_dir = job.job_dir()
         os.makedirs(job_dir, exist_ok=True)
@@ -82,7 +82,7 @@ def moe_build_expert_task(self, job_id):
         # GGUF-вход → конвертация в safetensors (dequant)
         if (os.path.isdir(src) and not any(f.endswith('.safetensors') for f in os.listdir(src))) \
                 or src.endswith('.gguf'):
-            job.add_log("GGUF-вход: конвертация в safetensors (dequant)")
+            job.add_log("GGUF input: converting to safetensors (dequant)")
             job.update_progress(2, "GGUF → safetensors")
             converted = moe_patching.convert_gguf_to_safetensors(
                 src, os.path.join(job_dir, 'base_converted'),
@@ -103,14 +103,14 @@ def moe_build_expert_task(self, job_id):
             seed=job.holdout_seed, progress_cb=scan_progress)
         job.scan_report = scan_report
         job.save(update_fields=['scan_report'])
-        job.add_log(f"Скан: AUC-гейт = {scan_report['gate_auc']} ({scan_report['gate']}), "
-                    f"слоёв {scan_report['n_layers']}, за {scan_report['sec']}с")
+        job.add_log(f"Scan: AUC gate = {scan_report['gate_auc']} ({scan_report['gate']}), "
+                    f"layers {scan_report['n_layers']}, {scan_report['sec']}s")
 
         if scan_report['gate'] != 'PASS':
             raise ValueError(
-                f"Гейт скана НЕ ПРОЙДЕН (AUC={scan_report['gate_auc']} ≤ 0.85): "
-                f"направление темы не выделяется. Проверьте наборы промптов "
-                f"(валидацию темы) и их длину — патч не делается.")
+                f"Scan gate FAILED (AUC={scan_report['gate_auc']} <= 0.85): "
+                f"theme direction not extracted. Check prompt sets (theme "
+                f"validation) and lengths — no patch applied.")
 
         # ── Режим анализа: только скан и отчёты, без патча (основа решения) ──
         if not job.do_patch:
@@ -133,9 +133,8 @@ def moe_build_expert_task(self, job_id):
         eff_mode, eff_alpha = job.mode, job.alpha
         if job.goal == 'ablate':
             eff_mode, eff_alpha = 'amplify', -abs(job.alpha)
-            job.add_log(f"⚖ WSP-абляция: направление «{theme.name}» подавляется "
-                        f"((I−α·d̂d̂ᵀ)W, α={eff_alpha}); доменные промпты темы = поведение, "
-                        f"которое убираем")
+            job.add_log(f"⚖ WSP ablation: theme direction '{theme.name}' is suppressed "
+                        f"((I−α·d̂d̂ᵀ)W, α={eff_alpha}); theme domain prompts = behavior to remove")
 
         def patch_progress(done, total, step):
             job.update_progress(55 + 20 * done / max(1, total), f"Патч: {step}")
@@ -146,8 +145,8 @@ def moe_build_expert_task(self, job_id):
             progress_cb=patch_progress)
         job.patch_report = patch_report
         job.save(update_fields=['patch_report'])
-        job.add_log(f"Патч: {patch_report['patched_count']} тензоров, "
-                    f"слои {patch_report['layers']}, α={job.alpha}")
+        job.add_log(f"Patch: {patch_report['patched_count']} tensors, "
+                    f"layers {patch_report['layers']}, α={job.alpha}")
 
         # ── регистрация выходного чекпойнта (паттерн merge_models_task) ──
         timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
@@ -175,7 +174,7 @@ def moe_build_expert_task(self, job_id):
             if len(eval_d) >= 2 and len(eval_g) >= 2:
                 job.status = 'EVALUATING'
                 job.save(update_fields=['status'])
-                job.add_log(f"Eval-гейт: {len(eval_d)} доменных + {len(eval_g)} общих")
+                job.add_log(f"Eval gate: {len(eval_d)} domain + {len(eval_g)} general")
 
                 def eval_progress(done, total, step):
                     job.update_progress(75 + 17 * done / max(1, total), f"Eval: {step}")
@@ -187,18 +186,12 @@ def moe_build_expert_task(self, job_id):
                 param_b = base.parameter_count or 0
                 quant = param_b >= 2_500_000_000
                 if quant:
-                    job.add_log("⚠ Eval-гейт пропущен: nf4-перезагрузка ≥2.5B падает "
-                                "на несовместимости bitsandbytes↔transformers. "
-                                "Оцени модель через Evaluation или чат вручную.")
+                    job.add_log("⚠ Eval gate skipped: nf4 reload >=2.5B hits bitsandbytes↔transformers incompatibility. Evaluate via Evaluation module or chat manually.")
                 max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
-                if quant:
-                    eval_report = {}
-                    job.add_log("Eval: пропущен для модели ≥2.5B (ограничение bnb↔transformers)")
-                else:
-                    eval_report = moe_evalgate.run_eval_gate(
-                        base.local_path, out_dir, eval_d, eval_g,
-                        os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
-                        quantized=False, progress_cb=eval_progress)
+                eval_report = moe_evalgate.run_eval_gate(
+                    base.local_path, out_dir, eval_d, eval_g,
+                    os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
+                    quantized=quant, progress_cb=eval_progress)
                 job.eval_report = eval_report
                 job.save(update_fields=['eval_report'])
                 if eval_report:
@@ -206,7 +199,7 @@ def moe_build_expert_task(self, job_id):
                                 f"general Δ{eval_report['summary']['general_len']['delta_pct']}%, "
                                 f"think-утечек {eval_report['summary']['think_leaks']}")
             else:
-                job.add_log("Eval-гейт пропущен: eval-наборы темы пусты (нужно ≥2+2)")
+                job.add_log("Eval gate skipped: theme eval sets empty (need >=2+2)")
 
         # ── Этап 4: роутер (прогресс 92–100%) ──
         if job.do_router:
@@ -228,12 +221,12 @@ def moe_build_expert_task(self, job_id):
                 theme.save(update_fields=['router_report', 'router_built_at'])
                 job.router_report = router_report
                 job.save(update_fields=['router_report'])
-                job.add_log(f"Роутер: точность {router_report['accuracy']:.0%} "
+                job.add_log(f"Router: accuracy {router_report['accuracy']:.0%} "
                             f"({router_report['gate']})")
             else:
                 theme.router_built_at = timezone.now()
                 theme.save(update_fields=['router_built_at'])
-                job.add_log("Роутер: центроиды построены (тест пропущен — нет eval-наборов)")
+                job.add_log("Router: centroids built (test skipped — no eval sets)")
 
         job.complete(output_model)
         logger.info(f"✅ moe_build_expert_task {job_id} completed → checkpoint {output_model.id}")

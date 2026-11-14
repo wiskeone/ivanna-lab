@@ -264,6 +264,10 @@
                         Object.assign({title: 'Теплокарта |ΔW|: ' + hm.name, yaxis: {title: 'out (hid)'}, xaxis: {title: 'in'}}, DARK), CFG);
                 });
             }
+            if (!C.eval) {
+                document.getElementById('chartEval').innerHTML =
+                    '<p class="small text-muted p-3">Eval gate was skipped for this run.</p>';
+            }
             if (C.eval) Plotly.newPlot('chartEval', [
                 {x: C.eval.labels, y: C.eval.values, type: 'bar',
                  marker: {color: ['#6b7280', '#10b981', '#6b7280', '#3b82f6']}}],
