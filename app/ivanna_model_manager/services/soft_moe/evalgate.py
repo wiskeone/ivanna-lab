@@ -112,12 +112,13 @@ model_path, out_path, max_new_tokens, quantized = sys.argv[1], sys.argv[2], int(
 tasks = json.load(open(sys.argv[5]))
 
 kwargs = {'trust_remote_code': True}
+device = sys.argv[6] if len(sys.argv) > 6 else 'auto'
 if quantized:
     bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type='nf4',
                              bnb_4bit_compute_dtype=torch.bfloat16,
                              bnb_4bit_use_double_quant=True,
                              llm_int8_enable_fp32_cpu_offload=True)
-    kwargs.update(quantization_config=bnb, device_map='auto')
+    kwargs.update(quantization_config=bnb, device_map=device)
 
 dtype = torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else torch.float16
 if not quantized:
@@ -150,7 +151,7 @@ json.dump(results, open(out_path, 'w'), ensure_ascii=False)
 
 
 def _generate_batch_subprocess(model_path: str, prompts: list, max_new_tokens: int,
-                               quantized: bool, out_path: str) -> list:
+                               quantized: bool, out_path: str, device: str = 'auto') -> list:
     """Генерация батча промптов в изолированном подпроцессе."""
     import json
     import subprocess
@@ -158,8 +159,8 @@ def _generate_batch_subprocess(model_path: str, prompts: list, max_new_tokens: i
     json.dump(tasks, open(out_path + '.tasks.json', 'w'), ensure_ascii=False)
     r = subprocess.run([sys.executable, '-c', RUNNER_CODE, model_path,
                         out_path + '.answers.json', str(max_new_tokens),
-                        '1' if quantized else '0', out_path + '.tasks.json'],
-                       capture_output=True, text=True, timeout=7200)
+                        '1' if quantized else '0', out_path + '.tasks.json', device],
+                       capture_output=True, text=True, timeout=14400)
     if r.returncode != 0:
         raise RuntimeError(f'generation subprocess failed: {r.stderr[-600:]}')
     return json.load(open(out_path + '.answers.json'))
@@ -183,11 +184,19 @@ def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
             progress_cb(0, 100, f"загрузка {model_tag}")
         for set_tag, texts in (("eval_domain", eval_domain_texts),
                                ("eval_general", eval_contrast_texts)):
+            run_texts, run_tokens, device = texts, max_new_tokens, 'auto'
+            if quantized:
+                # KNOWN ISSUE: transformers 6.x + bnb 0.49.2 — GPU-диспатч квантованной
+                # модели ломается на meta-переносе Params4bit. Для >=2.5B: генерация на
+                # CPU, усечённые наборы (3+3, 64 токенов) — детерминированный fallback.
+                run_texts = [t[:1500] for t in texts[:3]]
+                run_tokens = 64
+                device = 'cpu'
             if progress_cb:
-                progress_cb(0, len(texts), f"{model_tag}/{set_tag}")
+                progress_cb(0, len(run_texts), f"{model_tag}/{set_tag}")
             answers = _generate_batch_subprocess(
-                path, texts, max_new_tokens, quantized,
-                str(outdir / f'{model_tag}_{set_tag}'))
+                path, run_texts, run_tokens, quantized,
+                str(outdir / f'{model_tag}_{set_tag}'), device=device)
             rows = []
             for i, (p, ans) in enumerate(zip(texts, answers)):
                 t0 = time.time()
