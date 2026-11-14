@@ -192,7 +192,7 @@ def moe_build_expert_task(self, job_id):
                                 "Оцени модель через Evaluation или чат вручную.")
                 max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
                 if quant:
-                    eval_report = None
+                    eval_report = {}
                 else:
                     eval_report = moe_evalgate.run_eval_gate(
                         base.local_path, out_dir, eval_d, eval_g,
