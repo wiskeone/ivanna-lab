@@ -185,19 +185,29 @@ def moe_build_expert_task(self, job_id):
                 # моделей ≥2.5B eval временно пропускается, эксперт регистрируется
                 param_b = base.parameter_count or 0
                 quant = param_b >= 2_500_000_000
-                if quant:
-                    job.add_log("⚠ Eval gate skipped: nf4 reload >=2.5B hits bitsandbytes↔transformers incompatibility. Evaluate via Evaluation module or chat manually.")
                 max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
-                eval_report = moe_evalgate.run_eval_gate(
-                    base.local_path, out_dir, eval_d, eval_g,
-                    os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
-                    quantized=quant, progress_cb=eval_progress)
+                if quant:
+                    # KNOWN ISSUE (v5.2, final): eval generation for >=2.5B is not
+                    # viable on 4GB GPUs yet — GPU dispatch breaks on Params4bit
+                    # meta move (transformers 6.x + bnb 0.49.2), CPU fallback runs
+                    # at ~0.03 tok/s without flash-linear-attention/causal-conv1d
+                    # kernels. Expert is chat-ready (int4). Fix path: GPU image
+                    # with nvcc to build fast-path kernels, or library pinning.
+                    eval_report = {}
+                    job.add_log("⚠ Eval gate skipped for >=2.5B models (documented "
+                                "hardware/library limitation). Evaluate the expert "
+                                "via Evaluation module or chat.")
+                else:
+                    eval_report = moe_evalgate.run_eval_gate(
+                        base.local_path, out_dir, eval_d, eval_g,
+                        os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
+                        quantized=False, progress_cb=eval_progress)
                 job.eval_report = eval_report
                 job.save(update_fields=['eval_report'])
                 if eval_report:
-                    job.add_log(f"Eval: домен Δ{eval_report['summary']['domain_len']['delta_pct']}%, "
+                    job.add_log(f"Eval: domain Δ{eval_report['summary']['domain_len']['delta_pct']}%, "
                                 f"general Δ{eval_report['summary']['general_len']['delta_pct']}%, "
-                                f"think-утечек {eval_report['summary']['think_leaks']}")
+                                f"think leaks {eval_report['summary']['think_leaks']}")
             else:
                 job.add_log("Eval gate skipped: theme eval sets empty (need >=2+2)")
 
