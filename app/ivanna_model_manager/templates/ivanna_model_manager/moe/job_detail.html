@@ -61,7 +61,7 @@
     </div>
     {% endif %}
 
-    {% if charts_json %}
+    {% if charts %}
     <div class="moe-card" id="vizCard">
         <h6><i class="bi bi-graph-up"></i> {% trans "Визуализация эксперимента" %}</h6>
         <div id="chartAuc" style="height:300px"></div>
@@ -204,7 +204,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script type="application/json" id="charts-data">{{ charts_json }}</script>
+{{ charts|json_script:"charts-data" }}
 <script>
     // v5.2: визуализация эксперимента (Plotly глобально в base.html)
     (function() {

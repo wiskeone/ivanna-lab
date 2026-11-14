@@ -4566,7 +4566,7 @@ def moe_job_detail(request, pk):
         'eval_report_json': _j(job.eval_report),
         'router_report_json': _j(job.router_report),
         'eval_texts': _moe_eval_texts(job),
-        'charts_json': json.dumps(_moe_charts(job), ensure_ascii=False),
+        'charts': _moe_charts(job),
         'hints': _moe_hints(job),
     }
     return render(request, 'ivanna_model_manager/moe/job_detail.html', context)
