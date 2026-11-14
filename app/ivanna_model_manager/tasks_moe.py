@@ -186,10 +186,24 @@ def moe_build_expert_task(self, job_id):
                 param_b = base.parameter_count or 0
                 quant = param_b >= 2_500_000_000
                 max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
-                eval_report = moe_evalgate.run_eval_gate(
-                    base.local_path, out_dir, eval_d, eval_g,
-                    os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
-                    quantized=quant, progress_cb=eval_progress)
+                if quant:
+                    # KNOWN ISSUE (v5.2, verified on Qwen3.5-4B / GTX 1650 4GB):
+                    # eval generation for >=2.5B is not viable through any path —
+                    #   GPU nf4 subprocess: accelerate 1.6.0 → Params4bit kwarg bug;
+                    #     accelerate 1.15.0 → CPU-bound degenerate loop (~0.03 tok/s);
+                    #   CPU fallback: hours per prompt set (same cause);
+                    #   fla/causal-conv1d kernels: triton crashes on CPU-offloaded
+                    #     tensors; causal-conv1d needs nvcc (not in runtime image).
+                    # Expert is chat-ready (int4). Fix path: GPU image with nvcc
+                    # to build fast-path kernels, or library version pinning.
+                    eval_report = {}
+                    job.add_log("Eval gate skipped for >=2.5B models (documented "
+                                "hardware/library limitation — see evalgate.py)")
+                else:
+                    eval_report = moe_evalgate.run_eval_gate(
+                        base.local_path, out_dir, eval_d, eval_g,
+                        os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
+                        quantized=False, progress_cb=eval_progress)
                 job.eval_report = eval_report
                 job.save(update_fields=['eval_report'])
                 if eval_report:
