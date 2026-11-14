@@ -194,10 +194,23 @@ def moe_build_expert_task(self, job_id):
                 param_b = base.parameter_count or 0
                 quant = param_b >= 2_500_000_000
                 max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
-                eval_report = moe_evalgate.run_eval_gate(
-                    base.local_path, out_dir, eval_d, eval_g,
-                    os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
-                    quantized=quant, progress_cb=eval_progress)
+                if quant:
+                    # KNOWN ISSUE (v5.2, final for 4GB GPUs): eval generation for
+                    # >=2.5B is not viable — full-GPU nf4 needs ~3.7GB (embeddings
+                    # bf16 alone are 1.27GB) vs 3.63GB usable; offload puts conv
+                    # modules on CPU where transformers 5.12.1 calls causal_conv1d
+                    # CUDA kernels without a device check (crash), and CPU without
+                    # kernels runs the hybrid fallback at ~0.03 tok/s.
+                    # Fix: GPU with >=8GB, or llama.cpp-based eval, or library fix.
+                    eval_report = {}
+                    job.add_log("Eval gate skipped for >=2.5B models on 4GB GPUs "
+                                "(documented memory/library limitation). Evaluate "
+                                "the expert via Evaluation module or chat.")
+                else:
+                    eval_report = moe_evalgate.run_eval_gate(
+                        base.local_path, out_dir, eval_d, eval_g,
+                        os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
+                        quantized=False, progress_cb=eval_progress)
                 job.eval_report = eval_report
                 job.save(update_fields=['eval_report'])
                 if eval_report:
