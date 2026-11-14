@@ -768,6 +768,12 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
         else:
             raw_text = extract_text_from_txt(file_path)
 
+        # v5.2: универсальная санитизация — некоторые источники (браузерные
+        # сохранения, бинарные .doc) содержат NUL, который не ест PostgreSQL
+        raw_text = (raw_text or '').replace('\x00', '')
+        for ec in extra_chunks:
+            ec['content'] = ec['content'].replace('\x00', '')
+
         if not raw_text.strip() and not extra_chunks:
             raise ValueError("No extractable text found")
 
