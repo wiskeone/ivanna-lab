@@ -168,6 +168,13 @@ def create_chunks_v2(document, content: str, chunk_size: int = 1000,
             return c
 
         idx = 0
+
+        def _flush(text, start):
+            nonlocal idx
+            if text.strip():
+                chunks.append(_mk(text, start, idx))
+                idx += 1
+
         buf, buf_len, buf_start, pos = [], 0, None, 0
         for p in (p.strip() for p in re.split(r'\n\s*\n', content)):
             if not p:
@@ -176,17 +183,43 @@ def create_chunks_v2(document, content: str, chunk_size: int = 1000,
             if start < 0:
                 start = pos
             pos = start + len(p)
+
+            # v5.2: «абзац» крупнее chunk_size (PDF-текст без пустых строк
+            # склеивает десятки страниц) — режем по предложениям на под-чанки
+            if len(p) > chunk_size:
+                _flush('\n\n'.join(buf), buf_start)
+                buf, buf_len, buf_start = [], 0, None
+                try:
+                    sents = sent_tokenize(p)
+                except Exception:
+                    sents = [p[i:i + chunk_size] for i in range(0, len(p), chunk_size)]
+                cur, clen, cstart, i = [], 0, 0, 0
+                for sent in sents:
+                    off = p.find(sent, i)
+                    if off < 0:
+                        off = i
+                    i = off + len(sent)
+                    if cur and clen + len(sent) > chunk_size:
+                        _flush(' '.join(cur), start + cstart)
+                        cstart, cur, clen = off, [sent], len(sent)
+                    else:
+                        if not cur:
+                            cstart = off
+                        cur.append(sent)
+                        clen += len(sent)
+                _flush(' '.join(cur), start + cstart)
+                continue
+
             if not buf or buf_len + len(p) + 2 <= chunk_size:
                 if buf_start is None:
                     buf_start = start
                 buf.append(p)
                 buf_len += len(p) + 2
             else:
-                chunks.append(_mk('\n\n'.join(buf), buf_start, idx))
-                idx += 1
+                _flush('\n\n'.join(buf), buf_start)
                 buf, buf_len, buf_start = [p], len(p) + 2, start
         if buf:
-            chunks.append(_mk('\n\n'.join(buf), buf_start, idx))
+            _flush('\n\n'.join(buf), buf_start)
         return chunks
 
     # semantic/fixed/recursive — проверенная логика create_chunks + страницы
@@ -1020,6 +1053,18 @@ def _rebuild_embeddings_and_index_impl(self, collection_id: int) -> Dict[str, An
 
         # Обновляем статистику коллекции
         collection.update_statistics()
+
+        # v5.2: синк статусов документов — документ, чанки которого полностью
+        # покрыты эмбеддингами, помечается INDEXED (иначе висит «Uploaded»
+        # после ребилда, хотя вектор готов)
+        for doc in collection.documents.all():
+            active = doc.chunks.filter(is_active=True)
+            total_c = active.count()
+            embedded = active.filter(has_embedding=True).count()
+            if total_c > 0 and embedded == total_c and doc.status != 'INDEXED':
+                doc.status = 'INDEXED'
+                doc.save(update_fields=['status'])
+                logger.info(f"📄 Document {doc.id} → INDEXED ({embedded} chunks embedded)")
 
         logger.info(f"✅ Rebuilt embeddings and index for collection {collection_id}")
         return {'success': True, 'collection_id': collection_id, 'processed': processed, 'total': total}

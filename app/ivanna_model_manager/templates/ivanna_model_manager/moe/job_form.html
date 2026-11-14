@@ -20,14 +20,20 @@
     <form method="post">
         {% csrf_token %}
         <div class="moe-form-card">
+            <div class="row">
             {% for field in form %}
-            <div class="mb-3">
-                <label class="form-label">{{ field.label }}</label>
+            <div class="{% if field.name in 'name,theme,base_checkpoint' or field.widget.input_type == 'checkbox' %}col-12{% else %}col-md-6{% endif %} mb-3">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
                 {% if field.help_text %}<div class="form-text text-muted">{{ field.help_text }}</div>{% endif %}
                 {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
             </div>
             {% endfor %}
+            </div>
+            <div class="hint-box">
+                <strong>{% trans "Подсказки:" %}</strong>
+                {% trans "• Тема должна быть валидирована (гейт bge) до сборки. • α=0.2 — старт; деградирует general → снижай. • 'Слои: auto' доверяет каузальным писателям скана. • nf4-скан включается полем «Загрузка» для моделей ≥3B на 4GB GPU. • do_patch=Off — только скан и визуализация, решение «до сборки»." %}
+            </div>
             {% if form.non_field_errors %}
                 {% for error in form.non_field_errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
             {% endif %}

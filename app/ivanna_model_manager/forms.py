@@ -1744,6 +1744,15 @@ class MoEThemeForm(forms.ModelForm):
             'router_threshold': forms.NumberInput(attrs={'step': '0.01'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            w = field.widget
+            css = ('form-check-input' if isinstance(w, forms.CheckboxInput)
+                   else 'form-select' if isinstance(w, (forms.Select, forms.SelectMultiple))
+                   else 'form-control')
+            w.attrs['class'] = (w.attrs.get('class', '') + ' ' + css).strip()
+
     def clean_name(self):
         name = self.cleaned_data['name']
         if len(name) < 2:
@@ -1789,6 +1798,12 @@ class MoEExpertJobForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            w = field.widget
+            css = ('form-check-input' if isinstance(w, forms.CheckboxInput)
+                   else 'form-select' if isinstance(w, (forms.Select, forms.SelectMultiple))
+                   else 'form-control')
+            w.attrs['class'] = (w.attrs.get('class', '') + ' ' + css).strip()
         # Только плотные модели, выгруженные на диск
         self.fields['base_checkpoint'].queryset = ModelCheckpoint.objects.filter(
             is_active=True).exclude(local_path='').order_by('name')
@@ -1820,6 +1835,15 @@ class RerankerModelForm(forms.ModelForm):
     class Meta:
         model = RerankerModel
         fields = ['name', 'display_name', 'model_id', 'max_length', 'is_active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            w = field.widget
+            css = ('form-check-input' if isinstance(w, forms.CheckboxInput)
+                   else 'form-select' if isinstance(w, (forms.Select, forms.SelectMultiple))
+                   else 'form-control')
+            w.attrs['class'] = (w.attrs.get('class', '') + ' ' + css).strip()
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'dipty-russian-crossencoder'}),
             'model_id': forms.TextInput(attrs={'placeholder': 'DiTy/cross-encoder-russian-msmarco'}),
