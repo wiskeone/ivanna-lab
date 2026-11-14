@@ -301,6 +301,7 @@ urlpatterns = [
     path('moe/jobs/<int:pk>/', views.moe_job_detail, name='moe_job_detail'),
     path('moe/jobs/<int:pk>/status/', views.moe_job_status, name='moe_job_status'),
     path('moe/jobs/<int:pk>/push-hf/', views.moe_job_push_hf, name='moe_job_push_hf'),
+    path('moe/jobs/<int:pk>/interpret/', views.moe_interpret, name='moe_interpret'),
 
 ]
 

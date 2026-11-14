@@ -4714,3 +4714,19 @@ def document_page_render(request, pk, page):
     resp = HttpResponse(buf.getvalue(), content_type='image/png')
     resp['Cache-Control'] = 'max-age=86400'
     return resp
+
+
+@login_required
+@require_POST
+def moe_interpret(request, pk):
+    """Кайллер-фича: отправить отчёт прогона в модель джобы на интерпретацию."""
+    from .models import MoEExpertJob
+    from .tasks_moe import moe_interpret_task
+
+    job = get_object_or_404(MoEExpertJob, pk=pk)
+    if job.status != 'COMPLETED':
+        messages.error(request, 'Интерпретация доступна для завершённых задач.')
+        return redirect('moe_job_detail', pk=pk)
+    transaction.on_commit(lambda: moe_interpret_task.delay(job.pk))
+    messages.info(request, 'Модель анализирует отчёт прогона — обнови страницу через пару минут.')
+    return redirect('moe_job_detail', pk=pk)

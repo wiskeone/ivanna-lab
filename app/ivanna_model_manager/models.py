@@ -4545,6 +4545,11 @@ class MoEExpertJob(models.Model):
     eval_report = models.JSONField(default=dict, blank=True)
     router_report = models.JSONField(default=dict, blank=True)
 
+    # v5.2: LLM-интерпретация результатов (killer feature) — текст, сгенерированный
+    # моделью по дайджесту отчётов скана/патча/eval/роутера
+    interpretation = models.TextField(blank=True, default='',
+                                      help_text=_("LLM-интерпретация результатов прогона"))
+
     # Выход
     output_model = models.ForeignKey(
         'ModelCheckpoint', on_delete=models.SET_NULL, null=True, blank=True,

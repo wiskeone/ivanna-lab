@@ -65,11 +65,35 @@
     <div class="moe-card" id="vizCard">
         <h6><i class="bi bi-graph-up"></i> {% trans "Визуализация эксперимента" %}</h6>
         <div id="chartAuc" style="height:300px"></div>
+        <div class="small text-muted mb-2">{% trans "Серый — train, зелёный — hold-out. Ближе к 1 = направление чётко отделяет домен от контраста на этом слое. Провалы в ранних слоях нормальны." %}</div>
         <div id="chartWriters" style="height:260px"></div>
+        <div class="small text-muted mb-2">{% trans "Чем выше столбец — тем сильнее слой «пишет» направление в residual stream. При layers=auto патчатся слои выше порога." %}</div>
         <div id="chartDirHeat" style="height:360px"></div>
+        <div class="small text-muted mb-2">{% trans "Теплокарта |d̂|: строка = слой, столбец = группа скрытых размерностей. Яркие пятна — где локализовано доменное направление; светлая верхняя зона ожидаема." %}</div>
         <div id="chartDeltas" style="height:300px"></div>
+        <div class="small text-muted mb-2">{% trans "Размер правки (L1) на каждый тензор: сколько веса реально изменилось. Очень крупные дельты — признак слишком aggressive α." %}</div>
         <div id="chartHeatmaps"></div>
+        <div class="small text-muted mb-2">{% trans "Теплокарты |ΔW| внутри матриц: строки = выходы (hid), столбцы = входы. Равномерное свечение — широкая правка; точечное — узкая." %}</div>
         <div id="chartEval" style="height:300px"></div>
+        <div class="small text-muted mb-2">{% trans "Прокси полноты: средняя длина ответов. Синий столбец — expert на general: рост допустим в пределах ~10%, сильный рост/падение — смотреть тексты." %}</div>
+        {% if job.status == 'COMPLETED' %}
+        <form method="post" action="{% url 'moe_interpret' job.pk %}" class="mt-1">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-info"><i class="bi bi-stars"></i> {% trans "Интерпретировать отчёт моделью джобы" %}</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if job.interpretation %}
+    <div class="moe-card border-info">
+        <h6><i class="bi bi-stars"></i> {% trans "Интерпретация прогона (сгенерирована моделью джобы)" %}
+            <form method="post" action="{% url 'moe_interpret' job.pk %}" class="d-inline float-end">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-info"><i class="bi bi-arrow-repeat"></i> {% trans "перегенерировать" %}</button>
+            </form>
+        </h6>
+        <div class="small" style="white-space:pre-wrap">{{ job.interpretation }}</div>
     </div>
     {% endif %}
 

@@ -301,3 +301,75 @@ def moe_push_to_hf_task(self, job_id, repo_id, private=True, notes=""):
     job.save(update_fields=['hf_repo_id'])
     job.add_log(f"🤗 Опубликовано: {result['url']}")
     return result
+
+
+# ─────────────────── v5.2: LLM-интерпретация прогона ───────────────────
+@shared_task(bind=True, queue='gpu_tasks', time_limit=3600, soft_time_limit=None,
+             name='ivanna_model_manager.tasks_moe.moe_interpret_task')
+def moe_interpret_task(self, job_id):
+    """Кайллер-фича: модель джобы сама читает дайджест отчётов и пишет
+    интерпретацию «что произошло и что делать» на странице задачи."""
+    import torch
+    from .services.soft_moe.evalgate import _load_for_generation
+
+    job = MoEExpertJob.objects.get(pk=job_id)
+    theme, patch = job.theme, job.patch_report or {}
+    scan = job.scan_report or {}
+    er = (job.eval_report or {}).get('summary') or {}
+    rr = job.router_report or {}
+    top = [w for w in (scan.get('top_writers') or [])[:4]]
+
+    digest = (
+        f"EXPERIMENT REPORT (soft MoE weight-steering, no training)\n"
+        f"base model: {job.base_checkpoint.name} ({job.base_checkpoint.parameter_count or '?'} params)\n"
+        f"theme/domain: {theme.name}\n"
+        f"scan: hold-out AUC gate = {scan.get('gate_auc')} ({scan.get('gate')}), "
+        f"layers={scan.get('n_layers')}\n"
+        f"top writers: {[(w['layer'], w['proj']) for w in top]}\n"
+        f"patch: mode={patch.get('mode')}, alpha={patch.get('alpha')}, "
+        f"layers={patch.get('layers')}, tensors patched={patch.get('patched_count')}\n"
+        f"eval summary: {er if er else 'skipped'}\n"
+        f"router accuracy: {rr.get('accuracy')} ({rr.get('gate')})\n"
+    )
+
+    prompt = (
+        "You are an interpretability assistant inside a model lab. A user ran a "
+        "weight-space steering experiment (a domain direction extracted from "
+        "activations was baked into the model with a rank-one patch). "
+        "Below is the machine report. Write a SHORT interpretation for the user "
+        "(6-10 bullet points, plain language): what each number means, whether the "
+        "experiment succeeded, and concrete next actions (tune alpha, narrow layers, "
+        "improve prompt sets, evaluate vs base). Do not invent numbers.\n\n"
+        f"{digest}"
+    )
+
+    try:
+        param_b = job.base_checkpoint.parameter_count or 0
+        model, tok = _load_for_generation(job.base_checkpoint.local_path,
+                                          quantized=param_b >= 2_500_000_000)
+        try:
+            text = tok.apply_chat_template(
+                [{'role': 'user', 'content': prompt}],
+                add_generation_prompt=True, tokenize=False, enable_thinking=False)
+        except TypeError:
+            text = tok.apply_chat_template([{'role': 'user', 'content': prompt}],
+                                           add_generation_prompt=True, tokenize=False)
+        ids = tok(text, return_tensors='pt').to(model.device)
+        with torch.no_grad():
+            out = model.generate(**ids, max_new_tokens=500, do_sample=False,
+                                 pad_token_id=tok.eos_token_id or 0)
+        interpretation = tok.decode(out[0][ids['input_ids'].shape[1]:],
+                                    skip_special_tokens=True).strip()
+        job.interpretation = interpretation
+        job.save(update_fields=['interpretation'])
+        job.add_log("🧠 LLM-интерпретация готова (см. карточку на странице)")
+        del model, tok
+        import gc
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        return {'success': True, 'length': len(interpretation)}
+    except Exception as e:
+        import traceback
+        job.add_log(f"❌ Интерпретация не удалась: {e}")
+        return {'success': False, 'error': str(e), 'traceback': traceback.format_exc()}
