@@ -60,9 +60,17 @@ def moe_build_expert_task(self, job_id):
     theme = job.theme
     try:
         job.status = 'VALIDATING'
-        job.started_at = job.started_at or timezone.now()
+        job.started_at = timezone.now()
         job.celery_task_id = self.request.id
-        job.save(update_fields=['status', 'started_at', 'celery_task_id'])
+        # v5.2: re-run сбрасывает артефакты прошлого прогона — иначе на странице
+        # остаются графики/интерпретация предыдущей попытки
+        job.interpretation = ''
+        job.scan_report = {}
+        job.patch_report = {}
+        job.eval_report = {}
+        job.router_report = {}
+        job.save(update_fields=['status', 'started_at', 'celery_task_id', 'interpretation',
+                                'scan_report', 'patch_report', 'eval_report', 'router_report'])
         job.add_log("🚀 Soft MoE expert build started")
 
         base = job.base_checkpoint
