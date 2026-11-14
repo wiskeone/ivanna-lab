@@ -188,20 +188,10 @@ def moe_build_expert_task(self, job_id):
                 if quant:
                     job.add_log("⚠ Eval gate skipped: nf4 reload >=2.5B hits bitsandbytes↔transformers incompatibility. Evaluate via Evaluation module or chat manually.")
                 max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
-                if quant:
-                    # KNOWN ISSUE (v5.2): bitsandbytes 0.49.2 fails on a second
-                    # quantized load in the same process (after model teardown:
-                    # Params4bit/_is_hf_initialized). Eval for >=2.5B is skipped;
-                    # the expert itself is chat-ready (int4). Fix candidates:
-                    # pin bitsandbytes 0.45.x or transformers 6.0.x.
-                    eval_report = {}
-                    job.add_log("Eval gate skipped for >=2.5B models (known "
-                                "bitsandbytes second-load issue; see code comment)")
-                else:
-                    eval_report = moe_evalgate.run_eval_gate(
-                        base.local_path, out_dir, eval_d, eval_g,
-                        os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
-                        quantized=False, progress_cb=eval_progress)
+                eval_report = moe_evalgate.run_eval_gate(
+                    base.local_path, out_dir, eval_d, eval_g,
+                    os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
+                    quantized=quant, progress_cb=eval_progress)
                 job.eval_report = eval_report
                 job.save(update_fields=['eval_report'])
                 if eval_report:

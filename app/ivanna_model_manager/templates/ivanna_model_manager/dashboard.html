@@ -175,6 +175,9 @@
                                     {% elif task.type == 'conversion' %}{% trans "Конвертация" %}
                                     {% elif task.type == 'distillation_questions' %}{% trans "Дистилляция (вопросы)" %}
                                     {% elif task.type == 'distillation_answers' %}{% trans "Дистилляция (ответы)" %}
+                                    {% elif task.type == 'soft_moe' %}{% trans "Мягкий MoE (усиление)" %}
+                                    {% elif task.type == 'soft_moe_ablation' %}{% trans "WSP-абляция" %}
+                                    {% elif task.type == 'vector_index' %}{% trans "FAISS-индекс коллекции" %}
                                     {% else %}{% trans "Задача" %}{% endif %}
                                 </span>
                                 <span>

@@ -250,6 +250,33 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             })
 
         # Сортировка по дате создания
+        # v5.2: Soft MoE / WSP-абляция (job.goal различает тип на карточке)
+        my_moe_jobs = (MoEExpertJob.objects.all() if user.is_staff
+                       else MoEExpertJob.objects.filter(created_by=user.username))
+        for job in my_moe_jobs.order_by('-created_at')[:3]:
+            recent_tasks.append({
+                'id': job.id,
+                'type': 'soft_moe_ablation' if job.goal == 'ablate' else 'soft_moe',
+                'name': job.name,
+                'status': job.status,
+                'progress': job.progress,
+                'created_at': job.created_at,
+                'url': reverse('moe_job_detail', args=[job.id])
+            })
+
+        # v5.2: сборка FAISS-индексов коллекций (последние пересборки)
+        for coll in DocumentCollection.objects.filter(
+                is_active=True, vector_index_created=True).order_by('-updated_at')[:3]:
+            recent_tasks.append({
+                'id': coll.id,
+                'type': 'vector_index',
+                'name': f"{coll.name} ({coll.total_vectors} vectors)",
+                'status': 'COMPLETED',
+                'progress': 100,
+                'created_at': coll.updated_at,
+                'url': reverse('rag_collection_detail', args=[coll.id])
+            })
+
         recent_tasks.sort(key=lambda x: x['created_at'], reverse=True)
         context['recent_tasks'] = recent_tasks[:5]
 
