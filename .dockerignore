@@ -43,3 +43,12 @@ vllm_cache/
 !ivanna_model_manager/
 !manage.py
 !config/
+
+# v5.2: рантайм-мусор, не должен попадать в образ
+celerybeat-schedule*
+app/celerybeat-schedule*
+app/data/
+app/logs/
+app/media/vendor/
+media/vendor/
+*.sqlite3-journal

@@ -78,6 +78,13 @@ RUN uv pip install \
 # 8. bitsandbytes (проверенная версия, работает с CUDA)
 RUN uv pip install bitsandbytes==0.49.2
 
+# 8.5 v5.2: fast-path кернелы для гибридных архитектур (Qwen3.5 linear attention).
+# causal-conv1d компилируется против установленного torch + nvcc (devel-образ);
+# без них генерация fallback-ится в медленный torch-путь.
+ENV CUDA_HOME=/usr/local/cuda
+RUN uv pip install flash-linear-attention && \
+    uv pip install --no-build-isolation causal-conv1d
+
 # 9. mergekit (последняя стабильная версия с PyPI)
 RUN uv pip install mergekit==0.1.4
 
