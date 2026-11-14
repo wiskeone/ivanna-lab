@@ -180,14 +180,24 @@ def moe_build_expert_task(self, job_id):
                 def eval_progress(done, total, step):
                     job.update_progress(75 + 17 * done / max(1, total), f"Eval: {step}")
 
-                # v5.2: большие модели на малых GPU — nf4-генерация в eval
+                # v5.2: большие модели на малых GPU — nf4-генерация в eval.
+                # ИЗВЕСТНОЕ ОГРАНИЧЕНИЕ: bitsandbytes 0.49.2 + transformers 6.x падают
+                # на повторной nf4-загрузке (Params4bit/_is_hf_initialized) — для
+                # моделей ≥2.5B eval временно пропускается, эксперт регистрируется
                 param_b = base.parameter_count or 0
                 quant = param_b >= 2_500_000_000
+                if quant:
+                    job.add_log("⚠ Eval-гейт пропущен: nf4-перезагрузка ≥2.5B падает "
+                                "на несовместимости bitsandbytes↔transformers. "
+                                "Оцени модель через Evaluation или чат вручную.")
                 max_tokens_eval = 192 if quant else moe_evalgate.DEFAULT_MAX_NEW_TOKENS
-                eval_report = moe_evalgate.run_eval_gate(
-                    base.local_path, out_dir, eval_d, eval_g,
-                    os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
-                    quantized=quant, progress_cb=eval_progress)
+                if quant:
+                    eval_report = None
+                else:
+                    eval_report = moe_evalgate.run_eval_gate(
+                        base.local_path, out_dir, eval_d, eval_g,
+                        os.path.join(job_dir, 'eval'), max_new_tokens=max_tokens_eval,
+                        quantized=False, progress_cb=eval_progress)
                 job.eval_report = eval_report
                 job.save(update_fields=['eval_report'])
                 job.add_log(f"Eval: домен Δ{eval_report['summary']['domain_len']['delta_pct']}%, "
