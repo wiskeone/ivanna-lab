@@ -320,10 +320,17 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
         diff = v_d.mean(0) - v_c.mean(0)
         d = D_last[min(li + 1, n_layers)]
         d = d / (np.linalg.norm(d) + 1e-9)
+        proj = float(diff @ d)
+        nrm = float(np.linalg.norm(diff))
+        # bf16-выбросы на синтетических форматах дают inf/nan — честно пропускаем
+        if not np.isfinite(proj) or not np.isfinite(nrm):
+            writers[f"L{li:02d}:{tail}"] = {"layer": li, "module": tail,
+                                            "proj": None, "norm": None, "nan": True}
+            continue
         writers[f"L{li:02d}:{tail}"] = {
             "layer": li, "module": tail,
-            "proj": round(float(diff @ d), 2),
-            "norm": round(float(np.linalg.norm(diff)), 2),
+            "proj": round(proj, 2),
+            "norm": round(nrm, 2),
         }
     top_writers = sorted(writers.values(), key=lambda w: -abs(w["proj"]))[:16]
 
@@ -357,9 +364,16 @@ def auto_layers_from_writers(scan_report: dict, thr_factor: float = 0.6):
     порог = 0.6 · медианы топ-8 (как в лабе)."""
     per_layer = {}
     for w in scan_report.get("writers", {}).values():
+        if w.get("proj") is None or w.get("nan"):
+            continue  # nan-проекции (bf16-выбросы) не участвуют в выборе слоёв
         per_layer[w["layer"]] = per_layer.get(w["layer"], 0.0) + abs(w["proj"])
     if not per_layer:
         return []
     ranked = sorted(per_layer.items(), key=lambda kv: -kv[1])
     thr = float(np.median([v for _, v in ranked[:8]])) * thr_factor
-    return sorted(l for l, v in per_layer.items() if v >= thr)
+    picked = sorted(l for l, v in per_layer.items() if v >= thr)
+    if len(picked) < 3:
+        # синтетические форматы (tool-call и т.п.) дают плоский профиль —
+        # берём топ-3 слоя вместо пустого списка
+        picked = sorted(l for l, v in ranked[:3])
+    return picked
