@@ -34,11 +34,23 @@ def answer_metrics(answer: str) -> dict:
     }
 
 
-def _load_for_generation(model_path: str):
+def _load_for_generation(model_path: str, quantized: bool = False):
     from transformers import AutoModelForCausalLM, AutoTokenizer
     kwargs = {"trust_remote_code": True}
     dtype = torch.bfloat16 if (torch.cuda.is_available() and
                                torch.cuda.is_bf16_supported()) else torch.float16
+    if quantized:
+        # малые GPU: nf4-генерация (bf16-офлоад 4B ловит device-side assert)
+        from transformers import BitsAndBytesConfig
+        bnb = BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=dtype, bnb_4bit_use_double_quant=True,
+            llm_int8_enable_fp32_cpu_offload=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path, quantization_config=bnb, device_map="auto", **kwargs)
+        model.eval()
+        tok = AutoTokenizer.from_pretrained(model_path, **kwargs)
+        return model, tok
     model = AutoModelForCausalLM.from_pretrained(
         model_path, torch_dtype=dtype, device_map="auto", **kwargs)
     model.eval()
@@ -89,7 +101,7 @@ def _run_set(model, tok, prompts_list, outdir: Path, tag: str,
 
 def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
                   eval_contrast_texts, out_dir: str, max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
-                  progress_cb=None) -> dict:
+                  quantized: bool = False, progress_cb=None) -> dict:
     """Прогон двух сборок на двух наборах. Отчёт + тексты в out_dir.
 
     Смысл гейта (лаба): доменные ответы эксперта не хуже/полне базовых,
@@ -103,7 +115,7 @@ def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
     for model_tag, path in (("base", base_path), ("expert", expert_path)):
         if progress_cb:
             progress_cb(0, 100, f"загрузка {model_tag}")
-        model, tok = _load_for_generation(path)
+        model, tok = _load_for_generation(path, quantized=quantized)
         for set_tag, texts in (("eval_domain", eval_domain_texts),
                                ("eval_general", eval_contrast_texts)):
             if progress_cb:

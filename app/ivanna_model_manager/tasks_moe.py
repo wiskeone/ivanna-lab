@@ -180,9 +180,13 @@ def moe_build_expert_task(self, job_id):
                 def eval_progress(done, total, step):
                     job.update_progress(75 + 17 * done / max(1, total), f"Eval: {step}")
 
+                # v5.2: большие модели на малых GPU — nf4-генерация в eval
+                param_b = base.parameter_count or 0
+                quant = param_b >= 2_500_000_000
                 eval_report = moe_evalgate.run_eval_gate(
                     base.local_path, out_dir, eval_d, eval_g,
-                    os.path.join(job_dir, 'eval'), progress_cb=eval_progress)
+                    os.path.join(job_dir, 'eval'), quantized=quant,
+                    progress_cb=eval_progress)
                 job.eval_report = eval_report
                 job.save(update_fields=['eval_report'])
                 job.add_log(f"Eval: домен Δ{eval_report['summary']['domain_len']['delta_pct']}%, "
