@@ -32,6 +32,7 @@ from .models import (
     FineTuningJob, ModelDownloadJob, EvaluationDataset,
     ModelEvaluationTask, EvaluationResult,
     DocumentCollection, Document, DocumentChunk,
+    MoEExpertJob,
     EmbeddingModel, RAGSession, SearchQuery, FineTuningMethod,
     FineTuningJob, FineTuningCheckpoint, FineTuningEvaluation,
     FineTuningTemplate, UserProfile, TrainingMetric,
