@@ -8,6 +8,7 @@
 Параметры генерации и детали — в docs/soft_moe.md.
 """
 import json
+import sys
 import re
 import statistics
 import time
@@ -99,10 +100,75 @@ def _run_set(model, tok, prompts_list, outdir: Path, tag: str,
     return {"agg": agg, "rows": rows}
 
 
+RUNNER_CODE = """
+# Изолированный генератор: свежий процесс = чистый bnb-контекст.
+# Фон: второй quantized load в одном процессе падает в accelerate
+# (Params4bit/_is_hf_initialized, bnb 0.49.2 + transformers 6.x).
+import json, sys
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
+model_path, out_path, max_new_tokens, quantized = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4] == '1'
+tasks = json.load(open(sys.argv[5]))
+
+kwargs = {'trust_remote_code': True}
+if quantized:
+    bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type='nf4',
+                             bnb_4bit_compute_dtype=torch.bfloat16,
+                             bnb_4bit_use_double_quant=True,
+                             llm_int8_enable_fp32_cpu_offload=True)
+    kwargs.update(quantization_config=bnb, device_map='auto')
+
+dtype = torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else torch.float16
+if not quantized:
+    kwargs['torch_dtype'] = dtype
+model = AutoModelForCausalLM.from_pretrained(model_path, **kwargs)
+model.eval()
+tok = AutoTokenizer.from_pretrained(model_path, **kwargs)
+
+results = []
+for item in tasks:
+    prompt, max_new = item['prompt'], item.get('max_new_tokens', max_new_tokens)
+    if getattr(tok, 'chat_template', None):
+        msgs = [{'role': 'user', 'content': prompt}]
+        try:
+            text = tok.apply_chat_template(msgs, add_generation_prompt=True,
+                                           tokenize=False, enable_thinking=False)
+        except TypeError:
+            text = tok.apply_chat_template(msgs, add_generation_prompt=True, tokenize=False)
+        ids = tok(text, return_tensors='pt').to(model.device)
+    else:
+        ids = tok(prompt, return_tensors='pt').to(model.device)
+    with torch.no_grad():
+        out = model.generate(**ids, max_new_tokens=max_new, do_sample=True,
+                             temperature=0.7, top_p=0.9,
+                             pad_token_id=tok.eos_token_id or 0)
+    results.append(tok.decode(out[0][ids['input_ids'].shape[1]:], skip_special_tokens=True))
+
+json.dump(results, open(out_path, 'w'), ensure_ascii=False)
+"""
+
+
+def _generate_batch_subprocess(model_path: str, prompts: list, max_new_tokens: int,
+                               quantized: bool, out_path: str) -> list:
+    """Генерация батча промптов в изолированном подпроцессе."""
+    import json
+    import subprocess
+    tasks = [{'prompt': p, 'max_new_tokens': max_new_tokens} for p in prompts]
+    json.dump(tasks, open(out_path + '.tasks.json', 'w'), ensure_ascii=False)
+    r = subprocess.run([sys.executable, '-c', RUNNER_CODE, model_path,
+                        out_path + '.answers.json', str(max_new_tokens),
+                        '1' if quantized else '0', out_path + '.tasks.json'],
+                       capture_output=True, text=True, timeout=7200)
+    if r.returncode != 0:
+        raise RuntimeError(f'generation subprocess failed: {r.stderr[-600:]}')
+    return json.load(open(out_path + '.answers.json'))
+
+
 def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
                   eval_contrast_texts, out_dir: str, max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
                   quantized: bool = False, progress_cb=None) -> dict:
-    """Прогон двух сборок на двух наборах. Отчёт + тексты в out_dir.
+    """Прогон двух сборок на двух наборах (v5.2: генерация в подпроцессах).
 
     Смысл гейта (лаба): доменные ответы эксперта не хуже/полне базовых,
     общие не деградировали. Числа — прокси (длина); финальное решение —
@@ -111,25 +177,35 @@ def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
     outdir = Path(out_dir)
     outdir.mkdir(parents=True, exist_ok=True)
     report = {"base": base_path, "expert": expert_path, "max_new_tokens": max_new_tokens,
-              "sets": {}}
+              "quantized": quantized, "sets": {}}
     for model_tag, path in (("base", base_path), ("expert", expert_path)):
         if progress_cb:
             progress_cb(0, 100, f"загрузка {model_tag}")
-        model, tok = _load_for_generation(path, quantized=quantized)
         for set_tag, texts in (("eval_domain", eval_domain_texts),
                                ("eval_general", eval_contrast_texts)):
             if progress_cb:
                 progress_cb(0, len(texts), f"{model_tag}/{set_tag}")
-            res = _run_set(model, tok, texts, outdir, f"{model_tag}_{set_tag}",
-                           max_new_tokens)
-            report["sets"][f"{model_tag}/{set_tag}"] = res
+            answers = _generate_batch_subprocess(
+                path, texts, max_new_tokens, quantized,
+                str(outdir / f'{model_tag}_{set_tag}'))
+            rows = []
+            for i, (p, ans) in enumerate(zip(texts, answers)):
+                t0 = time.time()
+                m = answer_metrics(ans)
+                m['sec'] = round(time.time() - t0, 1)
+                m['prompt'] = p
+                rows.append(m)
+                (outdir / f'{model_tag}_{set_tag}_{i:02d}.txt').write_text(
+                    f'ПРОМПТ:\n{p}\n\nОТВЕТ:\n{ans}\n', encoding='utf-8')
+            agg = {
+                'n': len(rows),
+                'mean_len': round(statistics.mean(r['len_chars'] for r in rows), 0) if rows else 0,
+                'think_leaks': sum(r['think_leak'] for r in rows),
+                'max_repeat_pairs': max((r['repeat_pairs'] for r in rows), default=0),
+            }
+            report['sets'][f'{model_tag}/{set_tag}'] = {'agg': agg, 'rows': rows}
             if progress_cb:
-                progress_cb(len(texts), len(texts), f"{model_tag}/{set_tag}")
-        del model, tok
-        import gc
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+                progress_cb(len(texts), len(texts), f'{model_tag}/{set_tag}')
 
     # сводка для гейта: направление изменений
     b_d = report["sets"]["base/eval_domain"]["agg"]["mean_len"]
