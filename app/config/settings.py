@@ -171,6 +171,7 @@ CELERY_TASK_ROUTES = {
     'ivanna_model_manager.tasks.update_faiss_index_task': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks.regenerate_document_chunks_task': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks.rebuild_collection_index_task': {'queue': 'cpu_tasks'},
+    'ivanna_model_manager.tasks.convert_model_to_gguf_task': {'queue': 'cpu_tasks'},
 }
 
 CELERY_TASK_DEFAULT_RETRY_DELAY = 30
