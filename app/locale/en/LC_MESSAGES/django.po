@@ -21,7 +21,7 @@ msgstr[0] "%(counter)s evaluation"
 msgstr[1] "%(counter)s evaluations"
 
 msgid "%(dq)s вопросов"
-msgstr "%(dataset.total_questions)s questions"
+msgstr "%(dq)s questions"
 
 msgid "%(docs)s док., %(vecs)s векторов"
 msgstr "%(docs)s docs, %(vecs)s vectors"
@@ -42,7 +42,7 @@ msgid "%(n)s вопросов"
 msgstr "%(n)s questions"
 
 msgid "%(n)s инструкций"
-msgstr "%(ds.instructions.count)s instructions"
+msgstr "%(n)s instructions"
 
 msgid "%(embedding_downloaded)s скачано"
 msgstr "%(embedding_downloaded)s downloaded"
@@ -60,7 +60,7 @@ msgid "%(loaded_models)s загружено"
 msgstr "%(loaded_models)s loaded"
 
 msgid "%(cl)s токенов"
-msgstr "%(model.context_length)s tokens"
+msgstr "%(cl)s tokens"
 
 msgid "%(my_answer_jobs_active)s ответов"
 msgstr "%(my_answer_jobs_active)s answers"
@@ -123,13 +123,13 @@ msgid "%(t)s - Документ"
 msgstr "%(t)s - Document"
 
 msgid "%(tk)s токенов"
-msgstr "%(result.tokens_used)s tokens"
+msgstr "%(tk)s tokens"
 
 msgid "%(n)s сообщ."
-msgstr "%(session.total_messages)s msgs"
+msgstr "%(n)s msgs"
 
 msgid "%(t)s токенов"
-msgstr "%(session.total_tokens)s tokens"
+msgstr "%(t)s tokens"
 
 msgid "%(since)s назад"
 msgstr "%(since)s ago"
@@ -141,13 +141,13 @@ msgid "%(t)sс"
 msgstr "%(t)ss"
 
 msgid "%(tm)s моделей"
-msgstr "%(task.total_models)s models"
+msgstr "%(tm)s models"
 
 msgid "%(tq)s вопросов"
-msgstr "%(task.total_questions)s questions"
+msgstr "%(tq)s questions"
 
 msgid "%(n)s использований"
-msgstr "%(template.usage_count)s uses"
+msgstr "%(n)s uses"
 
 msgid "%(tokens)s токенов"
 msgstr "%(tokens)s tokens"
@@ -493,7 +493,7 @@ msgid "Автообновление"
 msgstr "Auto-refresh"
 
 msgid "Автор: %(author)s"
-msgstr "Author: %(job.created_by)s"
+msgstr "Author: %(author)s"
 
 msgid "Автор:"
 msgstr "Author:"
@@ -763,7 +763,7 @@ msgid "Войти"
 msgstr "Sign in"
 
 msgid "Вопрос %(qid)s:"
-msgstr "Question %(result.question_id)s:"
+msgstr "Question %(qid)s:"
 
 msgid "Вопрос"
 msgstr "Question"
@@ -4254,9 +4254,6 @@ msgstr "Progress by models:"
 msgid "Прогресс эмбеддингов"
 msgstr "Embedding progress"
 
-msgid "Прогресс: %(progress)s%"
-msgstr "Progress: %(progress)s%"
-
 msgid "Прогресс:"
 msgstr "Progress:"
 
@@ -5229,7 +5226,7 @@ msgid "Творческий"
 msgstr "Creative"
 
 msgid "Тег: %(tag)s"
-msgstr "Tag: %(request.GET.tag)s"
+msgstr "Tag: %(tag)s"
 
 msgid "Теги"
 msgstr "Tags"
@@ -5705,7 +5702,7 @@ msgid "Чанков с эмбеддингами"
 msgstr "Chunks with embeddings"
 
 msgid "Чат с %(name)s"
-msgstr "Chat with %(chat_session.checkpoint.display_name)s"
+msgstr "Chat with %(name)s"
 
 msgid "Чат с AI моделью"
 msgstr "Chat with AI model"
@@ -5753,7 +5750,7 @@ msgid "Шаблоны fine-tuning"
 msgstr "Fine-tuning templates"
 
 msgid "Шаг %(step)s"
-msgstr "Step %(cp.step)s"
+msgstr "Step %(step)s"
 
 msgid "Штраф за повторения (0.0-2.0)"
 msgstr "Repetition penalty (0.0–2.0)"
@@ -6551,13 +6548,6 @@ msgstr ""
 "|ΔW| heatmaps inside matrices: rows = outputs (hid), columns = inputs. Even "
 "glow = broad patch; spot = narrow."
 
-msgid ""
-"Прокси полноты: средняя длина ответов. Синий столбец — expert на general: "
-"рост допустим в пределах ~10%, сильный рост/падение — смотреть тексты."
-msgstr ""
-"Completeness proxy: mean answer length. Blue bar = expert on general: growth"
-" within ~10% is acceptable; big swings — check the texts."
-
 msgid "Интерпретировать отчёт моделью джобы"
 msgstr "Interpret the report with the job's model"
 
@@ -6656,3 +6646,199 @@ msgstr "Q5_1 (5-bit, better)"
 
 msgid "Q8_0 (8-bit)"
 msgstr "Q8_0 (8-bit)"
+
+msgid "Основное"
+msgstr "Main"
+
+msgid "Документация"
+msgstr "Documentation"
+
+msgid "О проекте"
+msgstr "About"
+
+msgid "FAISS-индекс коллекции"
+msgstr "Collection FAISS index"
+
+msgid "никогда"
+msgstr "never"
+
+msgid "только что"
+msgstr "just now"
+
+msgid "%d лет назад"
+msgstr "%d years ago"
+
+msgid "%d месяцев назад"
+msgstr "%d months ago"
+
+msgid "%d дней назад"
+msgstr "%d days ago"
+
+msgid "%d часов назад"
+msgstr "%d hours ago"
+
+msgid "Ожидание"
+msgstr "Pending"
+
+msgid "Загружена на диск"
+msgstr "Downloaded to disk"
+
+msgid "Загрузка в память"
+msgstr "Loading to memory"
+
+msgid "В архиве"
+msgstr "Archived"
+
+msgid "%d год назад"
+msgid_plural "%d year ago"
+msgstr[0] "%d year ago"
+msgstr[1] "%d years ago"
+
+msgid "%d месяц назад"
+msgid_plural "%d month ago"
+msgstr[0] "%d month ago"
+msgstr[1] "%d months ago"
+
+msgid "%d день назад"
+msgid_plural "%d day ago"
+msgstr[0] "%d day ago"
+msgstr[1] "%d days ago"
+
+msgid "%d час назад"
+msgid_plural "%d hour ago"
+msgstr[0] "%d hour ago"
+msgstr[1] "%d hours ago"
+
+msgid "%d мин назад"
+msgid_plural "%d min ago"
+msgstr[0] "%d min ago"
+msgstr[1] "%d min ago"
+
+msgid "Загрузить эмбеддинг"
+msgstr "Upload embedding"
+
+msgid "Роутер"
+msgstr "Router"
+
+msgid "Открыть"
+msgstr "Open"
+
+msgid "Тема"
+msgstr "Theme"
+
+msgid "База"
+msgstr "Base"
+
+msgid "В очереди"
+msgstr "Queued"
+
+msgid "Проверка входа"
+msgstr "Validating inputs"
+
+msgid "Скан активаций"
+msgstr "Activation scan"
+
+msgid "Патч весов"
+msgstr "Patching weights"
+
+msgid "Eval-гейт"
+msgstr "Eval gate"
+
+msgid "Построение роутера"
+msgstr "Building router"
+
+msgid "✓ гейт ≥ 0.9"
+msgstr "✓ gate ≥ 0.9"
+
+msgid "General"
+msgstr "General"
+
+msgid "Данные последнего прогона:"
+msgstr "Latest run data:"
+
+msgid "Интерпретация: куда смотреть и что делать"
+msgstr "Interpretation: what to look at and what to do"
+
+msgid "Оценить в Evaluation (base vs expert)"
+msgstr "Evaluate in Evaluation (base vs expert)"
+
+msgid "✗ гейт < 0.9"
+msgstr "✗ gate < 0.9"
+
+msgid "AUC-гейт:"
+msgstr "AUC gate:"
+
+msgid "eval пропущен"
+msgstr "eval skipped"
+
+msgid "Визуализация эксперимента"
+msgstr "Experiment visualization"
+
+msgid "Eval"
+msgstr "Eval"
+
+msgid ""
+"Прокси полноты: средняя длина ответов. Синий столбец — expert на general: "
+"рост допустим в пределах ~10 процентов, сильный рост/падение — смотреть "
+"тексты."
+msgstr ""
+"Completeness proxy: mean answer length. The blue bar is expert on general: "
+"growth within about 10 percent is fine; strong growth or a drop — check the "
+"texts."
+
+msgid "Прогресс: %(progress)s"
+msgstr "Progress: %(progress)s"
+
+msgid ""
+"AUC низкий — направление темы не выделяется. Проверьте валидацию темы (cross"
+" cos, баланс длин), добавьте промптов. Патч в таком случае бесполезен."
+msgstr ""
+"Low AUC — the theme direction does not stand out. Check the theme validation"
+" (cross cos, length balance) and add prompts. Patching is pointless in this "
+"case."
+
+msgid ""
+"AUC %(top)s — направление выражено очень чётко; α=0.2 обычно безопасна, при "
+"деградации general снижайте."
+msgstr ""
+"AUC %(top)s — the direction is expressed very clearly; alpha=0.2 is usually "
+"safe, lower it if general quality degrades."
+
+msgid ""
+"Писатели сосредоточены в поздних слоях (например L%(layer)s) — это ожидаемо:"
+" доменное поведение записывается в конце residual stream."
+msgstr ""
+"Writers are concentrated in the late layers (e.g. L%(layer)s) — expected: "
+"domain behavior is written at the end of the residual stream."
+
+msgid "Ни один тензор не патчился: проверьте mean-входы (для steer) и слои."
+msgstr ""
+"No tensors were patched: check the mean inputs (for steer) and the layers."
+
+msgid ""
+"General просел на %(g)s%% — уменьшите α (сетка 0.1/0.05) или сузьте список "
+"слоёв; патч слишком широкий."
+msgstr ""
+"General dropped by %(g)s%% — lower alpha (grid 0.1/0.05) or narrow the layer"
+" list; the patch is too broad."
+
+msgid ""
+"Доменные ответы заметно короче базы — числовые метрики — это прокси: "
+"обязательно просмотрите тексты ответов ниже руками."
+msgstr ""
+"Domain answers are noticeably shorter than base — numeric metrics are a "
+"proxy: always review the answer texts below by hand."
+
+msgid ""
+"Роутер путает темы — добавьте контрастных negative-примеров в scan-наборы "
+"или поднимите порог margin."
+msgstr ""
+"The router confuses themes — add contrastive negative examples to the scan "
+"sets or raise the margin threshold."
+
+msgid ""
+"Гейты пройдены: результаты в отчётах ниже; тексты eval — для ручной "
+"проверки."
+msgstr ""
+"Gates passed: results are in the reports below; eval texts are for manual "
+"review."

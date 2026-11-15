@@ -4,6 +4,7 @@
 
 from django import template
 from django.utils.html import format_html
+from django.utils.translation import gettext as _, ngettext
 from django.utils import timezone
 from django.db.models import Count, Avg, Max, Min, Q, Sum
 from datetime import datetime, timedelta
@@ -351,7 +352,7 @@ def log10(value):
 def time_ago(value):
     """Время в относительном формате (3 часа назад)"""
     if not value:
-        return "никогда"
+        return _("никогда")
     
     now = timezone.now()
     if isinstance(value, str):
@@ -364,20 +365,20 @@ def time_ago(value):
     
     if delta.days > 365:
         years = delta.days // 365
-        return f"{years} год назад" if years == 1 else f"{years} лет назад"
+        return ngettext("%d год назад", "%d лет назад", years) % years
     elif delta.days > 30:
         months = delta.days // 30
-        return f"{months} месяц назад" if months == 1 else f"{months} месяцев назад"
+        return ngettext("%d месяц назад", "%d месяцев назад", months) % months
     elif delta.days > 0:
-        return f"{delta.days} дней назад"
+        return ngettext("%d день назад", "%d дней назад", delta.days) % delta.days
     elif delta.seconds > 3600:
         hours = delta.seconds // 3600
-        return f"{hours} час назад" if hours == 1 else f"{hours} часов назад"
+        return ngettext("%d час назад", "%d часов назад", hours) % hours
     elif delta.seconds > 60:
         minutes = delta.seconds // 60
-        return f"{minutes} мин назад"
+        return ngettext("%d мин назад", "%d мин назад", minutes) % minutes
     else:
-        return "только что"
+        return _("только что")
 
 @register.filter
 def short_date(value):

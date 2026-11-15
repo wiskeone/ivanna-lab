@@ -4543,39 +4543,42 @@ def _moe_charts(job):
 
 def _moe_hints(job):
     """Интерпретация результатов — «что с этим делать» (v5.2)."""
+    from django.utils.translation import gettext as _
+
     hints = []
     scan = job.scan_report or {}
     if scan:
         if scan.get('gate') != 'PASS':
-            hints.append(('danger', 'AUC низкий — направление темы не выделяется. '
-                          'Проверьте валидацию темы (cross cos, баланс длин), добавьте промптов. Патч в таком случае бесполезен.'))
+            hints.append(('danger', _('AUC низкий — направление темы не выделяется. '
+                          'Проверьте валидацию темы (cross cos, баланс длин), добавьте промптов. Патч в таком случае бесполезен.')))
         else:
             top = max(scan.get('auc', {}).get('last', {}).get('test', [0]))
             if top >= 0.98:
-                hints.append(('success', f'AUC {top} — направление выражено очень чётко; '
-                              'α=0.2 обычно безопасна, при деградации general снижайте.'))
+                hints.append(('success', _('AUC %(top)s — направление выражено очень чётко; '
+                              'α=0.2 обычно безопасна, при деградации general снижайте.') % {'top': top}))
         late = [w for w in (scan.get('top_writers') or []) if w['layer'] >= scan.get('n_layers', 24) * 0.5]
         if late:
-            hints.append(('info', f'Писатели сосредоточены в поздних слоях (например L{late[0]["layer"]}) — '
-                          'это ожидаемо: доменное поведение записывается в конце residual stream.'))
+            hints.append(('info', _('Писатели сосредоточены в поздних слоях (например L%(layer)s) — '
+                          'это ожидаемо: доменное поведение записывается в конце residual stream.')
+                          % {'layer': late[0]["layer"]}))
     patch = job.patch_report or {}
     if patch and patch.get('patched_count', 0) == 0:
-        hints.append(('danger', 'Ни один тензор не патчился: проверьте mean-входы (для steer) и слои.'))
+        hints.append(('danger', _('Ни один тензор не патчился: проверьте mean-входы (для steer) и слои.')))
     er = (job.eval_report or {}).get('summary') or {}
     g = er.get('general_len', {}).get('delta_pct')
     d = er.get('domain_len', {}).get('delta_pct')
     if g is not None and g < -15:
-        hints.append(('warning', f'General просел на {abs(g)}% — уменьшите α (сетка 0.1/0.05) '
-                      'или сузьте список слоёв; патч слишком широкий.'))
+        hints.append(('warning', _('General просел на %(g)s%% — уменьшите α (сетка 0.1/0.05) '
+                      'или сузьте список слоёв; патч слишком широкий.') % {'g': abs(g)}))
     if d is not None and d < -15:
-        hints.append(('warning', 'Доменные ответы заметно короче базы — числовые метрики — это прокси: '
-                      'обязательно просмотрите тексты ответов ниже руками.'))
+        hints.append(('warning', _('Доменные ответы заметно короче базы — числовые метрики — это прокси: '
+                      'обязательно просмотрите тексты ответов ниже руками.')))
     rr = job.router_report or {}
     if rr.get('accuracy') is not None and rr.get('gate') != 'PASS':
-        hints.append(('warning', 'Роутер путает темы — добавьте контрастных negative-примеров '
-                      'в scan-наборы или поднимите порог margin.'))
+        hints.append(('warning', _('Роутер путает темы — добавьте контрастных negative-примеров '
+                      'в scan-наборы или поднимите порог margin.')))
     if not hints:
-        hints.append(('info', 'Гейты пройдены: результаты в отчётах ниже; тексты eval — для ручной проверки.'))
+        hints.append(('info', _('Гейты пройдены: результаты в отчётах ниже; тексты eval — для ручной проверки.')))
     return hints
 
 

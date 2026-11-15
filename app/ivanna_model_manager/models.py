@@ -96,14 +96,16 @@ class ModelCheckpoint(models.Model):
     ]
     
     STATUS_CHOICES = [
-        ('PENDING', 'Ожидание'),
-        ('DOWNLOADING', 'Загрузка'),
-        ('DOWNLOADED', 'Загружена на диск'), 
-        ('LOADING', 'Загрузка в память'),
-        ('LOADED', 'Загружена'),
-        ('MERGED', 'Слитая'),
-        ('ERROR', 'Ошибка'),
-        ('ARCHIVED', 'В архиве'),
+        # lazy labels: Django 5+ autodetector compares them by msgid, so no
+        # spurious migrations; UI translates per active language
+        ('PENDING', _('Ожидание')),
+        ('DOWNLOADING', _('Загрузка')),
+        ('DOWNLOADED', _('Загружена на диск')),
+        ('LOADING', _('Загрузка в память')),
+        ('LOADED', _('Загружена')),
+        ('MERGED', _('Слитая')),
+        ('ERROR', _('Ошибка')),
+        ('ARCHIVED', _('В архиве')),
     ]
     
     QUANTIZATION_CHOICES = [
@@ -4500,18 +4502,19 @@ class MoETheme(models.Model):
 class MoEExpertJob(models.Model):
     """Задача создания мягкого MoE-эксперта из плотной модели (скан → патч → гейты)."""
     STATUS_CHOICES = [
-        ('PENDING', 'В очереди'),
-        ('VALIDATING', 'Проверка входа'),
-        ('SCANNING', 'Скан активаций'),
-        ('PATCHING', 'Патч весов'),
-        ('EVALUATING', 'Eval-гейт'),
-        ('ROUTING', 'Построение роутера'),
-        ('COMPLETED', 'Завершено'),
-        ('FAILED', 'Ошибка'),
+        ('PENDING', _('В очереди')),
+        ('VALIDATING', _('Проверка входа')),
+        ('SCANNING', _('Скан активаций')),
+        ('PATCHING', _('Патч весов')),
+        ('EVALUATING', _('Eval-гейт')),
+        ('ROUTING', _('Построение роутера')),
+        ('COMPLETED', _('Завершено')),
+        ('FAILED', _('Ошибка')),
     ]
     MODE_CHOICES = [
-        ('steer', 'steer — усиление W += α·outer(d̂,ī)/‖ī‖² (рекомендуется)'),
-        ('amplify', 'amplify — (I+α·d̂d̂ᵀ)W (запасной)'),
+        # mode names stay technical (latin); RU notes are help_text-only
+        ('steer', 'steer'),
+        ('amplify', 'amplify'),
     ]
     LOAD_MODE_CHOICES = [
         ('auto', _('Авто (bf16 + CPU-offload при нехватке VRAM)')),
@@ -4542,8 +4545,8 @@ class MoEExpertJob(models.Model):
     layers = models.CharField(max_length=255, default='auto',
                               help_text=_("'auto' — по каузальным писателям, или CSV: 19,20,21,22,23"))
     position = models.CharField(max_length=10, default='last', choices=[
-        ('last', 'last — последний токен (проверено в лабе)'),
-        ('mean', 'mean — среднее по токенам'),
+        ('last', _('last — последний токен (проверено в лабе)')),
+        ('mean', _('mean — среднее по токенам')),
     ], help_text=_("Позиция скрытых состояний для направления d̂"))
     holdout_seed = models.IntegerField(default=7)
     load_mode = models.CharField(max_length=10, choices=LOAD_MODE_CHOICES, default='auto')

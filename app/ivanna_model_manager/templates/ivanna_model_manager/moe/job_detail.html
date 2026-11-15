@@ -76,7 +76,7 @@
         <div id="chartHeatmaps"></div>
         <div class="small text-muted mb-2">{% trans "Теплокарты |ΔW| внутри матриц: строки = выходы (hid), столбцы = входы. Равномерное свечение — широкая правка; точечное — узкая." %}</div>
         <div id="chartEval" style="height:300px"></div>
-        <div class="small text-muted mb-2">{% trans "Прокси полноты: средняя длина ответов. Синий столбец — expert на general: рост допустим в пределах ~10%, сильный рост/падение — смотреть тексты." %}</div>
+        <div class="small text-muted mb-2">{% blocktrans %}Прокси полноты: средняя длина ответов. Синий столбец — expert на general: рост допустим в пределах ~10 процентов, сильный рост/падение — смотреть тексты.{% endblocktrans %}</div>
         {% if job.status == 'COMPLETED' %}
         <form method="post" action="{% url 'moe_interpret' job.pk %}" class="mt-1">
             {% csrf_token %}
@@ -122,7 +122,7 @@
             <div class="moe-card">
                 <h6>{% trans "Скан (Этап 1)" %}</h6>
                 <p class="mb-1">
-                    AUC-гейт: <strong class="{% if job.scan_report.gate == 'PASS' %}text-success{% else %}text-danger{% endif %}">
+                    {% trans "AUC-гейт:" %} <strong class="{% if job.scan_report.gate == 'PASS' %}text-success{% else %}text-danger{% endif %}">
                         {{ job.scan_report.gate_auc }} ({{ job.scan_report.gate }})</strong>
                     · {% trans "слоёв" %} {{ job.scan_report.n_layers }} · {{ job.scan_report.sec }}с
                 </p>
@@ -208,7 +208,7 @@
             <div class="moe-card">
                 <h6>{% trans "Роутер (Этап 4)" %}</h6>
                 <p class="mb-1">{% trans "Точность" %}: <strong>{{ job.router_report.accuracy }}</strong>
-                    {% if job.router_report.gate == 'PASS' %}<span class="text-success">✓ гейт ≥ 0.9</span>{% else %}<span class="text-danger">✗ гейт ≥ 0.9</span>{% endif %}
+                    {% if job.router_report.gate == 'PASS' %}<span class="text-success">{% trans "✓ гейт ≥ 0.9" %}</span>{% else %}<span class="text-danger">{% trans "✗ гейт < 0.9" %}</span>{% endif %}
                 </p>
                 {% if job.router_report.misses %}
                 <details><summary class="small text-muted">{% trans "Промахи" %} ({{ job.router_report.misses|length }})</summary>

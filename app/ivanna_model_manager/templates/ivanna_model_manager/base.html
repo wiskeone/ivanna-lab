@@ -42,7 +42,7 @@
         <div class="sidebar-menu">
             <!-- ==================== ОСНОВНОЕ ==================== -->
             <div class="nav-group">
-                <div class="nav-group-title">Основное</div>
+                <div class="nav-group-title">{% trans "Основное" %}</div>
                 <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="bi bi-speedometer2"></i>
                     <span>{% trans "Дашборд" %}</span>
@@ -70,7 +70,7 @@
                             <i class="bi bi-list-ul"></i> {% trans "Список моделей" %}
                         </a>
                         <a href="{% url 'embedding_model_create' %}" class="nav-link-sub">
-                            <i class="bi bi-cloud-upload"></i> Загрузить эмбеддинг
+                            <i class="bi bi-cloud-upload"></i> {% trans "Загрузить эмбеддинг" %}
                         </a>
                         <div class="fw-bold text-muted small mt-2 mb-1 ps-3">{% trans "Конвертация в GGUF" %}</div>
                         <a href="{% url 'conversion_dashboard' %}" class="nav-link-sub">

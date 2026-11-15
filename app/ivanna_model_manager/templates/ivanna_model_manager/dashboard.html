@@ -181,7 +181,7 @@
                                     {% else %}{% trans "Задача" %}{% endif %}
                                 </span>
                                 <span>
-                                    <i class="bi bi-hourglass-split"></i> {% blocktrans with progress=task.progress|floatformat:0 %}Прогресс: {{ progress }}%{% endblocktrans %}
+                                    <i class="bi bi-hourglass-split"></i> {% blocktrans with progress=task.progress|floatformat:0 %}Прогресс: {{ progress }}{% endblocktrans %}%
                                 </span>
                             </div>
                             {% if task.progress > 0 and task.progress < 100 %}
@@ -249,7 +249,7 @@
                                 <div class="progress-bar" style="width: {{ emb.download_progress }}%"></div>
                             </div>
                             <div class="item-footer mt-2">
-                                <span>{% blocktrans with progress=emb.download_progress %}Прогресс: {{ progress }}%{% endblocktrans %}</span>
+                                <span>{% blocktrans with progress=emb.download_progress %}Прогресс: {{ progress }}{% endblocktrans %}%</span>
                             </div>
                             {% else %}
                             <div class="item-footer">
@@ -357,7 +357,7 @@
                             <div class="progress-bar" style="width: {{ job.progress }}%"></div>
                         </div>
                         <div class="item-footer mt-2">
-                            <span>{% blocktrans with progress=job.progress %}Прогресс: {{ progress }}%{% endblocktrans %}</span>
+                            <span>{% blocktrans with progress=job.progress %}Прогресс: {{ progress }}{% endblocktrans %}%</span>
                             <span>{{ job.created_at|short_date }}</span>
                         </div>
                     </div>
