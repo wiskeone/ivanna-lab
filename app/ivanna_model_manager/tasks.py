@@ -1602,7 +1602,7 @@ def convert_model_to_gguf_task(self, job_id):
             relative_path=f"converted_models/{output_filename}",
             status='DOWNLOADED',
             parameter_count=src_model.parameter_count,
-            quantization='gguf',
+            quantization='int8',  # 'gguf' не входит в ModelCheckpoint.QUANTIZATION_CHOICES
             context_length=src_model.context_length,
             vocab_size=src_model.vocab_size,
             license_type=src_model.license_type,
