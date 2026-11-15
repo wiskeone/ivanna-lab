@@ -168,7 +168,7 @@ def _generate_batch_subprocess(model_path: str, prompts: list, max_new_tokens: i
 
 def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
                   eval_contrast_texts, out_dir: str, max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
-                  quantized: bool = False, progress_cb=None) -> dict:
+                  quantized: bool = False, eval_device: str = 'auto', progress_cb=None) -> dict:
     """Прогон двух сборок на двух наборах (v5.2: генерация в подпроцессах).
 
     Смысл гейта (лаба): доменные ответы эксперта не хуже/полне базовых,
@@ -196,7 +196,7 @@ def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
                 progress_cb(0, len(run_texts), f"{model_tag}/{set_tag}")
             answers = _generate_batch_subprocess(
                 path, run_texts, run_tokens, quantized,
-                str(outdir / f'{model_tag}_{set_tag}'), device=device)
+                str(outdir / f'{model_tag}_{set_tag}'), device=eval_device)
             rows = []
             for i, (p, ans) in enumerate(zip(texts, answers)):
                 t0 = time.time()
