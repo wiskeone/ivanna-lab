@@ -3,9 +3,24 @@
 Self-hosted **LLM model lab**: a web platform for managing models, building datasets, fine-tuning, merging models, running inference and evaluating results — everything around the "make my own model" loop, Dockerized for a single GPU machine.
 
 > Born as a personal toolchain for model experiments; now open-sourced.
-> **UI language:** Russian is the source language; core interface strings
-> (1300+) are translated to **English** — switch with the 🌐 menu in the navbar.
-> Some form/admin labels remain Russian for now.
+> **UI language:** Russian is the source language; the full interface
+> (2100+ strings — including model statuses, relative times, form hints and
+> task logs) is translated to **English** — switch with the 🌐 menu in the sidebar.
+
+## In the UI
+
+Dark theme, bilingual, single-GPU-first. English interface shown below.
+
+| | |
+|---|---|
+| **Dashboard** — every task type at a glance | **Model registry** — experts published on Hugging Face get a badge |
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Models](docs/screenshots/models.png) |
+| **Soft MoE job** — scan/patch/eval/router reports, Plotly charts, and an interpretation written by the job's own model | **Patch heatmaps** — \|ΔW\| per tensor: the decision material before you publish |
+| ![MoE job](docs/screenshots/moe_job.png) | ![Heatmaps](docs/screenshots/moe_heatmaps.png) |
+| **MoE dashboard** — themes (domains) and expert build jobs | **Model card** — "Published on Hugging Face" indicator with repo link |
+| ![MoE dashboard](docs/screenshots/moe_dashboard.png) | ![Model detail](docs/screenshots/model_detail.png) |
+| **RAG collection** — chunks, pages, FAISS index, rerankers | **GGUF conversion** — llama.cpp pipeline with quantization hints |
+| ![RAG](docs/screenshots/rag_collection.png) | ![Conversion form](docs/screenshots/conversion_form.png) |
 
 ## What it does
 
@@ -13,10 +28,10 @@ Self-hosted **LLM model lab**: a web platform for managing models, building data
 - **Inference & chat** — chat sessions with any registered model, model-vs-model comparison, inference testing
 - **Fine-tuning** — instruction / RAFT / document trainers (LoRA-class adapters via transformers+bitsandbytes), templates, task queue with progress
 - **Model merging** — mergekit-powered linear / SLERP / TIES / DARE merges with a web UI
-- **Soft MoE experts** — turn any dense model into a domain expert *without training*: activation scan extracts the domain direction, a rank-one steer patch bakes it into the weights, an embedding router picks the variant per request (weight-space steering, verified on Qwen3.5-2B)
+- **Soft MoE experts** — turn any dense model into a domain expert *without training*: activation scan extracts the domain direction, a rank-one steer patch bakes it into the weights, an embedding router picks the variant per request (weight-space steering). Also supports **WSP ablation** (suppress a behavior instead of amplifying it)
 - **Datasets & evaluation** — dataset builder, upload/import/export (incl. Hugging Face datasets), evaluation tasks, answer ratings and leaderboards
 - **Distillation** — generate Q&A with teacher checkpoints, assemble instruction datasets
-- **RAG** — document collections (PDF/DOCX/HTML/CSV/Excel), chunking, FAISS + BM25 hybrid search, RAG-grounded chat
+- **RAG** — document collections (PDF/DOCX/HTML/CSV/Excel/EPUB), paragraph-aware chunking, page previews, FAISS + BM25 hybrid search, selectable rerankers, RAG-grounded chat
 - **Monitoring** — GPU status, Prometheus + Grafana, Flower
 
 ## Stack
@@ -84,7 +99,12 @@ prometheus/ grafana/ nginx/ scripts/
 
 ## Soft MoE in one minute
 
-> Live examples published from this lab: [Qwen3.5-4B-SMS-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-4B-SMS-SoftMoE) (aviation/ICAO domain), [Qwen3.5-0.8B-HTML-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-0.8B-HTML-SoftMoE), [Qwen3.5-0.8B-Python-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-0.8B-Python-SoftMoE). All three: scan gate AUC 1.0, no training. Deep dive: [docs/soft_moe_en.md](docs/soft_moe_en.md).
+> Live experts published from this lab (scan gate AUC 1.0, zero training):
+> [Qwen3.5-4B-SMS-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-4B-SMS-SoftMoE) (aviation/ICAO),
+> [Qwen3.5-0.8B-HTML-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-0.8B-HTML-SoftMoE),
+> [Qwen3.5-0.8B-Python-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-0.8B-Python-SoftMoE),
+> [Qwen3.5-2B-Tools-SoftMoE](https://huggingface.co/NikitaLazarev/Qwen3.5-2B-Tools-SoftMoE) (tool-calling).
+> GGUF (Q8_0) quantizations live in the sibling `-GGUF` repos. Deep dive: [docs/soft_moe_en.md](docs/soft_moe_en.md).
 
 Create a **theme** (25–30 domain prompts + 25–30 length-matched contrast prompts),
 run the validation gate, then start a **build job** on a dense checkpoint:
@@ -95,7 +115,6 @@ with an auto-generated model card. Full recipe and knobs: [docs/soft_moe.md](doc
 
 ## Notes & limitations
 
-- **UI is in Russian** for now.
 - **Inference backends** — per-model choice: in-process transformers (default) or an external **vLLM** server (OpenAI-compatible API). Enable with `docker compose --profile vllm up -d vllm`, then set the checkpoint's backend to "vLLM" in the model edit form.
 - Large artifacts (HF cache, model weights, datasets, logs) are intentionally git-ignored; they live in mounted volumes (`media/`, `docker_volumes/`, `app/.cache/`, `app/models/`).
 - Log files use `RotatingFileHandler` (10 MB × 5).
