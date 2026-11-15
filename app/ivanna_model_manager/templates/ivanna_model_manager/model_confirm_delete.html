@@ -10,13 +10,13 @@
             <div class="card border-danger">
                 <div class="card-header bg-danger text-white">
                     <h4 class="mb-0 text-center">
-                        <i class="fas fa-exclamation-triangle"></i> {% trans "Подтверждение удаления" %}
+                        <i class="bi bi-exclamation-triangle"></i> {% trans "Подтверждение удаления" %}
                     </h4>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-warning">
                         <h5 class="alert-heading">
-                            <i class="fas fa-exclamation-circle"></i> {% trans "Внимание!" %}
+                            <i class="bi bi-exclamation-circle"></i> {% trans "Внимание!" %}
                         </h5>
                         <p class="mb-0">
                             {% trans "Вы собираетесь удалить модель" %} <strong>"{{ model.display_name }}"</strong>{% trans ".
@@ -63,25 +63,25 @@
                             <ul class="list-unstyled mb-0">
                                 {% if related_count.sessions > 0 %}
                                 <li class="mb-2">
-                                    <i class="fas fa-video text-info"></i>
+                                    <i class="bi bi-camera-video text-info"></i>
                                     {% blocktrans with n=related_count.sessions %}Активных сессий: {{ n }}{% endblocktrans %}
                                 </li>
                                 {% endif %}
                                 {% if related_count.evaluations > 0 %}
                                 <li class="mb-2">
-                                    <i class="fas fa-chart-bar text-success"></i>
+                                    <i class="bi bi-bar-chart text-success"></i>
                                     {% blocktrans with n=related_count.evaluations %}Оценок: {{ n }}{% endblocktrans %}
                                 </li>
                                 {% endif %}
                                 {% if related_count.versions > 0 %}
                                 <li class="mb-2">
-                                    <i class="fas fa-code-branch text-warning"></i>
+                                    <i class="bi bi-code-branch text-warning"></i>
                                     {% blocktrans with n=related_count.versions %}Версий: {{ n }}{% endblocktrans %}
                                 </li>
                                 {% endif %}
                                 {% if related_count.chat_sessions > 0 %}
                                 <li>
-                                    <i class="fas fa-comments text-primary"></i>
+                                    <i class="bi bi-chat-dots text-primary"></i>
                                     {% blocktrans with n=related_count.chat_sessions %}Чат-сессий: {{ n }}{% endblocktrans %}
                                 </li>
                                 {% endif %}
@@ -91,7 +91,7 @@
                     {% endif %}
                     
                     <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
+                        <i class="bi bi-info-circle"></i>
                         <strong>{% trans "Примечание:" %}</strong> {% trans "Удаление будет \"мягким\" - модель будет деактивирована и перемещена в архив." %}
                     </div>
                     
@@ -100,10 +100,10 @@
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{% url 'model_detail' model.pk %}" 
                                class="btn btn-outline-secondary me-md-2">
-                                <i class="fas fa-arrow-left"></i> {% trans "Отмена" %}
+                                <i class="bi bi-arrow-left"></i> {% trans "Отмена" %}
                             </a>
                             <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-trash"></i> {% trans "Удалить модель" %}
+                                <i class="bi bi-trash"></i> {% trans "Удалить модель" %}
                             </button>
                         </div>
                     </form>

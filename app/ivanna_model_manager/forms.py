@@ -446,7 +446,17 @@ class ModelCheckpointForm(forms.ModelForm):
                 'placeholder': 'ru, code, 7b, instruct'
             }),
         }
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Bootstrap-классы (как в MoE-формах)
+        for name, field in self.fields.items():
+            w = field.widget
+            css = ('form-check-input' if isinstance(w, forms.CheckboxInput)
+                   else 'form-select' if isinstance(w, (forms.Select, forms.SelectMultiple))
+                   else 'form-control')
+            w.attrs['class'] = (w.attrs.get('class', '') + ' ' + css).strip()
+
     def clean(self):
         cleaned_data = super().clean()
         

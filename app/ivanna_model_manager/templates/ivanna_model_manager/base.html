@@ -164,15 +164,33 @@
                         </a>
                         <a href="{% url 'evaluation_dashboard' %}" class="nav-link-sub">
                             <i class="bi bi-clipboard-check"></i> {% trans "Оценка моделей" %}
-                            <a href="{% url 'benchmark_list' %}" class="nav-link-sub {% if request.resolver_match.url_name == 'benchmark_list' or request.resolver_match.url_name == 'benchmark_run_detail' %}active{% endif %}">
-                                <i class="bi bi-trophy"></i> {% trans "Бенчмарки" %}
-                            </a>
                         </a>
                     </div>
                 </div>
             </div>
 
             <!-- ==================== RAG ==================== -->
+            <div class="accordion-item nav-group">
+                <div class="accordion-header">
+                    <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBenchmarks">
+                        <i class="bi bi-trophy"></i>
+                        <span>{% trans "Бенчмарки" %}</span>
+                    </button>
+                </div>
+                <div id="collapseBenchmarks" class="accordion-collapse collapse" data-bs-parent="#sidebar">
+                    <div class="accordion-body">
+                        <a href="{% url 'benchmark_list' %}" class="nav-link-sub {% if request.resolver_match.url_name == 'benchmark_list' or request.resolver_match.url_name == 'benchmark_detail' %}active{% endif %}">
+                            <i class="bi bi-list-check"></i> {% trans "Каталог бенчмарков" %}
+                        </a>
+                        <a href="{% url 'benchmark_run_create' %}" class="nav-link-sub {% if request.resolver_match.url_name == 'benchmark_run_create' or request.resolver_match.url_name == 'benchmark_run_detail' %}active{% endif %}">
+                            <i class="bi bi-play-fill"></i> {% trans "Прогоны" %}
+                        </a>
+                        <a href="{% url 'benchmark_leaderboard' %}" class="nav-link-sub {% if request.resolver_match.url_name == 'benchmark_leaderboard' %}active{% endif %}">
+                            <i class="bi bi-trophy"></i> {% trans "Лидерборд" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
             <div class="accordion-item nav-group">
                 <div class="accordion-header">
                     <button class="accordion-button collapsed nav-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRAG">

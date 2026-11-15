@@ -7049,3 +7049,18 @@ msgstr "nf4 model quantization for the run (automatic for models from 1.5B)"
 
 msgid "Собственный раннер"
 msgstr "In-house runner"
+
+msgid "Каталог бенчмарков"
+msgstr "Benchmark catalog"
+
+msgid "Прогоны"
+msgstr "Runs"
+
+msgid ""
+"Метаданные чекпойнта: имя и тип влияют на реестр и роутинг задач; Hugging "
+"Face ID нужен для повторной загрузки; параметры/контекст используются "
+"подсказками в чате и оценке. Физические файлы не трогаются."
+msgstr ""
+"Checkpoint metadata: the name and type affect the registry and task routing;"
+" the Hugging Face ID is needed for re-downloads; parameters/context feed "
+"chat and evaluation hints. Physical files are not touched."

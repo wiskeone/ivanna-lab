@@ -213,6 +213,9 @@
                     <a href="{% url 'model_test' model.pk %}" class="action-link">
                         <i class="bi bi-play-circle"></i> {% trans "Тест" %}
                     </a>
+                    <a href="{% url 'model_delete' model.pk %}" class="action-link text-danger">
+                        <i class="bi bi-trash"></i> {% trans "Удалить" %}
+                    </a>
                 </div>
             </div>
         </div>
