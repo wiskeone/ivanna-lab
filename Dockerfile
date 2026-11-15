@@ -93,7 +93,7 @@ RUN uv pip install mergekit==0.1.4
 # стек lm-eval не должен конфликтовать с пиннед-стеком основного venv
 # (transformers==5.12.1 + accelerate==1.6.0 + bnb 0.49.2, см. requirements.in).
 # Платформа вызывает его subprocess'ом (settings.LMEVAL_PYTHON).
-RUN uv venv /opt/lmeval-venv && \
+RUN uv venv /opt/lmeval-venv --python 3.13 --seed && \
     /opt/lmeval-venv/bin/pip install --no-cache-dir --upgrade pip && \
     /opt/lmeval-venv/bin/pip install --no-cache-dir lm-eval
 
