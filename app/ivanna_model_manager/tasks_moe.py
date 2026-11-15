@@ -121,9 +121,13 @@ def moe_build_expert_task(self, job_id):
             job.update_progress(10 + 45 * done / max(1, total), f"Скан: {step}")
 
         job.update_progress(10, "Скан: загрузка модели")
+        # v5.2: модели ≤2.5e9 параметров в nf4 влезают в GPU целиком —
+        # иначе offload ставит conv-модули на CPU и causal_conv1d кернелы падают
+        param_b = base.parameter_count or 0
         scan_report = moe_scan.scan_theme(
             src, domain, contrast, npz_path, load_mode=job.load_mode,
-            seed=job.holdout_seed, progress_cb=scan_progress)
+            seed=job.holdout_seed, full_gpu=(param_b > 0 and param_b < 2_500_000_000),
+            progress_cb=scan_progress)
         job.scan_report = _json_safe(scan_report)
         job.save(update_fields=['scan_report'])
         job.add_log(f"Scan: AUC gate = {scan_report['gate_auc']} ({scan_report['gate']}), "

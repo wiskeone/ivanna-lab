@@ -72,9 +72,12 @@ def load_model_for_scan(model_path: str, load_mode: str = "auto"):
         bnb = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=dtype, bnb_4bit_use_double_quant=True,
-            llm_int8_enable_fp32_cpu_offload=True)  # 4GB-карты: часть модулей уходит на CPU
+            # v5.2: offload ломает causal_conv1d кернелы (conv-модули на CPU);
+            # для моделей, влезающих в VRAM, — full_gpu ставит всё на GPU
+            llm_int8_enable_fp32_cpu_offload=not full_gpu)
+        device_map = {'': 'cuda:0'} if full_gpu else 'auto'
         model = AutoModelForCausalLM.from_pretrained(
-            str(path), quantization_config=bnb, device_map="auto", **kwargs)
+            str(path), quantization_config=bnb, device_map=device_map, **kwargs)
         tok = AutoTokenizer.from_pretrained(str(path), **kwargs)
     elif load_mode == "cpu":
         model = AutoModelForCausalLM.from_pretrained(
@@ -229,7 +232,7 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
     n_total = len(domain_texts) + len(contrast_texts)
     done = 0
 
-    model, tok, info = load_model_for_scan(model_path, load_mode)
+    model, tok, info = load_model_for_scan(model_path, load_mode, full_gpu=full_gpu)
     layers = get_decoder_layers(model)
     n_layers = len(layers)
     out_modules = discover_out_modules(model)
