@@ -84,8 +84,11 @@ def moe_build_expert_task(self, job_id):
         job.patch_report = {}
         job.eval_report = {}
         job.router_report = {}
+        job.error_message = ''
+        job.error_details = {}
         job.save(update_fields=['status', 'started_at', 'celery_task_id', 'interpretation',
-                                'scan_report', 'patch_report', 'eval_report', 'router_report'])
+                                'scan_report', 'patch_report', 'eval_report', 'router_report',
+                                'error_message', 'error_details'])
         job.add_log("🚀 Soft MoE expert build started")
 
         base = job.base_checkpoint

@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from celery import Celery
-from celery.signals import worker_process_init, worker_process_shutdown
+from celery.signals import worker_process_init, worker_process_shutdown, task_postrun
 from kombu.serialization import register
 
 # Устанавливаем метод запуска процессов для избежания проблем с fork
@@ -111,6 +111,23 @@ app.conf.task_routes = {
     'ivanna_model_manager.tasks.auto_clean_memory': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks.evaluate_fine_tuned_model_task': {'queue': 'cpu_tasks'},
 }
+
+@task_postrun.connect
+def release_gpu_after_task(**kwargs):
+    # Solo workers serve many tasks in one long-lived process. Without this
+    # the next GPU task inherits cached CUDA blocks from the previous one:
+    # accelerate misjudges free VRAM and offloads conv modules to CPU, where
+    # fast-path kernels (causal_conv1d/fla) crash with device asserts.
+    # empty_cache only releases blocks no longer referenced, so models kept
+    # resident by redis_model_manager (chat) stay loaded.
+    try:
+        if torch.cuda.is_available():
+            import gc
+            gc.collect()
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
+
 
 # --------------------------------------------------------------------------
 # Сигналы для инициализации/очистки GPU
