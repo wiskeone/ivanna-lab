@@ -1,7 +1,7 @@
-"""Публикация мягкого MoE-эксперта на Hugging Face.
+"""Publishing a soft MoE expert to Hugging Face.
 
-upload_folder чекпойнта + авто-README-карточка (RU/EN): метод, тема, параметры
-патча, гейты скана/роутера. Токен — UserProfile.huggingface_token.
+upload_folder of the checkpoint + an auto README card (RU/EN): method, theme,
+patch parameters, scan/router gates. Token — UserProfile.huggingface_token.
 """
 import logging
 from pathlib import Path
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def build_model_card(job, theme) -> str:
-    """README.md карточки эксперта (RU + EN кратко)."""
+    """README.md of the expert card (RU + a short EN section)."""
     scan = job.scan_report or {}
     patch = job.patch_report or {}
     base = job.base_checkpoint
@@ -69,12 +69,12 @@ def build_model_card(job, theme) -> str:
 
 def push_expert(job, theme, repo_id: str, token: str, private: bool = True,
                 notes: str = "") -> dict:
-    """Пуш чекпойнта эксперта на HF. Возвращает {repo_id, url, files}."""
+    """Push the expert checkpoint to HF. Returns {repo_id, url, files}."""
     from huggingface_hub import HfApi
 
     ckpt = job.output_model
     if ckpt is None or not ckpt.local_path or not Path(ckpt.local_path).exists():
-        raise ValueError("Чекпойнт эксперта не найден локально — джоба завершена?")
+        raise ValueError("Expert checkpoint not found locally — has the job completed?")
 
     card = build_model_card(job, theme)
     if notes:

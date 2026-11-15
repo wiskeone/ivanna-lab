@@ -1,17 +1,17 @@
-"""Мягкий MoE (soft MoE): тематические эксперты без дообучения.
+"""Soft MoE: thematic experts without fine-tuning.
 
-Порт техники из weight_lab (Weight-Space Programming, Phase A «мягкий MoE»):
-из плотной модели через активационный скан выделяется доменное направление d̂
-(разность средних hidden states на доменных vs контрастных промптах),
-вшивается steer-патчем в выходные матрицы поздних слоёв, внешний роутер
-эмбеддингов выбирает сборку по запросу.
+Port of the technique from weight_lab (Weight-Space Programming, Phase A "soft MoE"):
+a domain direction d̂ is extracted from a dense model via an activation scan
+(difference of mean hidden states on domain vs contrast prompts), baked into
+late-layer output matrices with a steer patch; an external embedding router
+picks the variant per request.
 
-Модули:
-  prompts    — наборы промптов темы (txt-файлы, чистка, фильтры, дедуп)
-  validation — гейт наборов: bge-косинусы cross/intra + баланс длин
-  scan       — активационный скан: d̂, hold-out AUC, писатели, mean-входы ī
-  patching   — steer/amplify патч safetensors (+ GGUF→safetensors конвертация)
-  router     — центроиды тем + правило margin + тест точности
-  evalgate   — лёгкий eval-гейт: base vs expert на свежих промптах
-  hf_push    — публикация эксперта на Hugging Face с авто-карточкой
+Modules:
+  prompts    — theme prompt sets (txt files, cleaning, filters, dedup)
+  validation — prompt set gate: bge cosines cross/intra + length balance
+  scan       — activation scan: d̂, hold-out AUC, writers, mean inputs ī
+  patching   — steer/amplify safetensors patch (+ GGUF→safetensors conversion)
+  router     — theme centroids + margin rule + accuracy test
+  evalgate   — light eval gate: base vs expert on fresh prompts
+  hf_push    — expert publishing to Hugging Face with an auto model card
 """

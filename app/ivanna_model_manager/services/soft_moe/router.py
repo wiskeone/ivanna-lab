@@ -1,8 +1,8 @@
-"""Роутер тем (порт weight_lab/router.py, Этап 4).
+"""Theme router (port of weight_lab/router.py, Stage 4).
 
-Центроиды тем = mean embedding scan-наборов (НЕ eval — честная проверка).
-Правило: cos(тема) − cos(контраст) > threshold → эксперт темы, иначе general.
-Порог по умолчанию 0.08 (в лабе 20/20 = 100%). Гейт теста: точность ≥ 90%.
+Theme centroids = mean embedding of the scan sets (NOT eval — honest check).
+Rule: cos(theme) − cos(contrast) > threshold → theme expert, else general.
+Default threshold 0.08 (20/20 = 100% in the lab). Test gate: accuracy ≥ 90%.
 """
 import json
 from pathlib import Path
@@ -24,7 +24,7 @@ def _centroid(model_id, texts) -> np.ndarray:
 
 def build_centroids(theme_dir_path, domain_texts, contrast_texts,
                     embedding_model_id=None) -> dict:
-    """Центроиды темы → centroids_domain.npy / centroids_contrast.npy + отчёт."""
+    """Theme centroids → centroids_domain.npy / centroids_contrast.npy + report."""
     d = Path(theme_dir_path)
     d.mkdir(parents=True, exist_ok=True)
     C_d = _centroid(embedding_model_id, domain_texts)
@@ -48,7 +48,7 @@ def load_centroids(theme_dir_path):
 
 def route_text(text, centroids_domain, centroids_contrast,
                threshold: float = 0.08, embedding_model_id=None) -> dict:
-    """Маршрут одного запроса: expert|general + косинусы + margin."""
+    """Route a single request: expert|general + cosines + margin."""
     e = embedding_service.create_embedding(text, model_id=embedding_model_id,
                                            normalize=True)
     cos_d = float(e @ centroids_domain)
@@ -66,7 +66,7 @@ def route_text(text, centroids_domain, centroids_contrast,
 def test_router(theme_dir_path, eval_domain_texts, eval_contrast_texts,
                 threshold: float = 0.08, embedding_model_id=None,
                 out_json=None) -> dict:
-    """Точность роутера на свежих eval-наборах (гейт ≥ 90%)."""
+    """Router accuracy on fresh eval sets (gate ≥ 90%)."""
     C_d, C_c = load_centroids(theme_dir_path)
     cases = [(t, "expert") for t in eval_domain_texts] + \
             [(t, "general") for t in eval_contrast_texts]

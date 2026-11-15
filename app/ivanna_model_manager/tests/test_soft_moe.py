@@ -1,7 +1,7 @@
-"""v5.2: тесты мягкого MoE (порт weight_lab, чистая логика — без GPU).
+"""v5.2: soft MoE tests (port of weight_lab, pure logic — no GPU).
 
-Математика патча проверяется на миниатюрных safetensors-файлах: неверный
-патч = испорченная модель, поэтому формулы steer/amplify закреплены тестами.
+The patch math is verified on miniature safetensors files: a wrong patch = a spoiled
+model, so the steer/amplify formulas are pinned by tests.
 """
 import json
 import os
@@ -13,8 +13,8 @@ import numpy as np
 from django.test import SimpleTestCase
 
 try:
-    import torch  # нужен только для PatchMathTests
-    # hasattr: заглушки-стабы (локальный запуск без GPU-стека) не считаем настоящим torch
+    import torch  # needed only for PatchMathTests
+    # hasattr: stub shims (local runs without the GPU stack) do not count as real torch
     TORCH_OK = hasattr(torch, "randn") and hasattr(torch, "outer")
 except ImportError:
     TORCH_OK = False
@@ -40,12 +40,12 @@ class HoldoutTests(SimpleTestCase):
     def test_sizes_and_determinism(self):
         a = moe_scan.split_holdout(30, 30, seed=7, holdout_fraction=0.33)
         b = moe_scan.split_holdout(30, 30, seed=7, holdout_fraction=0.33)
-        # сид → воспроизводимость (как в лабе); сравнение поэлементно (np-массивы)
+        # seed → reproducibility (as in the lab); element-wise comparison (np arrays)
         self.assertTrue(all(np.array_equal(x, y) for x, y in zip(a, b)))
         tr_d, tr_c, te_d, te_c = a
         self.assertEqual(len(tr_d) + len(te_d), 30)
         self.assertEqual(len(tr_c) + len(te_c), 30)
-        self.assertEqual(len(set(tr_d.tolist()) & set(te_d.tolist())), 0)  # hold-out без пересечений
+        self.assertEqual(len(set(tr_d.tolist()) & set(te_d.tolist())), 0)  # hold-out without overlap
 
     def test_tiny_sets_keep_one_test_sample(self):
         _, _, te_d, te_c = moe_scan.split_holdout(3, 3, seed=1, holdout_fraction=0.33)
@@ -58,7 +58,7 @@ class AutoLayersTests(SimpleTestCase):
         return {"writers": {f"L{w['layer']:02d}:{w['module']}": w for w in writers}}
 
     def test_threshold_rule(self):
-        # топ-8 медиана = 2.0, порог 0.6·2 = 1.2 → слои с суммой |proj| ≥ 1.2
+        # top-8 median = 2.0, threshold 0.6·2 = 1.2 → layers with a |proj| sum ≥ 1.2
         writers = [{"layer": l, "module": "mlp.down_proj", "proj": p, "norm": abs(p)}
                    for l, p in [(23, 4.0), (22, 2.0), (21, 2.0), (19, 2.0), (20, 2.0),
                                 (18, 2.0), (17, 2.0), (16, 2.0), (10, 1.0), (5, 0.1)]]
@@ -84,9 +84,9 @@ class MatchOutTensorTests(SimpleTestCase):
         self.assertIsNone(moe_patching.match_out_tensor("lm_head.weight"))
 
 
-@unittest.skipUnless(TORCH_OK, "torch недоступен — полный прогон в CPU-образе CI")
+@unittest.skipUnless(TORCH_OK, "torch unavailable — full run in the CI CPU image")
 class PatchMathTests(SimpleTestCase):
-    """Формулы steer/amplify на миниатюрных safetensors-файлах."""
+    """Steer/amplify formulas on miniature safetensors files."""
 
     HID, FFN = 8, 16
     LAYER0 = "model.layers.0.mlp.down_proj.weight"
@@ -102,7 +102,7 @@ class PatchMathTests(SimpleTestCase):
         os.makedirs(scan_dir, exist_ok=True)
 
         tensors = {
-            # down_proj: [hidden, ffn] (out-строки = hid — конвенция патча)
+            # down_proj: [hidden, ffn] (out rows = hid — the patch convention)
             self.LAYER0: torch.randn(self.HID, self.FFN),
             "model.layers.1.self_attn.o_proj.weight": torch.randn(self.HID, self.HID),
             self.OTHER: torch.randn(self.HID, self.FFN),
@@ -114,8 +114,8 @@ class PatchMathTests(SimpleTestCase):
 
         rng = np.random.default_rng(0)
         d_last = np.zeros((4, self.HID), dtype=np.float32)
-        d_last[1] = rng.normal(size=self.HID)          # d̂ для слоя 0 (конвенция L+1)
-        i_bar = rng.normal(size=self.FFN).astype(np.float32)  # mean-вход слоя 0
+        d_last[1] = rng.normal(size=self.HID)          # d̂ for layer 0 (the L+1 convention)
+        i_bar = rng.normal(size=self.FFN).astype(np.float32)  # mean input of layer 0
         npz = os.path.join(scan_dir, "scan_dirs.npz")
         np.savez_compressed(npz, d_last=d_last, n_layers=3, **{"mi|0|mlp.down_proj": i_bar})
 
@@ -147,11 +147,11 @@ class PatchMathTests(SimpleTestCase):
                     + 0.2 * torch.outer(d, torch.from_numpy(i_bar)) / float(np.linalg.norm(i_bar) ** 2))
         torch.testing.assert_close(patched[self.LAYER0], expected.to(w0.dtype),
                                    rtol=1e-4, atol=1e-4)
-        # out-матрица слоя 1 не входит в auto-выбор (писатель только L0) → не изменена
+        # the layer-1 out-matrix is not in the auto selection (only L0 is a writer) → unchanged
         self.assertTrue(torch.equal(
             patched["model.layers.1.self_attn.o_proj.weight"],
             tensors["model.layers.1.self_attn.o_proj.weight"]))
-        # не-out-тензор скопирован байт-в-байт
+        # the non-out tensor is copied byte-for-byte
         self.assertTrue(torch.equal(patched[self.OTHER], tensors[self.OTHER]))
 
     def test_amplify_formula(self):
@@ -168,7 +168,7 @@ class PatchMathTests(SimpleTestCase):
 
         tmp = tempfile.mkdtemp()
         src, npz, report, _, _, _ = self._make_fixture(tmp)
-        # перезаписываем слой 0 в float16 — патч должен сохранить dtype
+        # overwrite layer 0 as float16 — the patch must preserve the dtype
         st = os.path.join(src, "model.safetensors")
         t = load_file(st)
         t[self.LAYER0] = t[self.LAYER0].to(torch.float16)
@@ -180,7 +180,7 @@ class PatchMathTests(SimpleTestCase):
         self.assertEqual(patched[self.LAYER0].dtype, torch.float16)
 
     def test_wrong_orientation_skipped(self):
-        """Тензор out-модуля поперёк ориентации (ffn, hidden) не патчится вовсе."""
+        """An out-module tensor with the wrong orientation (ffn, hidden) is not patched at all."""
         import torch
         from safetensors.torch import load_file, save_file
 
@@ -188,7 +188,7 @@ class PatchMathTests(SimpleTestCase):
         src, npz, report, _, _, _ = self._make_fixture(tmp)
         st = os.path.join(src, "model.safetensors")
         t = load_file(st)
-        t[self.LAYER0] = torch.randn(self.FFN, self.HID)  # транспонированная down_proj
+        t[self.LAYER0] = torch.randn(self.FFN, self.HID)  # transposed down_proj
         save_file(t, st, metadata={"format": "pt"})
         out = os.path.join(tmp, "out")
         moe_patching.patch_model_dir(src, out, npz, report, mode="steer", alpha=0.2,
@@ -199,22 +199,22 @@ class PatchMathTests(SimpleTestCase):
 
 class PromptSetTests(SimpleTestCase):
     def test_clean_dedup_and_length_filter(self):
-        texts = ["Жёсткая посадка ВС из-за обледенения, экипаж действовал по РЛЭ.",
-                 "жёсткая посадка вс из-за обледенения, экипаж действовал по рлэ.",  # дедуп по 80 символам
-                 "коротко",                                    # < min_len
-                 "Корректный промпт про инструмент и смазку в ангаре."]
+        texts = ["Hard landing of the aircraft due to icing, the crew followed the flight manual.",
+                 "hard landing of the aircraft due to icing, the crew followed the flight manual.",  # dedup by 80 chars
+                 "short",                                      # < min_len
+                 "Correct prompt about tooling and lubrication in the hangar."]
         out = moe_prompts.clean_prompt_set(texts, min_len=10, max_len=200)
         self.assertEqual(len(out), 2)
-        self.assertIn("Корректный промпт", out[1])
+        self.assertIn("Correct prompt", out[1])
 
     def test_html_cleaning(self):
-        raw = ["<p>Описание&nbsp;нарушения</p> с деталями инцидента на борту."]
+        raw = ["<p>Incident&nbsp;description</p> with details from on board."]
         out = moe_prompts.clean_prompt_set(raw, min_len=5)
-        self.assertEqual(out, ["Описание нарушения с деталями инцидента на борту."])
+        self.assertEqual(out, ["Incident description with details from on board."])
 
     def test_save_load_roundtrip(self):
         import tempfile
-        texts = ["промпт раз", "промпт два"]
+        texts = ["prompt one", "prompt two"]
         path = os.path.join(tempfile.mkdtemp(), "set.txt")
         n = moe_prompts.save_prompt_set(path, texts)
         self.assertEqual(n, 2)
@@ -224,13 +224,13 @@ class PromptSetTests(SimpleTestCase):
     def test_balance_warning(self):
         w = moe_prompts.balance_warning({"n": 30, "median": 400},
                                         {"n": 30, "median": 50})
-        self.assertIn("Медианы длин расходятся", w)
+        self.assertIn("Median lengths diverge", w)
         self.assertEqual(moe_prompts.balance_warning({"n": 30, "median": 400},
                                                      {"n": 30, "median": 380}), "")
 
 
 class RouterRuleTests(SimpleTestCase):
-    """Правило margin на подменённом embedding-сервисе (без загрузки моделей)."""
+    """Margin rule on a swapped-in embedding service (no model loading)."""
 
     class _FakeEmbedder:
         def __init__(self, dim=4):
@@ -238,7 +238,7 @@ class RouterRuleTests(SimpleTestCase):
 
         def _emb(self, text):
             v = np.zeros(self.dim, dtype=np.float32)
-            v[0 if "домен" in text else 1] = 1.0
+            v[0 if "domain" in text else 1] = 1.0
             return v
 
         def create_embedding(self, text, model_id=None, normalize=True):
@@ -255,25 +255,25 @@ class RouterRuleTests(SimpleTestCase):
         self.addCleanup(self.patcher.stop)
 
     def test_build_and_route(self):
-        domain = [f"домен промпт {i}" for i in range(5)]
-        contrast = [f"быт промпт {i}" for i in range(5)]
+        domain = [f"domain prompt {i}" for i in range(5)]
+        contrast = [f"general prompt {i}" for i in range(5)]
         moe_router.build_centroids(self.tmp, domain, contrast)
         C_d, C_c = moe_router.load_centroids(self.tmp)
         self.assertAlmostEqual(float(np.linalg.norm(C_d)), 1.0, places=5)
 
-        r = moe_router.route_text("домен вопрос", C_d, C_c, threshold=0.08)
+        r = moe_router.route_text("domain question", C_d, C_c, threshold=0.08)
         self.assertEqual(r["route"], "expert")
         self.assertGreater(r["margin"], 0.08)
-        r2 = moe_router.route_text("быт вопрос", C_d, C_c, threshold=0.08)
+        r2 = moe_router.route_text("general question", C_d, C_c, threshold=0.08)
         self.assertEqual(r2["route"], "general")
 
     def test_test_router_accuracy_gate(self):
-        domain = [f"домен {i}" for i in range(6)]
-        contrast = [f"быт {i}" for i in range(6)]
+        domain = [f"domain {i}" for i in range(6)]
+        contrast = [f"general {i}" for i in range(6)]
         moe_router.build_centroids(self.tmp, domain, contrast)
         report = moe_router.test_router(
-            self.tmp, [f"домен eval {i}" for i in range(4)],
-            [f"быт eval {i}" for i in range(4)], threshold=0.08,
+            self.tmp, [f"domain eval {i}" for i in range(4)],
+            [f"general eval {i}" for i in range(4)], threshold=0.08,
             out_json=os.path.join(self.tmp, "router_test.json"))
         self.assertEqual(report["accuracy"], 1.0)
         self.assertEqual(report["gate"], "PASS")

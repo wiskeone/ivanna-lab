@@ -1,8 +1,8 @@
-"""Наборы промптов темы (порт weight_lab/themes, Этап 0).
+"""Theme prompt sets (port of weight_lab/themes, Stage 0).
 
-Формат файла — txt, один промпт на строку. В лабе проверено: длины доменных
-и контрастных наборов должны быть выровнены (медианы в одном порядке), иначе
-длина протекает в направление d̂.
+File format — txt, one prompt per line. Verified in the lab: lengths of the domain
+and contrast sets must be aligned (medians of the same order), otherwise
+length leaks into the direction d̂.
 """
 import html
 import re
@@ -16,14 +16,14 @@ WS_RE = re.compile(r"\s+")
 
 
 def theme_dir(slug: str) -> Path:
-    """Каталог артефактов темы: MEDIA_ROOT/moe_themes/<slug>/."""
+    """Theme artifact directory: MEDIA_ROOT/moe_themes/<slug>/."""
     d = Path(settings.MEDIA_ROOT) / "moe_themes" / slug
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def clean_text(text: str) -> str:
-    """Чистка HTML (как в extract_prompts лабы): unescape → strip-тегов → whitespace."""
+    """HTML cleaning (as in the lab's extract_prompts): unescape → strip tags → whitespace."""
     text = html.unescape(text or "")
     text = TAG_RE.sub(" ", text)
     text = text.replace("&nbsp;", " ")
@@ -31,7 +31,7 @@ def clean_text(text: str) -> str:
 
 
 def clean_prompt_set(texts, min_len: int = 20, max_len: int = 2000) -> list:
-    """Чистка + фильтр длины + дедуп по первым 80 символам (пул годных промптов)."""
+    """Clean + length filter + dedup by first 80 chars (pool of usable prompts)."""
     seen, out = set(), []
     for t in texts:
         t = clean_text(t)
@@ -46,12 +46,12 @@ def clean_prompt_set(texts, min_len: int = 20, max_len: int = 2000) -> list:
 
 
 def parse_prompts(raw: str) -> list:
-    """Textarea/файл → список промптов (строки, пустые выкидываются)."""
+    """Textarea/file → list of prompts (lines, empty ones dropped)."""
     return [ln.strip() for ln in (raw or "").splitlines() if ln.strip()]
 
 
 def save_prompt_set(path: Path, texts) -> int:
-    """Сохранить набор (одна строка = один промпт). Возвращает количество."""
+    """Save a set (one line = one prompt). Returns the count."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [t.replace("\n", " ").strip() for t in texts if t.strip()]
@@ -60,7 +60,7 @@ def save_prompt_set(path: Path, texts) -> int:
 
 
 def load_texts(path) -> list:
-    """Файл → список промптов. Пустой/отсутствующий файл → пустой список."""
+    """File → list of prompts. Empty/missing file → empty list."""
     if not path:
         return []
     p = Path(path)
@@ -71,7 +71,7 @@ def load_texts(path) -> list:
 
 
 def length_stats(texts) -> dict:
-    """Статистика длин набора — для контроля баланса домен/контраст."""
+    """Length stats of a set — for domain/contrast balance control."""
     lens = [len(t) for t in texts]
     if not lens:
         return {"n": 0}
@@ -85,14 +85,14 @@ def length_stats(texts) -> dict:
 
 
 def balance_warning(domain_stats: dict, contrast_stats: dict, factor: float = 2.0) -> str:
-    """Предупреждение, если медианы длин расходятся более чем в factor раз
-    (в лабе длины выравнивали осознанно: иначе длина протечёт в направление)."""
+    """Warning if median lengths diverge by more than factor
+    (in the lab lengths were aligned deliberately: otherwise length leaks into the direction)."""
     if domain_stats.get("n", 0) < 3 or contrast_stats.get("n", 0) < 3:
         return ""
     d, c = domain_stats["median"], contrast_stats["median"]
     if d and c and max(d, c) / max(1, min(d, c)) > factor:
         return (
-            f"Медианы длин расходятся: домен {d} vs контраст {c}. "
-            f"Выровняйте наборы по длине, иначе длина протечёт в направление d̂."
+            f"Median lengths diverge: domain {d} vs contrast {c}. "
+            f"Align the sets by length, otherwise length leaks into the direction d̂."
         )
     return ""

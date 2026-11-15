@@ -1,10 +1,10 @@
-"""Гейт качества наборов промптов (порт weight_lab/themes/check_bge.py, Этап 0).
+"""Prompt set quality gate (port of weight_lab/themes/check_bge.py, Stage 0).
 
-Валидация через эмбеддинги (bge-m3 в лабе; здесь — любой EmbeddingModel из
-реестра платформы):
-  1) cross cos(domain, contrast) mean < 0.5 — наборы лексически не пересекаются;
-  2) intra cos(domain) > intra cos(contrast) — домен плотнее контраста;
-  3) баланс длин (предупреждение, не блокирует).
+Validation via embeddings (bge-m3 in the lab; here — any EmbeddingModel from
+the platform registry):
+  1) cross cos(domain, contrast) mean < 0.5 — sets do not overlap lexically;
+  2) intra cos(domain) > intra cos(contrast) — domain is denser than contrast;
+  3) length balance (warning, non-blocking).
 """
 import numpy as np
 
@@ -15,16 +15,16 @@ CROSS_GATE = 0.5
 
 
 def validate_prompt_sets(domain_texts, contrast_texts, embedding_model_id=None) -> dict:
-    """Отчёт валидации наборов: косинусы, ближайшая пара, длины, гейт.
+    """Prompt set validation report: cosines, closest pair, lengths, gate.
 
-    Возвращает dict:
+    Returns dict:
       n_domain/n_contrast, cross_mean, cross_max, intra_domain, intra_contrast,
       closest_pair {domain, contrast, cos}, length {domain, contrast}, warning,
       gate: 'PASS'|'FAIL', gate_reason
     """
     if len(domain_texts) < 3 or len(contrast_texts) < 3:
         return {"gate": "FAIL",
-                "gate_reason": "Недостаточно промптов: нужно ≥3 в каждом наборе (рекомендуется 25–30).",
+                "gate_reason": "Not enough prompts: need ≥3 in each set (25–30 recommended).",
                 "n_domain": len(domain_texts), "n_contrast": len(contrast_texts)}
 
     E_d = embedding_service.create_embeddings_batch(
@@ -53,9 +53,10 @@ def validate_prompt_sets(domain_texts, contrast_texts, embedding_model_id=None) 
     reason = ""
     if not gate_ok:
         if cross_mean >= CROSS_GATE:
-            reason = f"Наборы пересекаются: cross cos = {cross_mean:.3f} ≥ {CROSS_GATE}."
+            reason = f"Sets overlap: cross cos = {cross_mean:.3f} ≥ {CROSS_GATE}."
         else:
-            reason = "Контраст плотнее домена (intra_contrast > intra_domain) — домен не монолитный."
+            reason = ("Contrast is denser than domain (intra_contrast > intra_domain) "
+                      "— domain is not monolithic.")
 
     return {
         "n_domain": len(domain_texts),

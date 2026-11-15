@@ -1,18 +1,18 @@
-"""Steer/amplify патч safetensors-чекпойнта (порт weight_lab/patch_theme.py, Этап 2).
+"""Steer/amplify patch of a safetensors checkpoint (port of weight_lab/patch_theme.py, Stage 2).
 
-Режимы (как в лабе):
-  steer   W' = W + α·outer(d̂, ī)/||ī||²  — при типичном входе (x≈ī) сдвиг выхода ≈ α·||d̂_nat||;
-          ī — mean вход модуля на доменных промптах (привязка усиления к типичному входу)
-  amplify W' = (I + α·d̂d̂ᵀ)W              — зеркало абляции Эксп. 1, усиливает существующие
-                                          записи модуля вдоль d̂ (запасной режим)
+Modes (as in the lab):
+  steer   W' = W + α·outer(d̂, ī)/||ī||²  — at a typical input (x≈ī) the output shift ≈ α·||d̂_nat||;
+          ī — mean input of the module on domain prompts (gain tied to the typical input)
+  amplify W' = (I + α·d̂d̂ᵀ)W              — mirror of ablation Exp. 1, amplifies the module's
+                                          existing entries along d̂ (fallback mode)
 
-d̂ берётся D_last[l+1] — модуль слоя l пишет в residual ПОСЛЕ слоя l (конвенция лабы).
-Не трогаем embed/lm_head/norm — патчатся только out-матрицы выбранных слоёв
-(суффиксы down_proj/o_proj/out_proj по умолчанию).
+d̂ is taken from D_last[l+1] — a layer-l module writes into the residual AFTER layer l (lab convention).
+embed/lm_head/norm are untouched — only out-matrices of selected layers are patched
+(down_proj/o_proj/out_proj suffixes by default).
 
-safetensors-версия: правка в fp32 → каст в исходный dtype тензора, нетронутые
-тензоры копируются как есть. GGUF-вход: конвертация через transformers
-(dequant bf16) → стандартный safetensors-чекпойнт.
+safetensors version: edit in fp32 → cast back to the tensor's original dtype; untouched
+tensors are copied as is. GGUF input: conversion via transformers
+(dequant bf16) → a standard safetensors checkpoint.
 """
 import json
 import re
@@ -24,14 +24,14 @@ import torch
 
 from .scan import OUT_MODULE_SUFFIXES, auto_layers_from_writers
 
-# tail тензора в safetensors: <prefix>.<layers-key>.<li>.<tail>.weight
+# tensor tail in safetensors: <prefix>.<layers-key>.<li>.<tail>.weight
 # (Llama/Qwen/Mistral: model.layers.23.mlp.down_proj.weight; GPT-2: h.0.attn...)
 TENSOR_RE = re.compile(
     r"^(?P<pre>.*?)(?P<lk>layers|h|blocks|layer)\.(?P<li>\d+)\.(?P<tail>.+)\.weight$")
 
 
 def bucket_matrix(arr, n=24):
-    """|ΔW| [out, in] → средние по бакетам [n, n] — компактная теплокарта."""
+    """|ΔW| [out, in] → per-bucket means [n, n] — compact heatmap."""
     a = np.abs(np.asarray(arr, dtype=np.float32))
     oh, ih = a.shape
     out = np.zeros((min(n, oh) or 1, min(n, ih) or 1), dtype=np.float32)
@@ -59,17 +59,17 @@ def auto_layers(scan_report, thr_factor: float = 0.6):
 
 
 def resolve_layers(layers_arg, scan_report, thr_factor: float = 0.6):
-    """'auto' | '19,20,21' → отсортированный список слоёв."""
+    """'auto' | '19,20,21' → sorted list of layers."""
     if str(layers_arg).strip().lower() == "auto":
         return auto_layers(scan_report, thr_factor)
     return sorted(int(x) for x in str(layers_arg).split(",") if x.strip())
 
 
 def convert_gguf_to_safetensors(model_path: str, out_dir: str, progress_cb=None) -> str:
-    """GGUF (файл или каталог с .gguf) → HF-чекпойнт safetensors (dequant bf16/fp16).
+    """GGUF (file or directory with .gguf) → HF safetensors checkpoint (dequant bf16/fp16).
 
-    Требует RAM ≈ размер модели (как скан в лабе: ~5.6 ГБ RSS для 2B Q4).
-    Возвращает путь к выходному каталогу.
+    Requires RAM ≈ model size (like the lab scan: ~5.6 GB RSS for a 2B Q4).
+    Returns the output directory path.
     """
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -78,11 +78,11 @@ def convert_gguf_to_safetensors(model_path: str, out_dir: str, progress_cb=None)
     path = Path(model_path)
     gguf_dir, gguf_name = _gguf_in_dir(path)
     if not gguf_name:
-        raise ValueError(f"GGUF не найден: {model_path}")
+        raise ValueError(f"GGUF not found: {model_path}")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     if progress_cb:
-        progress_cb(10, 100, "загрузка GGUF (dequant)")
+        progress_cb(10, 100, "loading GGUF (dequant)")
     dtype = _pick_dtype()
     model = AutoModelForCausalLM.from_pretrained(
         str(gguf_dir), gguf_file=gguf_name, torch_dtype=dtype, trust_remote_code=True)
@@ -98,21 +98,21 @@ def convert_gguf_to_safetensors(model_path: str, out_dir: str, progress_cb=None)
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     if progress_cb:
-        progress_cb(100, 100, "GGUF → safetensors готово")
+        progress_cb(100, 100, "GGUF → safetensors done")
     return str(out)
 
 
 def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
                     alpha=0.2, layers="auto", suffixes=OUT_MODULE_SUFFIXES,
                     position="last", progress_cb=None) -> dict:
-    """Патч чекпойнта: читаем safetensors лениво, правим out-матрицы выбранных слоёв.
+    """Patch a checkpoint: lazy safetensors reading, edit out-matrices of selected layers.
 
-    Несовпадающие тензоры копируются байт-в-байт (новый файл safetensors),
-    прочие файлы (config.json, tokenizer.*, *.json) копируются как есть.
-    Память: пик ≈ размер одного safetensors-файла.
-    position: 'last' | 'mean' — какую пару направлений из скана использовать
-    (mean-входы ī в steer всегда с last-позиции — в лабе проверен только last).
-    Возвращает отчёт (mode/alpha/layers/tensors/delta_l1).
+    Non-matching tensors are copied byte-for-byte (into the new safetensors file),
+    other files (config.json, tokenizer.*, *.json) are copied as is.
+    Memory: peak ≈ size of one safetensors file.
+    position: 'last' | 'mean' — which pair of scan directions to use
+    (mean inputs ī in steer always come from the last position — the lab verified only last).
+    Returns a report (mode/alpha/layers/tensors/delta_l1).
     """
     src, out = Path(src_dir), Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -122,10 +122,10 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
 
     chosen = resolve_layers(layers, scan_report)
     if not chosen:
-        raise ValueError("Не выбран ни один слой для патча (layers=auto по writers "
-                         "дал пустой список — проверьте scan_report).")
+        raise ValueError("No layer selected for patching (layers=auto over writers "
+                         "gave an empty list — check scan_report).")
 
-    # d̂ по слоям (единичные)
+    # d̂ per layer (unit-norm)
     dirs = {}
     for l in chosen:
         d = D[min(l + 1, len(D) - 1)]
@@ -133,9 +133,9 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
         if n > 1e-6:
             dirs[l] = (d / n).astype(np.float32)
     if not dirs:
-        raise ValueError("Все направления d̂ нулевые — скан не выделил тему.")
+        raise ValueError("All d̂ directions are zero — the scan did not extract the theme.")
 
-    # mean-входы ī: ключи npz 'mi|{li}|{tail}'
+    # mean inputs ī: npz keys 'mi|{li}|{tail}'
     mean_in = {}
     for key in Z.files:
         if key.startswith("mi|"):
@@ -144,7 +144,7 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
 
     st_files = sorted(src.glob("*.safetensors"))
     if not st_files:
-        raise ValueError(f"В {src} нет *.safetensors — сначала конвертируйте GGUF "
+        raise ValueError(f"No *.safetensors in {src} — convert the GGUF first "
                          f"(convert_gguf_to_safetensors).")
 
     report = {"mode": mode, "alpha": alpha, "layers": chosen, "suffixes": list(suffixes),
@@ -162,7 +162,7 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
                 continue
             W = tensors[name]
             if W.dim() != 2 or W.shape[0] != hid:
-                continue  # не out-матрица (например, transposed-конвенция) — пропускаем
+                continue  # not an out-matrix (e.g. a transposed convention) — skip
             orig_dtype = W.dtype
             W32 = W.to(torch.float32)
             d = torch.from_numpy(dirs[li])
@@ -171,12 +171,12 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
             else:  # steer
                 i_bar = mean_in.get((li, tail))
                 if i_bar is None:
-                    report["tensors"].append({"name": name, "skipped": "нет mean-входа"})
+                    report["tensors"].append({"name": name, "skipped": "no mean-input"})
                     continue
                 i_t = torch.from_numpy(np.ascontiguousarray(i_bar))
                 n_i = float(torch.norm(i_t))
                 if n_i < 1e-9:
-                    report["tensors"].append({"name": name, "skipped": "нулевой mean-вход"})
+                    report["tensors"].append({"name": name, "skipped": "zero mean-input"})
                     continue
                 W2 = W32 + alpha * torch.outer(d, i_t) / (n_i ** 2)
             delta_l1 = float((W2 - W32).abs().sum())
@@ -189,9 +189,9 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
         report["patched_count"] += n_patched_file
         del tensors
         if progress_cb:
-            progress_cb(fi + 1, total, f"{st.name}: патчено {n_patched_file}")
+            progress_cb(fi + 1, total, f"{st.name}: patched {n_patched_file}")
 
-    # прочие файлы (config, tokenizer, index) — как есть
+    # other files (config, tokenizer, index) — as is
     for f in src.iterdir():
         if f.is_file() and f.suffix != ".safetensors":
             shutil.copy2(f, out / f.name)

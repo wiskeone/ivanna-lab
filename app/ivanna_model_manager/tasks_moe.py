@@ -1,11 +1,11 @@
-"""Задачи мягкого MoE (v5.2): валидация темы, скан+патч эксперта, роутер, HF-push.
+"""Soft MoE tasks (v5.2): theme validation, expert scan+patch, router, HF push.
 
-Пайплайн джобы (Этапы лабы):
-  VALIDATING → SCANNING (d̂, AUC-гейт, писатели) → PATCHING (steer/amplify)
-  → [EVALUATING] → [ROUTING] → COMPLETED (новый ModelCheckpoint-эксперт).
+Job pipeline (lab stages):
+  VALIDATING → SCANNING (d̂, AUC gate, writers) → PATCHING (steer/amplify)
+  → [EVALUATING] → [ROUTING] → COMPLETED (a new ModelCheckpoint expert).
 
-Гейт AUC не пройден → джоба останавливается со статусом FAILED и отчётом скана
-(патч не делается — принцип «каждый патч через гейт» из лабы).
+AUC gate failed → the job stops with status FAILED and the scan report
+(no patch — the lab's "every patch goes through a gate" principle).
 """
 import logging
 import os
@@ -26,11 +26,11 @@ from .services.soft_moe import validation as moe_validation
 logger = logging.getLogger(__name__)
 
 
-# ─────────────────────────── Этап 0: валидация темы ───────────────────────────
+# ─────────────────────────── Stage 0: theme validation ───────────────────────────
 
 @shared_task(bind=True, queue='cpu_tasks', name='ivanna_model_manager.tasks_moe.moe_validate_theme_task')
 def moe_validate_theme_task(self, theme_id):
-    """Гейт наборов промптов: bge-косинусы cross/intra + баланс длин (CPU)."""
+    """Prompt set gate: bge cosines cross/intra + length balance (CPU)."""
     theme = MoETheme.objects.get(pk=theme_id)
     theme.validation_status = 'PENDING'
     theme.save(update_fields=['validation_status'])
@@ -50,7 +50,7 @@ def moe_validate_theme_task(self, theme_id):
         raise
 
 
-# ─────────────────────────── Этапы 1–4: сборка эксперта ───────────────────────────
+# ─────────────────────────── Stages 1–4: expert build ───────────────────────────
 
 def _json_safe(d):
     """PG JSON rejects NaN/Inf (python json.dump emits them) — replace with None."""
@@ -70,15 +70,15 @@ def _json_safe(d):
 @shared_task(bind=True, queue='gpu_tasks', time_limit=86400, soft_time_limit=None,
              name='ivanna_model_manager.tasks_moe.moe_build_expert_task')
 def moe_build_expert_task(self, job_id):
-    """Скан активаций → гейт AUC → steer/amplify патч → eval-гейт → роутер."""
+    """Activation scan → AUC gate → steer/amplify patch → eval gate → router."""
     job = MoEExpertJob.objects.get(pk=job_id)
     theme = job.theme
     try:
         job.status = 'VALIDATING'
         job.started_at = timezone.now()
         job.celery_task_id = self.request.id
-        # v5.2: re-run сбрасывает артефакты прошлого прогона — иначе на странице
-        # остаются графики/интерпретация предыдущей попытки
+        # v5.2: a re-run resets the previous run's artifacts — otherwise the page
+        # keeps the graphs/interpretation of the previous attempt
         job.interpretation = ''
         job.scan_report = {}
         job.patch_report = {}
@@ -94,18 +94,18 @@ def moe_build_expert_task(self, job_id):
         base = job.base_checkpoint
         src = base.local_path
         if not src or not os.path.exists(src):
-            raise FileNotFoundError(f"Базовая модель не найдена локально: {src}")
+            raise FileNotFoundError(f"Base model not found locally: {src}")
 
         domain = moe_prompts.load_texts(theme.domain_prompts_path())
         contrast = moe_prompts.load_texts(theme.contrast_prompts_path())
         if len(domain) < 3 or len(contrast) < 3:
-            raise ValueError("Наборы промптов темы пусты (нужно ≥3+3).")
+            raise ValueError("Theme prompt sets are empty (need ≥3+3).")
         job.add_log(f"Prompts: domain {len(domain)}, contrast {len(contrast)}")
 
         job_dir = job.job_dir()
         os.makedirs(job_dir, exist_ok=True)
 
-        # GGUF-вход → конвертация в safetensors (dequant)
+        # GGUF input → conversion to safetensors (dequant)
         if (os.path.isdir(src) and not any(f.endswith('.safetensors') for f in os.listdir(src))) \
                 or src.endswith('.gguf'):
             job.add_log("GGUF input: converting to safetensors (dequant)")
@@ -115,17 +115,17 @@ def moe_build_expert_task(self, job_id):
                 progress_cb=lambda d, t, s: job.update_progress(2 + 8 * d / max(1, t), f"GGUF: {s}"))
             src = converted
 
-        # ── Этап 1: скан (прогресс 10–55%) ──
+        # ── Stage 1: scan (progress 10–55%) ──
         job.status = 'SCANNING'
         job.save(update_fields=['status'])
         npz_path = os.path.join(job_dir, 'scan_dirs.npz')
 
         def scan_progress(done, total, step):
-            job.update_progress(10 + 45 * done / max(1, total), f"Скан: {step}")
+            job.update_progress(10 + 45 * done / max(1, total), f"Scan: {step}")
 
-        job.update_progress(10, "Скан: загрузка модели")
-        # v5.2: модели ≤2.5e9 параметров в nf4 влезают в GPU целиком —
-        # иначе offload ставит conv-модули на CPU и causal_conv1d кернелы падают
+        job.update_progress(10, "Scan: loading model")
+        # v5.2: models ≤2.5e9 params fit entirely in the GPU in nf4 —
+        # otherwise offload puts conv modules on CPU and causal_conv1d kernels crash
         param_b = base.parameter_count or 0
         scan_report = moe_scan.scan_theme(
             src, domain, contrast, npz_path, load_mode=job.load_mode,
@@ -142,24 +142,24 @@ def moe_build_expert_task(self, job_id):
                 f"theme direction not extracted. Check prompt sets (theme "
                 f"validation) and lengths — no patch applied.")
 
-        # ── Режим анализа: только скан и отчёты, без патча (основа решения) ──
+        # ── Analysis mode: scan and reports only, no patch (basis for the decision) ──
         if not job.do_patch:
-            job.add_log("📊 Режим анализа: скан и отчёты готовы, патч не выполнялся (do_patch=False). "
-                        "Смотрите визуализацию на странице задачи.")
+            job.add_log("📊 Analysis mode: scan and reports are ready, no patch was applied "
+                        "(do_patch=False). See the visualization on the job page.")
             job.status = 'COMPLETED'
             job.progress = 100.0
             job.completed_at = timezone.now()
             job.save()
             return {'success': True, 'analysis_only': True, 'scan_gate': scan_report['gate']}
 
-        # ── Этап 2: патч (прогресс 55–75%) ──
+        # ── Stage 2: patch (progress 55–75%) ──
         job.status = 'PATCHING'
         job.save(update_fields=['status'])
         out_dir = os.path.join(job_dir, 'expert')
-        job.update_progress(55, "Патч весов")
+        job.update_progress(55, "Patching weights")
 
-        # v5.2: цель операции. ablate = WSP-абляция (Эксп.1): направление темы
-        # ВЫЧИТАЕТСЯ из весов — (I−α·d̂d̂ᵀ)W, реализуется amplify с α<0.
+        # v5.2: operation goal. ablate = WSP ablation (Exp.1): the theme direction
+        # is SUBTRACTED from the weights — (I−α·d̂d̂ᵀ)W, implemented as amplify with α<0.
         eff_mode, eff_alpha = job.mode, job.alpha
         if job.goal == 'ablate':
             eff_mode, eff_alpha = 'amplify', -abs(job.alpha)
@@ -167,7 +167,7 @@ def moe_build_expert_task(self, job_id):
                         f"((I−α·d̂d̂ᵀ)W, α={eff_alpha}); theme domain prompts = behavior to remove")
 
         def patch_progress(done, total, step):
-            job.update_progress(55 + 20 * done / max(1, total), f"Патч: {step}")
+            job.update_progress(55 + 20 * done / max(1, total), f"Patch: {step}")
 
         patch_report = moe_patching.patch_model_dir(
             src, out_dir, npz_path, scan_report,
@@ -178,7 +178,7 @@ def moe_build_expert_task(self, job_id):
         job.add_log(f"Patch: {patch_report['patched_count']} tensors, "
                     f"layers {patch_report['layers']}, α={job.alpha}")
 
-        # ── регистрация выходного чекпойнта (паттерн merge_models_task) ──
+        # ── output checkpoint registration (merge_models_task pattern) ──
         timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
         out_name = f"moe_{theme.slug}_{base.name}_{timestamp}"
         output_model = ModelCheckpoint.objects.create(
@@ -197,7 +197,7 @@ def moe_build_expert_task(self, job_id):
             vocab_size=base.vocab_size,
         )
 
-        # ── Этап 3: eval-гейт (прогресс 75–92%) ──
+        # ── Stage 3: eval gate (progress 75–92%) ──
         if job.do_eval:
             eval_d = moe_prompts.load_texts(theme.eval_domain_path())
             eval_g = moe_prompts.load_texts(theme.eval_contrast_path())
@@ -209,10 +209,10 @@ def moe_build_expert_task(self, job_id):
                 def eval_progress(done, total, step):
                     job.update_progress(75 + 17 * done / max(1, total), f"Eval: {step}")
 
-                # v5.2: большие модели на малых GPU — nf4-генерация в eval.
-                # ИЗВЕСТНОЕ ОГРАНИЧЕНИЕ: bitsandbytes 0.49.2 + transformers 6.x падают
-                # на повторной nf4-загрузке (Params4bit/_is_hf_initialized) — для
-                # моделей ≥2.5B eval временно пропускается, эксперт регистрируется
+                # v5.2: large models on small GPUs — nf4 generation in eval.
+                # KNOWN LIMITATION: bitsandbytes 0.49.2 + transformers 6.x crash
+                # on a repeated nf4 load (Params4bit/_is_hf_initialized) — for
+                # models ≥2.5B eval is temporarily skipped, the expert is registered
                 param_b = base.parameter_count or 0
                 quant = param_b >= 1_500_000_000
                 eval_device = 'cuda:0' if param_b < 2_500_000_000 else 'cpu'
@@ -243,11 +243,11 @@ def moe_build_expert_task(self, job_id):
             else:
                 job.add_log("Eval gate skipped: theme eval sets empty (need >=2+2)")
 
-        # ── Этап 4: роутер (прогресс 92–100%) ──
+        # ── Stage 4: router (progress 92–100%) ──
         if job.do_router:
             job.status = 'ROUTING'
             job.save(update_fields=['status'])
-            job.update_progress(92, "Роутер: центроиды")
+            job.update_progress(92, "Router: centroids")
             emb_id = theme.get_embedding_model_id()
             moe_router.build_centroids(theme.theme_dir(), domain, contrast,
                                        embedding_model_id=emb_id)
@@ -279,16 +279,16 @@ def moe_build_expert_task(self, job_id):
         try:
             job = MoEExpertJob.objects.get(pk=job_id)
             job.fail(str(e), {'error': str(e), 'traceback': traceback.format_exc()})
-        except Exception:  # noqa: BLE001, S110 — фолбэк отчёта не должен маскировать исходную ошибку
+        except Exception:  # noqa: BLE001, S110 — the reporting fallback must not mask the original error
             pass
         return {'success': False, 'error': str(e)}
 
 
-# ─────────────────────────── Роутер отдельно ───────────────────────────
+# ─────────────────────────── Router standalone ───────────────────────────
 
 @shared_task(bind=True, queue='cpu_tasks', name='ivanna_model_manager.tasks_moe.moe_router_build_task')
 def moe_router_build_task(self, theme_id):
-    """Центроиды + тест точности роутера для темы (по её наборам)."""
+    """Centroids + router accuracy test for a theme (from its own sets)."""
     theme = MoETheme.objects.get(pk=theme_id)
     domain = moe_prompts.load_texts(theme.domain_prompts_path())
     contrast = moe_prompts.load_texts(theme.contrast_prompts_path())
@@ -303,18 +303,18 @@ def moe_router_build_task(self, theme_id):
             threshold=theme.router_threshold, embedding_model_id=emb_id,
             out_json=os.path.join(theme.theme_dir(), 'router_test.json'))
     else:
-        report = {"accuracy": None, "gate": "SKIP", "note": "нет eval-наборов"}
+        report = {"accuracy": None, "gate": "SKIP", "note": "no eval sets"}
     theme.router_report = report
     theme.router_built_at = timezone.now()
     theme.save(update_fields=['router_report', 'router_built_at'])
     return report
 
 
-# ─────────────────────────── HF-публикация ───────────────────────────
+# ─────────────────────────── HF publishing ───────────────────────────
 
 @shared_task(bind=True, queue='cpu_tasks', name='ivanna_model_manager.tasks_moe.moe_push_to_hf_task')
 def moe_push_to_hf_task(self, job_id, repo_id, private=True, notes=""):
-    """Публикация эксперта на Hugging Face (токен из профиля пользователя)."""
+    """Publish the expert to Hugging Face (token from the user's profile)."""
     from .models import UserProfile
 
     job = MoEExpertJob.objects.select_related('theme', 'base_checkpoint',
@@ -324,26 +324,26 @@ def moe_push_to_hf_task(self, job_id, repo_id, private=True, notes=""):
         profile = UserProfile.objects.filter(user__username=job.created_by).first()
         token = profile.huggingface_token if profile else ""
     if not token:
-        # fallback: общий HF_TOKEN из окружения (.env) — валиден для аккаунта,
-        # под которым настроена платформа
+        # fallback: shared HF_TOKEN from the environment (.env) — valid for the
+        # account the platform is configured under
         token = os.environ.get('HF_TOKEN', '')
     if not token:
-        raise ValueError("HF-токен не найден ни в профиле, ни в HF_TOKEN окружения.")
+        raise ValueError("HF token not found in the profile or in the HF_TOKEN environment variable.")
 
     result = moe_hf_push.push_expert(job, job.theme, repo_id, token,
                                      private=private, notes=notes)
     job.hf_repo_id = repo_id
     job.save(update_fields=['hf_repo_id'])
-    job.add_log(f"🤗 Опубликовано: {result['url']}")
+    job.add_log(f"🤗 Published: {result['url']}")
     return result
 
 
-# ─────────────────── v5.2: LLM-интерпретация прогона ───────────────────
+# ─────────────────── v5.2: LLM interpretation of the run ───────────────────
 @shared_task(bind=True, queue='gpu_tasks', time_limit=3600, soft_time_limit=None,
              name='ivanna_model_manager.tasks_moe.moe_interpret_task')
 def moe_interpret_task(self, job_id):
-    """Кайллер-фича: модель джобы сама читает дайджест отчётов и пишет
-    интерпретацию «что произошло и что делать» на странице задачи."""
+    """Killer feature: the job's own model reads the report digest and writes
+    an interpretation of "what happened and what to do next" on the job page."""
     import torch
     from .services.soft_moe.evalgate import _load_for_generation
 
@@ -397,7 +397,7 @@ def moe_interpret_task(self, job_id):
                                     skip_special_tokens=True).strip()
         job.interpretation = interpretation
         job.save(update_fields=['interpretation'])
-        job.add_log("🧠 LLM-интерпретация готова (см. карточку на странице)")
+        job.add_log("🧠 LLM interpretation ready (see the card on the job page)")
         del model, tok
         import gc
         gc.collect()
@@ -406,5 +406,5 @@ def moe_interpret_task(self, job_id):
         return {'success': True, 'length': len(interpretation)}
     except Exception as e:
         import traceback
-        job.add_log(f"❌ Интерпретация не удалась: {e}")
+        job.add_log(f"❌ Interpretation failed: {e}")
         return {'success': False, 'error': str(e), 'traceback': traceback.format_exc()}

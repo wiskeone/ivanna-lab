@@ -1,11 +1,11 @@
-"""Лёгкий eval-гейт патча (порт weight_lab/eval_theme.py, Этап 3).
+"""Light eval gate of the patch (port of weight_lab/eval_theme.py, Stage 3).
 
-Генерация base vs expert на свежих eval-промптах (не пересекаться со скановыми!),
-прод-параметры лабы: temp 0.7 / top_p 0.9. Метрики: длина, think-утечки,
-повторные пары слов. Тексты сохраняются для ручной выборочной проверки
-(в лабе — 5/5 ответов патча глазами).
+Generation base vs expert on fresh eval prompts (must not overlap the scan sets!),
+lab prod parameters: temp 0.7 / top_p 0.9. Metrics: length, think leaks,
+repeated word pairs. Texts are saved for manual spot checking
+(in the lab — 5/5 patch answers eyeballed).
 
-Параметры генерации и детали — в docs/soft_moe.md.
+Generation parameters and details — see docs/soft_moe.md.
 """
 import json
 import sys
@@ -24,7 +24,7 @@ DEFAULT_TOP_P = 0.9
 
 
 def answer_metrics(answer: str) -> dict:
-    """Метрики одного ответа (think-утечки, длина, повторы пар слов)."""
+    """Metrics of one answer (think leaks, length, word-pair repeats)."""
     a = answer or ""
     words = a.lower().split()
     pairs = [f"{words[i]} {words[i + 1]}" for i in range(len(words) - 1)]
@@ -41,7 +41,7 @@ def _load_for_generation(model_path: str, quantized: bool = False):
     dtype = torch.bfloat16 if (torch.cuda.is_available() and
                                torch.cuda.is_bf16_supported()) else torch.float16
     if quantized:
-        # малые GPU: nf4-генерация (bf16-офлоад 4B ловит device-side assert)
+        # small GPUs: nf4 generation (bf16 offload of 4B hits a device-side assert)
         from transformers import BitsAndBytesConfig
         bnb = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_quant_type="nf4",
@@ -90,7 +90,7 @@ def _run_set(model, tok, prompts_list, outdir: Path, tag: str,
         m["prompt"] = p
         rows.append(m)
         (outdir / f"{tag}_{i:02d}.txt").write_text(
-            f"ПРОМПТ:\n{p}\n\nОТВЕТ:\n{ans}\n", encoding="utf-8")
+            f"PROMPT:\n{p}\n\nANSWER:\n{ans}\n", encoding="utf-8")
     agg = {
         "n": len(rows),
         "mean_len": round(statistics.mean(r["len_chars"] for r in rows), 0) if rows else 0,
@@ -101,8 +101,8 @@ def _run_set(model, tok, prompts_list, outdir: Path, tag: str,
 
 
 RUNNER_CODE = """
-# Изолированный генератор: свежий процесс = чистый bnb-контекст.
-# Фон: второй quantized load в одном процессе падает в accelerate
+# Isolated generator: a fresh process = a clean bnb context.
+# Background: a second quantized load in one process crashes in accelerate
 # (Params4bit/_is_hf_initialized, bnb 0.49.2 + transformers 6.x).
 import json, sys
 import torch
@@ -152,7 +152,7 @@ json.dump(results, open(out_path, 'w'), ensure_ascii=False)
 
 def _generate_batch_subprocess(model_path: str, prompts: list, max_new_tokens: int,
                                quantized: bool, out_path: str, device: str = 'auto') -> list:
-    """Генерация батча промптов в изолированном подпроцессе."""
+    """Generate a batch of prompts in an isolated subprocess."""
     import json
     import subprocess
     tasks = [{'prompt': p, 'max_new_tokens': max_new_tokens} for p in prompts]
@@ -169,11 +169,11 @@ def _generate_batch_subprocess(model_path: str, prompts: list, max_new_tokens: i
 def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
                   eval_contrast_texts, out_dir: str, max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
                   quantized: bool = False, eval_device: str = 'auto', progress_cb=None) -> dict:
-    """Прогон двух сборок на двух наборах (v5.2: генерация в подпроцессах).
+    """Run both builds on both sets (v5.2: generation in subprocesses).
 
-    Смысл гейта (лаба): доменные ответы эксперта не хуже/полне базовых,
-    общие не деградировали. Числа — прокси (длина); финальное решение —
-    ручная выборочная проверка сохранённых текстов.
+    Gate meaning (lab): the expert's domain answers are no worse/fuller than base,
+    general answers did not degrade. The numbers are proxies (length); the final
+    decision is manual spot checking of the saved texts.
     """
     outdir = Path(out_dir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -181,14 +181,14 @@ def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
               "quantized": quantized, "sets": {}}
     for model_tag, path in (("base", base_path), ("expert", expert_path)):
         if progress_cb:
-            progress_cb(0, 100, f"загрузка {model_tag}")
+            progress_cb(0, 100, f"loading {model_tag}")
         for set_tag, texts in (("eval_domain", eval_domain_texts),
                                ("eval_general", eval_contrast_texts)):
             run_texts, run_tokens, device = texts, max_new_tokens, 'auto'
             if quantized:
-                # KNOWN ISSUE: transformers 6.x + bnb 0.49.2 — GPU-диспатч квантованной
-                # модели ломается на meta-переносе Params4bit. Для >=2.5B: генерация на
-                # CPU, усечённые наборы (3+3, 64 токенов) — детерминированный fallback.
+                # KNOWN ISSUE: transformers 6.x + bnb 0.49.2 — GPU dispatch of a quantized
+                # model breaks on the meta transfer of Params4bit. For >=2.5B: generation
+                # on CPU, truncated sets (3+3, 64 tokens) — deterministic fallback.
                 run_texts = [t[:1500] for t in texts[:3]]
                 run_tokens = 64
                 device = 'cpu'
@@ -205,7 +205,7 @@ def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
                 m['prompt'] = p
                 rows.append(m)
                 (outdir / f'{model_tag}_{set_tag}_{i:02d}.txt').write_text(
-                    f'ПРОМПТ:\n{p}\n\nОТВЕТ:\n{ans}\n', encoding='utf-8')
+                    f'PROMPT:\n{p}\n\nANSWER:\n{ans}\n', encoding='utf-8')
             agg = {
                 'n': len(rows),
                 'mean_len': round(statistics.mean(r['len_chars'] for r in rows), 0) if rows else 0,
@@ -216,7 +216,7 @@ def run_eval_gate(base_path: str, expert_path: str, eval_domain_texts,
             if progress_cb:
                 progress_cb(len(texts), len(texts), f'{model_tag}/{set_tag}')
 
-    # сводка для гейта: направление изменений
+    # gate summary: direction of the changes
     b_d = report["sets"]["base/eval_domain"]["agg"]["mean_len"]
     e_d = report["sets"]["expert/eval_domain"]["agg"]["mean_len"]
     b_g = report["sets"]["base/eval_general"]["agg"]["mean_len"]

@@ -1,19 +1,20 @@
-"""Активационный скан темы (порт weight_lab/theme_scan.py, Этап 1).
+"""Theme activation scan (port of weight_lab/theme_scan.py, Stage 1).
 
-d̂_theme[l] = mean_h(domain) − mean_h(contrast) — направления в residual stream
-по слоям, две позиции: last (последний токен ввода) и mean (среднее по токенам).
+d̂_theme[l] = mean_h(domain) − mean_h(contrast) — directions in the residual stream
+per layer, two positions: last (last input token) and mean (average over tokens).
 
-Валидация (гейты лабы):
-  1) AUC проекции h на d̂: domain vs contrast > 0.85 (hold-out, Mann-Whitney без sklearn);
-  2) каузальные писатели: (mean_domain − mean_contrast) выходов out-модулей,
-     проекция на d̂ — выбор слоёв для патча Этапа 2;
-  3) mean-входы ī out-модулей на доменных промптах — для steer-патча.
+Validation (lab gates):
+  1) AUC of the h projection onto d̂: domain vs contrast > 0.85
+     (hold-out, Mann-Whitney without sklearn);
+  2) causal writers: (mean_domain − mean_contrast) of out-module outputs,
+     projection onto d̂ — layer selection for the Stage 2 patch;
+  3) mean inputs ī of out-modules on domain prompts — for the steer patch.
 
-Обобщения относительно лабы:
-  - суффикс-матчинг out-модулей (down_proj/o_proj/out_proj) — любая архитектура;
-  - загрузка safetensors-чекпойнта или GGUF (через transformers gguf_file);
-  - режимы load_mode: auto (bf16 + device_map=auto, CPU-offload при нехватке VRAM),
-    int4 (bitsandbytes nf4 — скан 4B на 4GB VRAM), cpu (полностью на CPU).
+Generalizations vs the lab:
+  - suffix matching of out-modules (down_proj/o_proj/out_proj) — any architecture;
+  - loading a safetensors checkpoint or GGUF (via transformers gguf_file);
+  - load_mode: auto (bf16 + device_map=auto, CPU-offload when VRAM is short),
+    int4 (bitsandbytes nf4 — 4B scan on 4GB VRAM), cpu (entirely on CPU).
 """
 import gc
 import json
@@ -23,13 +24,13 @@ from pathlib import Path
 import numpy as np
 import torch
 
-# Суффиксы out-модулей (выход пишет в residual stream) — как в лабе
+# out-module suffixes (their output goes into the residual stream) — as in the lab
 OUT_MODULE_SUFFIXES = ("down_proj", "o_proj", "out_proj")
 
 AUC_GATE = 0.85
 
 
-# ─────────────────────────── загрузка модели ───────────────────────────
+# ─────────────────────────── model loading ───────────────────────────
 
 def _pick_dtype():
     if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
@@ -38,7 +39,7 @@ def _pick_dtype():
 
 
 def _gguf_in_dir(path: Path):
-    """GGUF-файл в каталоге (или сам путь — gguf-файл)?"""
+    """GGUF file in the directory (or the path itself — a gguf file)?"""
     if path.is_file() and path.suffix.lower() == ".gguf":
         return path.parent, path.name
     if path.is_dir():
@@ -49,9 +50,9 @@ def _gguf_in_dir(path: Path):
 
 
 def load_model_for_scan(model_path: str, load_mode: str = "auto", full_gpu: bool = False):
-    """Загрузить модель для форвардов. Возвращает (model, tokenizer, info).
+    """Load a model for forward passes. Returns (model, tokenizer, info).
 
-    load_mode: auto | int4 | cpu (см. модуль docstring).
+    load_mode: auto | int4 | cpu (see the module docstring).
     """
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -62,7 +63,7 @@ def load_model_for_scan(model_path: str, load_mode: str = "auto", full_gpu: bool
     kwargs = {"trust_remote_code": True}
 
     if gguf_name:
-        # GGUF-вход: dequant в bf16 (как в лабе), без device_map — потом при необходимости
+        # GGUF input: dequant to bf16 (as in the lab), no device_map — move later if needed
         model = AutoModelForCausalLM.from_pretrained(
             str(gguf_dir), gguf_file=gguf_name, torch_dtype=dtype, **kwargs)
         tok = AutoTokenizer.from_pretrained(str(gguf_dir), gguf_file=gguf_name, **kwargs)
@@ -72,8 +73,8 @@ def load_model_for_scan(model_path: str, load_mode: str = "auto", full_gpu: bool
         bnb = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=dtype, bnb_4bit_use_double_quant=True,
-            # v5.2: offload ломает causal_conv1d кернелы (conv-модули на CPU);
-            # для моделей, влезающих в VRAM, — full_gpu ставит всё на GPU
+            # v5.2: offload breaks causal_conv1d kernels (conv modules on CPU);
+            # for models fitting in VRAM — full_gpu puts everything on the GPU
             llm_int8_enable_fp32_cpu_offload=not full_gpu)
         device_map = {'': 'cuda:0'} if full_gpu else 'auto'
         model = AutoModelForCausalLM.from_pretrained(
@@ -95,7 +96,7 @@ def load_model_for_scan(model_path: str, load_mode: str = "auto", full_gpu: bool
 
 
 def get_decoder_layers(model):
-    """Список decoder-слоёв с fallback по распространённым именам."""
+    """Decoder layer list with fallback over common names."""
     for attr in ("model.layers", "transformer.h", "transformer.layers",
                  "gpt_neox.layers", "blocks"):
         obj = model
@@ -108,15 +109,16 @@ def get_decoder_layers(model):
         if ok and obj is not None and len(obj) > 0:
             return list(obj)
     raise RuntimeError(
-        "Не найдены decoder-слои (пробовал model.layers / transformer.h / "
-        "transformer.layers / gpt_neox.layers / blocks) — архитектура не поддержана сканом.")
+        "Decoder layers not found (tried model.layers / transformer.h / "
+        "transformer.layers / gpt_neox.layers / blocks) — architecture not "
+        "supported by the scan.")
 
 
 def discover_out_modules(model, suffixes=OUT_MODULE_SUFFIXES):
-    """[(layer_idx, module_tail, module)] — модули, пишущие в residual stream.
+    """[(layer_idx, module_tail, module)] — modules writing into the residual stream.
 
-    module_tail — имя модуля относительно слоя (последние сегменты), например
-    'mlp.down_proj' / 'self_attn.o_proj'; совпадает с tail в safetensors-именах.
+    module_tail — module name relative to the layer (last segments), e.g.
+    'mlp.down_proj' / 'self_attn.o_proj'; matches the tail in safetensors names.
     """
     out = []
     for li, lyr in enumerate(get_decoder_layers(model)):
@@ -124,28 +126,28 @@ def discover_out_modules(model, suffixes=OUT_MODULE_SUFFIXES):
             if n and n.endswith(suffixes) and hasattr(m, "weight"):
                 out.append((li, n, m))
     if not out:
-        raise RuntimeError("Не найдены out-модули (down_proj/o_proj/out_proj) — "
-                           "патчить нечего.")
+        raise RuntimeError("No out-modules found (down_proj/o_proj/out_proj) — "
+                           "nothing to patch.")
     return out
 
 
-# ─────────────────────────── математика валидации ───────────────────────────
+# ─────────────────────────── validation math ───────────────────────────
 
 def auc(scores_s, scores_c) -> float:
-    """Mann-Whitney U AUC без sklearn (как в лабе), со средними рангами связок.
+    """Mann-Whitney U AUC without sklearn (as in the lab), with average ranks for ties.
 
-    В лабе связки не встречались (проекции непрерывны), но для честности
-    метрики на дискретных/повторных данных — средние ранги (scipy 'average').
+    The lab had no ties (projections are continuous), but for metric honesty
+    on discrete/repeated data — average ranks (scipy 'average').
     """
     all_v = np.concatenate([scores_s, scores_c])
     n = len(all_v)
     order = all_v.argsort(kind="mergesort")
     sorted_v = all_v[order]
-    # границы групп равных значений
+    # boundaries of equal-value groups
     new_group = np.r_[True, sorted_v[1:] != sorted_v[:-1]]
-    group_idx = new_group.cumsum() - 1                      # dense-ранг каждого элемента
-    bounds = np.r_[np.nonzero(new_group)[0], n]             #start/end групп в sort-порядке
-    avg_rank_per_group = (bounds[:-1] + bounds[1:] + 1) / 2  # средний 1-базный ранг группы
+    group_idx = new_group.cumsum() - 1                      # dense rank of each element
+    bounds = np.r_[np.nonzero(new_group)[0], n]             # group start/end in sort order
+    avg_rank_per_group = (bounds[:-1] + bounds[1:] + 1) / 2  # mean 1-based rank of a group
     ranks = np.empty(n, dtype=float)
     ranks[order] = avg_rank_per_group[group_idx]
     n_s, n_c = len(scores_s), len(scores_c)
@@ -154,7 +156,7 @@ def auc(scores_s, scores_c) -> float:
 
 
 def split_holdout(n_domain: int, n_contrast: int, seed: int, holdout_fraction: float = 0.33):
-    """Пермутация с сидом → (train_domain_idx, train_contrast_idx, test_domain_idx, test_contrast_idx)."""
+    """Seeded permutation → (train_domain_idx, train_contrast_idx, test_domain_idx, test_contrast_idx)."""
     rng = np.random.default_rng(seed)
     d_idx = rng.permutation(n_domain)
     c_idx = rng.permutation(n_contrast)
@@ -163,10 +165,10 @@ def split_holdout(n_domain: int, n_contrast: int, seed: int, holdout_fraction: f
     return (d_idx[n_d_te:], c_idx[n_c_te:], d_idx[:n_d_te], c_idx[:n_c_te])
 
 
-# ─────────────────────────── сам скан ───────────────────────────
+# ─────────────────────────── the scan itself ───────────────────────────
 
 class _ScanState:
-    """Приёмник хуков: активации последней позиции по (setname, idx)."""
+    """Hook sink: last-position activations keyed by (setname, idx)."""
 
     def __init__(self):
         self.current_key = None          # ("domain"|"contrast", idx)
@@ -203,7 +205,7 @@ class _ScanState:
 
 
 def _build_inputs(tok, texts):
-    """Промпт → input_ids. Chat-рендер как в проде; enable_thinking — только Qwen."""
+    """Prompt → input_ids. Chat rendering as in prod; enable_thinking — Qwen only."""
     inputs = []
     for txt in texts:
         if getattr(tok, "chat_template", None):
@@ -225,9 +227,9 @@ def _build_inputs(tok, texts):
 def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="auto",
                seed: int = 7, holdout_fraction: float = 0.33, full_gpu: bool = False,
                progress_cb=None) -> dict:
-    """Полный скан темы. Пишет npz (d_last/d_mean/mean-входы) и возвращает отчёт.
+    """Full theme scan. Writes npz (d_last/d_mean/mean inputs) and returns a report.
 
-    progress_cb(done, total, step) — опционально, для прогресса задачи.
+    progress_cb(done, total, step) — optional, for task progress.
     """
     t0 = time.time()
     n_total = len(domain_texts) + len(contrast_texts)
@@ -264,7 +266,7 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
         h.remove()
     state.current_key = None
 
-    # ── направления по train-половине (hold-out честности) ──
+    # ── directions over the train half (hold-out honesty) ──
     tr_d, tr_c, te_d, te_c = split_holdout(
         len(domain_texts), len(contrast_texts), seed, holdout_fraction)
 
@@ -281,7 +283,7 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
              - mean_over(store, contrast_keys_tr, n_layers))  # [L+1, hid]
         variants[pos] = D
 
-    # сохраняем всё скановое сразу (грабли лабы: артефакты — до секций анализа)
+    # save all scan data at once (lab pitfall: artifacts — before the analysis sections)
     mean_inputs = {}
     for (sname, i, li, tail), v in state.mod_in.items():
         if sname == "domain":
@@ -293,7 +295,7 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
         **{f"mi|{li}|{tail}": torch.stack(vs).mean(0).numpy()
            for (li, tail), vs in mean_inputs.items()})
 
-    # ── AUC по слоям (всегда на last-позиции — «состояние готовности ответить») ──
+    # ── AUC per layer (always at the last position — the "readiness to answer" state) ──
     domain_keys_te = [("domain", i) for i in te_d]
     contrast_keys_te = [("contrast", i) for i in te_c]
     auc_report = {}
@@ -313,7 +315,7 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
                            "test": [round(float(v), 3) for v in a_te]}
         best_auc = max(best_auc, float(np.max(a_te)))
 
-    # ── писатели: (mean_domain − mean_contrast) выходов out-модулей @ last ──
+    # ── writers: (mean_domain − mean_contrast) of out-module outputs @ last ──
     D_last = variants["last"]
     writers = {}
     for (li, tail) in {(li, tail) for (_, _, li, tail) in state.mod_out}:
@@ -326,7 +328,7 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
         d = d / (np.linalg.norm(d) + 1e-9)
         proj = float(diff @ d)
         nrm = float(np.linalg.norm(diff))
-        # bf16-выбросы на синтетических форматах дают inf/nan — честно пропускаем
+        # bf16 outliers on synthetic formats give inf/nan — skip them honestly
         if not np.isfinite(proj) or not np.isfinite(nrm):
             writers[f"L{li:02d}:{tail}"] = {"layer": li, "module": tail,
                                             "proj": None, "norm": None, "nan": True}
@@ -356,7 +358,7 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
     with open(Path(out_npz).with_name("scan_report.json"), "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
 
-    # освобождение GPU до патча (del в замыкании ломает ruff F821 — обнуляем)
+    # free GPU before patching (del in a closure trips ruff F821 — null out instead)
     model = tok = None
     gc.collect()
     if torch.cuda.is_available():
@@ -365,12 +367,12 @@ def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="aut
 
 
 def auto_layers_from_writers(scan_report: dict, thr_factor: float = 0.6):
-    """Слои для патча по писателям: сумма |proj| модулей слоя,
-    порог = 0.6 · медианы топ-8 (как в лабе)."""
+    """Layers to patch based on writers: sum of |proj| of a layer's modules,
+    threshold = 0.6 · median of the top-8 (as in the lab)."""
     per_layer = {}
     for w in scan_report.get("writers", {}).values():
         if w.get("proj") is None or w.get("nan"):
-            continue  # nan-проекции (bf16-выбросы) не участвуют в выборе слоёв
+            continue  # nan projections (bf16 outliers) are excluded from layer selection
         per_layer[w["layer"]] = per_layer.get(w["layer"], 0.0) + abs(w["proj"])
     if not per_layer:
         return []
@@ -378,7 +380,7 @@ def auto_layers_from_writers(scan_report: dict, thr_factor: float = 0.6):
     thr = float(np.median([v for _, v in ranked[:8]])) * thr_factor
     picked = sorted(l for l, v in per_layer.items() if v >= thr)
     if len(picked) < 3:
-        # синтетические форматы (tool-call и т.п.) дают плоский профиль —
-        # берём топ-3 слоя вместо пустого списка
+        # synthetic formats (tool-call etc.) give a flat profile —
+        # take the top-3 layers instead of an empty list
         picked = sorted(l for l, v in ranked[:3])
     return picked
