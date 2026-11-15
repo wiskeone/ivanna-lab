@@ -6,6 +6,7 @@ import gc
 import logging
 import traceback
 import os
+import subprocess
 import threading
 import signal
 import sys
