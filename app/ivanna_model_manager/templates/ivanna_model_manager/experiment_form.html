@@ -1,0 +1,66 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{% if object %}{% trans "Редактирование эксперимента" %}{% else %}{% trans "Новый эксперимент" %}{% endif %}{% endblock %}
+{% block page_title %}{% if object %}{% trans "Редактирование эксперимента" %}{% else %}{% trans "Новый эксперимент" %}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .moe-form-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .hint-box { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 12px 16px; font-size: 0.9rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+    <div class="hint-box mb-3">
+        {% trans "Эксперимент — контейнер для серии прогонов вокруг одного вопроса исследования: привязанные модели, чекпойнты и оценки собираются под одним именем. Чекпойнт можно связать с экспериментом при создании или из карточки модели." %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="moe-form-card">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                    {{ form.name }}
+                    {% if form.name.help_text %}<div class="form-text text-muted">{{ form.name.help_text }}</div>{% endif %}
+                    {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                    {{ form.description }}
+                    {% if form.description.help_text %}<div class="form-text text-muted">{{ form.description.help_text }}</div>{% endif %}
+                    {% for error in form.description.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-8 mb-3">
+                    <label class="form-label" for="{{ form.base_checkpoint.id_for_label }}">{{ form.base_checkpoint.label }}</label>
+                    {{ form.base_checkpoint }}
+                    {% if form.base_checkpoint.help_text %}<div class="form-text text-muted">{{ form.base_checkpoint.help_text }}</div>{% endif %}
+                    {% for error in form.base_checkpoint.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label" for="{{ form.tags.id_for_label }}">{{ form.tags.label }}</label>
+                    {{ form.tags }}
+                    {% if form.tags.help_text %}<div class="form-text text-muted">{{ form.tags.help_text }}</div>{% endif %}
+                    {% for error in form.tags.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12 mb-2">
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+                    </div>
+                    {% for error in form.is_active.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> {% if object %}{% trans "Сохранить" %}{% else %}{% trans "Создать эксперимент" %}{% endif %}</button>
+            <a href="{% url 'experiment_list' %}" class="btn btn-outline-secondary">{% trans "Отмена" %}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -6596,3 +6596,63 @@ msgstr "Published on Hugging Face via the platform"
 
 msgid "Выложено на Hugging Face"
 msgstr "Published on Hugging Face"
+
+msgid ""
+"Конвертация выполняется llama.cpp (convert_hf_to_gguf.py) на CPU-воркере. "
+"Результат — один .gguf-файл, готовый для llama.cpp / LM Studio / Ollama. В "
+"списке источников — только модели, уже скачанные на диск."
+msgstr ""
+"The conversion runs llama.cpp (convert_hf_to_gguf.py) on the CPU worker. The"
+" result is a single .gguf file ready for llama.cpp / LM Studio / Ollama. The"
+" source list only includes models already downloaded to disk."
+
+msgid "Например: gguf_q8_0_sms-4b"
+msgstr "e.g. gguf_q8_0_sms-4b"
+
+msgid ""
+"• Q8_0 — почти без потерь качества (наш выбор для публикации экспертов). • "
+"Q4_0/Q4_1 — минимальный размер, деградация заметнее на малых моделях. • "
+"FP16/FP32 — без квантизации, файл в 2–4 раза больше. • Поле Config обычно "
+"оставляют пустым."
+msgstr ""
+"• Q8_0 — near lossless (our choice for publishing experts). • Q4_0/Q4_1 — "
+"smallest size, more quality loss on small models. • FP16/FP32 — no "
+"quantization, 2–4x larger file. • Leave Config empty unless needed."
+
+msgid "Редактирование эксперимента"
+msgstr "Edit experiment"
+
+msgid "Новый эксперимент"
+msgstr "New experiment"
+
+msgid ""
+"Эксперимент — контейнер для серии прогонов вокруг одного вопроса "
+"исследования: привязанные модели, чекпойнты и оценки собираются под одним "
+"именем. Чекпойнт можно связать с экспериментом при создании или из карточки "
+"модели."
+msgstr ""
+"An experiment is a container for a series of runs around one research "
+"question: linked models, checkpoints and evaluations are collected under a "
+"single name. A checkpoint can be linked to an experiment at creation or from"
+" its model card."
+
+msgid "JSON с дополнительными параметрами (опционально)"
+msgstr "JSON with extra parameters (optional)"
+
+msgid "Теги через запятую: ru, code, medical"
+msgstr "Comma-separated tags: ru, code, medical"
+
+msgid "Q4_0 (4-bit, минимальный)"
+msgstr "Q4_0 (4-bit, minimal)"
+
+msgid "Q4_1 (4-bit, чуть точнее)"
+msgstr "Q4_1 (4-bit, slightly better)"
+
+msgid "Q5_0 (5-bit)"
+msgstr "Q5_0 (5-bit)"
+
+msgid "Q5_1 (5-bit, точнее)"
+msgstr "Q5_1 (5-bit, better)"
+
+msgid "Q8_0 (8-bit)"
+msgstr "Q8_0 (8-bit)"

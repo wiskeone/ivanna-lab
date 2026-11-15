@@ -5,26 +5,65 @@
 {% block title %}{% trans "Новая конвертация в GGUF" %}{% endblock %}
 {% block page_title %}{% trans "Конвертация модели в GGUF" %}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .moe-form-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .hint-box { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 12px 16px; font-size: 0.9rem; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5>{% trans "Создание задачи конвертации" %}</h5>
+<div class="container" style="max-width: 900px;">
+    <div class="hint-box mb-3">
+        {% trans "Конвертация выполняется llama.cpp (convert_hf_to_gguf.py) на CPU-воркере. Результат — один .gguf-файл, готовый для llama.cpp / LM Studio / Ollama. В списке источников — только модели, уже скачанные на диск." %}
+    </div>
+
+    <form method="post" id="conversionForm">
+        {% csrf_token %}
+        <div class="moe-form-card">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                    {{ form.name }}
+                    <div class="form-text text-muted">{% trans "Например: gguf_q8_0_sms-4b" %}</div>
+                    {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 </div>
-                <div class="card-body">
-                    <form method="post" id="conversionForm">
-                        {% csrf_token %}
-                        {{ form.as_p }}
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary">{% trans "Создать" %}</button>
-                            <a href="{% url 'conversion_dashboard' %}" class="btn btn-secondary">{% trans "Отмена" %}</a>
-                        </div>
-                    </form>
+                <div class="col-12 mb-3">
+                    <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                    {{ form.description }}
+                    {% if form.description.help_text %}<div class="form-text text-muted">{{ form.description.help_text }}</div>{% endif %}
+                    {% for error in form.description.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label" for="{{ form.source_model.id_for_label }}">{{ form.source_model.label }}</label>
+                    {{ form.source_model }}
+                    {% for error in form.source_model.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="{{ form.quantization.id_for_label }}">{{ form.quantization.label }}</label>
+                    {{ form.quantization }}
+                    {% if form.quantization.help_text %}<div class="form-text text-muted">{{ form.quantization.help_text }}</div>{% endif %}
+                    {% for error in form.quantization.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label" for="{{ form.config.id_for_label }}">{{ form.config.label }}</label>
+                    {{ form.config }}
+                    {% if form.config.help_text %}<div class="form-text text-muted">{{ form.config.help_text }}</div>{% endif %}
+                    {% for error in form.config.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 </div>
             </div>
+            <div class="hint-box">
+                <strong>{% trans "Подсказки:" %}</strong>
+                {% trans "• Q8_0 — почти без потерь качества (наш выбор для публикации экспертов). • Q4_0/Q4_1 — минимальный размер, деградация заметнее на малых моделях. • FP16/FP32 — без квантизации, файл в 2–4 раза больше. • Поле Config обычно оставляют пустым." %}
+            </div>
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            {% endif %}
         </div>
-    </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-repeat"></i> {% trans "Создать задачу" %}</button>
+            <a href="{% url 'conversion_dashboard' %}" class="btn btn-outline-secondary">{% trans "Отмена" %}</a>
+        </div>
+    </form>
 </div>
 {% endblock %}

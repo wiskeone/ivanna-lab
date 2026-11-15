@@ -397,10 +397,20 @@ class ExperimentForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
             'tags': forms.TextInput(attrs={
-                'placeholder': 'Введите теги через запятую: ru, code, medical'
+                'placeholder': _('Теги через запятую: ru, code, medical')
             }),
         }
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Bootstrap-классы (как в MoE-формах)
+        for name, field in self.fields.items():
+            w = field.widget
+            css = ('form-check-input' if isinstance(w, forms.CheckboxInput)
+                   else 'form-select' if isinstance(w, (forms.Select, forms.SelectMultiple))
+                   else 'form-control')
+            w.attrs['class'] = (w.attrs.get('class', '') + ' ' + css).strip()
+
     def clean_tags(self):
         tags = self.cleaned_data.get('tags', [])
         if isinstance(tags, str):
@@ -1625,7 +1635,9 @@ class FineTuningTemplateSelectForm(forms.Form):
 #############################################################################
 class ModelConversionForm(forms.ModelForm):
     quantization = forms.ChoiceField(
-        choices=ModelConversionJob.QUANTIZATION_CHOICES,
+        # form-level lazy labels: the model's plain-string choices stay
+        # migration-stable, the form translates them per active language
+        choices=[(v, _(label)) for v, label in ModelConversionJob.QUANTIZATION_CHOICES],
         initial='q4_0',
         label=_('Квантизация'),
         help_text=_('Тип квантизации для GGUF')
@@ -1636,10 +1648,10 @@ class ModelConversionForm(forms.ModelForm):
         fields = ['name', 'description', 'source_model', 'quantization', 'config']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
-            'config': forms.Textarea(attrs={'rows': 5, 'class': 'font-monospace'}),
+            'config': forms.Textarea(attrs={'rows': 4, 'class': 'font-monospace'}),
         }
         help_texts = {
-            'config': 'JSON с дополнительными параметрами (опционально)',
+            'config': _('JSON с дополнительными параметрами (опционально)'),
         }
 
     def __init__(self, *args, **kwargs):
@@ -1652,6 +1664,13 @@ class ModelConversionForm(forms.ModelForm):
         # Поле config делаем необязательным
         self.fields['config'].required = False
         self.fields['config'].widget.attrs['placeholder'] = '{"param": "value"}'
+        # Bootstrap-классы (как в MoE-формах)
+        for name, field in self.fields.items():
+            w = field.widget
+            css = ('form-check-input' if isinstance(w, forms.CheckboxInput)
+                   else 'form-select' if isinstance(w, (forms.Select, forms.SelectMultiple))
+                   else 'form-control')
+            w.attrs['class'] = (w.attrs.get('class', '') + ' ' + css).strip()
 
     def clean_config(self):
         config = self.cleaned_data.get('config')
