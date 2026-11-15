@@ -53,6 +53,9 @@ def build_model_card(job, theme) -> str:
         "instead of ablating a behavior, a domain direction is steer-amplified and",
         "baked into the weights (works where inference hooks are unavailable).",
         "",
+        "Created with [Ivanna Lab](https://github.com/wiskeone/ivanna-lab) —",
+        "self-hosted LLM model lab.",
+        "",
         "## RU",
         "",
         "Мягкий MoE-эксперт, полученный из плотной модели **без дообучения**",
@@ -74,9 +77,6 @@ def build_model_card(job, theme) -> str:
         "правки весов без градиентов. Расширение лабы Ivanna: обратная операция —",
         "не абляция поведения, а steer-усиление доменного направления, вшитое в веса",
         "(работает там, где инференс-хуки недоступны).",
-        "",
-        "Created with [Ivanna Lab](https://github.com/wiskeone/ivanna-lab) —",
-        "self-hosted LLM model lab.",
     ]
     return "\n".join(lines) + "\n"
 
