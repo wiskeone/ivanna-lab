@@ -130,6 +130,13 @@
                         <i class="bi bi-cpu" style="color: var(--primary-color);"></i>
                         {{ model.display_name|truncatechars:30 }}
                     </div>
+                    {% if model.published_hf %}
+                    <a class="model-badge hf-badge"
+                       href="https://huggingface.co/{{ model.published_hf }}" target="_blank" rel="noopener"
+                       title='{% trans "Выложено на Hugging Face через платформу" %}: {{ model.published_hf }}'>
+                        <i class="bi bi-cloud-arrow-up-fill"></i> HF
+                    </a>
+                    {% endif %}
                     <span class="model-badge">{{ model.get_model_type_display }}</span>
                 </div>
                 <div class="model-body">

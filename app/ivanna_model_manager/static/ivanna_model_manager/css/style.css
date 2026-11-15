@@ -589,6 +589,16 @@ input[type="range"]:focus::-ms-thumb {
     border-radius: 20px;
     color: var(--text-secondary);
 }
+/* HF-published indicator: badge on the model card, link on the detail page */
+a.hf-badge {
+    background: rgba(255, 212, 0, 0.15);
+    color: #ffd400;
+    text-decoration: none;
+}
+a.hf-badge:hover {
+    background: rgba(255, 212, 0, 0.28);
+    color: #ffe04d;
+}
 .model-body {
     padding: 1rem;
     flex: 1;

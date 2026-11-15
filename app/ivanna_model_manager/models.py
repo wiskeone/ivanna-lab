@@ -415,7 +415,27 @@ class ModelCheckpoint(models.Model):
         if self.huggingface_id:
             return f"https://huggingface.co/{self.huggingface_id}"
         return None
-    
+
+    @property
+    def published_hf_repo(self):
+        """HF repo this checkpoint was published to from the platform
+        (soft MoE push, v5.2). None if it has never been published.
+        Uses the `published_hf` queryset annotation when available
+        (model list) to avoid a per-row query. MoEExpertJob is defined
+        later in this module — resolved at call time."""
+        annotated = getattr(self, 'published_hf', None)
+        if annotated:
+            return annotated
+        job = (MoEExpertJob.objects.filter(output_model=self)
+               .exclude(hf_repo_id='').order_by('-id').first())
+        return job.hf_repo_id if job else None
+
+    @property
+    def published_hf_url(self):
+        """URL of the platform-published HF repo, if any"""
+        repo = self.published_hf_repo
+        return f"https://huggingface.co/{repo}" if repo else None
+
     @property
     def safe_name(self):
         """Безопасное имя для файловой системы"""

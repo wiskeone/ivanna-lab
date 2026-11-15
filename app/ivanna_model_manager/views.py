@@ -10,7 +10,7 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from huggingface_hub import HfApi
 
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, OuterRef, Subquery
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.translation import gettext as _
 from django.http import JsonResponse, HttpResponse, Http404
@@ -333,7 +333,12 @@ class ModelListView(LoginRequiredMixin, ListView):
             qs = qs.order_by(sort)
         else:
             qs = qs.order_by('-created_at')
-        return qs.select_related('experiment', 'parent')
+        # HF-репо, куда модель выложена через платформу (soft MoE push):
+        # Subquery по новейшей MoE-джобе с непустым repo_id — без N+1
+        published_repo = (MoEExpertJob.objects.filter(output_model=OuterRef('pk'))
+                          .exclude(hf_repo_id='').order_by('-id'))
+        return qs.select_related('experiment', 'parent').annotate(
+            published_hf=Subquery(published_repo.values('hf_repo_id')[:1]))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
