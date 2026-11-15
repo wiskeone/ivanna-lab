@@ -88,6 +88,16 @@ urlpatterns = [
     path('models/<int:pk>/start-merge/', views.start_merge_view, name='model_start_merge'),
 
     # Эксперименты
+    # v5.3: benchmarks (lm-eval-harness)
+    path('benchmarks/', views.benchmark_list, name='benchmark_list'),
+    path('benchmarks/search/', views.benchmark_search_api, name='benchmark_search_api'),
+    path('benchmarks/leaderboard/', views.benchmark_leaderboard, name='benchmark_leaderboard'),
+    path('benchmarks/runs/create/', views.benchmark_run_create, name='benchmark_run_create'),
+    path('benchmarks/runs/<int:pk>/', views.benchmark_run_detail, name='benchmark_run_detail'),
+    path('benchmarks/runs/<int:pk>/status/', views.benchmark_run_status, name='benchmark_run_status'),
+    path('benchmarks/<int:pk>/', views.benchmark_detail, name='benchmark_detail'),
+    path('benchmarks/<int:pk>/install/', views.benchmark_install, name='benchmark_install'),
+    path('benchmarks/<int:pk>/install/status/', views.benchmark_install_status, name='benchmark_install_status'),
     path('experiments/', views.ExperimentListView.as_view(), name='experiment_list'),
     path('experiments/create/', views.ExperimentCreateView.as_view(), name='experiment_create'),
     path('experiments/<int:pk>/', views.ExperimentDetailView.as_view(), name='experiment_detail'),

@@ -64,7 +64,8 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 # v5.2: задачи мягкого MoE живут в отдельном модуле — autodiscover грузит
 # только <app>.tasks
-app.conf.imports = ('ivanna_model_manager.tasks_moe',)
+app.conf.imports = ('ivanna_model_manager.tasks_moe',
+                       'ivanna_model_manager.tasks_benchmarks',)
 
 # v5.1: корреляция логов веб↔Celery
 from ivanna_model_manager.log_context import setup_celery_log_signals
@@ -98,6 +99,10 @@ app.conf.task_routes = {
     # v5.2: llama.cpp-конвертация — CPU-bound, никогда не роутилась и висла
     # в дефолтной очереди 'celery', которую воркеры не слушают
     'ivanna_model_manager.tasks.convert_model_to_gguf_task': {'queue': 'cpu_tasks'},
+    # v5.3: benchmarks — catalog/install on CPU, generation runs on GPU
+    'ivanna_model_manager.tasks_benchmarks.refresh_benchmark_catalog_task': {'queue': 'cpu_tasks'},
+    'ivanna_model_manager.tasks_benchmarks.install_benchmark_task': {'queue': 'cpu_tasks'},
+    'ivanna_model_manager.tasks_benchmarks.run_benchmark_task': {'queue': 'gpu_tasks'},
     
     # CPU задачи (могут выполняться на любом воркере)
     'ivanna_model_manager.tasks.download_model_task': {'queue': 'cpu_tasks'},

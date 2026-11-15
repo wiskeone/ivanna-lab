@@ -1,0 +1,137 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Бенчмарки" %}{% endblock %}
+{% block page_title %}{% trans "Бенчмарки (lm-eval-harness)" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .moe-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 20px; }
+    .bench-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 18px; height: 100%; }
+    .bench-card .category { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
+    .hint-box { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 12px 16px; font-size: 0.9rem; }
+    .search-result { border: 1px solid #444; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; background: rgba(255,255,255,0.03); }
+    .badge-installed { background: rgba(16,185,129,0.15); color: #10b981; }
+    .badge-downloading { background: rgba(59,130,246,0.15); color: #60a5fa; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hint-box mb-3">
+        {% trans "Стандартные бенчмарки через lm-eval-harness (EleutherAI). Поток: установите датасет бенчмарка → создайте прогон (модель + бенчмарки) → смотрите метрики и лидерборд. Прогон идёт на GPU-воркере в изолированном venv lm-eval." %}
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-4"><div class="moe-card text-center"><h3>{{ total_benchmarks }}</h3><div class="text-muted">{% trans "задач в реестре" %}</div></div></div>
+        <div class="col-md-4"><div class="moe-card text-center"><h3>{{ installed_count }}</h3><div class="text-muted">{% trans "датасетов установлено" %}</div></div></div>
+        <div class="col-md-4"><div class="moe-card text-center">
+            <a href="{% url 'benchmark_run_create' %}" class="btn btn-primary mt-2"><i class="bi bi-play-fill"></i> {% trans "Новый прогон" %}</a>
+            <a href="{% url 'benchmark_leaderboard' %}" class="btn btn-outline-secondary mt-2"><i class="bi bi-trophy"></i> {% trans "Лидерборд" %}</a>
+        </div></div>
+    </div>
+
+    <h5 class="mt-2 mb-3"><i class="bi bi-star"></i> {% trans "Популярные" %}</h5>
+    <div class="row g-3 mb-4">
+        {% for bench in popular %}
+        <div class="col-md-6 col-xl-4">
+            <div class="bench-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <div class="category">{{ bench.get_category_display }}</div>
+                        <h6 class="mb-0"><a href="{% url 'benchmark_detail' bench.pk %}">{{ bench.display_name|default:bench.name }}</a></h6>
+                        <span class="text-muted small">{{ bench.name }}</span>
+                    </div>
+                    {% if bench.is_installed %}
+                    <span class="badge badge-installed"><i class="bi bi-check-lg"></i> {% trans "установлен" %}</span>
+                    {% elif bench.install_status == 'downloading' %}
+                    <span class="badge badge-downloading">{% trans "загрузка…" %} {{ bench.install_progress|floatformat:0 }}</span>
+                    {% endif %}
+                </div>
+                <p class="small text-muted mb-2">{{ bench.description|truncatechars:150 }}</p>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ bench.metrics|join:", "|default:"—" }}</span>
+                    {% if bench.n_samples %}<span class="text-muted small">{{ bench.n_samples }} examples</span>{% endif %}
+                </div>
+                {% if not bench.is_installed %}
+                <button class="btn btn-sm btn-outline-primary mt-2 bench-install-btn" data-id="{{ bench.pk }}">
+                    <i class="bi bi-cloud-arrow-down"></i> {% trans "Установить датасет" %}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h5 class="mt-4 mb-2"><i class="bi bi-search"></i> {% trans "Поиск по полному реестру lm-eval" %}</h5>
+    <div class="moe-card mb-3">
+        <input type="search" id="benchSearch" class="form-control mb-2"
+               placeholder='{% trans "Например: mmlu, gsm8k, swe, math…" %}'>
+        <div id="searchSpinner" class="text-muted small" style="display:none;">{% trans "Поиск…" %}</div>
+        <div id="searchResults"></div>
+    </div>
+</div>
+
+<script>
+// Live search over the synced lm-eval registry (pattern: upload_model.html searchModels)
+let searchTimer = null;
+document.getElementById('benchSearch').addEventListener('input', function () {
+    clearTimeout(searchTimer);
+    const q = this.value.trim();
+    const box = document.getElementById('searchResults');
+    const spinner = document.getElementById('searchSpinner');
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    searchTimer = setTimeout(async () => {
+        spinner.style.display = 'block';
+        try {
+            const r = await fetch(`/benchmarks/search/?q=${encodeURIComponent(q)}`);
+            const data = await r.json();
+            box.innerHTML = '';
+            (data.results || []).forEach(b => {
+                const installedBadge = b.is_installed
+                    ? '<span class="badge badge-installed"><i class="bi bi-check-lg"></i></span>'
+                    : '<button class="btn btn-sm btn-outline-primary bench-install-btn" data-id="' + b.id + '"><i class="bi bi-cloud-arrow-down"></i> install</button>';
+                const div = document.createElement('div');
+                div.className = 'search-result d-flex justify-content-between align-items-center';
+                div.innerHTML =
+                    '<div><a href="/benchmarks/' + b.id + '/"><strong>' + (b.display_name || b.name) + '</strong></a> ' +
+                    '<span class="text-muted small">' + b.name + (b.group ? ' · ' + b.group : '') + '</span>' +
+                    (b.description ? '<div class="text-muted small">' + b.description.slice(0, 120) + '</div>' : '') + '</div>' +
+                    '<div>' + installedBadge + '</div>';
+                box.appendChild(div);
+            });
+            if (!(data.results || []).length) {
+                box.innerHTML = '<div class="text-muted">{% trans "Ничего не найдено" %}</div>';
+            }
+            bindInstallButtons(box);
+        } finally {
+            spinner.style.display = 'none';
+        }
+    }, 350);
+});
+
+// Install buttons with progress polling (EmbeddingModel pattern)
+function bindInstallButtons(root) {
+    root.querySelectorAll('.bench-install-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 0%';
+            await fetch(`/benchmarks/${id}/install/`, { method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'} });
+            const timer = setInterval(async () => {
+                const r = await fetch(`/benchmarks/${id}/install/status/`);
+                const d = await r.json();
+                if (d.install_status === 'downloading') {
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + Math.round(d.progress) + '%';
+                } else {
+                    clearInterval(timer);
+                    location.reload();
+                }
+            }, 1500);
+        });
+    });
+}
+bindInstallButtons(document);
+</script>
+{% endblock %}

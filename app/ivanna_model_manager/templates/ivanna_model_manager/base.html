@@ -164,6 +164,9 @@
                         </a>
                         <a href="{% url 'evaluation_dashboard' %}" class="nav-link-sub">
                             <i class="bi bi-clipboard-check"></i> {% trans "Оценка моделей" %}
+                            <a href="{% url 'benchmark_list' %}" class="nav-link-sub {% if request.resolver_match.url_name == 'benchmark_list' or request.resolver_match.url_name == 'benchmark_run_detail' %}active{% endif %}">
+                                <i class="bi bi-trophy"></i> {% trans "Бенчмарки" %}
+                            </a>
                         </a>
                     </div>
                 </div>

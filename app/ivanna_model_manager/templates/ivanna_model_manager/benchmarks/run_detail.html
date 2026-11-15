@@ -1,0 +1,112 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ run.name }}{% endblock %}
+{% block page_title %}{{ run.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .moe-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .metric-table td, .metric-table th { padding: 6px 12px; }
+    .log-box { background: rgba(0,0,0,0.35); border: 1px solid #333; border-radius: 8px; padding: 12px;
+               font-family: var(--bs-font-monospace); font-size: 0.78rem; max-height: 320px; overflow-y: auto; white-space: pre-wrap; }
+    details > summary { cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px;">
+    <div class="moe-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h4>{{ run.name }} <span id="statusBadge" class="badge {% if run.status == 'COMPLETED' %}bg-success{% elif run.status == 'FAILED' %}bg-danger{% elif run.status == 'RUNNING' %}bg-info{% else %}bg-secondary{% endif %}">{{ run.get_status_display }}</span></h4>
+                <div class="text-muted">
+                    <a href="{% url 'model_detail' run.model.pk %}">{{ run.model.display_name|default:run.model.name }}</a>
+                    · engine: {{ run.engine }}
+                    {% if run.quantized %} · nf4{% endif %}
+                    {% if run.limit %} · limit {{ run.limit }}{% endif %}
+                    {% if run.num_fewshot is not None %} · few-shot {{ run.num_fewshot }}{% endif %}
+                    · batch {{ run.batch_size }}
+                </div>
+                <div class="text-muted small">
+                    {% for b in run.benchmarks.all %}<a href="{% url 'benchmark_detail' b.pk %}">{{ b.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+                </div>
+            </div>
+            <div class="text-muted text-end small">
+                {% if run.duration_seconds %}<div><i class="bi bi-clock"></i> {{ run.duration_seconds|floatformat:0 }}s</div>{% endif %}
+                {{ run.created_at|date:"d.m.Y H:i" }}
+            </div>
+        </div>
+
+        <div class="progress mt-2" style="height: 10px;">
+            <div id="runProgress" class="progress-bar {% if run.status == 'FAILED' %}bg-danger{% else %}bg-success{% endif %}"
+                 role="progressbar" style="width: {{ run.progress }}%;" aria-valuenow="{{ run.progress }}"
+                 aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="text-muted small mt-1" id="currentStep">{{ run.current_step }}</div>
+        {% if run.error_message %}
+        <div class="alert alert-danger mt-2 mb-0 py-2">{{ run.error_message }}</div>
+        {% endif %}
+    </div>
+
+    {% if run.summary %}
+    <div class="moe-card">
+        <h6><i class="bi bi-bar-chart"></i> {% trans "Метрики" %}</h6>
+        <table class="table table-dark metric-table mb-0">
+            <thead><tr><th>{% trans "Бенчмарк" %}</th><th>{% trans "Метрика" %}</th><th>{% trans "Значение" %}</th></tr></thead>
+            <tbody>
+            {% for bench_name, metrics in run.summary.items %}
+                {% for metric, value in metrics.items %}
+                <tr>
+                    {% if forloop.first %}<td rowspan="{{ metrics|length }}">{{ bench_name }}</td>{% endif %}
+                    <td><code>{{ metric }}</code></td>
+                    <td><strong>{{ value|floatformat:4 }}</strong></td>
+                </tr>
+                {% endfor %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="moe-card">
+        <h6><i class="bi bi-terminal"></i> {% trans "Лог" %}</h6>
+        <div class="log-box" id="logBox">{{ run.logs }}</div>
+    </div>
+
+    {% if run.results %}
+    <div class="moe-card">
+        <details>
+            <summary><i class="bi bi-filetype-json"></i> {% trans "Сырой JSON-отчёт lm-eval" %}</summary>
+            <pre class="log-box mt-2" style="max-height: 400px;">{{ results_pretty }}</pre>
+        </details>
+    </div>
+    {% endif %}
+</div>
+
+{% if run.status == 'RUNNING' or run.status == 'PENDING' %}
+<script>
+// Polling (pattern: moe/job_detail.html)
+const jobPk = {{ run.pk }};
+const statusUrl = `/benchmarks/runs/${jobPk}/status/`;
+let isRunning = true;
+
+function updateStatus() {
+    fetch(statusUrl).then(r => r.json()).then(d => {
+        const bar = document.getElementById('runProgress');
+        bar.style.width = d.progress + '%';
+        bar.setAttribute('aria-valuenow', d.progress);
+        document.getElementById('currentStep').textContent = d.current_step || '';
+        const badge = document.getElementById('statusBadge');
+        badge.textContent = d.status;
+        const box = document.getElementById('logBox');
+        box.textContent = d.logs_tail || box.textContent;
+        box.scrollTop = box.scrollHeight;
+        if (!d.is_running && isRunning) { location.reload(); }
+        isRunning = d.is_running;
+    }).catch(() => {});
+}
+setInterval(updateStatus, 3000);
+</script>
+{% endif %}
+{% endblock %}

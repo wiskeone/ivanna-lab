@@ -172,6 +172,9 @@ CELERY_TASK_ROUTES = {
     'ivanna_model_manager.tasks.regenerate_document_chunks_task': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks.rebuild_collection_index_task': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks.convert_model_to_gguf_task': {'queue': 'cpu_tasks'},
+    'ivanna_model_manager.tasks_benchmarks.refresh_benchmark_catalog_task': {'queue': 'cpu_tasks'},
+    'ivanna_model_manager.tasks_benchmarks.install_benchmark_task': {'queue': 'cpu_tasks'},
+    'ivanna_model_manager.tasks_benchmarks.run_benchmark_task': {'queue': 'gpu_tasks'},
 }
 
 CELERY_TASK_DEFAULT_RETRY_DELAY = 30
@@ -276,6 +279,9 @@ BM25_CACHE_SIZE = int(os.getenv('BM25_CACHE_SIZE', '10'))  # максималь�
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'static'
 MEDIA_URL = '/media/'
+
+# v5.3: isolated lm-eval-harness venv python (GPU image builds it)
+LMEVAL_PYTHON = os.getenv('LMEVAL_PYTHON', '/opt/lmeval-venv/bin/python')
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DOCUMENT_UPLOAD_DIR = MEDIA_ROOT / 'documents'

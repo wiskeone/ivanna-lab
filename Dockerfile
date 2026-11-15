@@ -88,6 +88,15 @@ RUN uv pip install flash-linear-attention && \
 # 9. mergekit (последняя стабильная версия с PyPI)
 RUN uv pip install mergekit==0.1.4
 
+# 9.5 lm-eval-harness в ИЗОЛИРОВАННОМ venv (v5.3 benchmarks).
+# Свой torch/transformers внутри venv (~2-3 ГБ к образу) — намеренно:
+# стек lm-eval не должен конфликтовать с пиннед-стеком основного venv
+# (transformers==5.12.1 + accelerate==1.6.0 + bnb 0.49.2, см. requirements.in).
+# Платформа вызывает его subprocess'ом (settings.LMEVAL_PYTHON).
+RUN uv venv /opt/lmeval-venv && \
+    /opt/lmeval-venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/lmeval-venv/bin/pip install --no-cache-dir lm-eval
+
 # ========== llama.cpp: только Python-скрипт конвертации ==========
 # (C++-бинарники проект не вызывает; сборка master сломалась на линковке
 # bin/llama — дрейф CMake-таргетов upstream. convert.py в upstream удалён

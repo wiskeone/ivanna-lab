@@ -21,7 +21,8 @@ from .models import (
     SearchQuery, SearchResult, RAGSession, RetrievedChunk,
     SearchQualityFeedback, RAGEvaluation, ProcessingPipeline,
     DocumentProcessor, DeletedDocumentLog,
-    MoETheme, MoEExpertJob
+    MoETheme, MoEExpertJob,
+    Benchmark, BenchmarkRun
 )
 
 
@@ -1876,3 +1877,20 @@ class MoEExpertJobAdmin(ModelAdmin):
     list_display = ('name', 'theme', 'base_checkpoint', 'status', 'progress', 'created_at')
     list_filter = ('status', 'mode')
     search_fields = ('name',)
+
+
+# ── Benchmarks (v5.3) ──
+
+@admin.register(Benchmark)
+class BenchmarkAdmin(ModelAdmin):
+    list_display = ('name', 'display_name', 'category', 'source', 'is_popular',
+                    'install_status', 'n_samples')
+    list_filter = ('source', 'category', 'install_status', 'is_popular')
+    search_fields = ('name', 'display_name', 'description')
+
+
+@admin.register(BenchmarkRun)
+class BenchmarkRunAdmin(ModelAdmin):
+    list_display = ('name', 'model', 'engine', 'status', 'progress', 'created_by', 'created_at')
+    list_filter = ('status', 'engine')
+    search_fields = ('name', 'model__name')

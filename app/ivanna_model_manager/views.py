@@ -32,6 +32,7 @@ from .models import (
     FineTuningJob, ModelDownloadJob, EvaluationDataset,
     ModelEvaluationTask, EvaluationResult,
     DocumentCollection, Document, DocumentChunk,
+    BenchmarkRun,
     MoEExpertJob,
     EmbeddingModel, RAGSession, SearchQuery, FineTuningMethod,
     FineTuningJob, FineTuningCheckpoint, FineTuningEvaluation,
@@ -276,6 +277,20 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'progress': 100,
                 'created_at': coll.updated_at,
                 'url': reverse('rag_collection_detail', args=[coll.id])
+            })
+
+        # v5.3: benchmark runs (lm-eval-harness)
+        my_bench_runs = (BenchmarkRun.objects.all() if user.is_staff
+                         else BenchmarkRun.objects.filter(created_by=user.username))
+        for run in my_bench_runs.select_related('model')[:3]:
+            recent_tasks.append({
+                'id': run.id,
+                'type': 'benchmark',
+                'name': run.name,
+                'status': run.status,
+                'progress': run.progress,
+                'created_at': run.created_at,
+                'url': reverse('benchmark_run_detail', args=[run.id])
             })
 
         recent_tasks.sort(key=lambda x: x['created_at'], reverse=True)
@@ -4766,3 +4781,188 @@ def moe_interpret(request, pk):
     transaction.on_commit(lambda: moe_interpret_task.delay(job.pk))
     messages.info(request, 'Модель анализирует отчёт прогона — обнови страницу через пару минут.')
     return redirect('moe_job_detail', pk=pk)
+
+
+# ══════════════════════════════════════════════════════════════════════
+# v5.3: Benchmarks (lm-eval-harness)
+# ══════════════════════════════════════════════════════════════════════
+
+@login_required
+def benchmark_list(request):
+    """Catalog: popular curated cards + full-registry live search."""
+    from .models import Benchmark
+
+    popular = Benchmark.objects.filter(is_popular=True)
+    total = Benchmark.objects.count()
+    installed = Benchmark.objects.filter(install_status='completed').count()
+    context = {
+        'popular': popular,
+        'total_benchmarks': total,
+        'installed_count': installed,
+        'active_tab': 'benchmarks',
+    }
+    return render(request, 'ivanna_model_manager/benchmarks/list.html', context)
+
+
+@login_required
+def benchmark_search_api(request):
+    """JSON search over the synced registry (name/group/description)."""
+    from django.http import JsonResponse
+    from .models import Benchmark
+
+    q = (request.GET.get('q') or '').strip()
+    category = request.GET.get('category') or ''
+    qs = Benchmark.objects.all()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(display_name__icontains=q) |
+                       Q(description__icontains=q) | Q(group__icontains=q))
+    if category:
+        qs = qs.filter(category=category)
+    rows = list(qs.values('id', 'name', 'display_name', 'description', 'category',
+                          'metrics', 'group', 'source', 'is_popular',
+                          'install_status')[:50])
+    for r in rows:
+        r['is_installed'] = r.pop('install_status') == 'completed'
+    return JsonResponse({'results': rows, 'total': qs.count()})
+
+
+@login_required
+def benchmark_detail(request, pk):
+    from .models import Benchmark
+
+    bench = get_object_or_404(Benchmark, pk=pk)
+    runs = BenchmarkRun.objects.filter(benchmarks=bench).select_related('model')[:20]
+    return render(request, 'ivanna_model_manager/benchmarks/detail.html',
+                  {'bench': bench, 'runs': runs, 'active_tab': 'benchmarks'})
+
+
+@login_required
+@require_POST
+def benchmark_install(request, pk):
+    """Kick off dataset prefetch for one benchmark."""
+    from django.http import JsonResponse
+    from .models import Benchmark
+    from .tasks_benchmarks import install_benchmark_task
+
+    bench = get_object_or_404(Benchmark, pk=pk)
+    if not bench.dataset_path:
+        return JsonResponse({'success': False, 'error': 'No dataset to install'})
+    if bench.install_status == 'downloading':
+        return JsonResponse({'success': False, 'error': 'Already installing'})
+    transaction.on_commit(lambda: install_benchmark_task.delay(bench.pk))
+    return JsonResponse({'success': True})
+
+
+@login_required
+def benchmark_install_status(request, pk):
+    from django.http import JsonResponse
+    from .models import Benchmark
+
+    bench = get_object_or_404(Benchmark, pk=pk)
+    return JsonResponse({'install_status': bench.install_status,
+                         'progress': bench.install_progress,
+                         'is_installed': bench.is_installed,
+                         'error': bench.install_error})
+
+
+@login_required
+def benchmark_run_create(request):
+    """Create a run: model + installed benchmarks + knobs."""
+    from .models import Benchmark, ModelCheckpoint
+    from .tasks_benchmarks import run_benchmark_task
+
+    models_qs = ModelCheckpoint.objects.filter(
+        is_active=True, status__in=['DOWNLOADED', 'LOADED'],
+        local_path__isnull=False).exclude(local_path='')
+
+    if request.method == 'POST':
+        model_id = request.POST.get('model')
+        bench_ids = request.POST.getlist('benchmarks')
+        run = BenchmarkRun(
+            model_id=model_id,
+            limit=int(request.POST['limit']) if request.POST.get('limit') else None,
+            num_fewshot=int(request.POST['num_fewshot']) if request.POST.get('num_fewshot', '').strip() else None,
+            batch_size=request.POST.get('batch_size') or 'auto',
+            created_by=request.user.username,
+        )
+        base = run.model
+        # same quantization policy as MoE scan: >= 1.5B on a small GPU needs nf4
+        run.quantized = (base.parameter_count or 0) >= 1_500_000_000
+        run.save()
+        run.benchmarks.set(bench_ids)
+        transaction.on_commit(lambda: run_benchmark_task.delay(run.pk))
+        messages.success(request, _('Задача бенчмарка "%(name)s" создана') % {'name': run.name})
+        return redirect('benchmark_run_detail', pk=run.pk)
+
+    installed = Benchmark.objects.filter(install_status='completed').order_by('category', 'name')
+    context = {
+        'models': models_qs.order_by('name'),
+        'installed_benchmarks': installed,
+        'active_tab': 'benchmarks',
+    }
+    return render(request, 'ivanna_model_manager/benchmarks/run_create.html', context)
+
+
+@login_required
+def benchmark_run_detail(request, pk):
+    from .models import BenchmarkRun
+
+    run = get_object_or_404(BenchmarkRun.objects.select_related('model'), pk=pk)
+    results_pretty = ''
+    if run.results:
+        try:
+            results_pretty = json.dumps(run.results, indent=2, ensure_ascii=False)[:40000]
+        except (TypeError, ValueError):
+            results_pretty = str(run.results)[:40000]
+    return render(request, 'ivanna_model_manager/benchmarks/run_detail.html',
+                  {'run': run, 'results_pretty': results_pretty,
+                   'active_tab': 'benchmarks'})
+
+
+@login_required
+def benchmark_run_status(request, pk):
+    """Polling JSON: DB fields merged with the Celery state (pattern
+    api_evaluation_task_status)."""
+    from django.http import JsonResponse
+    from celery.result import AsyncResult
+    from .models import BenchmarkRun
+
+    run = get_object_or_404(BenchmarkRun, pk=pk)
+    data = {
+        'status': run.status,
+        'progress': run.progress,
+        'current_step': run.current_step,
+        'is_running': run.status in ('PENDING', 'RUNNING'),
+        'error_message': run.error_message,
+        'logs_tail': run.logs[-2500:],
+    }
+    if run.celery_task_id:
+        res = AsyncResult(run.celery_task_id)
+        if res.state == 'PROGRESS' and isinstance(res.info, dict):
+            data['progress'] = res.info.get('progress', run.progress)
+            data['current_step'] = res.info.get('current_step', run.current_step)
+    return JsonResponse(data)
+
+
+@login_required
+def benchmark_leaderboard(request):
+    """Cross-run leaderboard: checkpoints × benchmarks, best score per cell."""
+    from .models import BenchmarkRun
+
+    runs = BenchmarkRun.objects.filter(status='COMPLETED').select_related('model')
+    bench_names, table = [], {}
+    for run in runs:
+        row = table.setdefault(run.model_id, {'model': run.model, 'scores': {}})
+        for bench_name, value in run.best_scores().items():
+            cur = row['scores'].get(bench_name)
+            if cur is None or value > cur:
+                row['scores'][bench_name] = value
+            if bench_name not in bench_names:
+                bench_names.append(bench_name)
+    bench_names.sort()
+    rows = sorted(table.values(), key=lambda r: -max(r['scores'].values(), default=0))
+    for row in rows:
+        row['max_score'] = max(row['scores'].values(), default=0)
+    return render(request, 'ivanna_model_manager/benchmarks/leaderboard.html',
+                  {'bench_names': bench_names, 'rows': rows,
+                   'active_tab': 'benchmarks'})

@@ -30,6 +30,7 @@ Dark theme, bilingual, single-GPU-first. English interface shown below.
 - **Model merging** — mergekit-powered linear / SLERP / TIES / DARE merges with a web UI
 - **Soft MoE experts** — turn any dense model into a domain expert *without training*: activation scan extracts the domain direction, a rank-one steer patch bakes it into the weights, an embedding router picks the variant per request (weight-space steering). Also supports **WSP ablation** (suppress a behavior instead of amplifying it)
 - **Datasets & evaluation** — dataset builder, upload/import/export (incl. Hugging Face datasets), evaluation tasks, answer ratings and leaderboards
+- **Standard benchmarks** — lm-eval-harness integration: curated catalog + 600-task registry search, dataset install, GPU runs in an isolated venv, metrics and a cross-model leaderboard ([docs/benchmarks.md](docs/benchmarks.md))
 - **Distillation** — generate Q&A with teacher checkpoints, assemble instruction datasets
 - **RAG** — document collections (PDF/DOCX/HTML/CSV/Excel/EPUB), paragraph-aware chunking, page previews, FAISS + BM25 hybrid search, selectable rerankers, RAG-grounded chat
 - **Monitoring** — GPU status, Prometheus + Grafana, Flower

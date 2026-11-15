@@ -178,6 +178,7 @@
                                     {% elif task.type == 'soft_moe' %}{% trans "Мягкий MoE (усиление)" %}
                                     {% elif task.type == 'soft_moe_ablation' %}{% trans "WSP-абляция" %}
                                     {% elif task.type == 'vector_index' %}{% trans "FAISS-индекс коллекции" %}
+                                    {% elif task.type == 'benchmark' %}{% trans "Бенчмарк" %}
                                     {% else %}{% trans "Задача" %}{% endif %}
                                 </span>
                                 <span>

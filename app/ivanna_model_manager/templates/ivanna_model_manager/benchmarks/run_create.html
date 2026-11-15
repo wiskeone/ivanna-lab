@@ -1,0 +1,83 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Новый прогон бенчмарка" %}{% endblock %}
+{% block page_title %}{% trans "Новый прогон бенчмарка" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .moe-form-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .hint-box { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 12px 16px; font-size: 0.9rem; }
+    .bench-pick { border: 1px solid #444; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.03); }
+    .bench-pick:hover { border-color: var(--primary-color); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+    <div class="hint-box mb-3">
+        {% trans "Прогон выполняется lm-eval-harness на GPU-воркере в изолированном venv. Для моделей от 1.5B автоматически включается nf4-квантизация (4GB VRAM). Полный MMLU — тысячи примеров: начинайте с лимита 100–300." %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="moe-form-card">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label class="form-label">{% trans "Модель" %}</label>
+                    <select name="model" class="form-select" required>
+                        <option value="">— {% trans "выберите чекпойнт" %} —</option>
+                        {% for m in models %}
+                        <option value="{{ m.pk }}">{{ m.display_name|default:m.name }}{% if m.parameter_count %} · {{ m.parameter_count|floatformat:0 }} params{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text text-muted">{% trans "Только чекпойнты, скачанные на диск." %}</div>
+                </div>
+
+                <div class="col-12 mb-3">
+                    <label class="form-label">{% trans "Бенчмарки (установленные)" %}</label>
+                    {% if installed_benchmarks %}
+                    <div>
+                        {% for b in installed_benchmarks %}
+                        <label class="bench-pick">
+                            <input type="checkbox" name="benchmarks" value="{{ b.pk }}">
+                            <div class="flex-grow-1">
+                                <strong>{{ b.display_name|default:b.name }}</strong>
+                                <span class="text-muted small">({{ b.name }})</span>
+                                <div class="text-muted small">{{ b.get_category_display }}{% if b.metrics %} · {{ b.metrics|join:", " }}{% endif %}</div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-muted">
+                        {% trans "Ни один датасет не установлен — установите бенчмарки на" %} <a href="{% url 'benchmark_list' %}">{% trans "странице каталога" %}</a>.
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">{% trans "Лимит примеров" %}</label>
+                    <input type="number" name="limit" class="form-control" min="1"
+                           placeholder='{% trans "пусто = весь датасет" %}'>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">{% trans "Few-shot" %}</label>
+                    <input type="number" name="num_fewshot" class="form-control" min="0"
+                           placeholder='{% trans "по умолчанию задачи" %}'>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Batch size</label>
+                    <input type="text" name="batch_size" class="form-control" value="auto">
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" {% if not installed_benchmarks %}disabled{% endif %}>
+                <i class="bi bi-play-fill"></i> {% trans "Запустить прогон" %}
+            </button>
+            <a href="{% url 'benchmark_list' %}" class="btn btn-outline-secondary">{% trans "Отмена" %}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

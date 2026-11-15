@@ -6842,3 +6842,210 @@ msgid ""
 msgstr ""
 "Gates passed: results are in the reports below; eval texts are for manual "
 "review."
+
+msgid "Бенчмарки"
+msgstr "Benchmarks"
+
+msgid "Бенчмарк"
+msgstr "Benchmark"
+
+msgid "Бенчмарки (lm-eval-harness)"
+msgstr "Benchmarks (lm-eval-harness)"
+
+msgid ""
+"Стандартные бенчмарки через lm-eval-harness (EleutherAI). Поток: установите "
+"датасет бенчмарка → создайте прогон (модель + бенчмарки) → смотрите метрики "
+"и лидерборд. Прогон идёт на GPU-воркере в изолированном venv lm-eval."
+msgstr ""
+"Standard benchmarks via lm-eval-harness (EleutherAI). Flow: install a "
+"benchmark dataset → create a run (model + benchmarks) → check metrics and "
+"the leaderboard. Runs execute on the GPU worker inside an isolated lm-eval "
+"venv."
+
+msgid "задач в реестре"
+msgstr "tasks in the registry"
+
+msgid "датасетов установлено"
+msgstr "datasets installed"
+
+msgid "Новый прогон"
+msgstr "New run"
+
+msgid "Лидерборд"
+msgstr "Leaderboard"
+
+msgid "Популярные"
+msgstr "Popular"
+
+msgid "установлен"
+msgstr "installed"
+
+msgid "загрузка…"
+msgstr "downloading…"
+
+msgid "Поиск по полному реестру lm-eval"
+msgstr "Search the full lm-eval registry"
+
+msgid "Например: mmlu, gsm8k, swe, math…"
+msgstr "e.g. mmlu, gsm8k, swe, math…"
+
+msgid "Поиск…"
+msgstr "Searching…"
+
+msgid "Установить датасет"
+msgstr "Install dataset"
+
+msgid "Знания"
+msgstr "Knowledge"
+
+msgid "Рассуждения"
+msgstr "Reasoning"
+
+msgid "Математика"
+msgstr "Math"
+
+msgid "Мультиязычность"
+msgstr "Multilingual"
+
+msgid "Следование инструкциям"
+msgstr "Instruction following"
+
+msgid "Другое"
+msgstr "Other"
+
+msgid "Курируемый"
+msgstr "Curated"
+
+msgid "Реестр lm-eval"
+msgstr "lm-eval registry"
+
+msgid "Не установлено"
+msgstr "Not installed"
+
+msgid "Установлено"
+msgstr "Installed"
+
+msgid "Датасет установлен"
+msgstr "Dataset installed"
+
+msgid "Запустить прогон"
+msgstr "Run now"
+
+msgid "Прогоны этого бенчмарка"
+msgstr "Runs of this benchmark"
+
+msgid "Прогон"
+msgstr "Run"
+
+msgid "Лучший скор"
+msgstr "Best score"
+
+msgid "Прогонов ещё не было."
+msgstr "No runs yet."
+
+msgid "Новый прогон бенчмарка"
+msgstr "New benchmark run"
+
+msgid ""
+"Прогон выполняется lm-eval-harness на GPU-воркере в изолированном venv. Для "
+"моделей от 1.5B автоматически включается nf4-квантизация (4GB VRAM). Полный "
+"MMLU — тысячи примеров: начинайте с лимита 100–300."
+msgstr ""
+"The run executes lm-eval-harness on the GPU worker inside an isolated venv. "
+"Models from 1.5B automatically get nf4 quantization (4GB VRAM). Full MMLU is"
+" thousands of examples: start with a limit of 100–300."
+
+msgid "— выберите чекпойнт —"
+msgstr "— pick a checkpoint —"
+
+msgid "Только чекпойнты, скачанные на диск."
+msgstr "Only checkpoints downloaded to disk."
+
+msgid "Бенчмарки (установленные)"
+msgstr "Benchmarks (installed)"
+
+msgid "Ни один датасет не установлен — установите бенчмарки на"
+msgstr "No datasets installed — install benchmarks on the"
+
+msgid "странице каталога"
+msgstr "catalog page"
+
+msgid "Лимит примеров"
+msgstr "Example limit"
+
+msgid "пусто = весь датасет"
+msgstr "empty = full dataset"
+
+msgid "Few-shot"
+msgstr "Few-shot"
+
+msgid "по умолчанию задачи"
+msgstr "task default"
+
+msgid "Задача бенчмарка \"%(name)s\" создана"
+msgstr "Benchmark run \"%(name)s\" created"
+
+msgid "Значение"
+msgstr "Value"
+
+msgid "Сырой JSON-отчёт lm-eval"
+msgstr "Raw lm-eval JSON report"
+
+msgid "Лидерборд бенчмарков"
+msgstr "Benchmark leaderboard"
+
+msgid ""
+"Лучший результат по каждой паре «модель × бенчмарк» среди завершённых "
+"прогонов. Строки отсортированы по лучшему скору. Полный список прогонов — в "
+"истории каждого бенчмарка."
+msgstr ""
+"Best result per model × benchmark pair across completed runs. Rows are "
+"sorted by the best score. Full run history lives on each benchmark page."
+
+msgid ""
+"Пока нет завершённых прогонов. Запустите бенчмарк — и результаты появятся "
+"здесь."
+msgstr ""
+"No completed runs yet. Launch a benchmark and results will appear here."
+
+msgid "Идентификатор задачи lm-eval (например, gsm8k)"
+msgstr "lm-eval task identifier (e.g. gsm8k)"
+
+msgid "Метрики задачи (acc, exact_match, ...)"
+msgstr "Task metrics (acc, exact_match, ...)"
+
+msgid "Группа lm-eval (mmlu, bbh, ...)"
+msgstr "lm-eval group (mmlu, bbh, ...)"
+
+msgid "HF datasets id для prefetch (например, gsm8k)"
+msgstr "HF datasets id for prefetch (e.g. gsm8k)"
+
+msgid "Имя конфига датасета (subset), если есть"
+msgstr "Dataset config name (subset), if any"
+
+msgid "Число примеров в датасете (для оценки длительности)"
+msgstr "Number of dataset examples (for duration estimates)"
+
+msgid "Показывать карточкой в «Популярных»"
+msgstr "Show as a card in Popular"
+
+msgid "Автогенерируется, если пусто"
+msgstr "Auto-generated when empty"
+
+msgid "Чекпойнт для прогона"
+msgstr "Checkpoint to run"
+
+msgid "Максимум примеров на бенчмарк (пусто = весь датасет)"
+msgstr "Max examples per benchmark (empty = full dataset)"
+
+msgid "Число few-shot примеров (пусто = по умолчанию задачи)"
+msgstr "Few-shot example count (empty = task default)"
+
+msgid "auto или число"
+msgstr "auto or a number"
+
+msgid "nf4-квантизация модели для прогона (авто для моделей от 1.5B)"
+msgstr "nf4 model quantization for the run (automatic for models from 1.5B)"
+
+msgid "Собственный раннер"
+msgstr "In-house runner"
