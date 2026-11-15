@@ -48,7 +48,7 @@ def _gguf_in_dir(path: Path):
     return None, None
 
 
-def load_model_for_scan(model_path: str, load_mode: str = "auto"):
+def load_model_for_scan(model_path: str, load_mode: str = "auto", full_gpu: bool = False):
     """Загрузить модель для форвардов. Возвращает (model, tokenizer, info).
 
     load_mode: auto | int4 | cpu (см. модуль docstring).
@@ -223,7 +223,8 @@ def _build_inputs(tok, texts):
 
 
 def scan_theme(model_path, domain_texts, contrast_texts, out_npz, load_mode="auto",
-               seed: int = 7, holdout_fraction: float = 0.33, progress_cb=None) -> dict:
+               seed: int = 7, holdout_fraction: float = 0.33, full_gpu: bool = False,
+               progress_cb=None) -> dict:
     """Полный скан темы. Пишет npz (d_last/d_mean/mean-входы) и возвращает отчёт.
 
     progress_cb(done, total, step) — опционально, для прогресса задачи.
