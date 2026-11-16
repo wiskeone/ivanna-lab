@@ -96,7 +96,7 @@ RUN uv pip install mergekit==0.1.4
 RUN uv venv /opt/lmeval-venv --python 3.13 --seed && \
     /opt/lmeval-venv/bin/pip install --no-cache-dir torch && \
     /opt/lmeval-venv/bin/pip install --no-cache-dir bitsandbytes && \
-    /opt/lmeval-venv/bin/pip install --no-cache-dir lm-eval
+    /opt/lmeval-venv/bin/pip install --no-cache-dir 'lm-eval[hf]'
 
 # ========== llama.cpp: только Python-скрипт конвертации ==========
 # (C++-бинарники проект не вызывает; сборка master сломалась на линковке
