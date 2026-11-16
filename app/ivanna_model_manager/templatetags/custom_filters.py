@@ -797,6 +797,15 @@ def list_length(value):
         return 0
 
 @register.filter
+@register.filter
+def first_value(d):
+    """First value of a dict (dict_values is not subscriptable in templates)."""
+    try:
+        return next(iter(d.values()))
+    except Exception:
+        return None
+
+
 def get_item(value, index):
     """Получить элемент списка по индексу"""
     try:

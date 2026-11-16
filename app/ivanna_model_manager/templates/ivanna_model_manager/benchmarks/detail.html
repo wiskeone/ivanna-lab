@@ -1,5 +1,5 @@
 {% extends 'ivanna_model_manager/base.html' %}
-{% load i18n %}
+{% load i18n custom_filters %}
 
 {% block title %}{{ bench.display_name|default:bench.name }}{% endblock %}
 {% block page_title %}{{ bench.display_name|default:bench.name }}{% endblock %}
@@ -95,7 +95,7 @@
                 <td><a href="{% url 'benchmark_run_detail' run.pk %}">{{ run.name }}</a></td>
                 <td>{{ run.model.display_name|default:run.model.name }}</td>
                 <td>{{ run.get_status_display }}</td>
-                <td>{% with s=run.best_scores %}{% if s %}{{ s.values|first|floatformat:3 }}{% else %}—{% endif %}{% endwith %}</td>
+                <td>{% with s=run.best_scores %}{% if s %}{{ s|first_value|floatformat:3 }}{% else %}—{% endif %}{% endwith %}</td>
                 <td>{{ run.created_at|date:"d.m.Y H:i" }}</td>
             </tr>
         {% endfor %}
