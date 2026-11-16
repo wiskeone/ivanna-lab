@@ -9,7 +9,8 @@ from unittest.mock import patch
 from django.test import SimpleTestCase, TestCase
 
 from ivanna_model_manager.models import Benchmark, BenchmarkRun, ModelCheckpoint
-from ivanna_model_manager.tasks_benchmarks import _build_lm_eval_command, _json_safe
+from ivanna_model_manager.tasks_benchmarks import (
+    _build_lm_eval_command, _json_safe, _prepare_quantized_model,)
 from ivanna_model_manager.services.benchmarks.catalog import curated_entries, CURATED_BENCHMARKS
 
 
@@ -45,16 +46,36 @@ class CommandBuildingTests(SimpleTestCase):
         self.assertIn('trust_remote_code=True', model_args)
         self.assertNotIn('load_in_4bit', model_args)
 
-    def test_quantized_command(self):
+    def test_quantized_command_uses_injected_path(self):
+        # quantization moved out of CLI args: the runner gets a model dir
+        # whose config.json carries the bnb config (_prepare_quantized_model)
         run = self._run(quantized=True, batch_size='8', num_fewshot=5, limit=100)
-        cmd = _build_lm_eval_command(run, ['mmlu', 'gsm8k'], '/tmp/out')
+        cmd = _build_lm_eval_command(run, ['mmlu', 'gsm8k'], '/tmp/out',
+                                     model_path='/tmp/out/model_quantized')
         model_args = cmd[cmd.index('--model_args') + 1]
-        self.assertIn('load_in_4bit=True', model_args)
-        self.assertIn('bnb_4bit_quant_type=nf4', model_args)
+        self.assertIn('pretrained=/tmp/out/model_quantized', model_args)
+        self.assertNotIn('load_in_4bit', model_args)
+        self.assertNotIn('quantization=', model_args)
         self.assertEqual(cmd[cmd.index('--tasks') + 1], 'mmlu,gsm8k')
-        self.assertEqual(cmd[cmd.index('--batch_size') + 1], '8')
         self.assertEqual(cmd[cmd.index('--num_fewshot') + 1], '5')
         self.assertEqual(cmd[cmd.index('--limit') + 1], '100')
+
+    def test_prepare_quantized_model_injects_config(self):
+        import json
+        import os
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as src, tempfile.TemporaryDirectory() as out:
+            with open(os.path.join(src, 'config.json'), 'w') as fh:
+                json.dump({'model_type': 'qwen3_5', 'vocab_size': 100}, fh)
+            with open(os.path.join(src, 'model.safetensors'), 'wb') as fh:
+                fh.write(b'x')
+            dst = _prepare_quantized_model(src, out)
+            cfg = json.load(open(os.path.join(dst, 'config.json')))
+            self.assertEqual(cfg['quantization_config']['quant_method'], 'bitsandbytes')
+            self.assertEqual(cfg['quantization_config']['bnb_4bit_quant_type'], 'nf4')
+            # weights are symlinked, not copied
+            self.assertTrue(os.path.islink(os.path.join(dst, 'model.safetensors')))
 
 
 class SummaryNormalizationTests(TestCase):

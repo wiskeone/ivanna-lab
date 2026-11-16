@@ -147,17 +147,46 @@ def install_benchmark_task(self, benchmark_id):
         cache.delete(lock_key)
 
 
-def _build_lm_eval_command(run: BenchmarkRun, task_names, out_dir):
-    """Build the lm-eval CLI for a run. Quantized runs use bnb nf4 (same
-    policy as MoE scan: >= 1.5B on a 4GB GPU cannot load in bf16)."""
-    model_args = [f'pretrained={run.model.local_path}', 'trust_remote_code=True']
-    if run.quantized:
-        # quantization=bnb makes lm-eval wrap the rest into BitsAndBytesConfig
-        # (transformers 5.x rejects bare load_in_4bit kwargs)
-        model_args += ['quantization=bnb', 'load_in_4bit=True',
-                       'bnb_4bit_quant_type=nf4', 'bnb_4bit_compute_dtype=bfloat16']
-    else:
-        model_args += ['dtype=bfloat16']
+def _prepare_quantized_model(model_path, out_dir):
+    """Create a run-local model dir whose config.json carries the nf4
+    quantization_config.
+
+    lm-eval 0.4.13 reads bnb settings from the MODEL CONFIG only (CLI
+    quantization args were dropped in transformers 5.x — bare load_in_4bit
+    reaches the model __init__ and crashes). Everything except config.json
+    is symlinked, so no weight copying."""
+    import glob
+    import json as _json
+
+    dst = os.path.join(out_dir, 'model_quantized')
+    os.makedirs(dst, exist_ok=True)
+    with open(os.path.join(model_path, 'config.json'), encoding='utf-8') as fh:
+        cfg = _json.load(fh)
+    cfg['quantization_config'] = {
+        'quant_method': 'bitsandbytes',
+        'load_in_4bit': True,
+        'bnb_4bit_quant_type': 'nf4',
+        'bnb_4bit_compute_dtype': 'bfloat16',
+        'bnb_4bit_use_double_quant': True,
+    }
+    for f in os.listdir(model_path):
+        if f == 'config.json':
+            continue
+        src = os.path.join(model_path, f)
+        link = os.path.join(dst, f)
+        if not os.path.exists(link):
+            os.symlink(os.path.abspath(src), link)
+    with open(os.path.join(dst, 'config.json'), 'w', encoding='utf-8') as fh:
+        _json.dump(cfg, fh, indent=2)
+    return dst
+
+
+def _build_lm_eval_command(run: BenchmarkRun, task_names, out_dir, model_path=None):
+    """Build the lm-eval CLI for a run. Quantized runs load through
+    _prepare_quantized_model (same nf4 policy as MoE scan: >= 1.5B on a 4GB
+    GPU cannot load in bf16)."""
+    model_args = [f'pretrained={model_path or run.model.local_path}',
+                  'trust_remote_code=True', 'dtype=bfloat16']
 
     cmd = [
         LMEVAL_PYTHON, '-m', 'lm_eval',
@@ -238,7 +267,11 @@ def run_benchmark_task(self, run_id):
         run.output_dir = out_dir
         run.save(update_fields=['output_dir'])
 
-        cmd = _build_lm_eval_command(run, task_names, out_dir)
+        model_path = run.model.local_path
+        if run.quantized:
+            model_path = _prepare_quantized_model(run.model.local_path, out_dir)
+            run.add_log("nf4 quantized load via config-injected model copy")
+        cmd = _build_lm_eval_command(run, task_names, out_dir, model_path)
         run.add_log(f"Command: {' '.join(cmd)}")
         run.update_progress(5, "Starting lm-eval")
 
