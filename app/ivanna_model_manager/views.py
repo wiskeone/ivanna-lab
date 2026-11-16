@@ -279,14 +279,19 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'url': reverse('rag_collection_detail', args=[coll.id])
             })
 
-        # v5.3: benchmark runs (lm-eval-harness)
+        # v5.3: benchmark runs (lm-eval-harness) — card title = benchmark
+        # names, model shown un-truncated on its own line
         my_bench_runs = (BenchmarkRun.objects.all() if user.is_staff
                          else BenchmarkRun.objects.filter(created_by=user.username))
         for run in my_bench_runs.select_related('model')[:3]:
+            bench_names = [b.display_name or b.name for b in run.benchmarks.all()[:3]]
+            extra = run.benchmarks.count() - len(bench_names)
+            label = ', '.join(bench_names) + (f' +{extra}' if extra > 0 else '')
             recent_tasks.append({
                 'id': run.id,
                 'type': 'benchmark',
-                'name': run.name,
+                'name': label or run.name,
+                'subtitle': run.model.display_name or run.model.name,
                 'status': run.status,
                 'progress': run.progress,
                 'created_at': run.created_at,
@@ -4949,7 +4954,8 @@ def benchmark_leaderboard(request):
     """Cross-run leaderboard: checkpoints × benchmarks.
 
     Cell = score from the LATEST completed run of that pair (a limited debug
-    run does not shadow a later full run). Rows sorted by mean score."""
+    run does not shadow a later full run). Rows sorted by mean score.
+    Filters: model, benchmark column, free-text search over names."""
     from .models import BenchmarkRun
 
     runs = (BenchmarkRun.objects.filter(status='COMPLETED')
@@ -4963,10 +4969,32 @@ def benchmark_leaderboard(request):
             if bench_name not in bench_names:
                 bench_names.append(bench_name)
     bench_names.sort()
-    rows = [r for r in table.values() if r['scores']]
+
+    model_id = request.GET.get('model') or ''
+    bench_filter = request.GET.get('benchmark') or ''
+    q = (request.GET.get('q') or '').strip()
+
+    all_rows = [r for r in table.values() if r['scores']]
+    filter_models = sorted(all_rows, key=lambda r: (r['model'].display_name or r['model'].name).lower())
+
+    rows = all_rows
+    if model_id:
+        rows = [r for r in rows if str(r['model'].id) == model_id]
+    if q:
+        ql = q.lower()
+        rows = [r for r in rows
+                if ql in (r['model'].display_name or '').lower()
+                or ql in (r['model'].name or '').lower()]
+        bench_names = [b for b in bench_names if ql in b.lower()]
+    if bench_filter:
+        bench_names = [b for b in bench_names if b == bench_filter]
+
     rows.sort(key=lambda r: -(sum(r['scores'].values()) / len(r['scores'])))
     for row in rows:
         row['max_score'] = max(row['scores'].values(), default=0)
     return render(request, 'ivanna_model_manager/benchmarks/leaderboard.html',
                   {'bench_names': bench_names, 'rows': rows,
+                   'filter_models': filter_models,
+                   'filter_benchmarks': sorted(table and {b for r in table.values() for b in r['scores']} or []),
+                   'model_id': model_id, 'benchmark_filter': bench_filter, 'q': q,
                    'active_tab': 'benchmarks'})

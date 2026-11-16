@@ -167,6 +167,9 @@
                                 <h4 class="item-name">{{ task.name|truncatechars:50 }}</h4>
                                 <span class="badge bg-{{ task.status|lower }}">{{ task.status }}</span>
                             </div>
+                            {% if task.subtitle %}
+                            <div class="small text-muted" style="white-space: normal;"><i class="bi bi-cpu me-1"></i>{{ task.subtitle }}</div>
+                            {% endif %}
                             <div class="item-details">
                                 <span>
                                     <i class="bi bi-tag"></i> 

@@ -7072,3 +7072,15 @@ msgid ""
 msgstr ""
 "Result of the latest completed run for each model × benchmark pair. Rows are"
 " sorted by mean score. Full run history lives on each benchmark page."
+
+msgid "Все бенчмарки"
+msgstr "All benchmarks"
+
+msgid "Поиск по имени модели или бенчмарка"
+msgstr "Search by model or benchmark name"
+
+msgid "Сброс"
+msgstr "Reset"
+
+msgid "Под фильтры ничего не попало — сбросьте их или запустите новый прогон."
+msgstr "Nothing matches the filters — reset them or launch a new run."
