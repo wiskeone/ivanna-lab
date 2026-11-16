@@ -423,6 +423,22 @@ class ModelDetailView(LoginRequiredMixin, DetailView):
         # Оценки
         context['evaluations'] = obj.evaluations.filter(is_valid=True).order_by('-evaluated_at')[:5]
 
+        # v5.3: scores of this model per benchmark (latest completed run per pair)
+        bench_scores = []
+        for run in obj.benchmark_runs.filter(status='COMPLETED') \
+                .prefetch_related('benchmarks').order_by('-completed_at'):
+            scores = run.best_scores()
+            for bench in run.benchmarks.all():
+                if bench.name in scores and not any(bs['bench_pk'] == bench.pk for bs in bench_scores):
+                    bench_scores.append({
+                        'bench_pk': bench.pk,
+                        'bench_name': bench.display_name or bench.name,
+                        'score': scores[bench.name],
+                        'run_pk': run.pk,
+                        'when': run.completed_at,
+                    })
+        context['bench_scores'] = bench_scores
+
         # Активные сессии
         context['active_sessions'] = obj.inference_sessions.filter(is_active=True).order_by('-last_activity')[:5]
 

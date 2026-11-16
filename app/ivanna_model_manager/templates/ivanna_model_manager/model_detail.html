@@ -468,6 +468,54 @@
                 </div>
             </div>
 
+            {% if bench_scores %}
+            <!-- Бенчмарки модели (v5.3) -->
+            <div class="card mt-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-trophy me-2"></i> {% trans "Бенчмарки" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% for bs in bench_scores %}
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <div>
+                            <a href="{% url 'benchmark_detail' bs.bench_pk %}">{{ bs.bench_name }}</a>
+                            <div class="small text-muted">{% trans "Прогон:" %} <a href="{% url 'benchmark_run_detail' bs.run_pk %}">#{{ bs.run_pk }}</a> · {{ bs.when|date:"d.m.Y H:i" }}</div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success-emphasis">{{ bs.score|floatformat:3 }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if model.parent %}
+            <!-- Родительская модель (v5.3) -->
+            <div class="card mt-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-diagram-2 me-2"></i> {% trans "Происхождение" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="bi bi-arrow-up-right"></i>
+                        <div>
+                            {% trans "Родитель:" %}
+                            <a href="{% url 'model_detail' model.parent.pk %}">{{ model.parent.display_name|default:model.parent.name }}</a>
+                        </div>
+                    </div>
+                    <div class="small text-muted">
+                        {{ model.parent.get_model_type_display }}
+                        {% if model.parent.parameter_count %} · {{ model.parent.parameter_count|floatformat:0 }} {% trans "параметров" %}{% endif %}
+                        {% if model.parent.huggingface_id %} · <a href="https://huggingface.co/{{ model.parent.huggingface_id }}" target="_blank" rel="noopener">{{ model.parent.huggingface_id }}</a>{% endif %}
+                    </div>
+                    {% if model.parent.children.exists %}
+                    <div class="small text-muted mt-2">
+                        {% blocktrans with n=model.parent.children.count %}Производных моделей: {{ n }}{% endblocktrans %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Управление версиями -->
             <div class="card mt-4">
                 <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">

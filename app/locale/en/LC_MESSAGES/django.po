@@ -7102,3 +7102,15 @@ msgstr "Last run"
 
 msgid "Скор"
 msgstr "Score"
+
+msgid "Происхождение"
+msgstr "Lineage"
+
+msgid "Родитель:"
+msgstr "Parent:"
+
+msgid "Производных моделей: %(n)s"
+msgstr "Derived models: %(n)s"
+
+msgid "Прогон:"
+msgstr "Run:"
