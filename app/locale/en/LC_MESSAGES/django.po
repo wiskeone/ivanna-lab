@@ -7114,3 +7114,9 @@ msgstr "Derived models: %(n)s"
 
 msgid "Прогон:"
 msgstr "Run:"
+
+msgid "Примеров"
+msgstr "Examples"
+
+msgid "Hugging Face datasets"
+msgstr "Hugging Face datasets"

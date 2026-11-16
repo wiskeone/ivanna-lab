@@ -4953,6 +4953,7 @@ def benchmark_run_create(request):
     context = {
         'models': models_qs.order_by('name'),
         'installed_benchmarks': installed,
+        'preselect': request.GET.get('benchmark') or '',
         'active_tab': 'benchmarks',
     }
     return render(request, 'ivanna_model_manager/benchmarks/run_create.html', context)
