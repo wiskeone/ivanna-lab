@@ -808,10 +808,13 @@ def first_value(d):
 
 @register.filter
 def get_item(value, index):
-    """Получить элемент списка по индексу"""
+    """Получить элемент списка по индексу; dict — безопасный .get
+    (лидерборд: строки не содержат все колонки бенчмарков)"""
+    if isinstance(value, dict):
+        return value.get(index)
     try:
         return value[index]
-    except (TypeError, IndexError):
+    except (TypeError, IndexError, KeyError):
         return None
 
 @register.filter
