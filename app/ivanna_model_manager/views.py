@@ -281,9 +281,13 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         # v5.3: benchmark runs (lm-eval-harness) — card title = benchmark
         # names, model shown un-truncated on its own line
-        my_bench_runs = (BenchmarkRun.objects.all() if user.is_staff
-                         else BenchmarkRun.objects.filter(created_by=user.username))
-        for run in my_bench_runs.select_related('model')[:3]:
+        my_bench_runs = list((BenchmarkRun.objects.all() if user.is_staff
+                              else BenchmarkRun.objects.filter(created_by=user.username))
+                             .select_related('model')[:10])
+        # active runs must never be crowded out by fresh PENDING ones
+        my_bench_runs.sort(key=lambda r: (0 if r.status == 'RUNNING' else 1,
+                                          -r.created_at.timestamp()))
+        for run in my_bench_runs[:3]:
             bench_names = [b.display_name or b.name for b in run.benchmarks.all()[:3]]
             extra = run.benchmarks.count() - len(bench_names)
             label = ', '.join(bench_names) + (f' +{extra}' if extra > 0 else '')
