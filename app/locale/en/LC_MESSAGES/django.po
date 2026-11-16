@@ -7132,3 +7132,21 @@ msgstr "Generation (beams)"
 
 msgid "Scoring (loglikelihood)"
 msgstr "Scoring (loglikelihood)"
+
+msgid "Страница не найдена"
+msgstr "Page not found"
+
+msgid "Такого адреса не существует — возможно, ссылка устарела."
+msgstr "This address does not exist — the link may be outdated."
+
+msgid "Доступ запрещён"
+msgstr "Access denied"
+
+msgid "У этого аккаунта нет прав на этот раздел."
+msgstr "This account does not have permission for this section."
+
+msgid "Некорректный запрос"
+msgstr "Bad request"
+
+msgid "Сервер не смог обработать этот запрос."
+msgstr "The server could not process this request."

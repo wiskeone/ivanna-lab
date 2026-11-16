@@ -1,0 +1,14 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Страница не найдена" %} — Ivanna Lab{% endblock %}
+{% block page_title %}404{% endblock %}
+
+{% block content %}
+<div class="container text-center py-5">
+    <div class="display-1 text-danger" style="font-weight: 700;">404</div>
+    <h3 class="mb-3">{% trans "Страница не найдена" %}</h3>
+    <p class="text-muted mb-4">{% trans "Такого адреса не существует — возможно, ссылка устарела." %}</p>
+    <a href="/" class="btn btn-primary"><i class="bi bi-house"></i> {% trans "На главную" %}</a>
+</div>
+{% endblock %}
