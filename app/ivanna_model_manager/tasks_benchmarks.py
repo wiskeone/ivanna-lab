@@ -238,8 +238,12 @@ def run_benchmark_task(self, run_id):
         run.update_progress(5, "Starting lm-eval")
 
         n_tasks = len(task_names)
+        # humaneval-class tasks execute generated code and require the
+        # disclaimer acknowledgement; the variable is ignored elsewhere
+        env = {**os.environ, 'HF_ALLOW_CODE_EVAL': '1'}
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT, text=True, bufsize=1)
+                                   stderr=subprocess.STDOUT, text=True, bufsize=1,
+                                   env=env)
         try:
             for line in process.stdout:
                 line = line.rstrip()
