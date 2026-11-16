@@ -53,6 +53,20 @@ Benchmark (catalog row)                      BenchmarkRun (job)
 All routed in `config/celery.py` **and** `config/settings.py` (dual routes are
 intentional — see repo quirk notes).
 
+## 4GB GPU reality (Qwen3.5 hybrid arch)
+
+- Models **< 1.5B** run in bf16, full GPU — fine on a 4 GB card.
+- Models **≥ 1.5B** load through the config-injected nf4 copy
+  (`_prepare_quantized_model`): lm-eval 0.4.13 reads bnb settings from the
+  model config.json only, and transformers 5.x dropped bare bnb CLI kwargs.
+  Skip patterns must be **regex-anchored** (`model\.layers\.\d+\.linear_attn\..*`)
+  — plain substrings do not match nested hybrid-net children.
+- Even then, a **2B hybrid model does not fit 3.63 GiB usable VRAM** during
+  generation (bf16 tails of the gated-delta-net layers + KV cache) — batch
+  size does not save it. Same limitation family as eval ≥ 2.5B in soft MoE.
+  Run such models on a bigger GPU, or benchmark their GGUF builds with a
+  llama.cpp-based runner (phase 2 candidate).
+
 ## Notes & limitations
 
 - First rebuild of the GPU image after this feature downloads the lm-eval
