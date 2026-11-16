@@ -279,8 +279,11 @@ def run_benchmark_task(self, run_id):
 
         n_tasks = len(task_names)
         # humaneval-class tasks execute generated code and require the
-        # disclaimer acknowledgement; the variable is ignored elsewhere
-        env = {**os.environ, 'HF_ALLOW_CODE_EVAL': '1'}
+        # disclaimer acknowledgement; the variable is ignored elsewhere.
+        # expandable_segments: long beam-search phases fragment the allocator
+        # on 4GB cards — OOM with gigabytes "reserved but unallocated"
+        env = {**os.environ, 'HF_ALLOW_CODE_EVAL': '1',
+               'PYTORCH_CUDA_ALLOC_CONF': 'expandable_segments:True'}
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, text=True, bufsize=1,
                                    env=env)
