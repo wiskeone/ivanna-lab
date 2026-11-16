@@ -102,6 +102,11 @@ class SummaryNormalizationTests(TestCase):
         run = self._make_run({'gsm8k': {'exact_match,strict-match': 0.41}})
         self.assertEqual(run.best_scores(), {'gsm8k': 0.41})
 
+    def test_best_scores_excludes_sample_len(self):
+        # humaneval summary: sample_len is bookkeeping, must not win as the score
+        run = self._make_run({'humaneval': {'sample_len': 164, 'pass@1,create_test': 0.2256}})
+        self.assertEqual(run.best_scores(), {'humaneval': 0.2256})
+
     def test_best_scores_ignores_non_numeric(self):
         run = self._make_run({'ifeval': {'inst_level_loose_acc': 0.3, 'note': 'text'}})
         self.assertEqual(run.best_scores(), {'ifeval': 0.3})

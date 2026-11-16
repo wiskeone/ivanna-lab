@@ -4818,16 +4818,23 @@ class BenchmarkRun(models.Model):
 
     def best_scores(self):
         """{benchmark_name: primary_metric_value} — for the leaderboard."""
+        priority = ('acc_norm,none', 'acc,none', 'exact_match,strict-match',
+                    'exact_match,none', 'exact_match', 'acc_norm', 'acc',
+                    'pass@1,create_test', 'pass@1', 'prompt_level_strict_acc,none',
+                    'inst_level_strict_acc,none')
+        non_scores = {'sample_len', 'alias'}
         out = {}
         for bench_name, metrics in (self.summary or {}).items():
             primary = None
-            for metric in ('acc_norm,none', 'acc,none', 'exact_match,none',
-                           'exact_match', 'acc_norm', 'acc', 'pass@1'):
-                if metric in metrics:
+            for metric in priority:
+                if metric in metrics and isinstance(metrics[metric], (int, float)):
                     primary = metrics[metric]
                     break
-            if primary is None and metrics:
-                primary = next(iter(metrics.values()))
-            if isinstance(primary, (int, float)):
+            if primary is None:
+                # fallback: first plausible score (exclude bookkeeping keys)
+                primary = next((v for k, v in metrics.items()
+                                if k not in non_scores and 'stderr' not in k
+                                and isinstance(v, (int, float))), None)
+            if primary is not None:
                 out[bench_name] = primary
         return out
