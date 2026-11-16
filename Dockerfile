@@ -105,7 +105,9 @@ RUN uv venv /opt/lmeval-venv --python 3.13 --seed && \
 RUN git config --global http.postBuffer 524288000 && \
     git config --global http.lowSpeedLimit 0 && \
     git config --global http.lowSpeedTime 999999 && \
-    git clone --depth 1 --single-branch https://github.com/ggerganov/llama.cpp.git /opt/llama.cpp && \
+    git clone --depth 1 --single-branch \
+      --revision b54752df40e4d8e53d34ef5a598336b4e4871d39 \
+      https://github.com/ggerganov/llama.cpp.git /opt/llama.cpp && \
     cd /opt/llama.cpp && \
     ln -sf convert_hf_to_gguf.py convert.py
 
