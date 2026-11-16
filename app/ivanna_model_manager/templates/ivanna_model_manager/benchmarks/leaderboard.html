@@ -13,92 +13,94 @@
 {% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 1100px;">
+<div class="container" style="max-width: 1400px;">
     <div class="hint-box mb-3">
         {% trans "Результат последнего завершённого прогона для каждой пары «модель × бенчмарк». Строки отсортированы по среднему скору. Полный список прогонов — в истории каждого бенчмарка." %}
     </div>
 
-    <div class="row g-3">
-    <div class="col-lg-8">
-    <form method="get" class="moe-card row g-2 align-items-center mb-3">
-        <div class="col-md-4">
-            <select name="model" class="form-select" onchange="this.form.submit()">
-                <option value="">{% trans "Все модели" %}</option>
-                {% for m in filter_models %}
-                <option value="{{ m.model.id }}" {% if model_id == m.model.id|stringformat:"s" %}selected{% endif %}>{{ m.model.display_name|default:m.model.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-3">
-            <select name="benchmark" class="form-select" onchange="this.form.submit()">
-                <option value="">{% trans "Все бенчмарки" %}</option>
-                {% for b in filter_benchmarks %}
-                <option value="{{ b }}" {% if benchmark_filter == b %}selected{% endif %}>{{ b }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-4">
-            <input type="search" name="q" value="{{ q }}" class="form-control"
-                   placeholder='{% trans "Поиск по имени модели или бенчмарка" %}'>
-        </div>
-        <div class="col-md-1 d-flex gap-2">
-            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
-            <a href="{% url 'benchmark_leaderboard' %}" class="btn btn-outline-secondary" title="{% trans "Сброс" %}"><i class="bi bi-x-lg"></i></a>
+    <form method="get" class="moe-card mb-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-lg-4">
+                <select name="model" class="form-select" onchange="this.form.submit()">
+                    <option value="">{% trans "Все модели" %}</option>
+                    {% for m in filter_models %}
+                    <option value="{{ m.model.id }}" {% if model_id == m.model.id|stringformat:"s" %}selected{% endif %}>{{ m.model.display_name|default:m.model.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-3">
+                <select name="benchmark" class="form-select" onchange="this.form.submit()">
+                    <option value="">{% trans "Все бенчмарки" %}</option>
+                    {% for b in filter_benchmarks %}
+                    <option value="{{ b }}" {% if benchmark_filter == b %}selected{% endif %}>{{ b }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-3">
+                <input type="search" name="q" value="{{ q }}" class="form-control"
+                       placeholder='{% trans "Поиск по имени модели или бенчмарка" %}'>
+            </div>
+            <div class="col-lg-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> {% trans "Фильтр" %}</button>
+                <a href="{% url 'benchmark_leaderboard' %}" class="btn btn-outline-secondary" title="{% trans "Сброс" %}"><i class="bi bi-x-lg"></i></a>
+            </div>
         </div>
     </form>
 
-    {% if rows %}
-    <div class="moe-card table-responsive">
-        <table class="table table-dark table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>{% trans "Модель" %}</th>
-                    {% for b in bench_names %}<th class="text-nowrap"><a href="#" class="text-muted">{{ b }}</a></th>{% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in rows %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td><a href="{% url 'model_detail' row.model.pk %}">{{ row.model.display_name|default:row.model.name }}</a></td>
-                    {% for b in bench_names %}
-                        {% with v=row.scores|get_item:b %}
-                            {% if v %}<td class="{% if v == row.max_score %}score-best{% endif %}">{{ v|floatformat:3 }}</td>{% else %}<td class="text-muted">—</td>{% endif %}
-                        {% endwith %}
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="moe-card text-muted">
-        {% if q or model_id or benchmark_filter %}{% trans "Под фильтры ничего не попало — сбросьте их или запустите новый прогон." %}{% else %}{% trans "Пока нет завершённых прогонов. Запустите бенчмарк — и результаты появятся здесь." %}{% endif %}
-        <div class="mt-2"><a href="{% url 'benchmark_run_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-play-fill"></i> {% trans "Новый прогон" %}</a></div>
-    </div>
-    {% endif %}
-    </div>
-
-    <div class="col-lg-4">
-        <div class="moe-card">
-            <h6><i class="bi bi-list-check"></i> {% trans "Бенчмарки с прогонами" %}</h6>
-            {% if bench_cards %}
-            {% for card in bench_cards %}
-            <a href="{% if card.pk %}{% url 'benchmark_detail' card.pk %}{% else %}#{% endif %}"
-               class="d-flex justify-content-between align-items-center py-2 border-bottom text-decoration-none">
-                <div>
-                    <strong class="text-body">{{ card.name }}</strong>
-                    <div class="small text-muted">{{ card.models_count }} {% trans "моделей" %}</div>
-                </div>
-                <span class="badge bg-success-subtle text-success-emphasis">{{ card.best|floatformat:3 }}</span>
-            </a>
-            {% endfor %}
+    <div class="row g-3">
+        <div class="col-lg-9">
+            {% if rows %}
+            <div class="moe-card table-responsive">
+                <table class="table table-dark table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>{% trans "Модель" %}</th>
+                            {% for b in bench_names %}<th class="text-nowrap"><a href="#" class="text-muted">{{ b }}</a></th>{% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><a href="{% url 'model_detail' row.model.pk %}">{{ row.model.display_name|default:row.model.name }}</a></td>
+                            {% for b in bench_names %}
+                                {% with v=row.scores|get_item:b %}
+                                    {% if v %}<td class="{% if v == row.max_score %}score-best{% endif %}">{{ v|floatformat:3 }}</td>{% else %}<td class="text-muted">—</td>{% endif %}
+                                {% endwith %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% else %}
-            <div class="text-muted small">{% trans "Пока нет завершённых прогонов." %}</div>
+            <div class="moe-card text-muted">
+                {% if q or model_id or benchmark_filter %}{% trans "Под фильтры ничего не попало — сбросьте их или запустите новый прогон." %}{% else %}{% trans "Пока нет завершённых прогонов. Запустите бенчмарк — и результаты появятся здесь." %}{% endif %}
+                <div class="mt-2"><a href="{% url 'benchmark_run_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-play-fill"></i> {% trans "Новый прогон" %}</a></div>
+            </div>
             {% endif %}
         </div>
-    </div>
+
+        <div class="col-lg-3">
+            <div class="moe-card">
+                <h6><i class="bi bi-list-check"></i> {% trans "Бенчмарки с прогонами" %}</h6>
+                {% if bench_cards %}
+                {% for card in bench_cards %}
+                <a href="{% if card.pk %}{% url 'benchmark_detail' card.pk %}{% else %}#{% endif %}"
+                   class="d-flex justify-content-between align-items-center py-2 border-bottom text-decoration-none">
+                    <div>
+                        <strong class="text-body">{{ card.name }}</strong>
+                        <div class="small text-muted">{{ card.models_count }} {% trans "моделей" %}</div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success-emphasis">{{ card.best|floatformat:3 }}</span>
+                </a>
+                {% endfor %}
+                {% else %}
+                <div class="text-muted small">{% trans "Пока нет завершённых прогонов." %}</div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
