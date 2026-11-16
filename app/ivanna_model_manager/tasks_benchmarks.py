@@ -169,6 +169,9 @@ def _build_lm_eval_command(run: BenchmarkRun, task_names, out_dir):
         cmd += ['--num_fewshot', str(run.num_fewshot)]
     if run.limit:
         cmd += ['--limit', str(run.limit)]
+    # humaneval-class tasks are marked unsafe (code execution); the flag only
+    # gates those, other tasks run unchanged
+    cmd += ['--confirm_run_unsafe_code']
     return cmd
 
 
