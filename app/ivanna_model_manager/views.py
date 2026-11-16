@@ -284,10 +284,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         my_bench_runs = list((BenchmarkRun.objects.all() if user.is_staff
                               else BenchmarkRun.objects.filter(created_by=user.username))
                              .select_related('model')[:10])
-        # active runs must never be crowded out by fresh PENDING ones
-        my_bench_runs.sort(key=lambda r: (0 if r.status == 'RUNNING' else 1,
-                                          -r.created_at.timestamp()))
-        for run in my_bench_runs[:3]:
+        # no [:3] slice here — the global priority sort decides visibility;
+        # slicing early crowded out RUNNING runs
+        for run in my_bench_runs:
             bench_names = [b.display_name or b.name for b in run.benchmarks.all()[:3]]
             extra = run.benchmarks.count() - len(bench_names)
             label = ', '.join(bench_names) + (f' +{extra}' if extra > 0 else '')
@@ -296,13 +295,16 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'type': 'benchmark',
                 'name': label or run.name,
                 'subtitle': run.model.display_name or run.model.name,
+                'priority': 0 if run.status == 'RUNNING' else 1,
                 'status': run.status,
                 'progress': run.progress,
                 'created_at': run.created_at,
                 'url': reverse('benchmark_run_detail', args=[run.id])
             })
 
-        recent_tasks.sort(key=lambda x: x['created_at'], reverse=True)
+        # active tasks (priority 0) first, then newest across all features
+        recent_tasks.sort(key=lambda x: (x.get('priority', 1),
+                                         -x['created_at'].timestamp()))
         context['recent_tasks'] = recent_tasks[:5]
 
         # Последние модели (глобальные)
