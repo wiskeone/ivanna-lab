@@ -67,6 +67,19 @@ intentional — see repo quirk notes).
   Run such models on a bigger GPU, or benchmark their GGUF builds with a
   llama.cpp-based runner (phase 2 candidate).
 
+## Pilot results (16-17.11.2026, Qwen3.5-0.8B pair)
+
+- **HumanEval (full 164)**: vanilla 0.2256, python-docs soft-MoE expert 0.2256 — identical. The
+  docs-direction does not touch code generation; the patch is provably harmless for general coding.
+- **code2text_python (BLEU-4, 150 samples)**: vanilla 1.0519, expert 1.0289 — a −2.2% delta,
+  within noise for this sample size. Docstring generation is not measurably shifted by the
+  docs-direction patch either.
+- **uncheatable_eval_github_python (perplexity)**: OOM on 4 GB even at batch 1 — the task builds
+  ~1.7 GiB loglikelihood requests in one chunk. Not feasible on this card; rerun on ≥8 GB.
+- Takeaway: standard benchmarks don't surface the soft-MoE docs-direction effect. Demonstrating it
+  needs domain-native tasks — the phase-2 custom benchmark builder over the lab's own RAG corpora
+  (PEP/docs QA) is the right vehicle.
+
 ## Notes & limitations
 
 - First rebuild of the GPU image after this feature downloads the lm-eval
