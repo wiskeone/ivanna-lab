@@ -51,6 +51,40 @@
         <a href="{% url 'benchmark_run_create' %}" class="btn btn-primary"><i class="bi bi-play-fill"></i> {% trans "Запустить прогон" %}</a>
     </div>
 
+    {% if model_rows %}
+    <div class="moe-card mb-3">
+        <h6><i class="bi bi-bar-chart"></i> {% trans "Скор по моделям" %}{% if chart.metric %} <span class="text-muted">({{ chart.metric }})</span>{% endif %}</h6>
+        <div id="scoreChart" style="height: 340px;"></div>
+        {{ chart|json_script:"chart-data" }}
+    </div>
+
+    <h5>{% trans "Модели — все данные" %}</h5>
+    <div class="moe-card table-responsive mb-3">
+        <table class="table table-dark table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>{% trans "Модель" %}</th>
+                    <th>{% trans "Скор" %}</th>
+                    {% for k, v in model_rows.0.metrics.items %}<th class="text-nowrap"><code class="small">{{ k }}</code></th>{% endfor %}
+                    <th>{% trans "Прогонов" %}</th>
+                    <th>{% trans "Последний" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in model_rows %}
+                <tr>
+                    <td><a href="{% url 'model_detail' row.model.pk %}">{{ row.model.display_name|default:row.model.name }}</a></td>
+                    <td><strong>{{ row.score|floatformat:4 }}</strong></td>
+                    {% for k, v in row.metrics.items %}<td>{{ v|floatformat:4 }}</td>{% endfor %}
+                    <td>{{ row.runs_count }}</td>
+                    <td>{{ row.run.completed_at|date:"d.m.Y H:i" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
     <h5>{% trans "Прогоны этого бенчмарка" %}</h5>
     {% if runs %}
     <table class="table table-dark table-hover">
@@ -71,6 +105,29 @@
     <div class="hint-box">{% trans "Прогонов ещё не было." %}</div>
     {% endif %}
 </div>
+
+{% if model_rows %}
+<script>
+// Plotly bar chart from json_script data (autoescaping-safe pattern)
+const data = JSON.parse(document.getElementById('chart-data').textContent);
+Plotly.newPlot('scoreChart', [{
+    type: 'bar',
+    x: data.models,
+    y: data.scores,
+    text: data.scores.map(v => v.toFixed(4)),
+    textposition: 'auto',
+    marker: { color: 'rgba(16,185,129,0.75)' },
+}], {
+    title: '',
+    margin: { t: 10, b: 120, l: 50, r: 20 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#ccc' },
+    xaxis: { tickangle: -20 },
+    yaxis: { gridcolor: 'rgba(255,255,255,0.1)', zerolinecolor: 'rgba(255,255,255,0.2)' },
+}, { responsive: true, displayModeBar: false });
+</script>
+{% endif %}
 
 <script>
 document.querySelectorAll('.bench-install-btn').forEach(btn => {

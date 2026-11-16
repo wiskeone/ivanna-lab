@@ -4833,12 +4833,46 @@ def benchmark_search_api(request):
 
 @login_required
 def benchmark_detail(request, pk):
-    from .models import Benchmark
+    """Benchmark page: per-model leaderboard chart + all model metrics.
+
+    Cell semantics = latest completed run per model (as in the leaderboard)."""
+    from .models import Benchmark, BenchmarkRun
 
     bench = get_object_or_404(Benchmark, pk=pk)
     runs = BenchmarkRun.objects.filter(benchmarks=bench).select_related('model')[:20]
-    return render(request, 'ivanna_model_manager/benchmarks/detail.html',
-                  {'bench': bench, 'runs': runs, 'active_tab': 'benchmarks'})
+
+    # per-model: score from the latest completed run + its full metrics dict
+    per_model, order = {}, []
+    for run in BenchmarkRun.objects.filter(benchmarks=bench, status='COMPLETED') \
+            .select_related('model').order_by('-completed_at'):
+        entry = per_model.setdefault(run.model_id, {'runs_count': 0})
+        entry['runs_count'] += 1
+        if run.model_id not in order:
+            metrics = (run.summary or {}).get(bench.name, {})
+            score = run.best_scores().get(bench.name)
+            if score is not None:
+                entry.update({'model': run.model, 'score': score,
+                              'metrics': metrics, 'run': run})
+                order.append(run.model_id)
+    rows = sorted((per_model[i] for i in order),
+                  key=lambda r: -r['score'])
+
+    top_metric = ''
+    if rows and rows[0]['metrics']:
+        for key in rows[0]['metrics']:
+            if key != 'sample_len':
+                top_metric = key
+                break
+    chart = {
+        'models': [(r['model'].display_name or r['model'].name)[:40] for r in rows],
+        'scores': [round(r['score'], 4) for r in rows],
+        'metric': top_metric,
+    }
+    context = {
+        'bench': bench, 'runs': runs, 'model_rows': rows,
+        'chart': chart, 'active_tab': 'benchmarks',
+    }
+    return render(request, 'ivanna_model_manager/benchmarks/detail.html', context)
 
 
 @login_required
@@ -4992,8 +5026,21 @@ def benchmark_leaderboard(request):
     rows.sort(key=lambda r: -(sum(r['scores'].values()) / len(r['scores'])))
     for row in rows:
         row['max_score'] = max(row['scores'].values(), default=0)
+
+    # right panel: benchmarks that have completed runs (models count + best score)
+    from .models import Benchmark, Benchmark as B
+    bench_cards = []
+    for b in bench_names:
+        bench_obj = Benchmark.objects.filter(name=b).first()
+        models_count = sum(1 for r in table.values() if b in r['scores'])
+        best = max((r['scores'][b] for r in table.values() if b in r['scores']), default=0)
+        bench_cards.append({'name': b,
+                            'pk': bench_obj.pk if bench_obj else None,
+                            'models_count': models_count,
+                            'best': best})
     return render(request, 'ivanna_model_manager/benchmarks/leaderboard.html',
                   {'bench_names': bench_names, 'rows': rows,
+                   'bench_cards': bench_cards,
                    'filter_models': filter_models,
                    'filter_benchmarks': sorted(table and {b for r in table.values() for b in r['scores']} or []),
                    'model_id': model_id, 'benchmark_filter': bench_filter, 'q': q,

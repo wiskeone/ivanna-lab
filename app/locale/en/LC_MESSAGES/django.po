@@ -7084,3 +7084,21 @@ msgstr "Reset"
 
 msgid "Под фильтры ничего не попало — сбросьте их или запустите новый прогон."
 msgstr "Nothing matches the filters — reset them or launch a new run."
+
+msgid "Бенчмарки с прогонами"
+msgstr "Benchmarks with runs"
+
+msgid "Скор по моделям"
+msgstr "Score per model"
+
+msgid "Модели — все данные"
+msgstr "Models — full data"
+
+msgid "Прогонов"
+msgstr "Runs"
+
+msgid "Последний"
+msgstr "Last run"
+
+msgid "Скор"
+msgstr "Score"
