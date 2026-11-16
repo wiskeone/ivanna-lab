@@ -806,6 +806,7 @@ def first_value(d):
         return None
 
 
+@register.filter
 def get_item(value, index):
     """Получить элемент списка по индексу"""
     try:
