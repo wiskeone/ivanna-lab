@@ -7120,3 +7120,15 @@ msgstr "Examples"
 
 msgid "Hugging Face datasets"
 msgstr "Hugging Face datasets"
+
+msgid "Что происходит"
+msgstr "What is happening"
+
+msgid "Команда"
+msgstr "Command"
+
+msgid "Generation (beams)"
+msgstr "Generation (beams)"
+
+msgid "Scoring (loglikelihood)"
+msgstr "Scoring (loglikelihood)"

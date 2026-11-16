@@ -4959,6 +4959,24 @@ def benchmark_run_create(request):
     return render(request, 'ivanna_model_manager/benchmarks/run_create.html', context)
 
 
+def _parse_run_log(logs):
+    """Extract the executed command, live activity line and lm-eval phase
+    progress from the run log."""
+    command, activity = '', ''
+    phases = {}  # ordered dict: phase label -> last seen percent
+    phase_re = re.compile(r'Running (generate_until|loglikelihood) requests:\s+(\d{1,3})%')
+    for line in logs.splitlines():
+        if '] Command: ' in line:
+            command = line.split('] Command: ', 1)[1].strip()
+        m = phase_re.search(line)
+        if m:
+            label = 'Generation (beams)' if m.group(1) == 'generate_until' \
+                else 'Scoring (loglikelihood)'
+            phases[label] = int(m.group(2))
+            activity = line.split('] ', 1)[-1].strip()
+    return command, list(phases.items()), activity
+
+
 @login_required
 def benchmark_run_detail(request, pk):
     from .models import BenchmarkRun
@@ -4970,8 +4988,10 @@ def benchmark_run_detail(request, pk):
             results_pretty = json.dumps(run.results, indent=2, ensure_ascii=False)[:40000]
         except (TypeError, ValueError):
             results_pretty = str(run.results)[:40000]
+    command, phases, activity = _parse_run_log(run.logs)
     return render(request, 'ivanna_model_manager/benchmarks/run_detail.html',
                   {'run': run, 'results_pretty': results_pretty,
+                   'command': command, 'phases': phases, 'activity': activity,
                    'active_tab': 'benchmarks'})
 
 
@@ -4997,6 +5017,10 @@ def benchmark_run_status(request, pk):
         if res.state == 'PROGRESS' and isinstance(res.info, dict):
             data['progress'] = res.info.get('progress', run.progress)
             data['current_step'] = res.info.get('current_step', run.current_step)
+    from .tasks_benchmarks import _PROGRESS_RE
+    command, phases, activity = _parse_run_log(run.logs)
+    data['phases'] = phases
+    data['activity'] = activity
     return JsonResponse(data)
 
 

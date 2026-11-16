@@ -1,112 +1,219 @@
 {% extends 'ivanna_model_manager/base.html' %}
-{% load i18n %}
+{% load i18n custom_filters %}
 
 {% block title %}{{ run.name }}{% endblock %}
 {% block page_title %}{{ run.name }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    .moe-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
-    .metric-table td, .metric-table th { padding: 6px 12px; }
     .log-box { background: rgba(0,0,0,0.35); border: 1px solid #333; border-radius: 8px; padding: 12px;
-               font-family: var(--bs-font-monospace); font-size: 0.78rem; max-height: 320px; overflow-y: auto; white-space: pre-wrap; }
+               font-family: var(--bs-font-monospace); font-size: 0.78rem; max-height: 360px; overflow-y: auto; white-space: pre-wrap; }
+    .log-err { color: #f87171; }
+    .log-ok { color: #34d399; }
     details > summary { cursor: pointer; }
+    .phase-chip { border: 1px solid #444; border-radius: 20px; padding: 4px 14px; font-size: 0.82rem;
+                  background: rgba(255,255,255,0.03); }
+    .phase-chip .bar { height: 4px; border-radius: 4px; background: var(--primary-color); margin-top: 4px; }
+    .bench-chip { border: 1px solid #444; border-radius: 20px; padding: 3px 12px; font-size: 0.82rem; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 1000px;">
-    <div class="moe-card">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h4>{{ run.name }} <span id="statusBadge" class="badge {% if run.status == 'COMPLETED' %}bg-success{% elif run.status == 'FAILED' %}bg-danger{% elif run.status == 'RUNNING' %}bg-info{% else %}bg-secondary{% endif %}">{{ run.get_status_display }}</span></h4>
-                <div class="text-muted">
-                    <a href="{% url 'model_detail' run.model.pk %}">{{ run.model.display_name|default:run.model.name }}</a>
-                    · engine: {{ run.engine }}
-                    {% if run.quantized %} · nf4{% endif %}
-                    {% if run.limit %} · limit {{ run.limit }}{% endif %}
-                    {% if run.num_fewshot is not None %} · few-shot {{ run.num_fewshot }}{% endif %}
-                    · batch {{ run.batch_size }}
-                </div>
-                <div class="text-muted small">
-                    {% for b in run.benchmarks.all %}<a href="{% url 'benchmark_detail' b.pk %}">{{ b.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
-                </div>
-            </div>
-            <div class="text-muted text-end small">
-                {% if run.duration_seconds %}<div><i class="bi bi-clock"></i> {{ run.duration_seconds|floatformat:0 }}s</div>{% endif %}
-                {{ run.created_at|date:"d.m.Y H:i" }}
-            </div>
-        </div>
+<div class="container" style="max-width: 1200px;">
 
-        <div class="progress mt-2" style="height: 10px;">
-            <div id="runProgress" class="progress-bar {% if run.status == 'FAILED' %}bg-danger{% else %}bg-success{% endif %}"
-                 role="progressbar" style="width: {{ run.progress }}%;" aria-valuenow="{{ run.progress }}"
-                 aria-valuemin="0" aria-valuemax="100"></div>
+    <!-- Заголовок + действия -->
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h4 class="mb-1">{{ run.name }}
+                        <span id="statusBadge" class="badge {% if run.status == 'COMPLETED' %}bg-success{% elif run.status == 'FAILED' %}bg-danger{% elif run.status == 'RUNNING' %}bg-info{% else %}bg-secondary{% endif %}">{{ run.get_status_display }}</span>
+                    </h4>
+                    <small class="text-muted">
+                        <i class="bi bi-cpu"></i> <a href="{% url 'model_detail' run.model.pk %}">{{ run.model.display_name|default:run.model.name }}</a>
+                        · <span class="bench-chip">{% for b in run.benchmarks.all %}<a href="{% url 'benchmark_detail' b.pk %}" class="text-decoration-none text-body">{{ b.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                    </small>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'benchmark_list' %}" class="action-link"><i class="bi bi-arrow-left"></i> {% trans "Назад" %}</a>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <div class="model-meta-item">
+                        <span class="model-meta-label">Engine</span>
+                        <span class="model-meta-value">{{ run.get_engine_display }}</span>
+                    </div>
+                    <div class="model-meta-item">
+                        <span class="model-meta-label">{% trans "Квантизация" %}</span>
+                        <span class="model-meta-value">{% if run.quantized %}nf4 (auto ≥ 1.5B){% else %}bf16{% endif %}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="model-meta-item">
+                        <span class="model-meta-label">{% trans "Параметры генерации" %}</span>
+                        <span class="model-meta-value">
+                            limit {{ run.limit|default:"full" }} · few-shot {{ run.num_fewshot|default:"auto" }} · batch {{ run.batch_size }}
+                        </span>
+                    </div>
+                    <div class="model-meta-item">
+                        <span class="model-meta-label">{% trans "Время" %}</span>
+                        <span class="model-meta-value" id="timing">
+                            {% if run.duration_seconds %}{{ run.duration_seconds|floatformat:0 }}s
+                            {% elif run.started_at %}elapsed <span id="elapsed">—</span>
+                            {% else %}—{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {% if run.error_message %}
+            <div class="alert alert-danger mt-2 mb-0 py-2"><i class="bi bi-exclamation-triangle me-1"></i>{{ run.error_message }}</div>
+            {% endif %}
         </div>
-        <div class="text-muted small mt-1" id="currentStep">{{ run.current_step }}</div>
-        {% if run.error_message %}
-        <div class="alert alert-danger mt-2 mb-0 py-2">{{ run.error_message }}</div>
-        {% endif %}
     </div>
 
-    {% if run.summary %}
-    <div class="moe-card">
-        <h6><i class="bi bi-bar-chart"></i> {% trans "Метрики" %}</h6>
-        <table class="table table-dark metric-table mb-0">
-            <thead><tr><th>{% trans "Бенчмарк" %}</th><th>{% trans "Метрика" %}</th><th>{% trans "Значение" %}</th></tr></thead>
-            <tbody>
-            {% for bench_name, metrics in run.summary.items %}
-                {% for metric, value in metrics.items %}
-                <tr>
-                    {% if forloop.first %}<td rowspan="{{ metrics|length }}">{{ bench_name }}</td>{% endif %}
-                    <td><code>{{ metric }}</code></td>
-                    <td><strong>{{ value|floatformat:4 }}</strong></td>
-                </tr>
+    <!-- Прогресс + фазы -->
+    {% if run.status == 'RUNNING' or run.status == 'PENDING' %}
+    <div class="card mt-4">
+        <div class="card-header bg-transparent border-bottom">
+            <h5 class="mb-0"><i class="bi bi-activity me-2"></i> {% trans "Что происходит" %}</h5>
+        </div>
+        <div class="card-body">
+            <div class="progress" style="height: 12px;">
+                <div id="runProgress" class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                     role="progressbar" style="width: {{ run.progress }}%;"></div>
+            </div>
+            <div class="d-flex justify-content-between mt-1">
+                <div class="text-muted small" id="currentStep">{{ run.current_step }}</div>
+                <div class="text-muted small">{{ run.progress|floatformat:0 }}%</div>
+            </div>
+
+            {% if phases %}
+            <div class="d-flex gap-2 flex-wrap mt-3">
+                {% for label, pct in phases %}
+                <div class="phase-chip" data-phase="{{ label }}">
+                    {{ label }} · {{ pct }}%
+                    <div class="bar" style="width: {{ pct }}%;"></div>
+                </div>
                 {% endfor %}
-            {% endfor %}
-            </tbody>
-        </table>
+            </div>
+            {% endif %}
+
+            <div class="log-box mt-3" id="activityLine" style="max-height: 60px;">{{ activity }}</div>
+        </div>
     </div>
     {% endif %}
 
-    <div class="moe-card">
-        <h6><i class="bi bi-terminal"></i> {% trans "Лог" %}</h6>
-        <div class="log-box" id="logBox">{{ run.logs }}</div>
+    <!-- Результаты -->
+    {% if run.summary %}
+    <div class="card mt-4">
+        <div class="card-header bg-transparent border-bottom">
+            <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i> {% trans "Метрики" %}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0">
+                    <thead><tr><th>{% trans "Бенчмарк" %}</th><th>{% trans "Метрика" %}</th><th>{% trans "Значение" %}</th></tr></thead>
+                    <tbody>
+                    {% for bench_name, metrics in run.summary.items %}
+                        {% for metric, value in metrics.items %}
+                        <tr>
+                            {% if forloop.first %}<td rowspan="{{ metrics|length }}">{{ bench_name }}</td>{% endif %}
+                            <td><code>{{ metric }}</code></td>
+                            <td><strong>{{ value|floatformat:4 }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Лог -->
+    <div class="card mt-4">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-terminal me-2"></i> {% trans "Лог" %}</h5>
+            {% if command %}
+            <details class="w-100">
+                <summary class="action-link"><i class="bi bi-terminal me-1"></i> {% trans "Команда" %}</summary>
+                <pre class="log-box mt-2" style="max-height: 120px; user-select: all;">{{ command }}</pre>
+            </details>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="log-box" id="logBox">{{ run.logs }}</div>
+        </div>
     </div>
 
     {% if run.results %}
-    <div class="moe-card">
-        <details>
-            <summary><i class="bi bi-filetype-json"></i> {% trans "Сырой JSON-отчёт lm-eval" %}</summary>
-            <pre class="log-box mt-2" style="max-height: 400px;">{{ results_pretty }}</pre>
-        </details>
+    <div class="card mt-4 mb-4">
+        <div class="card-header bg-transparent border-bottom">
+            <h5 class="mb-0"><i class="bi bi-filetype-json me-2"></i> {% trans "Сырой JSON-отчёт lm-eval" %}</h5>
+        </div>
+        <div class="card-body">
+            <pre class="log-box" style="max-height: 400px;">{{ results_pretty }}</pre>
+        </div>
     </div>
     {% endif %}
 </div>
 
-{% if run.status == 'RUNNING' or run.status == 'PENDING' %}
 <script>
-// Polling (pattern: moe/job_detail.html)
+// colorize + autoscroll for the log
+const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function renderLog(text) {
+    const box = document.getElementById('logBox');
+    box.innerHTML = text.split('\n').map(l => {
+        if (l.includes('❌') || l.includes('ERROR')) return `<span class="log-err">${esc(l)}</span>`;
+        if (l.includes('✅') || l.includes('Results:')) return `<span class="log-ok">${esc(l)}</span>`;
+        return esc(l);
+    }).join('\n');
+    box.scrollTop = box.scrollHeight;
+}
+renderLog(document.getElementById('logBox').textContent);
+
+{% if run.status == 'RUNNING' or run.status == 'PENDING' %}
 const jobPk = {{ run.pk }};
 const statusUrl = `/benchmarks/runs/${jobPk}/status/`;
 let isRunning = true;
+const startedAt = new Date('{{ run.started_at|date:"c" }}');
 
 function updateStatus() {
     fetch(statusUrl).then(r => r.json()).then(d => {
         const bar = document.getElementById('runProgress');
         bar.style.width = d.progress + '%';
-        bar.setAttribute('aria-valuenow', d.progress);
         document.getElementById('currentStep').textContent = d.current_step || '';
+        document.getElementById('activityLine').textContent = d.activity || '';
+
+        // phase chips
+        const wrap = document.querySelector('.phase-chip')?.parentElement;
+        if (wrap && d.phases) {
+            Object.entries(d.phases).forEach(([label, pct]) => {
+                const chip = wrap.querySelector(`[data-phase="${label}"]`);
+                if (chip) {
+                    chip.innerHTML = `${label} · ${pct}%<div class="bar" style="width: ${pct}%;"></div>`;
+                }
+            });
+        }
+
+        // elapsed timer
+        const el = document.getElementById('elapsed');
+        if (el && startedAt) {
+            el.textContent = Math.floor((Date.now() - startedAt.getTime()) / 1000) + 's';
+        }
+
         const badge = document.getElementById('statusBadge');
         badge.textContent = d.status;
-        const box = document.getElementById('logBox');
-        box.textContent = d.logs_tail || box.textContent;
-        box.scrollTop = box.scrollHeight;
+        renderLog(d.logs_tail || '');
         if (!d.is_running && isRunning) { location.reload(); }
         isRunning = d.is_running;
     }).catch(() => {});
 }
 setInterval(updateStatus, 3000);
-</script>
+updateStatus();
 {% endif %}
+</script>
 {% endblock %}
