@@ -167,7 +167,9 @@ def _prepare_quantized_model(model_path, out_dir):
         'load_in_4bit': True,
         'bnb_4bit_quant_type': 'nf4',
         'bnb_4bit_compute_dtype': 'bfloat16',
-        'bnb_4bit_use_double_quant': True,
+        # hybrid-arch modules (conv1d / gated delta net) crash bnb's 4-bit
+        # weight fixup; keep them and the head/embeddings in bf16
+        'llm_int8_skip_modules': ['conv1d', 'linear_attn', 'lm_head', 'embed_tokens'],
     }
     for f in os.listdir(model_path):
         if f == 'config.json':
