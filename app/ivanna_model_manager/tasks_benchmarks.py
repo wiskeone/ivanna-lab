@@ -152,8 +152,10 @@ def _build_lm_eval_command(run: BenchmarkRun, task_names, out_dir):
     policy as MoE scan: >= 1.5B on a 4GB GPU cannot load in bf16)."""
     model_args = [f'pretrained={run.model.local_path}', 'trust_remote_code=True']
     if run.quantized:
-        model_args += ['load_in_4bit=True', 'bnb_4bit_quant_type=nf4',
-                       'bnb_4bit_compute_dtype=bfloat16']
+        # quantization=bnb makes lm-eval wrap the rest into BitsAndBytesConfig
+        # (transformers 5.x rejects bare load_in_4bit kwargs)
+        model_args += ['quantization=bnb', 'load_in_4bit=True',
+                       'bnb_4bit_quant_type=nf4', 'bnb_4bit_compute_dtype=bfloat16']
     else:
         model_args += ['dtype=bfloat16']
 
