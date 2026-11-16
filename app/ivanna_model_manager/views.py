@@ -4946,21 +4946,25 @@ def benchmark_run_status(request, pk):
 
 @login_required
 def benchmark_leaderboard(request):
-    """Cross-run leaderboard: checkpoints × benchmarks, best score per cell."""
+    """Cross-run leaderboard: checkpoints × benchmarks.
+
+    Cell = score from the LATEST completed run of that pair (a limited debug
+    run does not shadow a later full run). Rows sorted by mean score."""
     from .models import BenchmarkRun
 
-    runs = BenchmarkRun.objects.filter(status='COMPLETED').select_related('model')
+    runs = (BenchmarkRun.objects.filter(status='COMPLETED')
+            .select_related('model').order_by('-created_at'))
     bench_names, table = [], {}
     for run in runs:
         row = table.setdefault(run.model_id, {'model': run.model, 'scores': {}})
         for bench_name, value in run.best_scores().items():
-            cur = row['scores'].get(bench_name)
-            if cur is None or value > cur:
+            if bench_name not in row['scores']:
                 row['scores'][bench_name] = value
             if bench_name not in bench_names:
                 bench_names.append(bench_name)
     bench_names.sort()
-    rows = sorted(table.values(), key=lambda r: -max(r['scores'].values(), default=0))
+    rows = [r for r in table.values() if r['scores']]
+    rows.sort(key=lambda r: -(sum(r['scores'].values()) / len(r['scores'])))
     for row in rows:
         row['max_score'] = max(row['scores'].values(), default=0)
     return render(request, 'ivanna_model_manager/benchmarks/leaderboard.html',
