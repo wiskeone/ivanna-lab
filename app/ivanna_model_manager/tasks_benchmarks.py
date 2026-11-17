@@ -8,6 +8,7 @@ progress (tasks_moe.py), EmbeddingModel install state (tasks_embedding.py).
 """
 import json
 import logging
+import sys
 import os
 import re
 import subprocess
