@@ -102,6 +102,7 @@
                     <thead>
                         <tr>
                             <th>{% trans "Модель" %}</th>
+                            <th>{% trans "Вариант" %}</th>
                             <th>{% trans "Скор" %}</th>
                             {% for k, v in model_rows.0.metrics.items %}<th class="text-nowrap"><code class="small">{{ k }}</code></th>{% endfor %}
                             <th>{% trans "Прогонов" %}</th>
@@ -112,6 +113,7 @@
                     {% for row in model_rows %}
                         <tr>
                             <td><a href="{% url 'model_detail' row.model.pk %}">{{ row.model.display_name|default:row.model.name }}</a></td>
+                            <td class="small text-muted">{{ row.variant }}</td>
                             <td><strong>{{ row.score|floatformat:4 }}</strong></td>
                             {% for k, v in row.metrics.items %}<td>{{ v|floatformat:4 }}</td>{% endfor %}
                             <td>{{ row.runs_count }}</td>
@@ -182,7 +184,7 @@ Plotly.newPlot('scoreChart', [{
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
     font: { color: '#ccc' },
-    xaxis: { gridcolor: 'rgba(255,255,255,0.08)', zeroline: false, range: [0, Math.max(...data.scores) * 1.18] },
+    xaxis: { gridcolor: 'rgba(255,255,255,0.08)', zeroline: false, range: [0, Math.max(...data.scores) * 1.05] },
     yaxis: { automargin: true, tickfont: { size: 12 } },
     showlegend: false,
 }, { responsive: true, displayModeBar: false });
