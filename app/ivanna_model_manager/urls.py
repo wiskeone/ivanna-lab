@@ -91,6 +91,8 @@ urlpatterns = [
     # v5.3: benchmarks (lm-eval-harness)
     path('benchmarks/', views.benchmark_list, name='benchmark_list'),
     path('benchmarks/search/', views.benchmark_search_api, name='benchmark_search_api'),
+    path('benchmarks/custom/create/', views.benchmark_custom_create, name='benchmark_custom_create'),
+    path('benchmarks/<int:pk>/qa-text/', views.benchmark_custom_qa_text, name='benchmark_custom_qa_text'),
     path('benchmarks/leaderboard/', views.benchmark_leaderboard, name='benchmark_leaderboard'),
     path('benchmarks/runs/create/', views.benchmark_run_create, name='benchmark_run_create'),
     path('benchmarks/runs/<int:pk>/', views.benchmark_run_detail, name='benchmark_run_detail'),

@@ -1,0 +1,63 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Собственный бенчмарк" %}{% endblock %}
+{% block page_title %}{% trans "Собственный бенчмарк" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+    <div class="card mb-3">
+        <div class="card-header bg-transparent border-bottom">
+            <h5 class="mb-0"><i class="bi bi-plus-square me-2"></i> {% trans "Новый собственный бенчмарк" %}</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">{% trans "Имя (id)" %}</label>
+                        <input type="text" name="name" class="form-control" required
+                               placeholder="my_python_qa">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{% trans "Отображаемое имя" %}</label>
+                        <input type="text" name="display_name" class="form-control"
+                               placeholder='{% trans "Python docs QA" %}'>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">{% trans "Описание" %}</label>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{% trans "RAG-коллекция (источник фрагментов)" %}</label>
+                        <select name="collection" class="form-select">
+                            <option value="">— {% trans "без автогенерации" %} —</option>
+                            {% for col in collections %}
+                            <option value="{{ col.id }}">{{ col.name }} ({{ col.total_chunks }} {% trans "чанков" %})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{% trans "QA-пар" %}</label>
+                        <input type="number" name="n_pairs" class="form-control" value="10" min="3" max="50">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{% trans "Модель-генератор" %}</label>
+                        <select name="generator_model" class="form-select">
+                            {% for m in generator_models %}
+                            <option value="{{ m.id }}" {% if forloop.first %}selected{% endif %}>{{ m.display_name|default:m.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="hint-box mt-3">
+                    {% trans "Автогенерация: модель читает случайные чанки коллекции и делает QA-пары {вопрос, эталон, ключевые слова}. Скоринг — ответ содержит ключевое слово (детерминированный, без LLM-судьи). После создания пары можно править вручную на странице бенчмарка." %}
+                </div>
+                <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-check-lg"></i> {% trans "Создать" %}</button>
+                <a href="{% url 'benchmark_list' %}" class="btn btn-outline-secondary mt-3">{% trans "Отмена" %}</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

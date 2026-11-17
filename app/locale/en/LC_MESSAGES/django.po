@@ -7188,3 +7188,66 @@ msgstr "nothing yet"
 
 msgid "α"
 msgstr "alpha"
+
+msgid "Собственный бенчмарк"
+msgstr "Custom benchmark"
+
+msgid "Новый собственный бенчмарк"
+msgstr "New custom benchmark"
+
+msgid "Имя (id)"
+msgstr "Name (id)"
+
+msgid "RAG-коллекция (источник фрагментов)"
+msgstr "RAG collection (fragment source)"
+
+msgid "чанков"
+msgstr "chunks"
+
+msgid "QA-пар"
+msgstr "QA pairs"
+
+msgid "Модель-генератор"
+msgstr "Generator model"
+
+msgid ""
+"Автогенерация: модель читает случайные чанки коллекции и делает QA-пары "
+"{вопрос, эталон, ключевые слова}. Скоринг — ответ содержит ключевое слово "
+"(детерминированный, без LLM-судьи). После создания пары можно править "
+"вручную на странице бенчмарка."
+msgstr ""
+"Auto-generation: the model reads random collection chunks and makes QA pairs"
+" {question, reference, keywords}. Scoring is deterministic — the answer must"
+" contain a keyword (no LLM judge). Pairs can be edited manually on the "
+"benchmark page afterwards."
+
+msgid "Свой бенчмарк"
+msgstr "Custom benchmark"
+
+msgid "QA-редактор"
+msgstr "QA editor"
+
+msgid "пар"
+msgstr "pairs"
+
+msgid "вопрос | эталонный ответ | kw1,kw2 — по одной паре на строку"
+msgstr "question | reference answer | kw1,kw2 — one pair per line"
+
+msgid ""
+"Формат строки: вопрос | эталон | ключевые слова через запятую. Скоринг: "
+"ответ содержит любое ключевое слово."
+msgstr ""
+"Line format: question | reference | comma-separated keywords. Scoring: the "
+"answer contains any keyword."
+
+msgid "Сохранить QA"
+msgstr "Save QA"
+
+msgid "Собственный бенчмарк \"%(name)s\" создан"
+msgstr "Custom benchmark \"%(name)s\" created"
+
+msgid "QA-набор сохранен: %(n)s пар"
+msgstr "QA set saved: %(n)s pairs"
+
+msgid "без автогенерации"
+msgstr "no auto-generation"

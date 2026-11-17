@@ -79,6 +79,27 @@
         </div>
     </div>
 
+    {% if bench.source == 'custom' %}
+    <div class="card mb-3">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i> {% trans "QA-редактор" %}</h5>
+            <span class="badge bg-info">{{ bench.n_samples }} {% trans "пар" %}</span>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'benchmark_custom_create' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save_qa">
+                <input type="hidden" name="bench_pk" value="{{ bench.pk }}">
+                <textarea name="qa_text" class="form-control font-monospace" rows="8"
+                          placeholder='{% trans "вопрос | эталонный ответ | kw1,kw2 — по одной паре на строку" %}'>{% if bench.qa_data %}{% for i in bench.qa_data %}{{ i.prompt }} | {{ i.reference }} | {{ i.keywords|join:", " }}
+{% endfor %}{% endif %}</textarea>
+                <div class="form-text text-muted">{% trans "Формат строки: вопрос | эталон | ключевые слова через запятую. Скоринг: ответ содержит любое ключевое слово." %}</div>
+                <button type="submit" class="btn btn-primary btn-sm mt-2"><i class="bi bi-save"></i> {% trans "Сохранить QA" %}</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
     {% if model_rows %}
     <!-- График скоров -->
     <div class="card mt-4">

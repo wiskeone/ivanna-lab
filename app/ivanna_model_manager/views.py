@@ -4879,6 +4879,76 @@ def benchmark_list(request):
 
 
 @login_required
+def benchmark_custom_create(request):
+    """Builder for custom benchmarks: name + QA generation from a RAG
+    collection (LLM) + manual QA editor."""
+    from .models import Benchmark, DocumentCollection, ModelCheckpoint
+    from .tasks_benchmarks import generate_custom_qa_task
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'create':
+            bench = Benchmark.objects.create(
+                name=request.POST.get('name', '').strip() or
+                     f"custom_{timezone.now().strftime('%Y%m%d_%H%M%S')}",
+                display_name=request.POST.get('display_name', '').strip(),
+                description=request.POST.get('description', '').strip(),
+                category='other', source='custom', is_popular=False,
+            )
+            collection_id = request.POST.get('collection')
+            n_pairs = int(request.POST.get('n_pairs') or 10)
+            model_id = request.POST.get('generator_model')
+            if collection_id and model_id:
+                bench.install_status = 'downloading'
+                bench.save(update_fields=['install_status'])
+                transaction.on_commit(lambda: generate_custom_qa_task.delay(
+                    bench.pk, int(collection_id), n_pairs, int(model_id)))
+            messages.success(request, _('Собственный бенчмарк "%(name)s" создан')
+                             % {'name': bench.name})
+            return redirect('benchmark_detail', pk=bench.pk)
+        if action == 'save_qa':
+            bench = get_object_or_404(Benchmark, pk=request.POST.get('bench_pk'))
+            qa = []
+            for line in (request.POST.get('qa_text') or '').splitlines():
+                line = line.strip()
+                if not line or '|' not in line:
+                    continue
+                parts = [p.strip() for p in line.split('|')]
+                if len(parts) < 2:
+                    continue
+                qa.append({'prompt': parts[0], 'reference': parts[1],
+                           'keywords': [k.strip().lower() for k in (parts[2].split(',') if len(parts) > 2 else [])
+                                        if k.strip()]})
+            bench.qa_data = qa
+            bench.n_samples = len(qa)
+            bench.install_status = 'completed' if qa else bench.install_status
+            bench.save(update_fields=['qa_data', 'n_samples', 'install_status'])
+            messages.success(request, _('QA-набор сохранен: %(n)s пар') % {'n': len(qa)})
+            return redirect('benchmark_detail', pk=bench.pk)
+    from .models import DocumentCollection
+    collections = DocumentCollection.objects.filter(is_active=True)
+    generator_models = ModelCheckpoint.objects.filter(
+        is_active=True, status='DOWNLOADED', local_path__isnull=False).exclude(local_path='')
+    return render(request, 'ivanna_model_manager/benchmarks/custom_create.html',
+                  {'collections': collections, 'generator_models': generator_models,
+                   'active_tab': 'benchmarks'})
+
+
+@login_required
+def benchmark_custom_qa_text(request, pk):
+    """QA pairs as editable text (prompt | reference | kw1,kw2)."""
+    from django.http import JsonResponse
+    from .models import Benchmark
+
+    bench = get_object_or_404(Benchmark, pk=pk)
+    lines = ['{} | {} | {}'.format(i['prompt'].replace('\n', ' '),
+                                   i['reference'].replace('\n', ' '),
+                                   ','.join(i.get('keywords', [])))
+             for i in bench.qa_data]
+    return JsonResponse({'text': '\n'.join(lines), 'n': len(lines)})
+
+
+@login_required
 def benchmark_search_api(request):
     """JSON search over the synced registry (name/group/description)."""
     from django.http import JsonResponse

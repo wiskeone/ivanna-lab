@@ -248,6 +248,20 @@ def run_benchmark_task(self, run_id):
         if not benches:
             raise ValueError("No benchmarks selected")
 
+        # v5.3 phase 2: in-house runner for custom benchmarks
+        if run.engine == 'custom':
+            out_dir = run.output_path()
+            os.makedirs(out_dir, exist_ok=True)
+            run.output_dir = out_dir
+            run.save(update_fields=['output_dir'])
+            summary, results, acc = _run_custom(run, out_dir)
+            run.results = _json_safe(results)
+            run.summary = _json_safe(summary)
+            run.save(update_fields=['results', 'summary'])
+            run.add_log(f"Results: accuracy {acc:.3f}")
+            run.complete()
+            return {'success': True, 'run_id': run.pk, 'accuracy': acc}
+
         # prefetch any datasets that were not installed yet (cheap safety net)
         missing = [b for b in benches if not b.is_installed and b.dataset_path]
         if missing:
@@ -355,3 +369,181 @@ def _json_safe(obj):
     if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
         return None
     return obj
+
+
+# ══════════════════════════════════════════════════════════════════════
+# v5.3 phase 2: custom benchmarks (engine='custom')
+# ══════════════════════════════════════════════════════════════════════
+
+QA_GEN_CODE = """
+import json, sys, torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_path, out_path, quantized = sys.argv[1], sys.argv[2], sys.argv[3] == '1'
+chunks = json.load(open(sys.argv[4]))
+
+kwargs = {'trust_remote_code': True}
+if quantized:
+    from transformers import BitsAndBytesConfig
+    kwargs.update(quantization_config=BitsAndBytesConfig(
+        load_in_4bit=True, bnb_4bit_quant_type='nf4',
+        bnb_4bit_compute_dtype=torch.bfloat16), device_map='cuda:0')
+else:
+    kwargs.update(torch_dtype=torch.bfloat16, device_map='cuda:0')
+
+m = AutoModelForCausalLM.from_pretrained(model_path, **kwargs).eval()
+tok = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+
+SYS = ("You create QA pairs for a benchmark. Read the documentation fragment and emit ONE "
+       "line of JSON: {\"q\": \"question about the fragment\", \"a\": \"short factual answer\", "
+       "\"kw\": [\"keyword1\", \"keyword2\"]}. Keywords are words that MUST appear in a correct "
+       "answer. No other text.")
+out = []
+for i, chunk in enumerate(chunks):
+    msgs = [{'role': 'system', 'content': SYS},
+            {'role': 'user', 'content': 'Fragment:\\n' + chunk[:1200]}]
+    text = tok.apply_chat_template(msgs, add_generation_prompt=True, tokenize=False,
+                                   enable_thinking=False)
+    ids = tok(text, return_tensors='pt').to(m.device)
+    with torch.no_grad():
+        o = m.generate(**ids, max_new_tokens=220, do_sample=False,
+                       pad_token_id=tok.eos_token_id or 0)
+    raw = tok.decode(o[0][ids['input_ids'].shape[1]:], skip_special_tokens=True)
+    try:
+        start, end = raw.find('{'), raw.rfind('}') + 1
+        item = json.loads(raw[start:end])
+        if item.get('q') and item.get('a'):
+            out.append({'q': str(item['q']), 'a': str(item['a']),
+                        'kw': [str(k).lower() for k in item.get('kw', [])][:4]})
+    except Exception:
+        pass
+    print(f'{i+1}/{len(chunks)}', file=sys.stderr)
+json.dump(out, open(out_path, 'w'), ensure_ascii=False)
+"""
+
+
+@shared_task(bind=True, queue='gpu_tasks', time_limit=7200, soft_time_limit=None,
+             name='ivanna_model_manager.tasks_benchmarks.generate_custom_qa_task')
+def generate_custom_qa_task(self, benchmark_id, collection_id, n_pairs, model_ckpt_id):
+    """Generate QA pairs for a custom benchmark from a RAG collection:
+    sample chunks -> LLM makes {question, answer, keywords} per chunk -> qa_data."""
+    import gc
+    import random
+    import subprocess as _sp
+    from .models import Benchmark, ModelCheckpoint, DocumentChunk
+
+    bench = Benchmark.objects.get(pk=benchmark_id)
+    model = ModelCheckpoint.objects.get(pk=model_ckpt_id)
+    if not model.local_path or not os.path.exists(model.local_path):
+        raise FileNotFoundError(f'Generator model not found: {model.local_path}')
+
+    chunk_ids = list(DocumentChunk.objects.filter(document__collection_id=collection_id)
+                     .values_list('id', flat=True))
+    if not chunk_ids:
+        raise ValueError('Collection has no chunks')
+    random.seed(bench.pk)
+    picked = random.sample(chunk_ids, min(n_pairs, len(chunk_ids)))
+    chunks = [c for c in (DocumentChunk.objects.get(pk=i).content or '' for i in picked) if c.strip()]
+
+    bench.install_status = 'downloading'   # reuse the install progress UI
+    bench.install_progress = 5.0
+    bench.save(update_fields=['install_status', 'install_progress'])
+
+    tasks_path = os.path.join(settings.MEDIA_ROOT, 'benchmarks', f'qa_gen_{bench.pk}.json')
+    os.makedirs(os.path.dirname(tasks_path), exist_ok=True)
+    out_path = tasks_path + '.out'
+    json.dump(chunks, open(tasks_path, 'w'), ensure_ascii=False)
+
+    quantized = (model.parameter_count or 0) >= 1_500_000_000
+    cmd = [sys.executable, '-c', QA_GEN_CODE, model.local_path, out_path,
+           '1' if quantized else '0', tasks_path]
+    r = _sp.run(cmd, capture_output=True, text=True, timeout=3600)
+    items = json.load(open(out_path, encoding='utf-8')) if os.path.exists(out_path) else []
+    bench.qa_data = [{'prompt': it['q'], 'reference': it['a'], 'keywords': it.get('kw', [])}
+                     for it in items]
+    bench.n_samples = len(bench.qa_data)
+    bench.install_status = 'completed' if bench.qa_data else 'failed'
+    bench.install_progress = 100.0 if bench.qa_data else 0.0
+    bench.save(update_fields=['qa_data', 'n_samples', 'install_status', 'install_progress'])
+    if not bench.qa_data:
+        raise RuntimeError(f'QA generation produced nothing: {r.stderr[-400:]}')
+    logger.info(f'custom benchmark {bench.name}: {len(bench.qa_data)} QA pairs generated')
+    return {'success': True, 'pairs': len(bench.qa_data)}
+
+
+def _score_answer(answer: str, item: dict, scoring: str) -> float:
+    """Deterministic scoring: keywords (case-insensitive containment) or exact match."""
+    a = (answer or '').lower()
+    if scoring == 'exact':
+        return 1.0 if item['reference'].strip().lower() in a else 0.0
+    kws = item.get('keywords') or [item['reference']]
+    return 1.0 if any(str(k).lower() in a for k in kws) else 0.0
+
+
+CUSTOM_RUNNER_CODE = """
+import json, sys, torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_path, out_path, quantized = sys.argv[1], sys.argv[2], sys.argv[3] == '1'
+tasks = json.load(open(sys.argv[4]))
+
+kwargs = {'trust_remote_code': True}
+if quantized:
+    from transformers import BitsAndBytesConfig
+    kwargs.update(quantization_config=BitsAndBytesConfig(
+        load_in_4bit=True, bnb_4bit_quant_type='nf4',
+        bnb_4bit_compute_dtype=torch.bfloat16), device_map='cuda:0')
+else:
+    kwargs.update(torch_dtype=torch.bfloat16, device_map='cuda:0')
+
+m = AutoModelForCausalLM.from_pretrained(model_path, **kwargs).eval()
+tok = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+
+answers = []
+for t in tasks:
+    msgs = [{'role': 'user', 'content': t['prompt']}]
+    text = tok.apply_chat_template(msgs, add_generation_prompt=True, tokenize=False,
+                                   enable_thinking=False)
+    ids = tok(text, return_tensors='pt').to(m.device)
+    with torch.no_grad():
+        o = m.generate(**ids, max_new_tokens=t.get('max_new_tokens', 320),
+                       do_sample=False, pad_token_id=tok.eos_token_id or 0)
+    answers.append(tok.decode(o[0][ids['input_ids'].shape[1]:], skip_special_tokens=True))
+json.dump(answers, open(out_path, 'w'), ensure_ascii=False)
+"""
+
+
+def _run_custom(run: BenchmarkRun, out_dir):
+    """engine='custom': generate answers for the benchmark's own QA pairs and
+    score them deterministically (keyword containment). Fresh subprocess per
+    run; greedy decoding for deterministic scores."""
+    bench = run.benchmarks.first()
+    if bench is None or not bench.qa_data:
+        raise ValueError('Custom benchmark has no qa_data')
+
+    model_path = run.model.local_path
+    quantized = run.quantized
+    tasks_path = os.path.join(out_dir, 'qa_tasks.json')
+    answers_path = os.path.join(out_dir, 'answers.json')
+    tasks = [{'prompt': item['prompt'], 'max_new_tokens': 320} for item in bench.qa_data]
+    json.dump(tasks, open(tasks_path, 'w'), ensure_ascii=False)
+
+    cmd = [sys.executable, '-c', CUSTOM_RUNNER_CODE, model_path, answers_path,
+           '1' if quantized else '0', tasks_path]
+    run.add_log('Generating answers (custom runner, greedy)...')
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=14400)
+    if r.returncode != 0:
+        raise RuntimeError(f'custom runner failed: {r.stderr[-500:]}')
+    answers = json.load(open(answers_path, encoding='utf-8'))
+
+    results, hits = [], 0
+    for item, answer in zip(bench.qa_data, answers):
+        s = _score_answer(answer, item, bench.scoring)
+        hits += s
+        results.append({'prompt': item['prompt'][:120], 'answer': (answer or '')[:300],
+                        'reference': item['reference'][:200], 'score': s})
+    acc = hits / max(1, len(results))
+    summary = {bench.name: {'accuracy': round(acc, 4), 'sample_len': len(results)}}
+    with open(os.path.join(out_dir, 'custom_results.json'), 'w', encoding='utf-8') as fh:
+        json.dump({'results': results}, fh, ensure_ascii=False, indent=1)
+    return summary, {'results': results}, acc
