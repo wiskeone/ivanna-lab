@@ -4864,6 +4864,7 @@ def benchmark_detail(request, pk):
     runs = BenchmarkRun.objects.filter(benchmarks=bench).select_related('model')[:20]
 
     # per-model: score from the latest completed run + its full metrics dict
+    from .models import MoEExpertJob
     per_model, order = {}, []
     for run in BenchmarkRun.objects.filter(benchmarks=bench, status='COMPLETED') \
             .select_related('model').order_by('-completed_at'):
@@ -4873,8 +4874,13 @@ def benchmark_detail(request, pk):
             metrics = (run.summary or {}).get(bench.name, {})
             score = run.best_scores().get(bench.name)
             if score is not None:
+                # MoE rebuilds share display_name — a variant tag + run id keep
+                # chart labels unique (Plotly merges identical categories)
+                job = MoEExpertJob.objects.filter(output_model=run.model).select_related('theme').first()
+                variant = f"α={job.alpha}, {job.position}, {job.theme.slug}" if job else 'vanilla/base'
                 entry.update({'model': run.model, 'score': score,
-                              'metrics': metrics, 'run': run})
+                              'metrics': metrics, 'run': run,
+                              'variant': variant})
                 order.append(run.model_id)
     rows = sorted((per_model[i] for i in order),
                   key=lambda r: -r['score'])
@@ -4886,7 +4892,8 @@ def benchmark_detail(request, pk):
                 top_metric = key
                 break
     chart = {
-        'models': [(r['model'].display_name or r['model'].name)[:40] for r in rows],
+        'models': [f"{(r['model'].display_name or r['model'].name)[:36]} · {r['variant']} · run{r['run'].pk}"
+                   for r in rows],
         'scores': [round(r['score'], 4) for r in rows],
         'metric': top_metric,
     }
