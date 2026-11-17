@@ -62,6 +62,29 @@
     {% endif %}
 
     {% if charts %}
+    <div class="moe-card mb-3" id="repatchPanel" style="border-color: #10b98155;">
+        <h6><i class="bi bi-hand-index-thumb"></i> {% trans "Re-patch: клик по теплокартам" %}
+            <span class="badge bg-success-subtle text-success-emphasis ms-2">{% trans "не-деструктивно: новая джоба" %}</span></h6>
+        <p class="small text-muted mb-2">
+            {% trans "Клик по барам «Каузальные писатели» или строкам теплокарты |d̂| — включает/исключает слой. Клик по колонке теплокарты |ΔW| — включает/исключает группу входов (ширина = бакет). Скан родителя переиспользуется — пересборка ~1 минута." %}
+        </p>
+        <div class="row g-2">
+            <div class="col-md-5">
+                <input type="text" id="rpLayers" class="form-control form-control-sm"
+                       placeholder='{% trans "Слои вручную (пусто = из джобы): 19,21,22..." %}'>
+            </div>
+            <div class="col-md-2">
+                <input type="number" id="rpAlpha" class="form-control form-control-sm" step="0.05"
+                       min="0.01" max="0.5" value="{{ job.alpha }}" title="α">
+            </div>
+            <div class="col-md-5">
+                <button id="rpSubmit" class="btn btn-primary btn-sm w-100" disabled>
+                    <i class="bi bi-arrow-repeat"></i> {% trans "Создать re-patch джобу" %}
+                </button>
+            </div>
+        </div>
+        <div class="small mt-2">{% trans "Выделено:" %} <span id="rpSel" class="text-muted">{% trans "пока ничего — кликайте по графикам ниже" %}</span></div>
+    </div>
     <div class="moe-card" id="vizCard">
         <h6><i class="bi bi-graph-up"></i> {% trans "Визуализация эксперимента" %}</h6>
         <div class="small text-muted mb-2">{% trans "Данные последнего прогона:" %} {{ job.completed_at|date:"d.m.Y H:i" }}{% if job.eval_report and not job.eval_report.summary %} · {% trans "eval пропущен" %}{% endif %}</div>
@@ -274,7 +297,75 @@
                  marker: {color: ['#6b7280', '#10b981', '#6b7280', '#3b82f6']}}],
                 Object.assign({title: 'Eval-гейт: средняя длина ответов (прокси полноты)'}, DARK), CFG);
         } catch (e) { console.error('viz', e); }
-    })();
+
+        // ── v5.3: click-tool — heatmap selection → re-patch config ──
+        const sel = { layers: new Set(), groups: {} };
+        const selBox = document.getElementById('rpSel');
+        const submitBtn = document.getElementById('rpSubmit');
+        function fmtSel() {
+            if (!selBox) return;
+            const parts = [];
+            if (sel.layers.size) parts.push('layers [' + [...sel.layers].sort((a,b)=>a-b).join(',') + ']');
+            const g = Object.entries(sel.groups).filter(([k,v]) => v.cols.size)
+                .map(([k,v]) => k + ' groups [' + [...v.cols].sort((a,b)=>a-b).join(',') + ']');
+            if (g.length) parts.push('col_masks ' + g.join('; '));
+            selBox.textContent = parts.length ? parts.join(' | ') : '{% trans "пока ничего" %}';
+            if (submitBtn) submitBtn.disabled = !(sel.layers.size || g.length);
+        }
+        function toggleLayer(layer) {
+            layer = parseInt(layer);
+            sel.layers.has(layer) ? sel.layers.delete(layer) : sel.layers.add(layer);
+            fmtSel();
+        }
+        function toggleGroup(suffix, hmIdx, col) {
+            if (!sel.groups[suffix]) sel.groups[suffix] = {cols: new Set(), hmIdx};
+            const set = sel.groups[suffix].cols;
+            set.has(col) ? set.delete(col) : set.add(col);
+            fmtSel();
+        }
+        chartWriters?.on('plotly_click', ev => toggleLayer(ev.points[0].x));
+        chartDirHeat?.on('plotly_click', ev => toggleLayer(ev.points[0].y));
+        (C.heatmaps || []).forEach((hm, i) => {
+            const gd = document.getElementById('hm' + i);
+            if (gd) gd.on('plotly_click', ev => {
+                const p = ev.points[0];
+                const suffix = hm.suffix || hm.name.split('.').slice(-2).join('.');
+                toggleGroup(suffix, i, p.x);
+            });
+        });
+        document.getElementById('rpSubmit')?.addEventListener('click', async () => {
+            const cfg = {
+                layers: [...sel.layers].sort((a,b)=>a-b),
+                col_masks: {},
+                alpha: parseFloat(document.getElementById('rpAlpha').value) || undefined,
+            };
+            Object.entries(sel.groups).forEach(([suffix, v]) => {
+                if (!v.cols.size) return;
+                const hm = (C.heatmaps || [])[v.hmIdx] || {};
+                const ih = hm.ih;
+                if (!ih) return;
+                const step = Math.ceil(ih / 24);
+                const cols = [...v.cols].sort((a,b)=>a-b);
+                const ranges = [];
+                let s0 = null, prev = null;
+                cols.forEach(c => {
+                    if (s0 === null) { s0 = c; prev = c; return; }
+                    if (c === prev + 1) { prev = c; return; }
+                    ranges.push([s0 * step, (prev + 1) * step]);
+                    s0 = c; prev = c;
+                });
+                if (s0 !== null) ranges.push([s0 * step, (prev + 1) * step]);
+                cfg.col_masks[suffix] = ranges;
+            });
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `{% url 'moe_job_repatch' 0 %}`.replace('/0/', '/{{ job.pk }}/');
+            form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">` +
+                `<input type="hidden" name="patch_config" value='${JSON.stringify(cfg).replace(/'/g, "&#39;")}'>`;
+            document.body.appendChild(form);
+            form.submit();
+        });
+        fmtSel();
 </script>
 <script>
     // Polling статуса джобы (паттерн fine_tuning/detail.html)

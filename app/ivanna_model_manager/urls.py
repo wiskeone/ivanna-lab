@@ -308,6 +308,7 @@ urlpatterns = [
     path('moe/themes/<int:pk>/router/', views.moe_theme_router_build, name='moe_theme_router_build'),
     path('moe/themes/<int:pk>/route/', views.moe_theme_route_test, name='moe_theme_route_test'),
     path('moe/jobs/create/', views.moe_job_create, name='moe_job_create'),
+    path('moe/jobs/<int:pk>/repatch/', views.moe_job_repatch, name='moe_job_repatch'),
     path('moe/jobs/<int:pk>/', views.moe_job_detail, name='moe_job_detail'),
     path('moe/jobs/<int:pk>/status/', views.moe_job_status, name='moe_job_status'),
     path('moe/jobs/<int:pk>/push-hf/', views.moe_job_push_hf, name='moe_job_push_hf'),

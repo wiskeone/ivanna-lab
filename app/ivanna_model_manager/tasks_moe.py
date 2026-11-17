@@ -7,6 +7,7 @@ Job pipeline (lab stages):
 AUC gate failed → the job stops with status FAILED and the scan report
 (no patch — the lab's "every patch goes through a gate" principle).
 """
+import json
 import logging
 import os
 import traceback
@@ -96,14 +97,31 @@ def moe_build_expert_task(self, job_id):
         if not src or not os.path.exists(src):
             raise FileNotFoundError(f"Base model not found locally: {src}")
 
-        domain = moe_prompts.load_texts(theme.domain_prompts_path())
-        contrast = moe_prompts.load_texts(theme.contrast_prompts_path())
-        if len(domain) < 3 or len(contrast) < 3:
-            raise ValueError("Theme prompt sets are empty (need ≥3+3).")
-        job.add_log(f"Prompts: domain {len(domain)}, contrast {len(contrast)}")
-
         job_dir = job.job_dir()
         os.makedirs(job_dir, exist_ok=True)
+
+        # v5.3: re-patch mode — reuse the parent job's scan (npz + report),
+        # skip theme prompt checks and the whole scan phase
+        reuse_parent = job.reuse_scan_from
+        if reuse_parent:
+            parent_npz = os.path.join(reuse_parent.job_dir(), 'scan_dirs.npz')
+            if not os.path.exists(parent_npz):
+                raise FileNotFoundError(
+                    f"Parent scan npz not found: {parent_npz} — run the parent job first.")
+            import shutil as _shutil
+            _shutil.copy2(parent_npz, os.path.join(job_dir, 'scan_dirs.npz'))
+            job.scan_report = _json_safe(reuse_parent.scan_report or {})
+            job.save(update_fields=['scan_report'])
+            job.add_log(f"♻ Re-patch of #{reuse_parent.pk}: scan reused "
+                        f"(AUC {job.scan_report.get('gate_auc')} {job.scan_report.get('gate')}), "
+                        f"patch_config={json.dumps(job.patch_config or {})}")
+
+        if not reuse_parent:
+            domain = moe_prompts.load_texts(theme.domain_prompts_path())
+            contrast = moe_prompts.load_texts(theme.contrast_prompts_path())
+            if len(domain) < 3 or len(contrast) < 3:
+                raise ValueError("Theme prompt sets are empty (need ≥3+3).")
+            job.add_log(f"Prompts: domain {len(domain)}, contrast {len(contrast)}")
 
         # GGUF input → conversion to safetensors (dequant)
         if (os.path.isdir(src) and not any(f.endswith('.safetensors') for f in os.listdir(src))) \
@@ -115,32 +133,37 @@ def moe_build_expert_task(self, job_id):
                 progress_cb=lambda d, t, s: job.update_progress(2 + 8 * d / max(1, t), f"GGUF: {s}"))
             src = converted
 
-        # ── Stage 1: scan (progress 10–55%) ──
-        job.status = 'SCANNING'
-        job.save(update_fields=['status'])
+        # ── Stage 1: scan (progress 10–55%) — skipped in re-patch mode ──
         npz_path = os.path.join(job_dir, 'scan_dirs.npz')
+        if not reuse_parent:
+            job.status = 'SCANNING'
+            job.save(update_fields=['status'])
 
-        def scan_progress(done, total, step):
-            job.update_progress(10 + 45 * done / max(1, total), f"Scan: {step}")
+            def scan_progress(done, total, step):
+                job.update_progress(10 + 45 * done / max(1, total), f"Scan: {step}")
 
-        job.update_progress(10, "Scan: loading model")
-        # v5.2: models ≤2.5e9 params fit entirely in the GPU in nf4 —
-        # otherwise offload puts conv modules on CPU and causal_conv1d kernels crash
-        param_b = base.parameter_count or 0
-        scan_report = moe_scan.scan_theme(
-            src, domain, contrast, npz_path, load_mode=job.load_mode,
-            seed=job.holdout_seed, full_gpu=(param_b > 0 and param_b < 2_500_000_000),
-            progress_cb=scan_progress)
-        job.scan_report = _json_safe(scan_report)
-        job.save(update_fields=['scan_report'])
-        job.add_log(f"Scan: AUC gate = {scan_report['gate_auc']} ({scan_report['gate']}), "
-                    f"layers {scan_report['n_layers']}, {scan_report['sec']}s")
+            job.update_progress(10, "Scan: loading model")
+            # v5.2: models ≤2.5e9 params fit entirely in the GPU in nf4 —
+            # otherwise offload puts conv modules on CPU and causal_conv1d kernels crash
+            param_b = base.parameter_count or 0
+            scan_report = moe_scan.scan_theme(
+                src, domain, contrast, npz_path, load_mode=job.load_mode,
+                seed=job.holdout_seed, full_gpu=(param_b > 0 and param_b < 2_500_000_000),
+                progress_cb=scan_progress)
+            job.scan_report = _json_safe(scan_report)
+            job.save(update_fields=['scan_report'])
+            job.add_log(f"Scan: AUC gate = {scan_report['gate_auc']} ({scan_report['gate']}), "
+                        f"layers {scan_report['n_layers']}, {scan_report['sec']}s")
 
-        if scan_report['gate'] != 'PASS':
-            raise ValueError(
-                f"Scan gate FAILED (AUC={scan_report['gate_auc']} <= 0.85): "
-                f"theme direction not extracted. Check prompt sets (theme "
-                f"validation) and lengths — no patch applied.")
+            if scan_report['gate'] != 'PASS':
+                raise ValueError(
+                    f"Scan gate FAILED (AUC={scan_report['gate_auc']} <= 0.85): "
+                    f"theme direction not extracted. Check prompt sets (theme "
+                    f"validation) and lengths — no patch applied.")
+        else:
+            scan_report = job.scan_report or {}
+            job.update_progress(50, "Scan reused from parent job")
+        scan_report = _json_safe(scan_report)
 
         # ── Analysis mode: scan and reports only, no patch (basis for the decision) ──
         if not job.do_patch:
@@ -172,7 +195,8 @@ def moe_build_expert_task(self, job_id):
         patch_report = moe_patching.patch_model_dir(
             src, out_dir, npz_path, scan_report,
             mode=eff_mode, alpha=eff_alpha, layers=job.layers, position=job.position,
-            progress_cb=patch_progress)
+            progress_cb=patch_progress,
+            col_masks=(job.patch_config or {}).get('col_masks'))
         job.patch_report = _json_safe(patch_report)
         job.save(update_fields=['patch_report'])
         job.add_log(f"Patch: {patch_report['patched_count']} tensors, "

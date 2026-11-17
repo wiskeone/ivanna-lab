@@ -4490,6 +4490,50 @@ def moe_theme_route_test(request, pk):
 
 
 @login_required
+@require_POST
+def moe_job_repatch(request, pk):
+    """Click-tool: create a re-patch job from the heatmap selection on this job.
+
+    Reuses the parent scan (npz + report); the selection (layers / column
+    groups / alpha) travels as job.patch_config. Non-destructive: a NEW job
+    is created and dispatched."""
+    from .models import MoEExpertJob
+    from .tasks_moe import moe_build_expert_task
+    import json as _json
+
+    parent = get_object_or_404(MoEExpertJob, pk=pk)
+    if parent.status != 'COMPLETED':
+        messages.error(request, _('Родительская джоба не завершена — выделение делается на готовых теплокартах.'))
+        return redirect('moe_job_detail', pk=pk)
+    try:
+        cfg = _json.loads(request.POST.get('patch_config') or '{}')
+    except ValueError:
+        cfg = {}
+    layers = (cfg.get('layers') or [])
+    col_masks = cfg.get('col_masks') or {}
+    alpha = cfg.get('alpha')
+    if not layers and not col_masks:
+        messages.error(request, _('Пустое выделение: выберите слои или группы размерностей.'))
+        return redirect('moe_job_detail', pk=pk)
+
+    job = MoEExpertJob.objects.create(
+        name=f"repatch_{parent.name[:120]}_{timezone.now().strftime('%H%M%S')}",
+        theme=parent.theme, base_checkpoint=parent.base_checkpoint,
+        mode=parent.mode, alpha=float(alpha) if alpha not in (None, '') else parent.alpha,
+        layers=','.join(str(l) for l in layers) if layers else parent.layers,
+        position=parent.position, holdout_seed=parent.holdout_seed,
+        load_mode=parent.load_mode, do_eval=False, do_router=parent.do_router,
+        goal=parent.goal, do_patch=True, created_by=request.user.username,
+        patch_config={'layers': layers, 'col_masks': col_masks},
+        reuse_scan_from=parent,
+    )
+    transaction.on_commit(lambda: moe_build_expert_task.delay(job.id))
+    messages.success(request, _('Re-patch задача "%(name)s" создана (скан переиспользуется).')
+                     % {'name': job.name})
+    return redirect('moe_job_detail', pk=job.pk)
+
+
+@login_required
 def moe_job_create(request):
     """Создание задачи сборки эксперта: валидации → джоба → GPU-очередь."""
     from .forms import MoEExpertJobForm
@@ -4570,7 +4614,10 @@ def _moe_charts(job):
         charts['deltas'] = [{'name': t['name'], 'delta': round(t['delta_l1'], 2)} for t in ts]
     heatmaps = [t for t in (patch.get('tensors') or []) if t.get('heatmap')]
     if heatmaps:
-        charts['heatmaps'] = [{'name': t['name'], 'z': t['heatmap']} for t in heatmaps]
+        charts['heatmaps'] = [{'name': t['name'], 'z': t['heatmap'],
+                               'ih': t.get('ih'), 'oh': t.get('oh'),
+                               'suffix': '.'.join(t['name'].split('.')[-2:])}
+                              for t in heatmaps]
 
     sets = (job.eval_report or {}).get('sets') or {}
     if sets:

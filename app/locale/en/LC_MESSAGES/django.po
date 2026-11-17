@@ -7153,3 +7153,38 @@ msgstr "The server could not process this request."
 
 msgid "Вариант"
 msgstr "Variant"
+
+msgid "Re-patch: клик по теплокартам"
+msgstr "Re-patch: click the heatmaps"
+
+msgid "не-деструктивно: новая джоба"
+msgstr "non-destructive: creates a new job"
+
+msgid ""
+"Клик по барам «Каузальные писатели» или строкам теплокарты |d̂| — "
+"включает/исключает слой. Клик по колонке теплокарты |ΔW| — "
+"включает/исключает группу входов (ширина = бакет). Скан родителя "
+"переиспользуется — пересборка ~1 минута."
+msgstr ""
+"Click the \"Causal writers\" bars or the |d̂| heatmap rows to "
+"include/exclude a layer. Click |ΔW| heatmap columns to include/exclude an "
+"input group (width = one bucket). The parent scan is reused — the rebuild "
+"takes about a minute."
+
+msgid "Слои вручную (пусто = из джобы): 19,21,22..."
+msgstr "Layers manually (empty = from the job): 19,21,22..."
+
+msgid "Создать re-patch джобу"
+msgstr "Create re-patch job"
+
+msgid "Выделено:"
+msgstr "Selected:"
+
+msgid "пока ничего — кликайте по графикам ниже"
+msgstr "nothing yet — click the charts below"
+
+msgid "пока ничего"
+msgstr "nothing yet"
+
+msgid "α"
+msgstr "alpha"

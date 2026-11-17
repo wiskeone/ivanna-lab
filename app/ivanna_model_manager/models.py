@@ -4572,6 +4572,13 @@ class MoEExpertJob(models.Model):
     # моделью по дайджесту отчётов скана/патча/eval/роутера
     interpretation = models.TextField(blank=True, default='',
                                       help_text=_("LLM-интерпретация результатов прогона"))
+    # v5.3: клик-инструмент re-patch — конфиг из выделения на теплокартах
+    patch_config = models.JSONField(default=dict, blank=True,
+                                    help_text=_("Слои/группы размерностей из выделения на теплокартах"))
+    reuse_scan_from = models.ForeignKey(
+        'self', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='repatch_children',
+        help_text=_("Родительская джоба: переиспользовать её скан (npz/scan_report), пропустить скан-фазу"))
 
     # Выход
     output_model = models.ForeignKey(
@@ -4681,7 +4688,14 @@ class Benchmark(models.Model):
                                     help_text=_("Число примеров в датасете (для оценки длительности)"))
 
     source = models.CharField(max_length=20, default='lm_eval',
-                              choices=[('curated', _('Курируемый')), ('lm_eval', _('Реестр lm-eval'))])
+                              choices=[('curated', _('Курируемый')), ('lm_eval', _('Реестр lm-eval')),
+                                       ('custom', _('Собственный'))])
+    # v5.3 phase 2: custom benchmark QA storage (engine='custom' runner)
+    qa_data = models.JSONField(default=list, blank=True,
+                               help_text=_("[{prompt, reference, keywords[]}] для source=custom"))
+    scoring = models.CharField(max_length=20, default='keywords',
+                               choices=[('keywords', _('Содержит ключевое слово')),
+                                        ('exact', _('Точное совпадение'))])
     is_popular = models.BooleanField(default=False,
                                      help_text=_("Показывать карточкой в «Популярных»"))
 

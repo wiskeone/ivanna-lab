@@ -102,9 +102,25 @@ def convert_gguf_to_safetensors(model_path: str, out_dir: str, progress_cb=None)
     return str(out)
 
 
+def build_col_mask(tensor_name, n_cols, col_masks):
+    """Column mask for a tensor from the click-tool selection: 1.0 inside kept
+    [start, end] ranges, 0.0 outside. None when no selection applies."""
+    if not col_masks:
+        return None
+    import torch as _torch
+    mask = None
+    for suffix, ranges in (col_masks or {}).items():
+        if tensor_name.endswith(suffix):
+            mask = _torch.zeros(n_cols, dtype=torch.float32)
+            for start, end in ranges:
+                mask[start:end] = 1.0
+            break
+    return mask
+
+
 def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
                     alpha=0.2, layers="auto", suffixes=OUT_MODULE_SUFFIXES,
-                    position="last", progress_cb=None) -> dict:
+                    position="last", progress_cb=None, col_masks=None) -> dict:
     """Patch a checkpoint: lazy safetensors reading, edit out-matrices of selected layers.
 
     Non-matching tensors are copied byte-for-byte (into the new safetensors file),
@@ -112,6 +128,9 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
     Memory: peak ≈ size of one safetensors file.
     position: 'last' | 'mean' — which pair of scan directions to use
     (mean inputs ī in steer always come from the last position — the lab verified only last).
+    col_masks: optional {suffix: [[start, end], ...]} — keep only these INPUT-column
+    ranges of the rank-one update on matching tensors (click-tool group selection);
+    columns outside the ranges get zero delta.
     Returns a report (mode/alpha/layers/tensors/delta_l1).
     """
     src, out = Path(src_dir), Path(out_dir)
@@ -166,8 +185,12 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
             orig_dtype = W.dtype
             W32 = W.to(torch.float32)
             d = torch.from_numpy(dirs[li])
+            col_mask = build_col_mask(name, W.shape[1], col_masks)
             if mode == "amplify":
-                W2 = W32 + alpha * torch.outer(d, d @ W32)
+                delta = alpha * torch.outer(d, d @ W32)
+                if col_mask is not None:
+                    delta = delta * col_mask
+                W2 = W32 + delta
             else:  # steer
                 i_bar = mean_in.get((li, tail))
                 if i_bar is None:
@@ -178,12 +201,17 @@ def patch_model_dir(src_dir, out_dir, dirs_npz, scan_report, mode="steer",
                 if n_i < 1e-9:
                     report["tensors"].append({"name": name, "skipped": "zero mean-input"})
                     continue
-                W2 = W32 + alpha * torch.outer(d, i_t) / (n_i ** 2)
-            delta_l1 = float((W2 - W32).abs().sum())
+                delta = alpha * torch.outer(d, i_t) / (n_i ** 2)
+                if col_mask is not None:
+                    delta = delta * col_mask
+                W2 = W32 + delta
+            delta = (W2 - W32)
+            delta_l1 = float(delta.abs().sum())
             tensors[name] = W2.to(orig_dtype)
             report["tensors"].append({"name": name, "delta_l1": delta_l1,
                                       "orig_l1": float(W32.abs().sum()),
-                                      "heatmap": bucket_matrix((W2 - W32).numpy())})
+                                      "ih": int(delta.shape[1]), "oh": int(delta.shape[0]),
+                                      "heatmap": bucket_matrix(delta.numpy())})
             n_patched_file += 1
         save_file(tensors, str(out / st.name), metadata={"format": "pt"})
         report["patched_count"] += n_patched_file
