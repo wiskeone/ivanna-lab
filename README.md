@@ -35,6 +35,20 @@ Dark theme, bilingual, single-GPU-first. English interface shown below.
 - **RAG** — document collections (PDF/DOCX/HTML/CSV/Excel/EPUB), paragraph-aware chunking, page previews, FAISS + BM25 hybrid search, selectable rerankers, RAG-grounded chat
 - **Monitoring** — GPU status, Prometheus + Grafana, Flower
 
+## Benchmarks module (lm-eval-harness)
+
+The lab ships its own benchmarking pipeline, styled after the model-download UX:
+**catalog (curated top-15 + 600-task registry search) → dataset install → pick a
+model → run → metrics & cross-model leaderboard**. The engine runs in an isolated
+venv (`/opt/lmeval-venv`) so the pinned main stack is never touched; runs stream
+live phase/progress into the UI.
+
+Example — the Python soft-MoE rebuild grid on `code2text_python` (CodeXGLUE BLEU-4):
+
+![code2text_python benchmark grid](docs/screenshots/bench_code2text_grid.png)
+
+Full recipe, 4 GB VRAM notes and pilot results: [docs/benchmarks.md](docs/benchmarks.md).
+
 ## Stack
 
 | Layer | Tech |
