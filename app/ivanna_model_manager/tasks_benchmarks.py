@@ -395,10 +395,10 @@ else:
 m = AutoModelForCausalLM.from_pretrained(model_path, **kwargs).eval()
 tok = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
-SYS = ("You create QA pairs for a benchmark. Read the documentation fragment and emit ONE "
-       "line of JSON: {\"q\": \"question about the fragment\", \"a\": \"short factual answer\", "
-       "\"kw\": [\"keyword1\", \"keyword2\"]}. Keywords are words that MUST appear in a correct "
-       "answer. No other text.")
+SYS = ('You create QA pairs for a benchmark. Read the documentation fragment and emit ONE '
+       'line of JSON: {"q": "question about the fragment", "a": "short factual answer", '
+       '"kw": ["keyword1", "keyword2"]}. Keywords are words that MUST appear in a correct '
+       'answer. No other text.')
 out = []
 for i, chunk in enumerate(chunks):
     msgs = [{'role': 'system', 'content': SYS},

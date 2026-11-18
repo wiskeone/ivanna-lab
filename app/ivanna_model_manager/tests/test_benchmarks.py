@@ -135,3 +135,49 @@ class CuratedCatalogSyncTests(TestCase):
     def test_curated_entries_have_unique_names(self):
         names = [e['name'] for e in curated_entries()]
         self.assertEqual(len(names), len(set(names)))
+
+
+class ScoreAnswerTests(SimpleTestCase):
+    from types import SimpleNamespace as _NS  # noqa
+    def test_keywords_hit(self):
+        from ivanna_model_manager.tasks_benchmarks import _score_answer
+        item = {'reference': 'decorator', 'keywords': ['decorator', '@']}
+        self.assertEqual(_score_answer('Use a @decorator above the def', item, 'keywords'), 1.0)
+        self.assertEqual(_score_answer('nothing relevant here', item, 'keywords'), 0.0)
+
+    def test_keywords_case_insensitive(self):
+        from ivanna_model_manager.tasks_benchmarks import _score_answer
+        item = {'reference': 'GIL', 'keywords': ['global interpreter lock']}
+        self.assertEqual(_score_answer('The Global Interpreter Lock serializes threads', item, 'keywords'), 1.0)
+
+    def test_exact_mode(self):
+        from ivanna_model_manager.tasks_benchmarks import _score_answer
+        item = {'reference': 'yes'}
+        self.assertEqual(_score_answer('yes, because X', item, 'exact'), 1.0)
+        self.assertEqual(_score_answer('maybe', item, 'exact'), 0.0)
+
+    def test_fallback_to_reference_as_keyword(self):
+        from ivanna_model_manager.tasks_benchmarks import _score_answer
+        item = {'reference': 'metaclass', 'keywords': []}
+        self.assertEqual(_score_answer('a metaclass is a class factory', item, 'keywords'), 1.0)
+
+
+class ColMaskTests(SimpleTestCase):
+    def test_ranges_cover_selected_groups(self):
+        from ivanna_model_manager.services.soft_moe.patching import build_col_mask
+        mask = build_col_mask('model.layers.5.mlp.down_proj.weight', 256,
+                              {'mlp.down_proj.weight': [[0, 64], [128, 192]]})
+        self.assertEqual(mask[0], 1.0)
+        self.assertEqual(mask[63], 1.0)
+        self.assertEqual(mask[64], 0.0)
+        self.assertEqual(mask[128], 1.0)
+        self.assertEqual(mask[255], 0.0)
+
+    def test_no_mask_for_other_tensors(self):
+        from ivanna_model_manager.services.soft_moe.patching import build_col_mask
+        self.assertIsNone(build_col_mask('model.layers.5.self_attn.q_proj.weight', 256,
+                                         {'mlp.down_proj.weight': [[0, 64]]}))
+
+    def test_none_config(self):
+        from ivanna_model_manager.services.soft_moe.patching import build_col_mask
+        self.assertIsNone(build_col_mask('anything', 256, None))
