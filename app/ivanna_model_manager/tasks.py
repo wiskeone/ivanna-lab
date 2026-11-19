@@ -1408,13 +1408,13 @@ def run_fine_tuning_task(self, job_id, restart=False, resume: bool = False):
         # Пробуем GPU, при OOM переключаемся на CPU
         device = 'cuda'
         try:
-            output_model = _run_training_on_device(job, device)
+            output_model = _run_training_on_device(job, device, resume=resume)
         except torch.cuda.OutOfMemoryError as e:
             job.add_log(f"⚠️ CUDA out of memory: {e}. Пробуем на CPU...")
             job.add_error(f"CUDA OOM: {e}")  # записываем ошибку, но продолжаем
             torch.cuda.empty_cache()
             device = 'cpu'
-            output_model = _run_training_on_device(job, device)
+            output_model = _run_training_on_device(job, device, resume=resume)
         except Exception as e:
             # Любая другая ошибка – логируем и пробрасываем дальше
             job.add_error(str(e), traceback.format_exc())
@@ -1452,7 +1452,7 @@ def run_fine_tuning_task(self, job_id, restart=False, resume: bool = False):
         return {'success': False, 'error': str(e)}
 
 
-def _run_training_on_device(job, device):
+def _run_training_on_device(job, device, resume: bool = False):
     """
     Выбирает нужный тренер и запускает обучение на указанном устройстве.
     v5.1: job.gpu_device переопределяет device (0..N = cuda:N, -1 = cpu).

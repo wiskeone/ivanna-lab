@@ -355,7 +355,7 @@ class RAFTTrainer:
             return (kl * mask).sum() / denom
         return kl.mean()
 
-    def train(self):
+    def train(self, resume: bool = False):
         try:
             self.job.status = 'PREPARING'
             self.job.save()
@@ -479,7 +479,7 @@ class RAFTTrainer:
 
             # guarded resume: only an explicitly resumed run picks up old checkpoints
             checkpoint = None
-            if self.resume and os.path.exists(output_dir) and \
+            if resume and os.path.exists(output_dir) and \
                     any(f.startswith('checkpoint-') for f in os.listdir(output_dir)):
                 checkpoint = True
                 self.job.add_log("🔄 Resuming from existing checkpoint...")

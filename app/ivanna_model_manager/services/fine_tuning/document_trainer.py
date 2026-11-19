@@ -212,7 +212,7 @@ class DocumentTrainer:
         model.print_trainable_parameters()
         return model, lora_config
 
-    def train(self):
+    def train(self, resume: bool = False):
         """Запуск обучения с чекпоинтами и отслеживанием прогресса."""
         try:
             # Включаем оптимизации CuDNN
@@ -296,7 +296,7 @@ class DocumentTrainer:
             apply_lora_plus(trainer, self.job.lora_plus_lr_ratio)
 
             checkpoint = None
-            if self.resume and os.path.exists(output_dir) and \
+            if resume and os.path.exists(output_dir) and \
                     any(f.startswith('checkpoint-') for f in os.listdir(output_dir)):
                 checkpoint = True
                 self.job.add_log("🔄 Resuming from existing checkpoint...")
