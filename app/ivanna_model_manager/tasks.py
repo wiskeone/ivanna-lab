@@ -1377,7 +1377,7 @@ def export_evaluation_results(task_id, export_format='json'):
 # FineTuning
 # --------------------------------------------------------------------------
 @shared_task(bind=True, queue='gpu_tasks', time_limit=86400)
-def run_fine_tuning_task(self, job_id, restart=False):
+def run_fine_tuning_task(self, job_id, restart=False, resume: bool = False):
     """
     Запуск fine-tuning с поддержкой чекпоинтов, fallback на CPU и логированием ошибок.
     """
@@ -1476,13 +1476,14 @@ def _run_training_on_device(job, device):
         trainer = RAFTTrainer(job, device=device)
     else:
         raise ValueError(f"Unknown method: {job.method}")
-    return trainer.train()
+    return trainer.train(resume=resume)
 
 
-@shared_task(queue='cpu_tasks')
+@shared_task(queue='gpu_tasks')
 def resume_fine_tuning_task(job_id):
-    """v5.1: резюме файнтюна — повторный прогон подхватывает чекпоинт."""
-    return run_fine_tuning_task(job_id)
+    """v5.1: резюме файнтюна — повторный прогон подхватывает чекпоинт.
+    gpu_tasks: тренировка требует CUDA (CPU-fallback только по OOM)."""
+    return run_fine_tuning_task(job_id, resume=True)
 
 
 @shared_task(queue='cpu_tasks')

@@ -7,7 +7,8 @@
 
 {% block extra_css %}
 <style>
-    /* ... существующие стили ... */
+    .hint-box { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 12px 16px; font-size: 0.9rem; }
+    .tier1-row { border-top: 1px dashed #444; padding-top: 12px; margin-top: 4px; }
 </style>
 {% endblock %}
 
@@ -22,6 +23,10 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    <div class="hint-box mb-3">
+                        {% trans "Пайплайн: модель грузится в выбранной квантизации → LoRA-адаптеры на целевых модулях → обучение с completion-only маскированием (loss только по ответу). Для Qwen3.5 (гибридная архитектура) пресет «Гибрид» накрывает и gated-delta-net слои. Типовые значения для старта: r=8-16, alpha=16-32, lr 1e-4…2e-4, NEFTune 5-10." %}
+                    </div>
+
                     <form method="post" id="createFineTuningForm">
                         {% csrf_token %}
                         
@@ -240,7 +245,59 @@
                                         <input type="number" name="lora_dropout" class="form-control" id="id_lora_dropout" value="{{ form.lora_dropout.value|default:'0.05' }}" step="0.01" min="0" max="0.5">
                                     </div>
                                 </div>
+
+                                <div class="tier1-row">
+                                    <h6 class="small text-muted mb-2"><i class="bi bi-lightning-charge me-1"></i>{% trans "Tier-1 улучшения (LoRA++)" %}</h6>
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="use_dora" id="id_use_dora" {% if form.use_dora.value %}checked{% endif %}>
+                                                <label class="form-check-label" for="id_use_dora"><strong>DoRA</strong>
+                                                    <small class="d-block text-muted">{% trans "magnitude+direction разложение — лучше на малых рангах" %}</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="use_rslora" id="id_use_rslora" {% if form.use_rslora.value %}checked{% endif %}>
+                                                <label class="form-check-label" for="id_use_rslora"><strong>rsLoRA</strong>
+                                                    <small class="d-block text-muted">{% trans "alpha на sqrt(r) — стабильнее при малом r" %}</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <label class="form-label small">LoRA+ (lr B ×)</label>
+                                            <input type="number" name="lora_plus_lr_ratio" class="form-control form-control-sm" value="{{ form.lora_plus_lr_ratio.value|default:'' }}" step="1" min="1" placeholder="{% trans "выкл" %}">
+                                            <small class="text-muted">{% trans "типово 16" %}</small>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <label class="form-label small">NEFTune α</label>
+                                            <input type="number" name="neftune_alpha" class="form-control form-control-sm" value="{{ form.neftune_alpha.value|default:'' }}" step="1" min="1" placeholder="{% trans "выкл" %}">
+                                            <small class="text-muted">{% trans "типово 5-10" %}</small>
+                                        </div>
+                                        <div class="col-12 mt-2">
+                                            <label class="form-label small">{% trans "Целевые модули" %}</label>
+                                            <select name="target_preset" class="form-select form-select-sm">
+                                                {% for v, l in form.target_preset.field.choices %}
+                                                <option value="{{ v }}" {% if form.target_preset.value == v %}selected{% endif %}>{{ l }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <small class="text-muted">{% trans "«Гибрид» накрывает gated-delta-net слои Qwen3.5; conv1d исключён (LoRA-Conv1d не поддержан)" %}</small>
+                                            <details class="mt-1">
+                                                <summary class="small text-muted">{% trans "Свой список модулей (JSON)" %}</summary>
+                                                <input type="text" name="target_modules" class="form-control form-control-sm mt-1"
+                                                       value="{{ form.target_modules.value|default:'' }}"
+                                                       placeholder='["q_proj","k_proj","v_proj","o_proj"]'>
+                                            </details>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+
+                        <div class="hint-box mb-4">
+                            <strong>{% trans "Подсказки:" %}</strong>
+                            {% trans "• r=8-16 достаточно для большинства задач; DoRA компенсирует малый ранг. • NEFTune — бесплатный буст instruction-задач. • LoRA+ ускоряет сходимость (B матрицы учатся быстрее). • На 4GB: batch 1-2 + gradient accumulation 4-8, max_seq_length ≤2048. • KL-регуляризация RAFT требует ≥8GB (учитель в fp16) — на 4GB отключена автоматически." %}
                         </div>
                         
                         <!-- Гиперпараметры обучения -->

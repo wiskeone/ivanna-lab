@@ -40,3 +40,10 @@ Working plan for future releases. Order is approximate — items move up if some
 **v5.0 — инференс и масштаб:** ✅ ВСЁ ЗАКРЫТО (vLLM, пресеты, пауза/резюме, редактор датасетов, структурные логи, GPU-выбор на задачу).
 
 **v5.x — экосистема:** ✅ мягкий MoE (весовой стиринг: домен-эксперт из плотной модели без дообучения, docs/soft_moe.md). Далее: хаб оценок с экспортом отчётов, авто-карточки моделей для Hugging Face, пуш GGUF обратно в Hub, однострочные доменные пайплайны (legal/code/medical) на базе дистилляции, API-ключи.
+
+
+## Roadmap: fine-tuning & docs (v5.4 candidate)
+
+- **Docs hub**: /docs/ с главами из docs/*.md (рендер markdown), скринами, полными EN/RU переводами
+- **Tier-2 alignment**: DPO / ORPO / KTO тренеры; датасет «пары предпочтений» из Rating и чатов
+- **Tier-3**: GRPO (RLVR) с reward из кастомных бенчей фазы 2; GaLore full-FT на 4GB; continued pretraining на доменных корпусах

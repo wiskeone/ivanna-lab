@@ -1565,6 +1565,9 @@ class FineTuningJobForm(forms.ModelForm):
         fields = [
             'name', 'description', 'base_model', 'method', 'quantization',
             'lora_r', 'lora_alpha', 'lora_dropout',
+            # v5.3 Tier-1: LoRA++ pack
+            'use_dora', 'use_rslora', 'lora_plus_lr_ratio', 'neftune_alpha',
+            'target_preset', 'target_modules',
             'learning_rate', 'batch_size', 'gradient_accumulation_steps',
             'num_epochs', 'max_seq_length',
             # Параметры RAFT
@@ -1597,6 +1600,16 @@ class FineTuningJobForm(forms.ModelForm):
                     gpu_choices.append((str(i), f'GPU {i}: {torch.cuda.get_device_name(i)}'))
         except Exception:
             pass
+        # v5.3: bootstrap classes for the Tier-1 fields
+        for fname in ['use_dora', 'use_rslora']:
+            w = self.fields[fname].widget
+            w.attrs['class'] = (w.attrs.get('class', '') + ' form-check-input').strip()
+        for fname, css in [('lora_plus_lr_ratio', 'form-control'),
+                           ('neftune_alpha', 'form-control'),
+                           ('target_preset', 'form-select form-select-sm')]:
+            w = self.fields[fname].widget
+            w.attrs['class'] = (w.attrs.get('class', '') + ' ' + css).strip()
+
         self.fields['gpu_device'] = forms.TypedChoiceField(
             choices=gpu_choices, coerce=lambda v: int(v) if v != '' else None,
             required=False, empty_value=None,

@@ -36,16 +36,17 @@ def _base_model_type(model_path):
 
 
 def resolve_target_modules(job, model_path):
-    """Target module list for the job: explicit selection, or an arch-aware preset."""
+    """Target module list for the job: explicit selection, or an arch-aware preset.
+
+    Default preset auto-picks by architecture: hybrid-full for hybrid archs
+    (Qwen3.5), attention+mlp for classic dense models."""
     if job.target_modules:
         return list(job.target_modules)
-    preset = getattr(job, 'target_preset', '') or 'hybrid-full'
+    model_type = _base_model_type(model_path)
+    is_hybrid = 'qwen3_5' in model_type or 'hybrid' in model_type
+    preset = getattr(job, 'target_preset', '') or ('hybrid-full' if is_hybrid else 'attention+mlp')
     if preset in TARGET_PRESETS:
         return list(TARGET_PRESETS[preset])
-    # non-hybrid fallback: attention+mlp covers classic dense archs
-    model_type = _base_model_type(model_path)
-    if 'qwen3_5' in model_type or 'hybrid' in model_type:
-        return list(TARGET_PRESETS['hybrid-full'])
     return list(TARGET_PRESETS['attention+mlp'])
 
 
