@@ -18,6 +18,7 @@ from datasets import Dataset
 
 from ...models import FineTuningJob, DocumentChunk
 from .callbacks import ProgressCallback, PauseCallback, PauseRequested   # ваш существующий callback
+from .dataset_sources import collect_document_texts, collect_document_collections
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,10 @@ class DocumentTrainer:
         self.job.add_log("📄 Preparing document dataset...")
 
         texts = []
-        collections = self.job.document_collections.all()
+        # Audit fix: the create form stores collection ids in training_config —
+        # the M2M relation is never populated, so UI-created jobs always
+        # failed with "No documents found in selected collections"
+        collections = collect_document_collections(self.job)
 
         for collection in collections:
             logger.info(f"Loading documents from collection: {collection.name}")

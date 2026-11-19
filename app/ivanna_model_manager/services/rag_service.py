@@ -1,10 +1,12 @@
 import os
 import time
 import logging
+import uuid
 import torch
 import langdetect
 import numpy as np
 from typing import List, Dict, Any, Optional, Union
+from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 from django.conf import settings
@@ -21,6 +23,9 @@ from ..models import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Sentinel for "no shared version recorded yet" (None means never invalidated)
+_BM25_NO_VERSION = '__none__'
 
 # HF endpoint: не перебивать окружение зеркалом жёстко — этот модуль
 # импортируется первым через services/__init__ и отравлял os.environ
@@ -66,6 +71,7 @@ class EnhancedSearchService:
         self._rerankers = {}  # язык -> модель
         self.bm25_service = BM25Service() if getattr(settings, 'KEYWORD_SEARCH_ENGINE', 'bm25') == 'bm25' else None
         self._bm25_index_built = set()  # коллекции, для которых построен BM25 индекс
+        self._bm25_index_versions = {}  # коллекция -> версия из общего кэша при построении
 
     def _clean_hf_cache_for_model(self, repo_id: str):
         """Удаляет все ревизии указанной модели из глобального кэша Hugging Face."""
@@ -258,12 +264,18 @@ class EnhancedSearchService:
                 return []
 
             # Проверяем, есть ли уже индекс в кэше
-            if collection_id not in self._bm25_index_built:
+            # Audit fix: the in-memory index is per-process — a version key in
+            # the shared Django cache makes invalidation visible to other
+            # processes (web vs celery workers)
+            shared_ver = cache.get(f'bm25_idx_ver:{collection_id}')
+            if collection_id not in self._bm25_index_built or \
+                    shared_ver != self._bm25_index_versions.get(collection_id, _BM25_NO_VERSION):
                 texts = [c[1] for c in chunks_list]
                 chunk_ids = [c[0] for c in chunks_list]
                 self.bm25_service.build_index(collection_id, texts, chunk_ids)
                 self._bm25_index_built.add(collection_id)
-                logger.info(f"BM25 index built for collection {collection_id}")
+                self._bm25_index_versions[collection_id] = shared_ver
+                logger.info(f"BM25 index built for collection {collection_id} (shared version={shared_ver})")
 
             # Выполняем поиск
             bm25_results = self.bm25_service.search(query, collection_id, top_k=k)
@@ -383,12 +395,16 @@ class EnhancedSearchService:
 
         # Реранжирование по общему пулу
         if use_reranking and unique_results:
+            # Audit fix: the reranker block used to iterate an undefined
+            # `collections` name (NameError on every hybrid search) — fetch
+            # the actual DocumentCollection rows for the requested ids
             reranker_obj = None
-            for c in collections:
-                r = getattr(c, 'reranker_model', None)
-                if r is not None and getattr(r, 'is_active', True):
-                    reranker_obj = r
-                    break
+            if collection_ids:
+                for c in DocumentCollection.objects.filter(id__in=collection_ids):
+                    r = getattr(c, 'reranker_model', None)
+                    if r is not None and getattr(r, 'is_active', True):
+                        reranker_obj = r
+                        break
             logger.info("Applying reranking" + (f" ({reranker_obj.model_id})" if reranker_obj else " (auto)"))
             unique_results = self._rerank_results(query, unique_results,
                                                   reranker_model=reranker_obj)
@@ -433,27 +449,40 @@ class EnhancedSearchService:
         semantic_results: List[Dict],
         keyword_results: List[Dict],
         semantic_weight: float = 0.7,
-        keyword_weight: float = 0.3
+        keyword_weight: float = 0.2
     ) -> List[Dict]:
-        """Объединение результатов семантического и ключевого поиска."""
+        """Объединение результатов семантического и ключевого поиска.
+
+        Audit fix: BM25 scores are unbounded (0..15+) while semantic scores
+        live in 0..1 — weighted sum let keyword hits dominate everything.
+        Keyword scores are min-max normalized to 0..1 per search call before
+        merging (raw value kept in keyword_score_raw for display).
+        """
+        # Normalize BM25 scores to 0..1 relative to the best hit of this call
+        max_kw = max((r.get('keyword_score', 0) for r in keyword_results), default=0.0)
+        norm_kw = max_kw if max_kw > 0 else 1.0
+
         merged = {}
         for r in semantic_results:
             cid = r['chunk_id']
             merged[cid] = r.copy()
-            merged[cid]['semantic_score'] = r.get('similarity', 0)
+            merged[cid]['semantic_score'] = max(0.0, r.get('similarity', 0))
             merged[cid]['keyword_score'] = 0.0
             merged[cid]['final_score'] = merged[cid]['semantic_score'] * semantic_weight
 
         for r in keyword_results:
             cid = r['chunk_id']
+            kw_norm = r.get('keyword_score', 0) / norm_kw
             if cid in merged:
-                merged[cid]['keyword_score'] = r['keyword_score']
-                merged[cid]['final_score'] += r['keyword_score'] * keyword_weight
+                merged[cid]['keyword_score_raw'] = r['keyword_score']
+                merged[cid]['keyword_score'] = kw_norm
+                merged[cid]['final_score'] += kw_norm * keyword_weight
                 merged[cid]['source'] = 'hybrid'
             else:
                 new = r.copy()
                 new['semantic_score'] = 0.0
-                new['final_score'] = r['keyword_score'] * keyword_weight
+                new['keyword_score'] = kw_norm
+                new['final_score'] = kw_norm * keyword_weight
                 new['source'] = 'keyword'
                 merged[cid] = new
 
@@ -497,8 +526,14 @@ class EnhancedSearchService:
             pairs = [(query, r['content'][:1000]) for r in results]
             scores = reranker.predict(pairs)
             for i, r in enumerate(results):
-                r['reranker_score'] = float(scores[i])
-                r['final_score'] = (r['final_score'] + r['reranker_score']) / 2
+                raw = float(scores[i])
+                # Audit fix: the cross-encoder emits an unbounded logit —
+                # averaging it with a 0..1 final_score pushed relevance out of
+                # the model validators' range. Sigmoid keeps everything 0..1.
+                sig = 1.0 / (1.0 + np.exp(-raw))
+                r['reranker_score_raw'] = raw
+                r['reranker_score'] = sig
+                r['final_score'] = max(0.0, min(1.0, (r['final_score'] + sig) / 2))
             logger.info("Reranking completed")
         except Exception as e:
             logger.warning(f"Reranking failed: {e}", exc_info=True)
@@ -507,11 +542,19 @@ class EnhancedSearchService:
     def invalidate_bm25_cache(self, collection_id: int):
         """
         Инвалидирует кэш BM25 для коллекции (например, после изменения документов).
+        Audit fix: also bump a shared version key in the Django cache so that
+        other processes (web, other workers) rebuild their in-memory index on
+        the next search — previously only the local (usually empty) cache of
+        the freshly created service instance was cleared.
         """
         if self.bm25_service:
             self.bm25_service.clear_cache(collection_id)
-            self._bm25_index_built.discard(collection_id)
-            logger.info(f"BM25 cache invalidated for collection {collection_id}")
+        self._bm25_index_built.discard(collection_id)
+        try:
+            cache.set(f'bm25_idx_ver:{collection_id}', uuid.uuid4().hex, None)
+        except Exception as e:
+            logger.warning(f"BM25 shared version bump failed for {collection_id}: {e}")
+        logger.info(f"BM25 cache invalidated for collection {collection_id}")
 
 
 class RAGService:
@@ -543,8 +586,10 @@ class RAGService:
         Если embedding_model_id не указан, используется модель из коллекции (если есть) или глобальная по умолчанию.
         """
         from datetime import datetime
+        # Audit fix: session_id is unique and was second-granular — two queries
+        # in the same second raised IntegrityError before the try block (500).
         rag_session = RAGSession.objects.create(
-            session_id=f"rag_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{user_id}",
+            session_id=f"rag_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{user_id}_{uuid.uuid4().hex[:6]}",
             user_id=user_id,
             original_query=query,
             system_prompt=system_prompt,
@@ -635,8 +680,11 @@ class RAGService:
             rag_session.search_query = search_query
 
             # 5. Сохраняем результаты в SearchResult и RetrievedChunk
+            # Audit fix: search_config=None crashed here (AttributeError) — the
+            # ajax chat view passes the value as-is from the client
+            top_k_limit = (search_config or {}).get('top_k', 5)
             retrieved_chunks = []
-            for i, result in enumerate(search_results[:search_config.get('top_k', 5)]):
+            for i, result in enumerate(search_results[:top_k_limit]):
                 chunk_id = result['chunk_id']
                 try:
                     chunk = DocumentChunk.objects.get(id=chunk_id, is_active=True)
@@ -712,21 +760,34 @@ class RAGService:
                     for rc in retrieved_chunks:
                         rc.chunk.mark_used()
 
+                    # Audit fix: RetrievedChunk has no metadata field — building
+                    # sources from it raised AttributeError AFTER a successful
+                    # search+generation, failing every RAG chat request at the
+                    # last step. Scores come from the in-memory search results.
+                    scores_by_chunk = {r['chunk_id']: r for r in search_results}
+                    sources = []
+                    for rc in retrieved_chunks[:3]:
+                        r = scores_by_chunk.get(rc.chunk_id, {})
+                        sources.append({
+                            'document_id': rc.chunk.document.id,
+                            'document_title': rc.chunk.document.title,
+                            'chunk_id': rc.chunk.id,
+                            'content': rc.chunk.content[:200] + '...',
+                            'relevance_score': rc.relevance_score,
+                            'search_scores': {
+                                'semantic_score': r.get('semantic_score', 0),
+                                'keyword_score': r.get('keyword_score', 0),
+                                'freshness_score': r.get('freshness_score', 0),
+                                'reranker_score': r.get('reranker_score', 0),
+                                'final_score': r.get('final_score', 0),
+                            }
+                        })
+
                     return {
                         'success': True,
                         'session_id': rag_session.session_id,
                         'answer': answer,
-                        'sources': [
-                            {
-                                'document_id': rc.chunk.document.id,
-                                'document_title': rc.chunk.document.title,
-                                'chunk_id': rc.chunk.id,
-                                'content': rc.chunk.content[:200] + '...',
-                                'relevance_score': rc.relevance_score,
-                                'search_scores': rc.metadata or {}
-                            }
-                            for rc in retrieved_chunks[:3]
-                        ],
+                        'sources': sources,
                         'metrics': {
                             'search_time_ms': search_time,
                             'generation_time_ms': generation_time,

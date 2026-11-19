@@ -1450,8 +1450,9 @@ def edit_dataset_questions_view(request, pk):
                 raise ValueError('Каждый вопрос должен иметь поле "answer" или "output"')
 
         # Сохраняем в файл
+        normalized = []
         with open(file_path, 'w', encoding='utf-8') as f:
-            for q in new_questions:
+            for i, q in enumerate(new_questions, 1):
                 item = {
                     'instruction': q.get('text', q.get('instruction', '')),
                     'output': q.get('answer', q.get('output', '')),
@@ -1460,7 +1461,18 @@ def edit_dataset_questions_view(request, pk):
                 }
                 json.dump(item, f, ensure_ascii=False)
                 f.write('\n')
-        dataset.total_questions = len(new_questions)
+                # Audit fix: trainers/evaluator read dataset.questions, but the
+                # edit view only rewrote the file — the JSONField diverged from
+                # the file and training used stale data
+                normalized.append({
+                    'id': i,
+                    'text': item['instruction'],
+                    'answer': item['output'],
+                    'category': item['category'],
+                    'difficulty': item['difficulty'],
+                })
+        dataset.questions = normalized
+        dataset.total_questions = len(normalized)
         dataset.save()
 
         messages.success(request, f'Датасет успешно обновлён. Сохранено {len(new_questions)} вопросов.')
@@ -2481,9 +2493,11 @@ def ajax_rag_advanced_search(request):
         elif search_type == 'keyword':
             results = search_service.keyword_search(query, collection.id, k=k)
         else:  # hybrid
+            # Audit fix: the service signature is collection_ids — passing
+            # collection_id raised TypeError (500) on every hybrid search
             results = search_service.enhanced_hybrid_search(
                 query=query,
-                collection_id=collection.id,
+                collection_ids=collection.id,
                 k=k,
                 semantic_weight=semantic_weight,
                 keyword_weight=keyword_weight,
@@ -2692,9 +2706,11 @@ def rag_upload_documents(request):
                     )
                     created.append(doc)
                     if auto_process:
+                        # Audit fix: the status save raced with the task — the
+                        # worker could overwrite INDEXED back to PROCESSING
+                        # (stuck forever) or hit the PROCESSING guard itself.
+                        # The task sets PROCESSING atomically on start.
                         process_document_task.delay(doc.id)
-                        doc.status = 'PROCESSING'
-                        doc.save()
                 except Exception as e:
                     logger.error(f"Upload error: {e}")
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

@@ -1890,8 +1890,12 @@ def generate_questions_for_set_task(self, question_set_id, teacher_model_id, qua
                 qset.logs += f"Группа {idx+1}/{total_groups} ошибка: {error}\n"
 
             # Сохраняем чекпоинт после каждой группы
+            # Audit fix: the checkpoint stored the index of the ALREADY
+            # processed group while resume started at groups[idx:] — the same
+            # group regenerated (duplicate questions). Store idx+1 like the
+            # answers task does.
             qset.checkpoint_data = {
-                'last_group_idx': idx,
+                'last_group_idx': idx + 1,
                 'total_groups': total_groups,
                 'teacher_model_id': teacher_model_id,
                 'quantization': quantization,
@@ -1982,6 +1986,11 @@ def generate_answers_for_questions_task(self, answer_job_id, teacher_model_id, q
         job.save(update_fields=['status'])
 
         chunk_cache = {}
+
+        # Audit fix: `processed` was assigned only in the success branch but
+        # used in the progress math on every iteration — NameError when the
+        # FIRST question failed
+        processed = DistillationAnswer.objects.filter(answer_job=job).count()
 
         for idx, q in enumerate(questions.order_by('id')[start_index:], start=start_index):
             # Получаем контекст из группы чанков
@@ -2145,6 +2154,10 @@ def import_huggingface_dataset_task(self, dataset_id):
             split_name = list(dataset.keys())[0]
             dataset = dataset[split_name]
 
+        # Audit fix: dataset[0] on an empty split raised IndexError
+        if len(dataset) == 0:
+            raise ValueError(f"Split '{hf_dataset.split}' of {hf_dataset.repo_id} is empty")
+
         # Проверяем доступные поля
         sample = dataset[0]
         available_fields = list(sample.keys())
@@ -2263,7 +2276,9 @@ def import_huggingface_dataset_task(self, dataset_id):
 
         # Сохраняем в JSONL
         dataset_name = hf_dataset.name or hf_dataset.repo_id.replace('/', '_')
-        file_name = f"hf_{dataset_name}_{hf_dataset.split}.jsonl"
+        # Audit fix: the filename included no unique suffix — a repeated import
+        # of the same repo+split overwrote the file of an existing dataset
+        file_name = f"hf_{hf_dataset.pk}_{dataset_name}_{hf_dataset.split}.jsonl"
         file_path = os.path.join(settings.MEDIA_ROOT, 'evaluation_datasets', file_name)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
@@ -2273,13 +2288,19 @@ def import_huggingface_dataset_task(self, dataset_id):
                 f.write('\n')
 
         # Создаём EvaluationDataset
+        # Audit fix: questions used to stay empty (only total_questions) —
+        # trainers and the evaluator read dataset.questions, so imported
+        # datasets were unusable for training and evaluation
+        questions = [{'id': i, 'text': it['instruction'], 'answer': it['output']}
+                     for i, it in enumerate(items, 1)]
         eval_dataset = EvaluationDataset.objects.create(
             name=dataset_name,
             description=hf_dataset.description or f"Импортировано из {hf_dataset.repo_id}",
             file_path=file_path,
+            questions=questions,
             source_type='API',
             created_by=hf_dataset.created_by,
-            total_questions=len(items)  # только количество, без самих данных
+            total_questions=len(questions)
         )
         eval_dataset.save()
 

@@ -458,7 +458,15 @@ def generate_custom_qa_task(self, benchmark_id, collection_id, n_pairs, model_ck
     quantized = (model.parameter_count or 0) >= 1_500_000_000
     cmd = [sys.executable, '-c', QA_GEN_CODE, model.local_path, out_path,
            '1' if quantized else '0', tasks_path]
-    r = _sp.run(cmd, capture_output=True, text=True, timeout=3600)
+    # Audit fix: a TimeoutExpired (or any crash before reading out_path) left
+    # the benchmark in 'downloading' forever — set 'failed' on any error
+    try:
+        r = _sp.run(cmd, capture_output=True, text=True, timeout=3600)
+    except Exception as e:
+        bench.install_status = 'failed'
+        bench.install_progress = 0.0
+        bench.save(update_fields=['install_status', 'install_progress'])
+        raise RuntimeError(f'QA generation subprocess failed: {e}') from e
     items = json.load(open(out_path, encoding='utf-8')) if os.path.exists(out_path) else []
     bench.qa_data = [{'prompt': it['q'], 'reference': it['a'], 'keywords': it.get('kw', [])}
                      for it in items]

@@ -1,4 +1,5 @@
 import logging
+import torch
 import numpy as np
 from typing import Dict, Any, List
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -41,10 +42,12 @@ class FineTuningEvaluator:
         references = []
         
         for q in dataset.questions[:50]:  # Ограничиваем для скорости
-            if 'answer' not in q:
+            # Audit fix: only 'answer' was accepted — datasets written with
+            # 'output' (HF import / distillation export) were skipped entirely
+            if 'answer' not in q and 'output' not in q:
                 continue
-                
-            prompt = f"### Instruction:\n{q.get('text', '')}\n\n### Response:"
+
+            prompt = f"### Instruction:\n{q.get('text', q.get('instruction', ''))}\n\n### Response:"
             
             inputs = tokenizer(prompt, return_tensors="pt").to(self.device)
             
@@ -62,7 +65,7 @@ class FineTuningEvaluator:
                 response = response.split("### Response:")[-1].strip()
             
             predictions.append(response)
-            references.append(q['answer'])
+            references.append(q.get('answer', q.get('output', '')))
         
         # Вычисляем метрики
         rouge_scores = self.rouge.compute(

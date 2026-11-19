@@ -143,6 +143,35 @@ def _page_of(offset: int, page_map):
     return page_map[-1][2] if page_map else None
 
 
+def _mk_extra_chunks(document, extras, start_idx) -> list:
+    """Persist ready-made extra chunks (tables/images/CSV blocks).
+
+    Audit fix: create_chunks_v2 accepted extra_chunks but never used it —
+    table/image chunks extracted by v5.2 extractors were dropped (and XLSX,
+    which has no plain text, always failed with "No chunks created").
+    """
+    created = []
+    idx = start_idx
+    for ec in extras or []:
+        text = (ec.get('content') or '').strip()
+        if not text:
+            continue
+        md = ec.get('metadata') or {}
+        created.append(DocumentChunk.objects.create(
+            document=document,
+            chunk_index=idx,
+            content=text,
+            token_count=len(text.split()),
+            start_char=0,   # no offset in the source text — synthetic chunk
+            end_char=len(text),
+            chunk_strategy=ec.get('strategy') or 'table',
+            page_number=md.get('page'),
+            metadata={'extra_chunk': True, **md},
+        ))
+        idx += 1
+    return created
+
+
 def create_chunks_v2(document, content: str, chunk_size: int = 1000,
                      chunk_overlap: int = 200, strategy: str = 'semantic',
                      page_map=None, extra_chunks=None) -> list:
@@ -151,6 +180,7 @@ def create_chunks_v2(document, content: str, chunk_size: int = 1000,
     strategy: 'paragraph' — блоки по пустым строкам, мелкие склеиваются до chunk_size;
               'semantic'/'fixed'/'recursive' — по предложениям (старая логика create_chunks).
     page_map: [(start_char, end_char, page_no)] — привязка чанков к страницам PDF.
+    extra_chunks: готовые чанки (таблицы/изображения) — сохраняются после основного текста.
     """
     page_map = page_map or []
     if strategy == 'paragraph':
@@ -220,6 +250,7 @@ def create_chunks_v2(document, content: str, chunk_size: int = 1000,
                 buf, buf_len, buf_start = [p], len(p) + 2, start
         if buf:
             _flush('\n\n'.join(buf), buf_start)
+        chunks.extend(_mk_extra_chunks(document, extra_chunks, idx))
         return chunks
 
     # semantic/fixed/recursive — проверенная логика create_chunks + страницы
@@ -228,6 +259,7 @@ def create_chunks_v2(document, content: str, chunk_size: int = 1000,
         for c in chunks:
             c.page_number = _page_of(c.start_char, page_map)
             c.save(update_fields=['page_number'])
+    chunks.extend(_mk_extra_chunks(document, extra_chunks, len(chunks)))
     return chunks
 
 
@@ -692,7 +724,9 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
         # Удаляем старые чанки (мягкое удаление)
         old_chunks = document.chunks.filter(is_active=True)
         old_count = old_chunks.count()
+        stale_chunk_ids = []
         if old_count:
+            stale_chunk_ids = list(old_chunks.values_list('id', flat=True))
             old_chunks.update(is_active=False)
             logger.info(f"Deactivated {old_count} old chunks")
 
@@ -810,6 +844,7 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
 
         # 3. Создаём эмбеддинги, используя эффективную модель коллекции
         embeddings_created = 0
+        faiss_ok = False
         if document.collection:
             embedding_model = document.collection.get_effective_embedding_model()
             if embedding_model:
@@ -843,12 +878,6 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
 
                     logger.info(f"Created {embeddings_created} embeddings for document {document_id}")
 
-                    # Индексируем в FAISS
-                    if document.collection.id:
-                        vstore = get_vector_store_manager()
-                        added = vstore.index_chunks(chunks, document.collection.id)
-                        logger.info(f"Indexed {added} vectors for collection {document.collection.id}")
-
                 except Exception as e:
                     logger.error(f"Embedding error: {e}")
             else:
@@ -856,13 +885,36 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
         else:
             logger.warning(f"Document {document_id} has no collection, skipping embeddings")
 
+        # Индексируем в FAISS (отдельный try: провал индексации не должен
+        # превращать документ в INDEXED — audit fix, статус был по факту
+        # эмбеддингов, даже если векторы так и не попали в индекс)
+        if document.collection and embeddings_created > 0:
+            try:
+                vstore = get_vector_store_manager()
+                added = vstore.index_chunks(chunks, document.collection.id)
+                faiss_ok = added > 0
+                logger.info(f"Indexed {added} vectors for collection {document.collection.id}")
+                # Audit fix: vectors of deactivated chunks stayed in the index
+                # forever (duplicates in search results) — remove them here
+                if stale_chunk_ids:
+                    removed = vstore.remove_stale_vectors(
+                        document.collection.id, stale_chunk_ids)
+                    if removed:
+                        logger.info(f"Removed {removed} stale vectors for collection {document.collection.id}")
+            except Exception as e:
+                logger.error(f"FAISS indexing error: {e}")
+                faiss_ok = False
+
         # 4. Завершение
         with transaction.atomic():
             document = Document.objects.get(id=document_id)
-            document.status = 'INDEXED' if embeddings_created > 0 else 'CHUNKED'
+            document.status = 'INDEXED' if (embeddings_created > 0 and faiss_ok) else 'CHUNKED'
+            # embeddings exist but never made it into the index — flag for reindex
+            if embeddings_created > 0 and not faiss_ok:
+                document.requires_reindexing = True
             document.processing_progress = 100
             document.processed_at = timezone.now()
-            if embeddings_created > 0:
+            if embeddings_created > 0 and faiss_ok:
                 document.indexed_at = timezone.now()
             document.save()
 
@@ -967,9 +1019,14 @@ def _create_embeddings_for_collection_impl(self, collection_id: int) -> Dict[str
                 logger.error(f"Batch embedding error: {e}")
 
         # Индексируем в FAISS
+        # Audit fix: update_index silently returned 0 when the collection had
+        # no index yet — embeddings existed but nothing was indexed
         if processed > 0:
             vstore = get_vector_store_manager()
-            vstore.update_index(collection_id)
+            if collection.vector_index_created:
+                vstore.update_index(collection_id)
+            else:
+                vstore.build_index(collection_id)
 
         logger.info(f"Created {processed} embeddings for collection {collection_id}")
         return {'success': True, 'processed': processed, 'total': total}

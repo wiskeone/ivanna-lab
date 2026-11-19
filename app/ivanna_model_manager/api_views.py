@@ -502,7 +502,8 @@ def rag_search(request):
     semantic_weight = data.get('semantic_weight', 0.7)
     keyword_weight = data.get('keyword_weight', 0.2)
     freshness_weight = data.get('freshness_weight', 0.1)
-    use_reranking = data.get('use_reranking', True)
+    # Audit fix: a JSON "false" string is truthy — coerce properly
+    use_reranking = str(data.get('use_reranking', True)).lower() not in ('false', '0', 'no')
 
     if not query:
         return JsonResponse({'success': False, 'error': 'Empty query'}, status=400)
@@ -544,37 +545,6 @@ def rag_search(request):
             freshness_weight=freshness_weight,
             use_reranking=use_reranking
         )
-
-    processing_time = (time.time() - start) * 1000
-    logger.info(f"Search returned {len(results)} results in {processing_time:.2f} ms")
-
-    # Форматируем результат
-    formatted_results = []
-    for r in results:
-        formatted_results.append({
-            'chunk_id': r['chunk_id'],
-            'document_id': r['document_id'],
-            'document_title': r.get('document_title', ''),
-            'content': r['content'][:500] + ('...' if len(r['content']) > 500 else ''),
-            'relevance_score': r.get('final_score', r.get('similarity', r.get('keyword_score', 0))),
-            'chunk_index': r.get('chunk_index', 0),
-            'document_uploaded_at': r.get('document_uploaded_at'),
-            'scores': {
-                'semantic': r.get('semantic_score', 0),
-                'keyword': r.get('keyword_score', 0),
-                'freshness': r.get('freshness_score', 0),
-                'reranker': r.get('reranker_score', 0)
-            }
-        })
-
-    return JsonResponse({
-        'success': True,
-        'query': query,
-        'collection': {'id': collection.id, 'name': collection.name},
-        'total_results': len(formatted_results),
-        'results': formatted_results,
-        'processing_time_ms': processing_time
-    })
 
     processing_time = (time.time() - start) * 1000
     logger.info(f"Search returned {len(results)} results in {processing_time:.2f} ms")
@@ -1079,6 +1049,13 @@ class DocumentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def process(self, request, pk=None):
         doc = self.get_object()
+        # Audit fix: unlike the UI views, the API path never reset the status
+        # before dispatch — a document stuck in PROCESSING (lost worker) could
+        # never be reprocessed via the API
+        if doc.status == 'PROCESSING':
+            doc.status = 'UPLOADED'
+            doc.processing_progress = 0
+            doc.save(update_fields=['status', 'processing_progress'])
         task = process_document_task.delay(doc.id)
         return Response({'success': True, 'task_id': task.id})
 
@@ -1682,15 +1659,38 @@ def evaluation_dataset_import(request, pk):
         for chunk in uploaded_file.chunks():
             f.write(chunk)
 
-    # Подсчитываем количество записей
-    total = 0
-    with open(file_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            total += 1
-    dataset.total_questions = total
-    dataset.save()
+    # Audit fix: only line counting happened here — dataset.questions stayed
+    # empty (trainers/evaluator read questions), invalid lines were counted
+    questions = []
+    bad_lines = 0
+    with open(file_path, 'r', encoding='utf-8-sig') as f:
+        for idx, line in enumerate(f, 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                item = json.loads(line)
+            except json.JSONDecodeError:
+                bad_lines += 1
+                continue
+            if not isinstance(item, dict):
+                bad_lines += 1
+                continue
+            text = (item.get('instruction') or item.get('text')
+                    or item.get('question') or '')
+            answer = (item.get('output') or item.get('answer')
+                      or item.get('response') or '')
+            text, answer = str(text).strip(), str(answer).strip()
+            if not text:
+                bad_lines += 1
+                continue
+            questions.append({'id': idx, 'text': text, 'answer': answer})
 
-    return Response({'success': True, 'total': total})
+    dataset.questions = questions
+    dataset.total_questions = len(questions)
+    dataset.save(update_fields=['questions', 'total_questions', 'updated_at'])
+
+    return Response({'success': True, 'total': len(questions), 'skipped_lines': bad_lines})
 
 # ============================================================================
 # HUGGING FACE API (ПОИСК МОДЕЛЕЙ)

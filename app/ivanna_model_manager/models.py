@@ -1568,41 +1568,68 @@ class EvaluationDataset(models.Model):
         """Добавить вопросы из файла"""
         import json
         import csv
-        
+
         questions = []
-        
+
+        # Audit fix: utf-8-sig (BOM silently broke json.load / csv headers),
+        # NUL stripped from extracted texts, JSONL accepted (export/import
+        # and the edit view all speak JSONL while upload did not)
+        enc = 'utf-8-sig'
+
+        def _clean(text):
+            return (text or '').replace('\x00', '').strip()
+
         try:
             if file_format == 'json' or (file_format == 'auto' and file_path.endswith('.json')):
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, 'r', encoding=enc) as f:
                     data = json.load(f)
                     if isinstance(data, list):
                         questions = data
                     elif isinstance(data, dict) and 'questions' in data:
                         questions = data['questions']
-            
+
+            elif file_format == 'jsonl' or (file_format == 'auto' and file_path.endswith('.jsonl')):
+                with open(file_path, 'r', encoding=enc) as f:
+                    for i, line in enumerate(f, 1):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            item = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        if isinstance(item, dict):
+                            item['text'] = _clean(
+                                item.get('instruction') or item.get('text')
+                                or item.get('question') or '')
+                            item['answer'] = _clean(
+                                item.get('output') or item.get('answer')
+                                or item.get('response') or '')
+                            questions.append(item)
+
             elif file_format == 'csv' or (file_format == 'auto' and file_path.endswith('.csv')):
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, 'r', encoding=enc) as f:
                     reader = csv.DictReader(f)
                     for i, row in enumerate(reader, 1):
                         if 'text' in row:
                             questions.append({
                                 'id': i,
-                                'text': row['text'].strip(),
+                                'text': _clean(row['text']),
                                 'category': row.get('category', ''),
                                 'difficulty': row.get('difficulty', 'medium')
                             })
-            
+
             elif file_format == 'txt' or (file_format == 'auto' and file_path.endswith('.txt')):
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, 'r', encoding=enc) as f:
                     lines = f.readlines()
                     for i, line in enumerate(lines, 1):
-                        line = line.strip()
+                        line = _clean(line)
                         if line and not line.startswith('#'):
                             questions.append({
                                 'id': i,
                                 'text': line
                             })
-            
+
             if questions:
                 self.questions = questions
                 self.total_questions = len(questions)

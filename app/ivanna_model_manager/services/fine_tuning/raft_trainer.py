@@ -16,6 +16,7 @@ from peft import get_peft_model, prepare_model_for_kbit_training
 from datasets import Dataset
 from ...models import FineTuningJob, DocumentCollection, EvaluationDataset, DocumentChunk
 from .callbacks import ProgressCallback, PauseCallback, PauseRequested
+from .dataset_sources import collect_instruction_pairs, collect_document_collections
 from .lora import build_lora_config, apply_lora_plus
 
 logger = logging.getLogger(__name__)
@@ -106,24 +107,21 @@ class RAFTTrainer:
         examples = []
 
         # 1. Загружаем инструкции
+        # Audit fix: the create form stores dataset ids in training_config —
+        # the M2M relation is never populated, so UI-created jobs always
+        # failed with "No instruction examples found"
         instructions = []
         answers = []
-        for dataset in self.job.instruction_datasets.all():
-            for q in dataset.questions:
-                if isinstance(q, dict):
-                    if 'answer' in q:
-                        instructions.append(q.get('text', ''))
-                        answers.append(q['answer'])
-                    elif 'output' in q:
-                        instructions.append(q.get('instruction', q.get('text', '')))
-                        answers.append(q['output'])
+        for inst, ans in collect_instruction_pairs(self.job):
+            instructions.append(inst)
+            answers.append(ans)
 
         if not instructions:
             raise ValueError("No instruction examples found")
 
         # 2. Релевантные документы
         relevant_docs = []
-        doc_collections = list(self.job.document_collections.all())
+        doc_collections = collect_document_collections(self.job)
         for collection in doc_collections:
             chunks = list(DocumentChunk.objects.filter(
                 document__collection=collection,

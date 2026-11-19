@@ -15,6 +15,7 @@ from datasets import Dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from ...models import FineTuningJob, EvaluationDataset
 from .callbacks import ProgressCallback, PauseCallback, PauseRequested
+from .dataset_sources import collect_instruction_pairs
 from .lora import build_lora_config, apply_lora_plus
 
 logger = logging.getLogger(__name__)
@@ -42,22 +43,15 @@ class InstructionTrainer:
         instructions = []
         answers = []
 
-        datasets = self.job.instruction_datasets.all()
-
-        for dataset in datasets:
-            logger.info(f"Loading dataset: {dataset.name}")
-            self.job.add_log(f"  - Loading dataset: {dataset.name}")
-            for q in dataset.questions:
-                if isinstance(q, dict):
-                    if 'answer' in q:
-                        instructions.append(q.get('text', ''))
-                        answers.append(q['answer'])
-                    elif 'output' in q:
-                        instructions.append(q.get('instruction', q.get('text', '')))
-                        answers.append(q['output'])
-
-        if not instructions:
-            raise ValueError("No instruction examples found")
+        # Audit fix: the create form stores dataset ids in training_config —
+        # the M2M relation is never populated, so UI-created jobs always
+        # failed with "No instruction examples found"
+        pairs = collect_instruction_pairs(self.job)
+        for inst, ans in pairs:
+            instructions.append(inst)
+            answers.append(ans)
+        self.job.add_log(f"  - Collected {len(pairs)} instruction pairs "
+                         f"(distillation / manual / HF / evaluation datasets)")
 
         tokenizer = AutoTokenizer.from_pretrained(
             self.job.base_model.local_path,

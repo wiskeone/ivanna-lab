@@ -8,7 +8,7 @@ from celery import shared_task
 from django.core.cache import cache
 from django.conf import settings
 from huggingface_hub import snapshot_download, HfFileSystem
-from .models import EmbeddingModel
+from .models import EmbeddingModel, UserProfile
 from django.contrib.auth import get_user_model
 
 # HF endpoint: официальный Hub по умолчанию; зеркало — только явно через env.

@@ -476,9 +476,12 @@ class ChatService:
         try:
             # Используем улучшенный гибридный поиск
             rag_config = session.get('rag_config', {})
+            # Audit fix: the service signature is collection_ids — the old call
+            # passed collection_id (TypeError for a single collection, empty
+            # result set for several collections)
             results = self.search_service.enhanced_hybrid_search(
                 query=query,
-                collection_id=collection_ids[0] if len(collection_ids) == 1 else None,
+                collection_ids=collection_ids,
                 k=rag_config.get('top_k', 5),
                 semantic_weight=rag_config.get('semantic_weight', 0.7),
                 keyword_weight=rag_config.get('keyword_weight', 0.2),
@@ -580,13 +583,10 @@ class ChatService:
         try:
             from .rag_service import EnhancedSearchService
             search_service = EnhancedSearchService()
-            
-            # Используем первую коллекцию (или можно модифицировать для нескольких)
-            collection_id = collection_ids[0]
-            
+
             results = search_service.enhanced_hybrid_search(
                 query=query,
-                collection_id=collection_id,
+                collection_ids=collection_ids,
                 k=rag_config.get('top_k', 3),
                 semantic_weight=rag_config.get('semantic_weight', 0.7),
                 keyword_weight=rag_config.get('keyword_weight', 0.2),

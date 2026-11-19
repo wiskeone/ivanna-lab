@@ -189,11 +189,63 @@ class VectorStoreManager:
         DocumentChunk.objects.filter(id__in=chunk_ids).update(is_active=False)
 
         # Перестраиваем индекс полностью (можно запустить задачу)
-        from ..tasks_rag import rebuild_collection_index_task
-        rebuild_collection_index_task.delay(collection_id)
+        # Audit fix: rebuild_collection_index_task does not exist — the import
+        # raised ImportError on every call
+        from ..tasks import build_faiss_index_task
+        build_faiss_index_task.delay(collection_id)
 
         logger.info(f"Marked {len(chunk_ids)} chunks as inactive, rebuild scheduled")
         return len(chunk_ids)  # для совместимости
+
+    def remove_stale_vectors(self, collection_id: int, stale_chunk_ids: List[int]) -> int:
+        """
+        Удалить векторы деактивированных чанков из индекса.
+
+        Audit fix: deactivated chunks kept their vectors in FAISS forever —
+        search returned stale duplicates until a full rebuild. For flat
+        indexes the vectors are reconstructed and the index rebuilt in place;
+        for ivf/hnsw the collection is rebuilt from active DB chunks.
+        Returns the number of removed vectors (0 if nothing changed).
+        """
+        from ..models import DocumentCollection
+
+        if not stale_chunk_ids or collection_id is None:
+            return 0
+
+        svc = self._get_faiss_service(collection_id)
+        if svc.index is None or not svc.chunk_ids:
+            return 0
+
+        stale = set(stale_chunk_ids)
+        keep = [(i, cid) for i, cid in enumerate(svc.chunk_ids) if cid not in stale]
+        if len(keep) == len(svc.chunk_ids):
+            return 0  # nothing stale present
+
+        removed = len(svc.chunk_ids) - len(keep)
+        index_type = svc._detect_index_type()
+
+        if index_type != 'flat':
+            # No cheap removal path — rebuild from active DB chunks
+            logger.info(f"Stale vector removal: rebuilding {index_type} index "
+                        f"for collection {collection_id} ({removed} stale)")
+            self.build_index(collection_id)
+            return removed
+
+        dimension = svc.dimension
+        vectors = [svc.index.reconstruct(i) for i, _ in keep]
+        new_ids = [cid for _, cid in keep]
+
+        svc.create_index(dimension=dimension, index_type='flat', metric=svc.metric)
+        if vectors:
+            svc.add_vectors(np.stack(vectors).astype('float32'), new_ids)
+        svc.save_index(collection_id)
+        self._index_cache[collection_id] = svc
+
+        DocumentCollection.objects.filter(id=collection_id).update(
+            total_vectors=svc.index.ntotal)
+        logger.info(f"Removed {removed} stale vectors from flat index "
+                    f"of collection {collection_id} (now {svc.index.ntotal})")
+        return removed
 
     # ----------------------------------------------------------------------
     # Управление индексом коллекции
@@ -256,6 +308,7 @@ class VectorStoreManager:
 
         # Обновляем поле коллекции
         from ..models import DocumentCollection
+        now_iso = timezone.now().isoformat()
         DocumentCollection.objects.filter(id=collection_id).update(
             vector_index_created=True,
             total_vectors=svc.index.ntotal,
@@ -263,7 +316,12 @@ class VectorStoreManager:
             index_metadata={
                 'index_type': index_type,
                 'metric': self._default_metric,
-                'built_at': timezone.now().isoformat(),  # ✅ правильно
+                'built_at': now_iso,
+                # Audit fix: update_index reads 'last_update' — it used to be
+                # missing after build, so the first update re-added EVERY chunk
+                # (index doubling). Same timestamp = only chunks created after
+                # the build get indexed.
+                'last_update': now_iso,
             }
         )
 
