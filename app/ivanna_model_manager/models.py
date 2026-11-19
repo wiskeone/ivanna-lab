@@ -3574,7 +3574,17 @@ class FineTuningJob(models.Model):
     gradient_accumulation_steps = models.IntegerField(default=4)
     num_epochs = models.IntegerField(default=3)
     max_seq_length = models.IntegerField(default=2048)
-    
+    # v5.3 Tier-1: LoRA++ pack
+    use_dora = models.BooleanField(default=False, help_text=_("DoRA: разложение веса на magnitude+direction — качество выше на низких рангах"))
+    use_rslora = models.BooleanField(default=False, help_text=_("rsLoRA: масштабирование alpha на sqrt(r) — стабильнее на малых рангах"))
+    lora_plus_lr_ratio = models.FloatField(null=True, blank=True, help_text=_("LoRA+: lr матриц B = lr × это отношение (пусто = выключено, типово 16)"))
+    neftune_alpha = models.FloatField(null=True, blank=True, help_text=_("NEFTune: шум на эмбеддингах — буст instruction-tuning (типово 5-15)"))
+    target_modules = models.JSONField(default=list, blank=True, help_text=_("Явный список модулей LoRA (пусто = пресет)"))
+    target_preset = models.CharField(max_length=30, default='hybrid-full', blank=True,
+                                     choices=[('hybrid-full', _('Гибрид: attention+MLP+linear_attn')),
+                                              ('attention+mlp', _('Attention + MLP')),
+                                              ('attention', _('Только attention'))],
+                                     help_text=_("Пресет целевых модулей (conv1d исключён)"))    
     # Параметры для RAFT
     distractors_per_example = models.IntegerField(
         default=3,

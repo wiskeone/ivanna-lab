@@ -13,6 +13,7 @@ from transformers import (
     DataCollatorForLanguageModeling
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from .lora import build_lora_config, apply_lora_plus
 from datasets import Dataset
 
 from ...models import FineTuningJob, DocumentChunk
@@ -65,13 +66,14 @@ class DocumentTrainer:
             trust_remote_code=True
         )
         if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
+            # a DISTINCT pad token: DataCollatorForLanguageModeling masks labels at
+            # pad positions — with pad == eos every real EOS would be hidden too
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
         def tokenize_function(examples):
             return tokenizer(
                 examples['text'],
                 truncation=True,
-                padding='max_length',
                 max_length=self.job.max_seq_length
             )
 
@@ -134,9 +136,11 @@ class DocumentTrainer:
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,
             )
-            model.gradient_checkpointing_enable()
+            model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={'use_reentrant': False})
             if quant in ('int4', 'int8'):
-                model = prepare_model_for_kbit_training(model)
+                model = prepare_model_for_kbit_training(
+                    model, gradient_checkpointing_kwargs={'use_reentrant': False})
 
         else:
             # CPU
@@ -144,6 +148,11 @@ class DocumentTrainer:
             torch.cuda.empty_cache()
 
             if quant in ('int4', 'int8'):
+                raise ValueError(
+                    f"CPU fallback does not support quantization='{quant}' "
+                    f"(bitsandbytes requires CUDA). Set the job quantization to "
+                    f"'float16' or 'none' to train on CPU.")
+            if False:
                 try:
                     import quanto
                     logger.info(f"Loading model with quanto {quant} on CPU")
@@ -179,7 +188,8 @@ class DocumentTrainer:
                     device_map=None,
                 )
             model = model.to('cpu')
-            model.gradient_checkpointing_enable()
+            model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={'use_reentrant': False})
 
         # Логируем размещение модели
         if hasattr(model, 'hf_device_map'):
@@ -190,14 +200,14 @@ class DocumentTrainer:
         else:
             logger.info(f"📌 Model device: {next(model.parameters()).device}")
 
-        lora_config = LoraConfig(
-            r=self.job.lora_r,
-            lora_alpha=self.job.lora_alpha,
-            target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-            lora_dropout=self.job.lora_dropout,
-            bias="none",
-            task_type="CAUSAL_LM"
-        )
+        # dedicated [PAD] token: grow embeddings BEFORE the LoRA wrap
+        tokenizer = AutoTokenizer.from_pretrained(
+            self.job.base_model.local_path, trust_remote_code=True)
+        if tokenizer.pad_token is None:
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            model.resize_token_embeddings(len(tokenizer))
+
+        lora_config = build_lora_config(self.job, self.job.base_model.local_path)
         model = get_peft_model(model, lora_config)
         model.print_trainable_parameters()
         return model, lora_config
@@ -214,8 +224,12 @@ class DocumentTrainer:
             self.job.add_log("📦 Starting document fine-tuning...")
 
             dataset = self.prepare_dataset()
-            split_dataset = dataset.train_test_split(test_size=0.1)
-            self.job.add_log(f"Train/val split: {len(split_dataset['train'])} / {len(split_dataset['test'])}")
+            if len(dataset) >= 20:
+                split_dataset = dataset.train_test_split(test_size=0.1)
+                self.job.add_log(f"Train/val split: {len(split_dataset['train'])} / {len(split_dataset['test'])}")
+            else:
+                split_dataset = {'train': dataset, 'test': dataset}
+                self.job.add_log(f"Train split: {len(dataset)} (no val split — small dataset)")
 
             self.job.status = 'TRAINING'
             self.job.save()
@@ -226,6 +240,9 @@ class DocumentTrainer:
                 self.job.base_model.local_path,
                 trust_remote_code=True
             )
+            if tokenizer.pad_token is None:
+                # keep in sync with setup_model (embeddings already resized there)
+                tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
             data_collator = DataCollatorForLanguageModeling(
                 tokenizer=tokenizer,
@@ -258,9 +275,12 @@ class DocumentTrainer:
                 metric_for_best_model="eval_loss",
                 greater_is_better=False,
                 report_to="none",
-                no_cuda=self.device.type == 'cpu',
+                use_cpu=self.device.type == 'cpu',
                 remove_unused_columns=False,
-                dataloader_num_workers=0,                  # отключаем дополнительные процессы
+                dataloader_num_workers=0,
+                gradient_checkpointing_kwargs={'use_reentrant': False},
+                **({'neftune_noise_alpha': self.job.neftune_alpha}
+                   if self.job.neftune_alpha else {}),
             )
 
             progress_callback = ProgressCallback(self.job, total_steps)
@@ -273,9 +293,11 @@ class DocumentTrainer:
                 data_collator=data_collator,
                 callbacks=[progress_callback, PauseCallback(self.job)],
             )
+            apply_lora_plus(trainer, self.job.lora_plus_lr_ratio)
 
             checkpoint = None
-            if os.path.exists(output_dir) and any(f.startswith('checkpoint-') for f in os.listdir(output_dir)):
+            if self.resume and os.path.exists(output_dir) and \
+                    any(f.startswith('checkpoint-') for f in os.listdir(output_dir)):
                 checkpoint = True
                 self.job.add_log("🔄 Resuming from existing checkpoint...")
 

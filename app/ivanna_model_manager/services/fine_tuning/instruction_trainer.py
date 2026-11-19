@@ -11,21 +11,23 @@ from transformers import (
     Trainer,
     DataCollatorForSeq2Seq
 )
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from datasets import Dataset
 from ...models import FineTuningJob, EvaluationDataset
 from .callbacks import ProgressCallback, PauseCallback, PauseRequested
+from .lora import build_lora_config, apply_lora_plus
 
 logger = logging.getLogger(__name__)
 
 
 class InstructionTrainer:
     """
-    Обучение модели на инструкциях (формат вопрос-ответ)
+    Обучение модели на инструкциях (формат вопрос-ответ).
+    Completion-only маскирование: loss считается только по ответу (+EOS).
     """
 
-    def __init__(self, job: FineTuningJob, device=None):
+    def __init__(self, job: FineTuningJob, device=None, resume: bool = False):
         self.job = job
+        self.resume = resume
         if device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
@@ -56,16 +58,6 @@ class InstructionTrainer:
         if not instructions:
             raise ValueError("No instruction examples found")
 
-        texts = []
-        for inst, ans in zip(instructions, answers):
-            prompt = f"### Instruction:\n{inst}\n\n### Response:\n{ans}"
-            texts.append(prompt)
-
-        logger.info(f"Total instruction examples: {len(texts)}")
-        self.job.add_log(f"✅ Loaded {len(texts)} instruction examples")
-
-        dataset = Dataset.from_dict({'text': texts})
-
         tokenizer = AutoTokenizer.from_pretrained(
             self.job.base_model.local_path,
             trust_remote_code=True
@@ -73,17 +65,24 @@ class InstructionTrainer:
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        def tokenize_function(examples):
-            return tokenizer(
-                examples['text'],
-                truncation=True,
-                padding='max_length',
-                max_length=self.job.max_seq_length
-            )
+        rows = {'input_ids': [], 'attention_mask': [], 'labels': []}
+        max_len = self.job.max_seq_length
+        for inst, ans in zip(instructions, answers):
+            prompt = f"### Instruction:\n{inst}\n\n### Response:\n"
+            full = prompt + ans + tokenizer.eos_token
+            full_ids = tokenizer(full, truncation=True, max_length=max_len).input_ids
+            # completion-only masking: the prompt part teaches nothing
+            prompt_ids = tokenizer(prompt, truncation=True, max_length=len(full_ids)).input_ids
+            p_len = min(len(prompt_ids), len(full_ids))
+            labels = [-100] * p_len + full_ids[p_len:]
+            rows['input_ids'].append(full_ids)
+            rows['attention_mask'].append([1] * len(full_ids))
+            rows['labels'].append(labels)
 
-        dataset = dataset.map(tokenize_function, batched=True, remove_columns=['text'])
-        logger.info(f"Dataset prepared with {len(dataset)} examples")
-        self.job.add_log(f"✅ Dataset prepared with {len(dataset)} examples")
+        dataset = Dataset.from_dict(rows)
+
+        logger.info(f"Total instruction examples: {len(dataset)}")
+        self.job.add_log(f"✅ Loaded {len(dataset)} instruction examples")
         return dataset
 
     def setup_model(self):
@@ -135,53 +134,37 @@ class InstructionTrainer:
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,
             )
-            model.gradient_checkpointing_enable()
+            # use_reentrant=False: the reentrant path silently zeroes LoRA grads
+            model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={'use_reentrant': False})
             if quant in ('int4', 'int8'):
-                model = prepare_model_for_kbit_training(model)
+                model = prepare_model_for_kbit_training(
+                    model, gradient_checkpointing_kwargs={'use_reentrant': False})
 
         else:
-            # CPU
-            os.environ['CUDA_VISIBLE_DEVICES'] = ''
-            torch.cuda.empty_cache()
-
+            # CPU: int4/int8 quantized training is bnb-only (CUDA) — a clear error
+            # instead of a silent quanto/fp32 swamp
             if quant in ('int4', 'int8'):
-                try:
-                    import quanto
-                    logger.info(f"Loading model with quanto {quant} on CPU")
-                    model = AutoModelForCausalLM.from_pretrained(
-                        self.job.base_model.local_path,
-                        torch_dtype=torch.float32,
-                        trust_remote_code=True,
-                        low_cpu_mem_usage=True,
-                        device_map=None,
-                    )
-                    if quant == 'int4':
-                        quanto.quantize(model, weights=quanto.qint4, activations=None)
-                    else:
-                        quanto.quantize(model, weights=quanto.qint8, activations=None)
-                    quanto.freeze(model)
-                    logger.info(f"Model quantized with quanto {quant} and frozen")
-                except ImportError:
-                    logger.warning("quanto not installed, falling back to float32")
-                    quant = None
-                    model = AutoModelForCausalLM.from_pretrained(
-                        self.job.base_model.local_path,
-                        torch_dtype=torch.float32,
-                        trust_remote_code=True,
-                        low_cpu_mem_usage=True,
-                        device_map=None,
-                    )
-            else:
-                logger.info("Loading model in float32 on CPU")
-                model = AutoModelForCausalLM.from_pretrained(
-                    self.job.base_model.local_path,
-                    torch_dtype=torch.float32,
-                    trust_remote_code=True,
-                    low_cpu_mem_usage=True,
-                    device_map=None,
-                )
+                raise ValueError(
+                    f"CPU fallback does not support quantization='{quant}' "
+                    f"(bitsandbytes requires CUDA). Set the job quantization to "
+                    f"'float16' or 'none' to train on CPU.")
+
+            if torch.cuda.is_available():
+                os.environ['CUDA_VISIBLE_DEVICES'] = ''
+                torch.cuda.empty_cache()
+
+            logger.info("Loading model in float32 on CPU")
+            model = AutoModelForCausalLM.from_pretrained(
+                self.job.base_model.local_path,
+                torch_dtype=torch.float32,
+                trust_remote_code=True,
+                low_cpu_mem_usage=True,
+                device_map=None,
+            )
             model = model.to('cpu')
-            model.gradient_checkpointing_enable()
+            model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={'use_reentrant': False})
 
         # Логируем размещение модели
         if hasattr(model, 'hf_device_map'):
@@ -192,32 +175,28 @@ class InstructionTrainer:
         else:
             logger.info(f"📌 Model device: {next(model.parameters()).device}")
 
-        # LoRA (для инструкций можно использовать те же модули)
-        lora_config = LoraConfig(
-            r=self.job.lora_r,
-            lora_alpha=self.job.lora_alpha,
-            target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-            lora_dropout=self.job.lora_dropout,
-            bias="none",
-            task_type="CAUSAL_LM"
-        )
+        # LoRA via the shared Tier-1 helper (DoRA / rsLoRA / target presets)
+        lora_config = build_lora_config(self.job, self.job.base_model.local_path)
         model = get_peft_model(model, lora_config)
         model.print_trainable_parameters()
         return model, lora_config
 
     def train(self):
         try:
-            # Включаем оптимизации CuDNN
-            torch.backends.cudnn.benchmark = True
-            torch.backends.cudnn.deterministic = False
-
             self.job.status = 'PREPARING'
             self.job.save()
             self.job.add_log("📦 Starting instruction fine-tuning...")
 
             dataset = self.prepare_dataset()
-            split_dataset = dataset.train_test_split(test_size=0.1)
-            self.job.add_log(f"Train/val split: {len(split_dataset['train'])} / {len(split_dataset['test'])}")
+            # train_test_split raises when the test split rounds to zero
+            if len(dataset) >= 20:
+                split_dataset = dataset.train_test_split(test_size=0.1)
+                self.job.add_log(f"Train/val split: {len(split_dataset['train'])} / {len(split_dataset['test'])}")
+                eval_dataset = split_dataset['test']
+            else:
+                split_dataset = {'train': dataset}
+                eval_dataset = None
+                self.job.add_log(f"Train split: {len(dataset)} (no val split — small dataset)")
 
             self.job.status = 'TRAINING'
             self.job.save()
@@ -228,11 +207,14 @@ class InstructionTrainer:
                 self.job.base_model.local_path,
                 trust_remote_code=True
             )
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
 
             data_collator = DataCollatorForSeq2Seq(
                 tokenizer=tokenizer,
                 model=model,
-                padding=True
+                padding=True,
+                label_pad_token_id=-100,
             )
 
             output_dir = self.job.output_model.local_path
@@ -254,18 +236,21 @@ class InstructionTrainer:
                 learning_rate=self.job.learning_rate,
                 fp16=self.device.type == 'cuda',
                 optim="adamw_8bit" if self.device.type == 'cuda' else "adamw_torch",
-                logging_steps=1,                          # логируем каждый шаг в консоль
-                save_steps=500,                            # чекпоинты каждые 500 шагов
+                logging_steps=1,
+                save_steps=500,
                 save_total_limit=3,
-                eval_strategy="steps",
+                eval_strategy="steps" if eval_dataset else "no",
                 eval_steps=500,
-                load_best_model_at_end=True,
+                load_best_model_at_end=bool(eval_dataset),
                 metric_for_best_model="eval_loss",
                 greater_is_better=False,
                 report_to="none",
-                no_cuda=self.device.type == 'cpu',
+                use_cpu=self.device.type == 'cpu',
                 remove_unused_columns=False,
-                dataloader_num_workers=0,                  # отключаем дополнительные процессы
+                dataloader_num_workers=0,
+                gradient_checkpointing_kwargs={'use_reentrant': False},
+                **({'neftune_noise_alpha': self.job.neftune_alpha}
+                   if self.job.neftune_alpha else {}),
             )
 
             progress_callback = ProgressCallback(
@@ -279,13 +264,17 @@ class InstructionTrainer:
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
-                eval_dataset=split_dataset['test'],
+                eval_dataset=eval_dataset,
                 data_collator=data_collator,
-                callbacks=[progress_callback, PauseCallback(self.job)],  # v5.1: пауза на каждом 5-м шаге
+                callbacks=[progress_callback, PauseCallback(self.job)],
             )
+            # LoRA+: separate lr for lora_B (skips the stock optimizer)
+            apply_lora_plus(trainer, self.job.lora_plus_lr_ratio)
 
+            # guarded resume: only an explicitly resumed run picks up old checkpoints
             checkpoint = None
-            if os.path.exists(output_dir) and any(f.startswith('checkpoint-') for f in os.listdir(output_dir)):
+            if self.resume and os.path.exists(output_dir) and \
+                    any(f.startswith('checkpoint-') for f in os.listdir(output_dir)):
                 checkpoint = True
                 self.job.add_log("🔄 Resuming from existing checkpoint...")
 
@@ -304,7 +293,6 @@ class InstructionTrainer:
             return output_model
 
         except PauseRequested:
-            # v5.1: чекпоинт уже на диске (save_steps) — resume подхватит
             self.job.status = 'PAUSED'
             self.job.save()
             self.job.add_log("⏸ Обучение приостановлено пользователем — прогресс в чекпоинте")

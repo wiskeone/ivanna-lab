@@ -11,46 +11,67 @@ from transformers import (
     BitsAndBytesConfig,
     TrainingArguments,
     Trainer,
-    DataCollatorForSeq2Seq
 )
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from peft import get_peft_model, prepare_model_for_kbit_training
 from datasets import Dataset
 from ...models import FineTuningJob, DocumentCollection, EvaluationDataset, DocumentChunk
 from .callbacks import ProgressCallback, PauseCallback, PauseRequested
+from .lora import build_lora_config, apply_lora_plus
 
 logger = logging.getLogger(__name__)
+
+GENERAL_INSTRUCTIONS = [
+    ("What is the capital of France?", "The capital of France is Paris."),
+    ("Explain quantum computing in simple terms",
+     "Quantum computing uses qubits, which can be in superposition, to solve certain problems faster."),
+    ("Write a Python function that reverses a string",
+     "def reverse(s): return s[::-1]"),
+    ("Summarize what a REST API is",
+     "A REST API is an HTTP interface where resources are addressed by URLs and manipulated with standard methods."),
+    ("Convert 25 degrees Celsius to Fahrenheit",
+     "25 °C is 77 °F: F = C × 9/5 + 32."),
+    ("Give three tips for writing clean code",
+     "Use clear names, keep functions small, and follow the project's style guide."),
+    ("What causes seasons on Earth?",
+     "Seasons are caused by the tilt of Earth's rotational axis relative to its orbit around the Sun."),
+    ("Explain the difference between a list and a tuple in Python",
+     "Lists are mutable; tuples are immutable and can be dictionary keys."),
+    ("How does photosynthesis work?",
+     "Plants convert CO2 and water into glucose and oxygen using light energy and chlorophyll."),
+    ("Rewrite this sentence politely: 'Send me the file'",
+     "Could you please send me the file when you have a moment?"),
+]
 
 
 class RAFTTrainer:
     """
-    RAFT (Retrieval-Augmented Fine-Tuning) обучение
+    RAFT (Retrieval-Augmented Fine-Tuning) обучение.
+    Completion-only маскирование: loss по ответу (+EOS), промпт и контекст в -100.
     """
-    MAX_DISTRACTORS = 7
 
-    def __init__(self, job: FineTuningJob, device=None):
+    MAX_DISTRACTORS = 7
+    HEATMAP_BUCKETS = 24
+
+    def __init__(self, job: FineTuningJob, device=None, resume: bool = False):
         self.job = job
+        self.resume = resume
         if device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
             self.device = torch.device(device)
-        self.base_model = None  # Для KL-дивергенции
+        self.base_model = None  # KL teacher
         logger.info(f"Initializing RAFTTrainer for job {job.id} on {self.device}")
 
     def load_general_instructions(self) -> List[Tuple[str, str]]:
-        # Заглушка – можно загружать из файла
-        return [
-            ("What is the capital of France?", "The capital of France is Paris."),
-            ("Explain quantum computing in simple terms",
-             "Quantum computing uses quantum mechanics to solve problems..."),
-        ]
+        return GENERAL_INSTRUCTIONS
 
     def get_distractor_chunks(self, count: int, exclude_collections: List[int]) -> List[str]:
-        chunks = DocumentChunk.objects.filter(
+        chunks = list(DocumentChunk.objects.filter(
             is_active=True
         ).exclude(
             document__collection_id__in=exclude_collections
-        ).values_list('content', flat=True)[:count * 10]
-        return random.sample(list(chunks), min(count, len(chunks)))
+        ).order_by('?').values_list('content', flat=True)[:count * 3])
+        return chunks[:count]
 
     def _truncate_context(self, context_parts: List[str], tokenizer, max_tokens: int) -> List[str]:
         result = []
@@ -62,6 +83,21 @@ class RAFTTrainer:
             result.append(part)
             total_tokens += tokens
         return result
+
+    def _rank_chunks_for_question(self, question: str, chunks: List[str], top_n: int) -> List[str]:
+        """Poor-man's retrieval: rank chunks by word overlap with the question.
+
+        The QA datasets carry no source-chunk link, so round-robin pairing trained
+        on unrelated context; lexical overlap is the honest cheap fix.
+        """
+        q_words = set(w.lower() for w in question.split() if len(w) > 3)
+        scored = []
+        for c in chunks:
+            c_words = set(w.lower() for w in c.split()[:400] if len(w) > 3)
+            overlap = len(q_words & c_words)
+            scored.append((overlap, c))
+        scored.sort(key=lambda t: -t[0])
+        return [c for _, c in scored[:top_n]]
 
     def prepare_raft_dataset(self) -> Dataset:
         logger.info("Preparing RAFT dataset...")
@@ -89,10 +125,10 @@ class RAFTTrainer:
         relevant_docs = []
         doc_collections = list(self.job.document_collections.all())
         for collection in doc_collections:
-            chunks = DocumentChunk.objects.filter(
+            chunks = list(DocumentChunk.objects.filter(
                 document__collection=collection,
                 is_active=True
-            ).values_list('content', flat=True)[:100]
+            ).order_by('?').values_list('content', flat=True)[:200])
             relevant_docs.extend(chunks)
 
         if not relevant_docs:
@@ -117,12 +153,17 @@ class RAFTTrainer:
 
         # 5. Создаём примеры
         for i, (inst, ans) in enumerate(zip(instructions, answers)):
-            rel_doc = relevant_docs[i % len(relevant_docs)]
+            # lexical-overlap ranking instead of round-robin: the oracle doc
+            # must actually relate to the question
+            ranked = self._rank_chunks_for_question(inst, relevant_docs, top_n=1 + self.MAX_DISTRACTORS)
+            if not ranked:
+                continue
+            rel_doc = ranked[0]
+            other_ranked = ranked[1:]
 
             # Oracle
             if random.random() < self.job.oracle_ratio:
-                context_parts = [rel_doc]
-                context_parts = self._truncate_context(context_parts, tokenizer, max_context_tokens)
+                context_parts = self._truncate_context([rel_doc], tokenizer, max_context_tokens)
                 if context_parts:
                     context = "\n\n".join(context_parts)
                     prompt = f"### Context:\n{context}\n\n### Instruction:\n{inst}\n\n### Response:"
@@ -131,10 +172,12 @@ class RAFTTrainer:
             # С дистракторами
             if random.random() < self.job.distractor_ratio:
                 for k in [7, 5, 3]:
-                    if len(distractors) < k:
+                    if len(other_ranked) + len(distractors) < k:
                         continue
-                    dist_samples = random.sample(distractors, k)
-                    context_parts = [rel_doc] + dist_samples
+                    need = k - min(k, len(other_ranked))
+                    dist_samples = random.sample(distractors, min(need, len(distractors))) + \
+                        other_ranked[:k - need]
+                    context_parts = [rel_doc] + dist_samples[:k]
                     context_parts = self._truncate_context(context_parts, tokenizer, max_context_tokens)
                     if len(context_parts) >= 2:
                         context = "\n\n".join(context_parts)
@@ -158,19 +201,23 @@ class RAFTTrainer:
             prompt = f"### Instruction:\n{inst}\n\n### Response:"
             examples.append({'prompt': prompt, 'response': ans, 'type': 'general'})
 
-        # 7. Создаём датасет
-        texts = [f"{ex['prompt']} {ex['response']}" for ex in examples]
-        dataset = Dataset.from_dict({'text': texts, 'metadata': examples})
+        if not examples:
+            raise ValueError("RAFT produced zero examples (check ratios and datasets)")
 
-        def tokenize_function(examples):
-            return tokenizer(
-                examples['text'],
-                truncation=True,
-                padding='max_length',
-                max_length=self.job.max_seq_length
-            )
+        # 7. Completion-only tokenization: labels over the response (+EOS) only
+        rows = {'input_ids': [], 'attention_mask': [], 'labels': []}
+        max_len = self.job.max_seq_length
+        for ex in examples:
+            full = ex['prompt'] + ' ' + ex['response'] + tokenizer.eos_token
+            full_ids = tokenizer(full, truncation=True, max_length=max_len).input_ids
+            prompt_ids = tokenizer(ex['prompt'], truncation=True, max_length=len(full_ids)).input_ids
+            p_len = min(len(prompt_ids), len(full_ids))
+            labels = [-100] * p_len + full_ids[p_len:]
+            rows['input_ids'].append(full_ids)
+            rows['attention_mask'].append([1] * len(full_ids))
+            rows['labels'].append(labels)
+        dataset = Dataset.from_dict(rows)
 
-        dataset = dataset.map(tokenize_function, batched=True, remove_columns=['text'])
         logger.info(f"RAFT dataset prepared with {len(dataset)} examples")
         self.job.add_log(f"✅ RAFT dataset prepared with {len(dataset)} examples")
         return dataset
@@ -182,6 +229,12 @@ class RAFTTrainer:
         quant = getattr(self.job, 'quantization', None)
         if quant == 'none' or not quant:
             quant = None
+
+        if quant in ('int4', 'int8') and self.device.type == 'cpu':
+            raise ValueError(
+                f"CPU fallback does not support quantization='{quant}' "
+                f"(bitsandbytes requires CUDA). Set the job quantization to "
+                f"'float16' or 'none' to train on CPU.")
 
         if self.device.type == 'cuda':
             # GPU – bitsandbytes
@@ -218,61 +271,51 @@ class RAFTTrainer:
                 low_cpu_mem_usage=True,
             )
 
+            # KL teacher: a second unquantized copy — on 4GB cards this does not
+            # fit next to the nf4 student; disable with a clear log line
             if self.job.use_kl_regularization:
-                self.base_model = AutoModelForCausalLM.from_pretrained(
-                    self.job.base_model.local_path,
-                    torch_dtype=torch.float16 if self.device.type == 'cuda' else torch.float32,
-                    device_map='auto' if self.device.type == 'cuda' else None,
-                    trust_remote_code=True
-                )
-                self.base_model.eval()
-                for param in self.base_model.parameters():
-                    param.requires_grad = False
+                free_bytes, total_bytes = torch.cuda.mem_get_info() if \
+                    torch.cuda.is_available() else (0, 1)
+                if total_bytes and total_bytes < 8 * 2**30:
+                    logger.warning('KL teacher disabled: GPU < 8GB cannot fit '
+                                   'the student + unquantized teacher')
+                    self.job.add_log('⚠️ KL regularization disabled: not enough VRAM '
+                                     'for the teacher model on this GPU')
+                    self.job.use_kl_regularization = False
+                else:
+                    self.base_model = AutoModelForCausalLM.from_pretrained(
+                        self.job.base_model.local_path,
+                        torch_dtype=torch.float16,
+                        device_map='auto',
+                        trust_remote_code=True
+                    )
+                    self.base_model.eval()
+                    for param in self.base_model.parameters():
+                        param.requires_grad = False
 
-            model.gradient_checkpointing_enable()
+            # use_reentrant=False: the reentrant path silently zeroes LoRA grads
+            model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={'use_reentrant': False})
             if quant in ('int4', 'int8'):
-                model = prepare_model_for_kbit_training(model)
+                model = prepare_model_for_kbit_training(
+                    model, gradient_checkpointing_kwargs={'use_reentrant': False})
 
         else:
             # CPU
-            os.environ['CUDA_VISIBLE_DEVICES'] = ''
-            torch.cuda.empty_cache()
+            if torch.cuda.is_available():
+                os.environ['CUDA_VISIBLE_DEVICES'] = ''
+                torch.cuda.empty_cache()
 
-            if quant in ('int4', 'int8'):
-                try:
-                    import quanto
-                    model = AutoModelForCausalLM.from_pretrained(
-                        self.job.base_model.local_path,
-                        torch_dtype=torch.float32,
-                        trust_remote_code=True,
-                        low_cpu_mem_usage=True,
-                        device_map=None,
-                    )
-                    if quant == 'int4':
-                        quanto.quantize(model, weights=quanto.qint4, activations=None)
-                    else:
-                        quanto.quantize(model, weights=quanto.qint8, activations=None)
-                    quanto.freeze(model)
-                except ImportError:
-                    logger.warning("quanto not installed, falling back to float32")
-                    quant = None
-                    model = AutoModelForCausalLM.from_pretrained(
-                        self.job.base_model.local_path,
-                        torch_dtype=torch.float32,
-                        trust_remote_code=True,
-                        low_cpu_mem_usage=True,
-                        device_map=None,
-                    )
-            else:
-                model = AutoModelForCausalLM.from_pretrained(
-                    self.job.base_model.local_path,
-                    torch_dtype=torch.float32,
-                    trust_remote_code=True,
-                    low_cpu_mem_usage=True,
-                    device_map=None,
-                )
+            model = AutoModelForCausalLM.from_pretrained(
+                self.job.base_model.local_path,
+                torch_dtype=torch.float32,
+                trust_remote_code=True,
+                low_cpu_mem_usage=True,
+                device_map=None,
+            )
             model = model.to('cpu')
-            model.gradient_checkpointing_enable()
+            model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={'use_reentrant': False})
 
             if self.job.use_kl_regularization:
                 self.base_model = AutoModelForCausalLM.from_pretrained(
@@ -294,38 +337,39 @@ class RAFTTrainer:
         else:
             logger.info(f"📌 Model device: {next(model.parameters()).device}")
 
-        # LoRA
-        lora_config = LoraConfig(
-            r=self.job.lora_r,
-            lora_alpha=self.job.lora_alpha,
-            target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-            lora_dropout=self.job.lora_dropout,
-            bias="none",
-            task_type="CAUSAL_LM"
-        )
+        # LoRA via the shared Tier-1 helper
+        lora_config = build_lora_config(self.job, self.job.base_model.local_path)
         model = get_peft_model(model, lora_config)
         model.print_trainable_parameters()
         return model, lora_config
 
-    def compute_kl_loss(self, student_logits, teacher_logits):
-        student_probs = F.log_softmax(student_logits, dim=-1)
-        teacher_probs = F.softmax(teacher_logits, dim=-1)
-        kl_loss = F.kl_div(student_probs, teacher_probs, reduction='batchmean')
-        return kl_loss
+    def compute_kl_loss(self, student_logits, teacher_logits, attention_mask=None):
+        """Per-token KL: sum over vocabulary, mean over ATTENDED tokens
+        (batchmean on [B,S,V] inflates the weight by sequence length)."""
+        logp = F.log_softmax(student_logits, dim=-1)
+        p = F.softmax(teacher_logits, dim=-1)
+        kl = F.kl_div(logp, p, reduction='none').sum(-1)  # [B, S]
+        if attention_mask is not None:
+            mask = attention_mask.to(kl.device)
+            denom = mask.sum().clamp(min=1)
+            return (kl * mask).sum() / denom
+        return kl.mean()
 
     def train(self):
         try:
-            # Включаем оптимизации CuDNN
-            torch.backends.cudnn.benchmark = True
-            torch.backends.cudnn.deterministic = False
-
             self.job.status = 'PREPARING'
             self.job.save()
             self.job.add_log("📦 Starting RAFT fine-tuning...")
 
             dataset = self.prepare_raft_dataset()
-            split_dataset = dataset.train_test_split(test_size=0.1)
-            self.job.add_log(f"Train/val split: {len(split_dataset['train'])} / {len(split_dataset['test'])}")
+            if len(dataset) >= 20:
+                split_dataset = dataset.train_test_split(test_size=0.1)
+                self.job.add_log(f"Train/val split: {len(split_dataset['train'])} / {len(split_dataset['test'])}")
+                eval_dataset = split_dataset['test']
+            else:
+                split_dataset = {'train': dataset}
+                eval_dataset = None
+                self.job.add_log(f"Train split: {len(dataset)} (no val split — small dataset)")
 
             self.job.status = 'TRAINING'
             self.job.save()
@@ -336,11 +380,15 @@ class RAFTTrainer:
                 self.job.base_model.local_path,
                 trust_remote_code=True
             )
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
 
+            from transformers import DataCollatorForSeq2Seq
             data_collator = DataCollatorForSeq2Seq(
                 tokenizer=tokenizer,
                 model=model,
-                padding=True
+                padding=True,
+                label_pad_token_id=-100,
             )
 
             output_dir = self.job.output_model.local_path
@@ -362,18 +410,21 @@ class RAFTTrainer:
                 learning_rate=self.job.learning_rate,
                 fp16=self.device.type == 'cuda',
                 optim="adamw_8bit" if self.device.type == 'cuda' else "adamw_torch",
-                logging_steps=1,                          # логируем каждый шаг в консоль
-                save_steps=500,                            # чекпоинты каждые 500 шагов
+                logging_steps=1,
+                save_steps=500,
                 save_total_limit=3,
-                eval_strategy="steps",
+                eval_strategy="steps" if eval_dataset else "no",
                 eval_steps=500,
-                load_best_model_at_end=True,
+                load_best_model_at_end=bool(eval_dataset),
                 metric_for_best_model="eval_loss",
                 greater_is_better=False,
                 report_to="none",
-                no_cuda=self.device.type == 'cpu',
+                use_cpu=self.device.type == 'cpu',
                 remove_unused_columns=False,
-                dataloader_num_workers=0,                  # отключаем дополнительные процессы
+                dataloader_num_workers=0,
+                gradient_checkpointing_kwargs={'use_reentrant': False},
+                **({'neftune_noise_alpha': self.job.neftune_alpha}
+                   if self.job.neftune_alpha else {}),
             )
 
             progress_callback = ProgressCallback(
@@ -383,20 +434,32 @@ class RAFTTrainer:
                 histogram_interval=50
             )
 
-            # Кастомный Trainer с KL-loss
+            # Кастомный Trainer с KL-loss (v5 signature; KL helper внутри класса)
             class RAFTTrainer(Trainer):
                 def __init__(self, base_model=None, kl_lambda=0.1, *args, **kwargs):
                     super().__init__(*args, **kwargs)
                     self.base_model = base_model
                     self.kl_lambda = kl_lambda
 
-                def compute_loss(self, model, inputs, return_outputs=False):
+                def compute_kl_loss(self, student_logits, teacher_logits, attention_mask=None):
+                    logp = F.log_softmax(student_logits, dim=-1)
+                    p = F.softmax(teacher_logits, dim=-1)
+                    kl = F.kl_div(logp, p, reduction='none').sum(-1)
+                    if attention_mask is not None:
+                        mask = attention_mask.to(kl.device)
+                        return (kl * mask).sum() / mask.sum().clamp(min=1)
+                    return kl.mean()
+
+                def compute_loss(self, model, inputs, return_outputs=False,
+                                 num_items_in_batch=None, **kwargs):
                     outputs = model(**inputs)
                     ce_loss = outputs.loss
                     if self.base_model is not None and self.kl_lambda > 0:
                         with torch.no_grad():
                             base_outputs = self.base_model(**inputs)
-                        kl_loss = self.compute_kl_loss(outputs.logits, base_outputs.logits)
+                        kl_loss = self.compute_kl_loss(
+                            outputs.logits, base_outputs.logits,
+                            inputs.get('attention_mask'))
                         loss = ce_loss + self.kl_lambda * kl_loss
                     else:
                         loss = ce_loss
@@ -406,15 +469,18 @@ class RAFTTrainer:
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
-                eval_dataset=split_dataset['test'],
+                eval_dataset=eval_dataset,
                 data_collator=data_collator,
                 base_model=self.base_model,
                 kl_lambda=self.job.kl_lambda if self.job.use_kl_regularization else 0.0,
                 callbacks=[progress_callback, PauseCallback(self.job)],
             )
+            apply_lora_plus(trainer, self.job.lora_plus_lr_ratio)
 
+            # guarded resume: only an explicitly resumed run picks up old checkpoints
             checkpoint = None
-            if os.path.exists(output_dir) and any(f.startswith('checkpoint-') for f in os.listdir(output_dir)):
+            if self.resume and os.path.exists(output_dir) and \
+                    any(f.startswith('checkpoint-') for f in os.listdir(output_dir)):
                 checkpoint = True
                 self.job.add_log("🔄 Resuming from existing checkpoint...")
 
