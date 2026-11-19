@@ -188,6 +188,9 @@
                         <a href="{% url 'benchmark_leaderboard' %}" class="nav-link-sub {% if request.resolver_match.url_name == 'benchmark_leaderboard' %}active{% endif %}">
                             <i class="bi bi-trophy"></i> {% trans "Лидерборд" %}
                         </a>
+                        <a href="{% url 'benchmark_custom_create' %}" class="nav-link-sub {% if request.resolver_match.url_name == 'benchmark_custom_create' %}active{% endif %}">
+                            <i class="bi bi-plus-square"></i> {% trans "Свой бенчмарк" %}
+                        </a>
                     </div>
                 </div>
             </div>
