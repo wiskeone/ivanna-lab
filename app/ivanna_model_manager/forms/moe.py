@@ -74,7 +74,7 @@ class MoEThemeForm(forms.ModelForm):
         return name
 
     def save(self, commit=True):
-        from .services.soft_moe import prompts as moe_prompts
+        from ..services.soft_moe import prompts as moe_prompts
 
         instance = super().save(commit=False)
         tdir = moe_prompts.theme_dir(instance.slug)

@@ -578,7 +578,7 @@ class ModelCheckpoint(models.Model):
     def download_model(self):
         """Запускаем загрузку модели в фоне"""
         try:
-            from .tasks import download_model_task
+            from ..tasks import download_model_task
             return download_model_task.delay(self.id)
         except ImportError as e:
             logger.warning(f"Tasks module not available for download_model: {e}")
@@ -587,7 +587,7 @@ class ModelCheckpoint(models.Model):
     def load_to_memory(self):
         """Загружаем модель в память"""
         try:
-            from .tasks import load_model_to_memory_task
+            from ..tasks import load_model_to_memory_task
             return load_model_to_memory_task.delay(self.id)
         except ImportError as e:
             logger.warning(f"Tasks module not available for load_to_memory: {e}")
@@ -596,7 +596,7 @@ class ModelCheckpoint(models.Model):
     def unload_from_memory(self):
         """Выгружаем модель из памяти"""
         try:
-            from .tasks import unload_model_from_memory_task
+            from ..tasks import unload_model_from_memory_task
             model_id = self.huggingface_id or self.name
             return unload_model_from_memory_task.delay(model_id)
         except ImportError as e:
@@ -606,7 +606,7 @@ class ModelCheckpoint(models.Model):
     def is_loaded_in_memory(self):
         """Проверяем, загружена ли модель в память - используя Redis"""
         try:
-            from .services.redis_model_service import redis_model_manager
+            from ..services.redis_model_service import redis_model_manager
         except ImportError as e:
             logger.warning(f"redis_model_service not available: {e}")
             return None
@@ -645,7 +645,7 @@ class ModelCheckpoint(models.Model):
     def get_loading_status(self):
         """Получает текущий статус загрузки модели"""
         try:
-            from .services.redis_model_service import redis_model_manager
+            from ..services.redis_model_service import redis_model_manager
             model_id = self.huggingface_id or self.name
             return redis_model_manager.get_loading_status(model_id)
         except ImportError as e:
@@ -695,7 +695,7 @@ class ModelCheckpoint(models.Model):
         """Получает информацию о загруженной модели"""
         # Используем импорт для избежания циклических зависимостей
         try:
-            from .services.redis_model_service import redis_model_manager
+            from ..services.redis_model_service import redis_model_manager
             return redis_model_manager.get_model_info(model_id)
         except ImportError:
             return None
@@ -708,7 +708,7 @@ class ModelCheckpoint(models.Model):
     def generate_text(self, prompt: str, **kwargs):
         """Генерируем текст с помощью модели"""
         try:
-            from .services.redis_model_service import redis_model_manager
+            from ..services.redis_model_service import redis_model_manager
         except ImportError as e:
             logger.warning(f"redis_model_service not available: {e}")
             return {
@@ -753,7 +753,7 @@ class ModelCheckpoint(models.Model):
     def sync_loading_status(self):
         """Синхронизирует статус загрузки в базе с фактическим состоянием"""
         try:
-            from .services.redis_model_service import redis_model_manager
+            from ..services.redis_model_service import redis_model_manager
         except ImportError as e:
             logger.warning(f"redis_model_service not available: {e}")
             return False

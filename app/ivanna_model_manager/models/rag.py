@@ -261,7 +261,7 @@ class DocumentCollection(models.Model):
     def build_vector_index(self, index_type='ivf'):
         """Запустить создание векторного индекса"""
         try:
-            from .tasks import build_faiss_index_task
+            from ..tasks import build_faiss_index_task
             task = build_faiss_index_task.delay(self.id, index_type)
             return task.id
         except Exception as e:
@@ -271,7 +271,7 @@ class DocumentCollection(models.Model):
     def search_in_index(self, query_vector: list, k: int = 10):
         """Поиск в векторном индексе"""
         try:
-            from .tasks import search_faiss_index_task
+            from ..tasks import search_faiss_index_task
             result = search_faiss_index_task.delay(self.id, query_vector, k)
             return result
         except Exception as e:
@@ -281,7 +281,7 @@ class DocumentCollection(models.Model):
     def update_vector_index(self):
         """Обновить векторный индекс"""
         try:
-            from .tasks import update_faiss_index_task
+            from ..tasks import update_faiss_index_task
             task = update_faiss_index_task.delay(self.id)
             return task.id
         except Exception as e:
@@ -291,7 +291,7 @@ class DocumentCollection(models.Model):
     def get_index_stats(self):
         """Получить статистику векторного индекса"""
         try:
-            from .services.faiss_service import FAISSService
+            from ..services.faiss_service import FAISSService
             faiss_service = FAISSService()
             return faiss_service.get_index_stats(self.id)
         except Exception as e:
@@ -586,7 +586,7 @@ class Document(models.Model):
     def start_processing(self):
         """Запустить обработку документа"""
         try:
-            from .tasks import process_document_task
+            from ..tasks import process_document_task
             return process_document_task.delay(self.id)
         except ImportError as e:
             logger.warning(f"Tasks module not available for start_processing: {e}")
