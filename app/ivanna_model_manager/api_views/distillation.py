@@ -75,7 +75,7 @@ logger = logging.getLogger(__name__)
 
 
 class DistillationQuestionSetViewSet(viewsets.ModelViewSet):
-    """Управление наборами для дистилляции."""
+    """Manage distillation question sets."""
     queryset = DistillationQuestionSet.objects.all()
     serializer_class = DistillationQuestionSetSerializer
     permission_classes = [IsAuthenticated]
@@ -92,8 +92,8 @@ class DistillationQuestionSetViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def auto_create_groups(self, request, pk=None):
         """
-        Автоматическое создание групп: разбивает список чанков на окна.
-        Ожидает JSON: {
+        Auto-create groups: splits the chunk list into windows.
+        Expects JSON: {
             "chunk_ids": [1,2,3,...],
             "window_size": 3,
             "num_questions": 3,
@@ -109,7 +109,7 @@ class DistillationQuestionSetViewSet(viewsets.ModelViewSet):
         if not chunk_ids:
             return Response({'error': 'chunk_ids required'}, status=400)
 
-        # Удаляем старые группы, если нужно (по желанию)
+        # Remove old groups if needed (optional)
         # qset.groups.all().delete()
 
         created = 0
@@ -137,8 +137,8 @@ class DistillationQuestionSetViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def start_generation(self, request, pk=None):
         """
-        Запуск генерации вопросов для всех групп набора.
-        Ожидает: teacher_model_id, опционально quantization и generation_config.
+        Start question generation for all groups of the set.
+        Expects: teacher_model_id, optionally quantization and generation_config.
         """
         qset = self.get_object()
         if qset.status not in ['PENDING', 'FAILED']:
@@ -150,7 +150,7 @@ class DistillationQuestionSetViewSet(viewsets.ModelViewSet):
 
         quantization = request.data.get('quantization', 'int4')
 
-        # Обновляем конфигурацию набора, если передана
+        # Update the set config if provided
         if 'generation_config' in request.data:
             qset.default_generation_config.update(request.data['generation_config'])
             qset.save(update_fields=['default_generation_config'])
@@ -174,17 +174,17 @@ class DistillationQuestionSetViewSet(viewsets.ModelViewSet):
 
         quantization = request.data.get('quantization', 'int4')
 
-        # Сохраняем celery_task_id, чтобы можно было отслеживать
+        # Save celery_task_id for tracking
         task = generate_questions_for_set_task.delay(qset.id, teacher_model_id, quantization)
         qset.celery_task_id = task.id
-        qset.status = 'PENDING'  # или RUNNING? лучше PENDING, а задача сама переведёт в RUNNING
+        qset.status = 'PENDING'  # PENDING is safer; the task itself switches to RUNNING
         qset.save(update_fields=['celery_task_id', 'status'])
 
         return Response({'success': True, 'task_id': task.id})
 
     @action(detail=True, methods=['get'])
     def questions(self, request, pk=None):
-        """Возвращает список вопросов набора."""
+        """Returns the set's questions."""
         qset = self.get_object()
         questions = DistillationQuestion.objects.filter(group__question_set=qset).order_by('-created_at')
         serializer = DistillationQuestionSerializer(questions, many=True)
@@ -192,7 +192,7 @@ class DistillationQuestionSetViewSet(viewsets.ModelViewSet):
 
 
 class DistillationChunkGroupViewSet(viewsets.ModelViewSet):
-    """Управление группами чанков."""
+    """Manage chunk groups."""
     queryset = DistillationChunkGroup.objects.all()
     serializer_class = DistillationChunkGroupSerializer
     permission_classes = [IsAuthenticated]
@@ -202,7 +202,7 @@ class DistillationChunkGroupViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def update_chunks(self, request, pk=None):
-        """Обновить список чанков группы."""
+        """Update the group's chunk list."""
         group = self.get_object()
         chunk_ids = request.data.get('chunk_ids', [])
         if not chunk_ids:
@@ -213,7 +213,7 @@ class DistillationChunkGroupViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def bulk_update(self, request):
-        """Массовое обновление групп."""
+        """Bulk update groups."""
         question_set_id = request.data.get('question_set_id')
         groups_data = request.data.get('groups', [])
         if not question_set_id:
@@ -229,7 +229,7 @@ class DistillationChunkGroupViewSet(viewsets.ModelViewSet):
                 group.order = g.get('order', group.order)
                 group.save()
             else:
-                # Создаём новую группу
+                # Create a new group
                 DistillationChunkGroup.objects.create(
                     question_set=question_set,
                     name=g.get('name', ''),
@@ -241,7 +241,7 @@ class DistillationChunkGroupViewSet(viewsets.ModelViewSet):
 
 
 class DistillationQuestionViewSet(viewsets.ModelViewSet):
-    """Управление вопросами дистилляции."""
+    """Manage distillation questions."""
     queryset = DistillationQuestion.objects.all()
     serializer_class = DistillationQuestionSerializer
     permission_classes = [IsAuthenticated]
@@ -251,7 +251,7 @@ class DistillationQuestionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def update_answer(self, request, pk=None):
-        """Вручную обновить ответ на вопрос."""
+        """Manually update a question's answer."""
         question = self.get_object()
         answer = request.data.get('answer', '')
         if not answer:
@@ -263,8 +263,8 @@ class DistillationQuestionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def batch_update_answers(self, request):
-        """Массовое обновление ответов."""
-        updates = request.data.get('updates', [])  # список {id, answer}
+        """Bulk update answers."""
+        updates = request.data.get('updates', [])  # list of {id, answer}
         for upd in updates:
             try:
                 q = DistillationQuestion.objects.get(id=upd['id'])
@@ -277,7 +277,7 @@ class DistillationQuestionViewSet(viewsets.ModelViewSet):
 
 
 class DistillationAnswerJobViewSet(viewsets.ModelViewSet):
-    """Управление задачами генерации ответов."""
+    """Manage answer generation jobs."""
     queryset = DistillationAnswerJob.objects.all()
     serializer_class = DistillationAnswerJobSerializer
     permission_classes = [IsAuthenticated]
@@ -351,9 +351,9 @@ class DistillationAnswerJobViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def distillation_task_status(request, question_set_id):
-    """Возвращает статус задачи генерации вопросов."""
+    """Returns question generation task status."""
     qset = get_object_or_404(DistillationQuestionSet, id=question_set_id, created_by=request.user.username)
-    # Получаем последние 15 вопросов для динамического отображения
+    # Get the latest 15 questions for dynamic display
     recent_questions = DistillationQuestion.objects.filter(
         group__question_set=qset
     ).order_by('-created_at')[:15]
@@ -377,7 +377,7 @@ def distillation_task_status(request, question_set_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def distillation_answer_job_status(request, job_id):
-    """Возвращает статус задачи генерации ответов."""
+    """Returns answer generation job status."""
     job = get_object_or_404(DistillationAnswerJob, id=job_id, created_by=request.user.username)
     recent_answers = DistillationAnswer.objects.filter(answer_job=job).select_related('question').order_by('-created_at')[:15]
     return Response({
@@ -401,21 +401,21 @@ def distillation_answer_job_status(request, job_id):
 
 @action(detail=True, methods=['post'])
 def resume(self, request, pk=None):
-    """Возобновление задачи из чекпоинта."""
+    """Resume the task from a checkpoint."""
     qset = self.get_object()
     if not qset.checkpoint_data:
         return Response({'error': _('Нет чекпоинта для возобновления')}, status=400)
     if qset.status == 'RUNNING':
         return Response({'error': _('Задача уже выполняется')}, status=400)
     
-    # Получаем последние сохранённые параметры из checkpoint_data
+    # Get the last saved parameters from checkpoint_data
     checkpoint = qset.checkpoint_data
     teacher_model_id = checkpoint.get('teacher_model_id')
     quantization = checkpoint.get('quantization', 'int4')
     if not teacher_model_id:
         return Response({'error': _('Не указана модель-учитель в чекпоинте')}, status=400)
     
-    # Запускаем задачу с параметрами из чекпоинта
+    # Start the task with the checkpoint parameters
     task = generate_questions_for_set_task.delay(qset.id, teacher_model_id, quantization)
     qset.celery_task_id = task.id
     qset.status = 'PENDING'
@@ -427,7 +427,7 @@ def resume(self, request, pk=None):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def distillation_dataset_builder_data(request):
-    """Возвращает данные для сборщика датасета: вопросы и ответы по выбранным задачам."""
+    """Returns dataset builder data: questions and answers for the selected jobs."""
     question_set_id = request.GET.get('question_set')
     answer_job_ids = request.GET.getlist('answer_jobs')
     
@@ -442,12 +442,12 @@ def distillation_dataset_builder_data(request):
     except DistillationQuestionSet.DoesNotExist:
         return Response({'error': _('Набор вопросов не найден')}, status=404)
     
-    # Вопросы через group__question_set
+    # Questions via group__question_set
     questions = DistillationQuestion.objects.filter(
         group__question_set=question_set
     ).order_by('id')
     
-    # ✅ Получаем все ответы для выбранных задач, сортируем по -created_at
+    # Fetch all answers for the selected jobs, sorted by -created_at
     answers_by_question = {}
     
     for job_id in answer_job_ids:
@@ -459,13 +459,13 @@ def distillation_dataset_builder_data(request):
         except DistillationAnswerJob.DoesNotExist:
             continue
         
-        # ✅ Сортируем по -created_at, чтобы последний ответ был первым
+        # Sort by -created_at so the latest answer comes first
         answers = DistillationAnswer.objects.filter(
             answer_job=job
         ).select_related('question').order_by('-created_at')
         
         for ans in answers:
-            # ✅ Если для этого вопроса ещё нет ответа — сохраняем (это будет последний)
+            # Keep only the first seen answer per question (the latest one)
             if ans.question_id not in answers_by_question:
                 answers_by_question[ans.question_id] = []
             
@@ -477,7 +477,7 @@ def distillation_dataset_builder_data(request):
                 'created_at': ans.created_at.isoformat() if ans.created_at else None
             })
     
-    # Формируем данные для каждого вопроса
+    # Build data for each question
     result = []
     for q in questions:
         chunks = []
@@ -494,8 +494,8 @@ def distillation_dataset_builder_data(request):
             'id': q.id,
             'question_text': q.question_text,
             'context_chunks': chunks,
-            'answers': question_answers,  # Список всех версий ответов
-            'latest_answer': question_answers[0] if question_answers else None,  # Последний ответ
+            'answers': question_answers,  # all answer versions
+            'latest_answer': question_answers[0] if question_answers else None,  # latest answer
             'has_multiple_answers': len(question_answers) > 1
         })
     
@@ -519,7 +519,7 @@ class DistillationDatasetViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def export_jsonl(self, request, pk=None):
-        """Экспорт датасета в JSONL для fine-tuning."""
+        """Export the dataset to JSONL for fine-tuning."""
         dataset = self.get_object()
         items = dataset.items
         response = HttpResponse(content_type='application/jsonl')
@@ -534,7 +534,7 @@ class DistillationDatasetViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def create_dataset(self, request):
-        """Создание датасета из выбранных вопросов и ответов"""
+        """Create a dataset from the selected questions and answers"""
         name = request.data.get('name')
         description = request.data.get('description', '')
         items = request.data.get('items', [])
@@ -572,7 +572,7 @@ class ManualInstructionSetViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def export_jsonl(self, request, pk=None):
-        """Экспорт набора в JSONL для fine-tuning."""
+        """Export the set to JSONL for fine-tuning."""
         instruction_set = self.get_object()
         instructions = instruction_set.instructions.all().order_by('order')
         response = HttpResponse(content_type='application/jsonl')
@@ -588,7 +588,7 @@ class ManualInstructionSetViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def upload_to_huggingface(self, request, pk=None):
-        """Загрузка датасета на Hugging Face Hub."""
+        """Upload the dataset to the Hugging Face Hub."""
         instruction_set = self.get_object()
         from huggingface_hub import HfApi, Repository
         import tempfile
@@ -600,7 +600,7 @@ class ManualInstructionSetViewSet(viewsets.ModelViewSet):
         if not repo_id or not token:
             return Response({'error': _('Не указаны repo_id и token')}, status=400)
 
-        # Создаём временную папку и сохраняем JSONL
+        # Create a temp dir and save the JSONL
         with tempfile.TemporaryDirectory() as tmpdir:
             file_path = os.path.join(tmpdir, f"{instruction_set.name}.jsonl")
             with open(file_path, 'w', encoding='utf-8') as f:
@@ -610,7 +610,7 @@ class ManualInstructionSetViewSet(viewsets.ModelViewSet):
                         'output': instr.answer
                     }, ensure_ascii=False)
                     f.write(line + '\n')
-            # Загружаем на HF
+            # Upload to HF
             api.upload_file(
                 path_or_fileobj=file_path,
                 path_in_repo=f"{instruction_set.name}.jsonl",
@@ -622,14 +622,14 @@ class ManualInstructionSetViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def sync_instructions(self, request, pk=None):
         """
-        Синхронизирует инструкции набора: удаляет старые, создаёт новые.
-        Всё в одной транзакции — без дублирования.
+        Sync the set's instructions: deletes old ones, creates new ones.
+        All in a single transaction — no duplicates.
         """
         from django.db import transaction
         
         instruction_set = self.get_object()
         
-        # Проверка прав
+        # Permission check
         if instruction_set.created_by != request.user.username and not request.user.is_staff:
             return Response({'error': _('Нет прав')}, status=403)
         
@@ -639,13 +639,13 @@ class ManualInstructionSetViewSet(viewsets.ModelViewSet):
             return Response({'error': _('instructions должен быть списком')}, status=400)
         
         try:
-            with transaction.atomic():  # ✅ Атомарная транзакция
-                # 1. Удаляем ВСЕ существующие инструкции этого набора
+            with transaction.atomic():  # atomic transaction
+                # 1. Delete ALL existing instructions of this set
                 deleted_count, _ = ManualInstruction.objects.filter(
                     instruction_set=instruction_set
                 ).delete()
                 
-                # 2. Создаём новые инструкции
+                # 2. Create the new instructions
                 created_instructions = []
                 for idx, instr_data in enumerate(instructions_data):
                     instruction = ManualInstruction.objects.create(
@@ -698,7 +698,7 @@ class HuggingFaceDatasetViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def import_dataset(self, request, pk=None):
-        """Запуск импорта датасета из HF."""
+        """Start dataset import from HF."""
         dataset = self.get_object()
         if dataset.status not in ['PENDING', 'FAILED']:
             return Response({'error': _('Датасет уже обрабатывается или завершён')}, status=400)

@@ -75,7 +75,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# ОЦЕНКА (EVALUATION)
+# EVALUATION
 # ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -88,7 +88,7 @@ def evaluation_datasets_api(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def upload_dataset_api(request):
-    """Загрузка датасета из файла."""
+    """Upload a dataset from a file."""
     from ..serializers import QuestionUploadSerializer
     serializer = QuestionUploadSerializer(data=request.data)
     if serializer.is_valid():
@@ -128,7 +128,7 @@ def upload_dataset_api(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def start_evaluation_api(request):
-    """Запуск задачи оценки."""
+    """Start an evaluation task."""
     from ..serializers import StartEvaluationSerializer
     serializer = StartEvaluationSerializer(data=request.data)
     if serializer.is_valid():
@@ -142,7 +142,7 @@ def start_evaluation_api(request):
             )
             task.evaluation_models.set(serializer.validated_data['model_ids'])
             task.save()
-            # RAG параметры
+            # RAG parameters
             use_rag = request.data.get('use_rag', False)
             collection_ids = request.data.get('collection_ids', [])
             celery_task = run_evaluation_task.delay(
@@ -170,14 +170,14 @@ def evaluation_task_status_api(request, task_id):
         serializer = ModelEvaluationTaskSerializer(task)
         data = serializer.data
 
-        # Добавляем информацию о чекпоинте
+        # Add checkpoint info
         if task.metadata and 'checkpoint' in task.metadata:
             data['checkpoint'] = task.metadata['checkpoint']
             data['has_checkpoint'] = True
         else:
             data['has_checkpoint'] = False
 
-        # Если задача выполняется, добавляем прогресс из Celery
+        # If the task is running, add progress from Celery
         if task.status == 'RUNNING' and task.celery_task_id:
             from celery.result import AsyncResult
             res = AsyncResult(task.celery_task_id)
@@ -232,7 +232,7 @@ def evaluation_results_api(request, task_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def rate_response_api(request):
-    """Оценка ответа модели."""
+    """Rate a model response."""
     from ..serializers import RatingSerializer
     serializer = RatingSerializer(data=request.data)
     if serializer.is_valid():
@@ -244,7 +244,7 @@ def rate_response_api(request):
                 rating=serializer.validated_data['rating'],
                 user_id=request.user.username
             )
-            # Обновить детальный результат
+            # Update the detailed result
             EvaluationResult.objects.filter(
                 task=task,
                 model_id=serializer.validated_data['model_id'],
@@ -264,7 +264,7 @@ def rate_response_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def compare_models_api(request, task_id):
-    """Сравнение моделей по вопросам."""
+    """Compare models by questions."""
     try:
         task = ModelEvaluationTask.objects.get(id=task_id)
         if task.status != 'COMPLETED':
@@ -275,7 +275,7 @@ def compare_models_api(request, task_id):
         results = task.results or {}
 
         comparison = []
-        for q in questions[:10]:  # первые 10 вопросов
+        for q in questions[:10]:  # first 10 questions
             qid = str(q.get('id', ''))
             qtext = q.get('text', '')
             if not qid or not qtext:
@@ -307,8 +307,8 @@ def compare_models_api(request, task_id):
 @permission_classes([IsAuthenticated])
 def compare_tasks_api(request, dataset_id):
     """
-    Возвращает данные для сравнения нескольких задач по одному датасету.
-    Ожидает JSON: {"task_ids": [1,2,3]}
+    Returns data for comparing several tasks on one dataset.
+    Expects JSON: {"task_ids": [1,2,3]}
     """
     task_ids = request.data.get('task_ids', [])
     if not task_ids:
@@ -329,7 +329,7 @@ def compare_tasks_api(request, dataset_id):
     tasks_data = []
     for task in tasks:
         models = list(task.evaluation_models.all())
-        # Получаем детальные результаты
+        # Get detailed results
         detailed_results = {}
         for result in EvaluationResult.objects.filter(task=task).select_related('model'):
             qid = str(result.question_id)
@@ -338,12 +338,12 @@ def compare_tasks_api(request, dataset_id):
             detailed_results[qid][result.model.id] = {
                 'response': result.model_response,
                 'rating': result.manual_rating,
-                'rag': False,  # можно добавить позже
+                'rag': False,  # can be added later
                 'response_time': result.response_time,
                 'tokens': result.tokens_used,
             }
 
-        # Дополняем из task.results (если чего-то не хватает)
+        # Fill in from task.results (if anything is missing)
         for model_id_str, model_results in (task.results or {}).items():
             model_id = int(model_id_str)
             for qid, ans in model_results.items():
@@ -423,7 +423,7 @@ def evaluation_dataset_questions(request, dataset_id):
 @login_required
 @require_http_methods(["PUT"])
 def evaluation_dataset_question_update(request, dataset_id, question_id):
-    """v5.0: обновление одного вопроса в JSONL-датасете (inline-редактирование)."""
+    """v5.0: update a single question in a JSONL dataset (inline editing)."""
     dataset = get_object_or_404(EvaluationDataset, id=dataset_id)
     if not dataset.file_path or not os.path.exists(dataset.file_path):
         return Response({'success': False, 'error': _('Файл датасета не найден')}, status=404)
@@ -490,7 +490,7 @@ def evaluation_dataset_import(request, pk):
     if not uploaded_file.name.endswith('.jsonl'):
         return Response({'success': False, 'error': _('Поддерживаются только файлы .jsonl')}, status=400)
 
-    # Сохраняем файл
+    # Save the file
     file_path = dataset.file_path
     if not file_path:
         file_name = f"dataset_{dataset.id}.jsonl"
@@ -539,8 +539,8 @@ def evaluation_dataset_import(request, pk):
 @permission_classes([IsAuthenticated])
 def api_evaluation_stats(request):
     """
-    Заглушка для статистики по задачам оценки.
-    Возвращает нулевые значения, чтобы не ломать фронтенд.
+    Placeholder for evaluation task statistics.
+    Returns zero values so the frontend does not break.
     """
     return Response({
         'total_tasks': 0,

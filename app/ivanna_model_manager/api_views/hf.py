@@ -75,10 +75,10 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# HUGGING FACE API (ПОИСК МОДЕЛЕЙ)
+# HUGGING FACE API (MODEL SEARCH)
 # ============================================================================
 class HuggingFaceAPI(APIView):
-    """API для взаимодействия с Hugging Face Hub: поиск моделей, эмбеддингов, датасетов."""
+    """API for the Hugging Face Hub: search models, embeddings, datasets."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -107,7 +107,7 @@ class HuggingFaceAPI(APIView):
             return Response({'error': _('Неизвестное действие')}, status=400)
 
     # =========================================================================
-    # Методы для обычных (LLM) моделей
+    # Methods for regular (LLM) models
     # =========================================================================
     def search_models(self, request):
         from huggingface_hub import HfApi
@@ -228,12 +228,12 @@ class HuggingFaceAPI(APIView):
             api = HfApi()
             info = api.model_info(model_id, timeout=10)
             
-            # Значения по умолчанию
+            # Default values
             context_length = 4096
             vocab_size = 32000
             parameter_count = 0
             
-            # Пытаемся получить конфиг через прямой запрос к raw config.json
+            # Try to fetch the config via a direct request to raw config.json
             try:
                 config_url = f"https://huggingface.co/{model_id}/raw/main/config.json"
                 headers = {"User-Agent": "IvannaModelManager/1.0"}
@@ -247,7 +247,7 @@ class HuggingFaceAPI(APIView):
             except Exception as e:
                 logger.warning(f"Could not fetch config for {model_id}: {e}")
             
-            # Если parameter_count всё ещё 0, попробуем извлечь из тегов или названия
+            # If parameter_count is still 0, try to extract it from tags or the name
             if parameter_count == 0 and info.tags:
                 for tag in info.tags:
                     tag_lower = tag.lower()
@@ -258,7 +258,7 @@ class HuggingFaceAPI(APIView):
                         parameter_count = int(tag_lower[:-1]) * 1_000_000
                         break
             
-            # Если не нашли, пробуем из названия модели (например, "7b")
+            # If not found, try the model name (e.g. "7b")
             if parameter_count == 0:
                 match = re.search(r'(\d+\.?\d*)[bB]', model_id)
                 if match:
@@ -286,7 +286,7 @@ class HuggingFaceAPI(APIView):
             }, status=404)
 
     # =========================================================================
-    # Методы для моделей эмбеддингов
+    # Methods for embedding models
     # =========================================================================
     def search_embedding_models(self, request):
         from huggingface_hub import HfApi
@@ -299,7 +299,7 @@ class HuggingFaceAPI(APIView):
 
         api = HfApi()
         try:
-            # Получаем до 100 моделей (чтобы не грузить API слишком сильно)
+            # Fetch up to 100 models (to avoid overloading the API)
             all_models = list(api.list_models(
                 search=query or None,
                 filter="sentence-transformers,feature-extraction",
@@ -399,12 +399,12 @@ class HuggingFaceAPI(APIView):
             return Response({'valid': False, 'exists': False, 'error': str(e)}, status=404)
 
     # =========================================================================
-    # Методы для датасетов
+    # Methods for datasets
     # =========================================================================
     def search_datasets(self, request):
         """
-        Поиск датасетов на Hugging Face Hub с ручной сортировкой и пагинацией.
-        Ограничивает количество получаемых датасетов для производительности.
+        Search datasets on the Hugging Face Hub with manual sorting and pagination.
+        Limits the number of fetched datasets for performance.
         """
         from huggingface_hub import HfApi
         import logging
@@ -419,10 +419,10 @@ class HuggingFaceAPI(APIView):
 
         api = HfApi()
         try:
-            # Получаем ограниченное количество датасетов (500) – достаточно для топ-20 и первых страниц поиска
+            # Fetch a limited number of datasets (500) - enough for top-20 and first search pages
             all_datasets = list(api.list_datasets(search=query or None, limit=500))
 
-            # Сортировка на клиенте (так как параметр sort не всегда поддерживается)
+            # Manual sorting (the sort parameter is not always supported)
             if sort_by == 'downloads':
                 all_datasets.sort(key=lambda x: getattr(x, 'downloads', 0), reverse=True)
             elif sort_by == 'likes':
@@ -460,12 +460,12 @@ class HuggingFaceAPI(APIView):
             return Response({'error': str(e), 'results': []}, status=500)
 
     def top_datasets(self, request):
-        """Возвращает топ-датасеты по загрузкам (пустой поиск)."""
-        # Перенаправляем на search_datasets с пустым q
+        """Return top datasets by downloads (empty search)."""
+        # Delegate to search_datasets with empty q
         new_request = request
-        # Создаём копию GET параметров и устанавливаем q=''
+        # Copy the GET params and set q=''
         if hasattr(request, 'GET') and isinstance(request.GET, dict):
-            # Просто вызываем search_datasets с теми же параметрами, но q заменён на ''
+            # Just call search_datasets with the same params but q replaced by ''
             get_params = request.GET.copy()
             get_params['q'] = ''
             request.GET = get_params

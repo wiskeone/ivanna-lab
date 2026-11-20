@@ -94,7 +94,7 @@ def fine_tuning_progress(request, pk):
 # ============================================================================
 @login_required
 def fine_tuning_dashboard(request):
-    """Дашборд fine-tuning"""
+    """Fine-tuning dashboard"""
     jobs = FineTuningJob.objects.filter(
         created_by=request.user.username
     ).order_by('-created_at')
@@ -112,7 +112,7 @@ def fine_tuning_dashboard(request):
 @login_required
 def fine_tuning_metrics(request, pk):
     """
-    Возвращает метрики обучения в формате JSON для построения графиков.
+    Return training metrics as JSON for charting.
     """
     job = get_object_or_404(FineTuningJob, pk=pk, created_by=request.user.username)
     metrics = TrainingMetric.objects.filter(job=job).order_by('step')
@@ -142,7 +142,7 @@ def fine_tuning_create(request):
 
             method = form.cleaned_data['method']
 
-            # Проверка наличия данных для instruction/raft
+            # Check that data exists for instruction/raft
             if method in ('instruction', 'raft'):
                 distillation_ids = request.POST.getlist('distillation_datasets')
                 manual_ids = request.POST.getlist('manual_datasets')
@@ -151,7 +151,7 @@ def fine_tuning_create(request):
                     form.add_error(None, 'Для методов instruction и RAFT необходимы датасеты инструкций.')
                     return render(request, 'ivanna_model_manager/fine_tuning/create.html', _get_create_context(request, form))
 
-            # Создание выходной модели
+            # Create the output model
             quantization = form.cleaned_data.get('quantization', 'int4')
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
             new_model_name = f"tuned_{method}_{base_model.name}_{timestamp}"
@@ -193,21 +193,21 @@ def fine_tuning_create(request):
             job.quantization = quantization
             job.save()
 
-            # Сохраняем выбранные коллекции и датасеты в training_config
+            # Save selected collections and datasets into training_config
             training_config = job.training_config or {}
-            # Коллекции
+            # Collections
             collection_ids = request.POST.getlist('document_collections')
             if collection_ids:
                 training_config['document_collections'] = [int(cid) for cid in collection_ids]
-            # Датасеты дистилляции
+            # Distillation datasets
             distillation_ids = request.POST.getlist('distillation_datasets')
             if distillation_ids:
                 training_config['distillation_datasets'] = [int(did) for did in distillation_ids]
-            # Ручные датасеты
+            # Manual datasets
             manual_ids = request.POST.getlist('manual_datasets')
             if manual_ids:
                 training_config['manual_datasets'] = [int(mid) for mid in manual_ids]
-            # HF датасеты
+            # HF datasets
             hf_ids = request.POST.getlist('hf_datasets')
             if hf_ids:
                 training_config['hf_datasets'] = [int(hid) for hid in hf_ids]
@@ -243,10 +243,10 @@ def _get_create_context(request, form):
 
 @login_required
 def fine_tuning_jobs(request):
-    """Список всех задач fine-tuning"""
+    """List all fine-tuning jobs"""
     from ..models import FineTuningJob
     
-    # Фильтрация
+    # Filtering
     status = request.GET.get('status', '')
     method = request.GET.get('method', '')
     
@@ -257,14 +257,14 @@ def fine_tuning_jobs(request):
     if method:
         jobs = jobs.filter(method=method)
     
-    # Сортировка
+    # Sorting
     sort = request.GET.get('sort', '-created_at')
     if sort.lstrip('-') in ['name', 'status', 'created_at', 'progress']:
         jobs = jobs.order_by(sort)
     else:
         jobs = jobs.order_by('-created_at')
     
-    # Пагинация
+    # Pagination
     paginator = Paginator(jobs, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -296,7 +296,7 @@ def fine_tuning_jobs(request):
 
 @login_required
 def fine_tuning_detail(request, pk):
-    """Детали задачи fine-tuning"""
+    """Fine-tuning job details"""
     job = get_object_or_404(
         FineTuningJob,
         id=pk,
@@ -314,7 +314,7 @@ def fine_tuning_detail(request, pk):
 
 @login_required
 def fine_tuning_logs(request, pk):
-    """Просмотр логов задачи (AJAX)"""
+    """View job logs (AJAX)"""
     job = get_object_or_404(
         FineTuningJob,
         id=pk,
@@ -325,10 +325,10 @@ def fine_tuning_logs(request, pk):
 
 @login_required
 def fine_tuning_templates(request):
-    """Список шаблонов fine-tuning"""
+    """List fine-tuning templates"""
     from ..models import FineTuningTemplate
     
-    # Фильтрация
+    # Filtering
     category = request.GET.get('category', '')
     method = request.GET.get('method', '')
     
@@ -339,7 +339,7 @@ def fine_tuning_templates(request):
     if method:
         templates = templates.filter(method=method)
     
-    # Статистика по категориям
+    # Per-category stats
     categories = templates.values('category').annotate(
         count=Count('id')
     ).order_by('category')
@@ -358,7 +358,7 @@ def fine_tuning_templates(request):
 
 @login_required
 def fine_tuning_template_detail(request, pk):
-    """Детали шаблона"""
+    """Template details"""
     from ..models import FineTuningTemplate
     
     template = get_object_or_404(FineTuningTemplate, pk=pk, is_public=True)
@@ -372,7 +372,7 @@ def fine_tuning_template_detail(request, pk):
 
 @login_required
 def fine_tuning_template_create(request):
-    """Создание нового шаблона"""
+    """Create a new template"""
     from ..forms import FineTuningTemplateForm
     
     if request.method == 'POST':
@@ -395,14 +395,14 @@ def fine_tuning_template_create(request):
 
 @login_required
 def fine_tuning_template_apply(request, pk):
-    """Применить шаблон к созданию задачи"""
+    """Apply a template to job creation"""
     from ..models import FineTuningTemplate
     from ..forms import FineTuningJobForm
     
     template = get_object_or_404(FineTuningTemplate, pk=pk, is_public=True)
     template.increment_usage()
     
-    # Предзаполняем форму данными из шаблона
+    # Pre-fill the form with template data
     initial_data = {
         'method': template.method,
         'lora_r': template.lora_r,
@@ -422,13 +422,13 @@ def fine_tuning_template_apply(request, pk):
         'general_instructions_ratio': template.general_instructions_ratio,
     }
     
-    # Перенаправляем на создание задачи с предзаполненной формой
+    # Redirect to job creation with the pre-filled form
     return redirect('fine_tuning_create_with_template', template_id=template.id)
 
 
 @login_required
 def conversion_dashboard(request):
-    """Дашборд конвертации"""
+    """Conversion dashboard"""
     jobs = ModelConversionJob.objects.filter(created_by=request.user.username).order_by('-created_at')
     context = {
         'active_tab': 'conversion',

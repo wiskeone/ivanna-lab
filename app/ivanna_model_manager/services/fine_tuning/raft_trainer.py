@@ -46,8 +46,8 @@ GENERAL_INSTRUCTIONS = [
 
 class RAFTTrainer:
     """
-    RAFT (Retrieval-Augmented Fine-Tuning) обучение.
-    Completion-only маскирование: loss по ответу (+EOS), промпт и контекст в -100.
+    RAFT (Retrieval-Augmented Fine-Tuning) training.
+    Completion-only masking: loss over the answer (+EOS), prompt and context set to -100.
     """
 
     MAX_DISTRACTORS = 7
@@ -106,7 +106,7 @@ class RAFTTrainer:
 
         examples = []
 
-        # 1. Загружаем инструкции
+        # 1. Load instructions
         # Audit fix: the create form stores dataset ids in training_config —
         # the M2M relation is never populated, so UI-created jobs always
         # failed with "No instruction examples found"
@@ -119,7 +119,7 @@ class RAFTTrainer:
         if not instructions:
             raise ValueError("No instruction examples found")
 
-        # 2. Релевантные документы
+        # 2. Relevant documents
         relevant_docs = []
         doc_collections = collect_document_collections(self.job)
         for collection in doc_collections:
@@ -132,14 +132,14 @@ class RAFTTrainer:
         if not relevant_docs:
             raise ValueError("No relevant documents found")
 
-        # 3. Дистракторы
+        # 3. Distractors
         exclude_ids = [c.id for c in doc_collections]
         distractors = self.get_distractor_chunks(
             count=len(instructions) * self.MAX_DISTRACTORS,
             exclude_collections=exclude_ids
         )
 
-        # 4. Токенизатор для обрезки
+        # 4. Tokenizer for truncation
         tokenizer = AutoTokenizer.from_pretrained(
             self.job.base_model.local_path,
             trust_remote_code=True
@@ -149,7 +149,7 @@ class RAFTTrainer:
 
         max_context_tokens = self.job.max_seq_length // 2
 
-        # 5. Создаём примеры
+        # 5. Build examples
         for i, (inst, ans) in enumerate(zip(instructions, answers)):
             # lexical-overlap ranking instead of round-robin: the oracle doc
             # must actually relate to the question
@@ -167,7 +167,7 @@ class RAFTTrainer:
                     prompt = f"### Context:\n{context}\n\n### Instruction:\n{inst}\n\n### Response:"
                     examples.append({'prompt': prompt, 'response': ans, 'type': 'oracle'})
 
-            # С дистракторами
+            # With distractors
             if random.random() < self.job.distractor_ratio:
                 for k in [7, 5, 3]:
                     if len(other_ranked) + len(distractors) < k:
@@ -187,12 +187,12 @@ class RAFTTrainer:
                         })
                         break
 
-            # Без контекста
+            # Without context
             if random.random() < self.job.no_context_ratio:
                 prompt = f"### Instruction:\n{inst}\n\n### Response:"
                 examples.append({'prompt': prompt, 'response': ans, 'type': 'no_context'})
 
-        # 6. Общие инструкции
+        # 6. General instructions
         general_instructions = self.load_general_instructions()
         n_general = int(len(examples) * self.job.general_instructions_ratio)
         for inst, ans in random.sample(general_instructions, min(n_general, len(general_instructions))):
@@ -326,7 +326,7 @@ class RAFTTrainer:
                 for param in self.base_model.parameters():
                     param.requires_grad = False
 
-        # Логируем размещение модели
+        # Log the model placement
         if hasattr(model, 'hf_device_map'):
             logger.info(f"📌 Device map: {model.hf_device_map}")
             devices = set(model.hf_device_map.values())
@@ -432,7 +432,7 @@ class RAFTTrainer:
                 histogram_interval=50
             )
 
-            # Кастомный Trainer с KL-loss (v5 signature; KL helper внутри класса)
+            # Custom Trainer with KL loss (v5 signature; KL helper inside the class)
             class RAFTTrainer(Trainer):
                 def __init__(self, base_model=None, kl_lambda=0.1, *args, **kwargs):
                     super().__init__(*args, **kwargs)

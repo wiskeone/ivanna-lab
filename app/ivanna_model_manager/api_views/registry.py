@@ -78,7 +78,7 @@ logger = logging.getLogger(__name__)
 # API ViewSets
 # ============================================================================
 class ExperimentViewSet(viewsets.ModelViewSet):
-    """API для экспериментов."""
+    """API for experiments."""
     queryset = Experiment.objects.filter(is_active=True)
     serializer_class = ExperimentSerializer
     permission_classes = [IsAuthenticated]
@@ -120,14 +120,14 @@ class ExperimentViewSet(viewsets.ModelViewSet):
 
 
 class ModelCheckpointViewSet(viewsets.ModelViewSet):
-    """API для моделей."""
+    """API for models."""
     queryset = ModelCheckpoint.objects.all()
     serializer_class = ModelCheckpointSerializer
     permission_classes = [IsAuthenticated]
 
     @action(detail=True, methods=['post'])
     def download(self, request, pk=None):
-        """Запуск загрузки модели (API)."""
+        """Start model download (API)."""
         model = self.get_object()
         if not model.huggingface_id:
             return Response({'error': 'No Hugging Face ID'}, status=400)
@@ -136,7 +136,7 @@ class ModelCheckpointViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def load(self, request, pk=None):
-        """Загрузка модели в память с выбором квантизации."""
+        """Load model into memory with quantization choice."""
         model = self.get_object()
         serializer = ModelLoadSerializer(data=request.data)
         if not serializer.is_valid():
@@ -145,13 +145,13 @@ class ModelCheckpointViewSet(viewsets.ModelViewSet):
         if not model.local_path or not os.path.exists(model.local_path):
             return Response({'error': 'Model not downloaded locally'}, status=400)
 
-        # Обновляем квантование, если указано и не равно 'none'
+        # Update quantization if specified and not 'none'
         quantization = serializer.validated_data.get('quantization')
         if quantization and quantization != 'none':
             model.quantization = quantization
             model.save()
 
-        # Запускаем задачу с переданной квантизацией
+        # Start the task with the given quantization
         task = load_model_to_memory_task.delay(
             model.id,
             quantization=quantization if quantization != 'none' else None
@@ -160,13 +160,13 @@ class ModelCheckpointViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def unload(self, request, pk=None):
-        """Выгрузка модели из памяти с опцией force."""
+        """Unload model from memory with force option."""
         model = self.get_object()
         model_id = model.huggingface_id or model.name
         
         force = request.data.get('force', False)
         
-        # Запускаем задачу выгрузки
+        # Start the unload task
         task = unload_model_from_memory_task.delay(model.id, force=force)
         
         return Response({
@@ -178,7 +178,7 @@ class ModelCheckpointViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def generate(self, request, pk=None):
-        """Генерация текста."""
+        """Text generation."""
         model = self.get_object()
         serializer = TextGenerationSerializer(data=request.data)
         if not serializer.is_valid():
@@ -201,7 +201,7 @@ class ModelCheckpointViewSet(viewsets.ModelViewSet):
         )
 
         if result.get('success'):
-            # Создаём сессию инференса для статистики
+            # Create an inference session for statistics
             session = InferenceSession.objects.create(
                 checkpoint=model,
                 session_id=f"api_{request.user.id}_{model.id}_{int(timezone.now().timestamp())}",
@@ -229,7 +229,7 @@ class ModelCheckpointViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def memory_status(self, request):
-        """Статус памяти GPU/CPU."""
+        """GPU/CPU memory status."""
         memory = redis_model_manager.get_available_memory()
         loaded = redis_model_manager.get_all_model_infos()
         return Response({
@@ -257,7 +257,7 @@ class ModelCheckpointViewSet(viewsets.ModelViewSet):
         if not device and model.loader_config:
             device = model.loader_config.get('target_device')
 
-        # Синхронизация статуса
+        # Sync model status
         if is_loaded and model.status != 'LOADED':
             model.status = 'LOADED'
             model.save(update_fields=['status'])
@@ -288,7 +288,7 @@ class ModelCheckpointViewSet(viewsets.ModelViewSet):
 
 
 class ModelMergeJobViewSet(viewsets.ModelViewSet):
-    """API для слияния моделей."""
+    """API for model merge jobs."""
     queryset = ModelMergeJob.objects.all()
     serializer_class = ModelMergeJobSerializer
     permission_classes = [IsAuthenticated]
@@ -338,7 +338,7 @@ class ModelMergeJobViewSet(viewsets.ModelViewSet):
 
 
 class InferenceSessionViewSet(viewsets.ReadOnlyModelViewSet):
-    """API для сессий инференса (только чтение)."""
+    """API for inference sessions (read-only)."""
     queryset = InferenceSession.objects.all()
     serializer_class = InferenceSessionSerializer
     permission_classes = [IsAuthenticated]
@@ -353,7 +353,7 @@ class InferenceSessionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ModelEvaluationViewSet(viewsets.ModelViewSet):
-    """API для оценок моделей."""
+    """API for model evaluations."""
     queryset = ModelEvaluation.objects.all()
     serializer_class = ModelEvaluationSerializer
     permission_classes = [IsAuthenticated]
@@ -368,7 +368,7 @@ class ModelEvaluationViewSet(viewsets.ModelViewSet):
 
 
 class ModelDownloadJobViewSet(viewsets.ReadOnlyModelViewSet):
-    """API для задач загрузки."""
+    """API for download jobs."""
     queryset = ModelDownloadJob.objects.all()
     serializer_class = ModelDownloadJobSerializer
     permission_classes = [IsAuthenticated]

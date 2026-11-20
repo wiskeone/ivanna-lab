@@ -75,10 +75,10 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# ПЕРМИШЕНЫ
+# PERMISSIONS
 # ============================================================================
 class IsCollectionOwnerOrPublic(BasePermission):
-    """Доступ к коллекции: владелец или публичная."""
+    """Collection access: owner or public."""
     def has_object_permission(self, request, view, obj):
         if obj.owner_id == str(request.user.id):
             return True
@@ -90,14 +90,14 @@ class IsCollectionOwnerOrPublic(BasePermission):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def task_result(request, task_id):
-    """Возвращает статус задачи Celery с безопасной сериализацией."""
+    """Returns Celery task status with safe serialization."""
     from celery.result import AsyncResult
     import traceback
     
     try:
         task = AsyncResult(task_id)
         
-        # Базовый ответ
+        # Base response
         response = {
             'task_id': task_id,
             'state': task.state,
@@ -106,10 +106,10 @@ def task_result(request, task_id):
         
         if task.ready():
             try:
-                # Пытаемся получить результат
+                # Try to get the result
                 result = task.result
                 
-                # Если результат - исключение, преобразуем в словарь
+                # If the result is an exception, convert it to a dict
                 if isinstance(result, Exception):
                     response['result'] = {
                         'success': False,
@@ -117,12 +117,12 @@ def task_result(request, task_id):
                         'error_type': result.__class__.__name__
                     }
                 elif result is not None:
-                    # Проверяем, что результат можно сериализовать
+                    # Check that the result is serializable
                     try:
                         json.dumps(result)
                         response['result'] = result
                     except (TypeError, ValueError):
-                        # Если не сериализуется, преобразуем в безопасный формат
+                        # If not serializable, convert to a safe format
                         response['result'] = {
                             'success': True if result.get('success') else False,
                             'message': str(result)
@@ -136,11 +136,11 @@ def task_result(request, task_id):
                     'error': f'Error getting task result: {str(e)}'
                 }
         else:
-            # Для задач в процессе
+            # For tasks still in progress
             try:
                 if hasattr(task, 'info') and task.info:
                     if isinstance(task.info, dict):
-                        # Убеждаемся, что все значения сериализуемы
+                        # Ensure all values are serializable
                         safe_info = {}
                         for k, v in task.info.items():
                             try:
@@ -159,7 +159,7 @@ def task_result(request, task_id):
         return Response(response)
         
     except Exception as e:
-        # Возвращаем понятную ошибку
+        # Return a friendly error
         return Response({
             'task_id': task_id,
             'state': 'FAILURE',
@@ -171,7 +171,7 @@ def task_result(request, task_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def force_local_load_model(request, model_id):
-    """Принудительная локальная загрузка модели с выбором квантизации."""
+    """Force local model load with a quantization choice."""
     try:
         from ..models import ModelCheckpoint
         from ..tasks import load_model_to_memory_task
@@ -179,7 +179,7 @@ def force_local_load_model(request, model_id):
 
         model = get_object_or_404(ModelCheckpoint, id=model_id, is_active=True)
 
-        # Проверяем, не загружена ли уже модель
+        # Check if the model is already loaded
         model_id_str = model.huggingface_id or model.name
         if redis_model_manager.get_model_info(model_id_str):
             return Response({
@@ -195,11 +195,11 @@ def force_local_load_model(request, model_id):
             }, status=400)
 
         quantization = request.data.get('quantization')
-        # Если квантизация не указана, берём из модели (или None)
+        # If quantization is not specified, fall back to the model's value (or None)
         if quantization is None:
             quantization = model.quantization or None
 
-        # Очищаем возможные старые блокировки
+        # Clean up any stale locks
         redis_model_manager.clean_stale_locks()
 
         task = load_model_to_memory_task.delay(model.id, quantization=quantization)
@@ -218,7 +218,7 @@ def force_local_load_model(request, model_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_user_rag_collections(request):
-    """Возвращает список доступных пользователю RAG коллекций."""
+    """Returns RAG collections available to the user."""
     from ..models import DocumentCollection
     from django.db.models import Q, Count
     
@@ -254,7 +254,7 @@ def api_user_rag_collections(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_task_status(request, task_id):
-    """Возвращает статус задачи Celery."""
+    """Returns Celery task status."""
     from celery.result import AsyncResult
     
     try:
@@ -269,7 +269,7 @@ def api_task_status(request, task_id):
         if task.ready():
             response['result'] = task.result
         else:
-            # Для задач в процессе, возвращаем meta информацию
+            # For tasks still in progress, return meta info
             if hasattr(task, 'info') and task.info:
                 response['info'] = task.info
             else:
@@ -281,12 +281,12 @@ def api_task_status(request, task_id):
 
 
 # ============================================================================
-# СИСТЕМНЫЕ API (ЕДИНЫЙ HEALTH CHECK)
+# SYSTEM API (UNIFIED HEALTH CHECK)
 # ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_health_check(request):
-    """Единый эндпоинт для проверки здоровья."""
+    """Unified health check endpoint."""
     from django.db import connection
     from celery.result import AsyncResult
 
@@ -296,7 +296,7 @@ def api_health_check(request):
         'services': {},
     }
 
-    # База данных
+    # Database
     try:
         with connection.cursor() as c:
             c.execute("SELECT 1")
@@ -313,7 +313,7 @@ def api_health_check(request):
         health['services']['redis'] = 'disconnected'
         health['status'] = 'degraded'
 
-    # Модели
+    # Models
     health['models'] = {
         'total': ModelCheckpoint.objects.filter(is_active=True).count(),
         'loaded': ModelCheckpoint.objects.filter(status='LOADED', is_active=True).count(),
@@ -326,7 +326,7 @@ def api_health_check(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def gpu_status(request):
-    """Статус GPU."""
+    """GPU status."""
     mem = redis_model_manager.get_available_memory()
     loaded = redis_model_manager.get_all_model_infos()
     return Response({
@@ -340,7 +340,7 @@ def gpu_status(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def system_metrics(request):
-    """Системные метрики (CPU, память, диск)."""
+    """System metrics (CPU, memory, disk)."""
     import psutil
     cpu = psutil.cpu_percent(interval=0.1)
     mem = psutil.virtual_memory()
@@ -367,7 +367,7 @@ def system_metrics(request):
 
 
 # ============================================================================
-# СТАТИСТИКА (УПРОЩЁННАЯ)
+# STATISTICS (SIMPLIFIED)
 # ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

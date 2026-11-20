@@ -29,15 +29,15 @@ from .registry import ModelCheckpoint
 
 
 class FineTuningMethod(models.TextChoices):
-    """Доступные методы fine-tuning"""
+    """Available fine-tuning methods."""
     DOCUMENT = 'document', 'Обучение на документах (LoRA/QLoRA)'
     INSTRUCTION = 'instruction', 'Обучение на инструкциях'
     RAFT = 'raft', 'RAFT (Retrieval-Augmented Fine-Tuning)'
 
 
 class FineTuningJob(models.Model):
-    """Задача fine-tuning модели"""
-    
+    """Model fine-tuning job."""
+
     STATUS_CHOICES = [
         ('PENDING', 'В ожидании'),
         ('PREPARING', 'Подготовка данных'),
@@ -49,11 +49,11 @@ class FineTuningJob(models.Model):
         ('CANCELLED', 'Отменено'),
     ]
     
-    # Основная информация
+    # Basic info
     name = models.CharField(max_length=255, verbose_name=_("Название задачи"))
     description = models.TextField(blank=True, verbose_name=_("Описание"))
-    
-    # Метод обучения
+
+    # Training method
     method = models.CharField(
         max_length=20,
         choices=FineTuningMethod.choices,
@@ -61,7 +61,7 @@ class FineTuningJob(models.Model):
         verbose_name=_("Метод обучения")
     )
     
-    # Базовая модель
+    # Base model
     base_model = models.ForeignKey(
         'ModelCheckpoint',
         on_delete=models.CASCADE,
@@ -69,7 +69,7 @@ class FineTuningJob(models.Model):
         verbose_name=_("Базовая модель")
     )
     
-    # Выходная модель (после обучения)
+    # Output model (after training)
     output_model = models.ForeignKey(
         'ModelCheckpoint',
         on_delete=models.SET_NULL,
@@ -79,7 +79,7 @@ class FineTuningJob(models.Model):
         verbose_name=_("Результирующая модель")
     )
     
-    # Источники данных для обучения
+    # Training data sources
     document_collections = models.ManyToManyField(
         'DocumentCollection',
         through='FineTuningJobCollection',
@@ -96,7 +96,7 @@ class FineTuningJob(models.Model):
         verbose_name=_("Датасеты инструкций")
     )
     
-    # Параметры обучения
+    # Training parameters
     lora_r = models.IntegerField(
         default=16,
         help_text=_("Ранг LoRA (рекомендуется 8-32)")
@@ -110,7 +110,7 @@ class FineTuningJob(models.Model):
         help_text=_("Dropout в LoRA слоях")
     )
     
-    # Гиперпараметры
+    # Hyperparameters
     learning_rate = models.FloatField(default=5e-5)
     batch_size = models.IntegerField(default=4)
     gradient_accumulation_steps = models.IntegerField(default=4)
@@ -127,7 +127,7 @@ class FineTuningJob(models.Model):
                                               ('attention+mlp', _('Attention + MLP')),
                                               ('attention', _('Только attention'))],
                                      help_text=_("Пресет целевых модулей (conv1d исключён)"))    
-    # Параметры для RAFT
+    # RAFT parameters
     distractors_per_example = models.IntegerField(
         default=3,
         help_text=_("Количество дистракторов на пример (для RAFT)")
@@ -145,7 +145,7 @@ class FineTuningJob(models.Model):
         help_text=_("Доля примеров без контекста")
     )
     
-    # Параметры для борьбы с забыванием
+    # Anti-forgetting parameters
     use_kl_regularization = models.BooleanField(
         default=True,
         help_text=_("Использовать KL-дивергенцию против забывания")
@@ -168,27 +168,27 @@ class FineTuningJob(models.Model):
         help_text=_("Тип квантизации для обучения (будет применена к модели)")
     )
     
-    # Конфигурация (JSON)
+    # Configuration (JSON)
     training_config = models.JSONField(
         default=dict,
         blank=True,
         help_text=_("Дополнительные параметры обучения")
     )
     
-    # Статус и прогресс
+    # Status and progress
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='PENDING'
     )
 
-    # v5.1: пауза/резюме — флаг читается PauseCallback-ом на каждом шаге
+    # v5.1: pause/resume — the flag is read by PauseCallback on every step
     pause_requested = models.BooleanField(
         default=False,
         help_text=_("Пользователь запросил паузу: тренер остановится на ближайшем шаге")
     )
 
-    # v5.1: выбор GPU — null = авто (первый доступный), -1 = CPU, 0..N = конкретный GPU
+    # v5.1: GPU selection — null = auto (first available), -1 = CPU, 0..N = specific GPU
     gpu_device = models.IntegerField(
         null=True, blank=True,
         help_text=_("GPU-устройство для обучения (null = авто, -1 = CPU, 0..N = конкретный GPU)")
@@ -196,35 +196,35 @@ class FineTuningJob(models.Model):
     progress = models.FloatField(default=0.0)
     current_step = models.CharField(max_length=255, blank=True)
     
-    # Логи и ошибки
+    # Logs and errors
     logs = models.TextField(blank=True)
     error_message = models.TextField(blank=True)
     error_details = models.JSONField(default=dict, blank=True)
-    
-    # Метрики обучения
+
+    # Training metrics
     training_metrics = models.JSONField(
         default=dict,
         blank=True,
         help_text=_("Метрики в процессе обучения (loss, grad_norm)")
     )
     
-    # Результаты оценки
+    # Evaluation results
     evaluation_results = models.JSONField(
         default=dict,
         blank=True,
         help_text=_("Результаты оценки на валидации")
     )
 
-    # Запись ошибок
+    # Error records
     training_errors = models.JSONField(
         default=list, blank=True,
         help_text=_("Список ошибок, возникших во время обучения (каждая ошибка – словарь с timestamp, message, traceback)")
     )
     
-    # Ссылка на задачу Celery
+    # Celery task reference
     celery_task_id = models.CharField(max_length=255, blank=True)
-    
-    # Временные метки
+
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -244,35 +244,35 @@ class FineTuningJob(models.Model):
         return f"{self.name} ({self.get_method_display()})"
     
     def update_progress(self, progress, step=""):
-        """Обновить прогресс выполнения"""
+        """Update job progress."""
         self.progress = max(0.0, min(100.0, progress))
         if step:
             self.current_step = step
         self.save(update_fields=['progress', 'current_step'])
     
 
-    # v5.1: пауза/резюме
+    # v5.1: pause/resume
     def request_pause(self):
-        """Запросить паузу: тренер остановится на ближайшем шаге."""
+        """Request a pause: the trainer will stop at the nearest step."""
         self.pause_requested = True
         self.save(update_fields=['pause_requested'])
-        self.add_log("⏸ Пауза запрошена — тренер остановится после текущего шага")
+        self.add_log("⏸ Pause requested — trainer will stop after the current step")
 
     def resume(self):
-        """Резюме: сброс флага и возврат в очередь (чекпоинт подхватится)."""
+        """Resume: reset the flag and re-queue (the checkpoint will be picked up)."""
         self.pause_requested = False
         self.status = 'PENDING'
         self.save(update_fields=['pause_requested', 'status'])
-        self.add_log("▶ Возобновлено — продолжение с последнего чекпоинта")
+        self.add_log("▶ Resumed — continuing from the last checkpoint")
 
     def add_log(self, message):
-        """Добавить запись в лог"""
+        """Append an entry to the log."""
         timestamp = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
         self.logs += f"[{timestamp}] {message}\n"
-        self.save(update_fields=['logs'])  # убрали 'updated_at'
-    
+        self.save(update_fields=['logs'])  # removed 'updated_at'
+
     def fail(self, error_message, error_details=None):
-        """Отметить задачу как ошибочную"""
+        """Mark the job as failed."""
         import traceback
         self.status = 'FAILED'
         self.error_message = error_message
@@ -283,7 +283,7 @@ class FineTuningJob(models.Model):
         self.add_log(f"❌ ERROR: {error_message}")
     
     def complete(self, output_model):
-        """Завершить задачу успешно"""
+        """Mark the job as completed."""
         self.status = 'COMPLETED'
         self.output_model = output_model
         self.progress = 100.0
@@ -292,7 +292,7 @@ class FineTuningJob(models.Model):
         self.add_log(f"✅ Fine-tuning completed, output model: {output_model.name}")
 
     def add_error(self, error_message, traceback_str=None):
-        """Добавить запись об ошибке в список training_errors."""
+        """Append an error entry to the training_errors list."""
         entry = {
             'timestamp': timezone.now().isoformat(),
             'message': error_message,
@@ -301,12 +301,12 @@ class FineTuningJob(models.Model):
             entry['traceback'] = traceback_str
         self.training_errors.append(entry)
         self.save(update_fields=['training_errors'])
-        # Также запишем в обычный лог
+        # Also write to the regular log
         self.add_log(f"❌ ERROR: {error_message}")
 
 
 class FineTuningJobCollection(models.Model):
-    """Промежуточная модель для связи FineTuningJob и DocumentCollection"""
+    """Through model linking FineTuningJob and DocumentCollection."""
     job = models.ForeignKey('FineTuningJob', on_delete=models.CASCADE)
     collection = models.ForeignKey('DocumentCollection', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -316,7 +316,7 @@ class FineTuningJobCollection(models.Model):
 
 
 class FineTuningJobDataset(models.Model):
-    """Промежуточная модель для связи FineTuningJob и EvaluationDataset"""
+    """Through model linking FineTuningJob and EvaluationDataset."""
     job = models.ForeignKey('FineTuningJob', on_delete=models.CASCADE)
     dataset = models.ForeignKey('EvaluationDataset', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -326,8 +326,7 @@ class FineTuningJobDataset(models.Model):
 
 
 class FineTuningCheckpoint(models.Model):
-    """Промежуточные чекпоинты в процессе обучения"""
-    
+    """Intermediate checkpoints during training."""
     job = models.ForeignKey(
         FineTuningJob,
         on_delete=models.CASCADE,
@@ -337,12 +336,12 @@ class FineTuningCheckpoint(models.Model):
     step = models.IntegerField(help_text=_("Номер шага/эпохи"))
     path = models.CharField(max_length=500, help_text=_("Путь к файлу чекпоинта"))
     
-    # Метрики на момент сохранения
+    # Metrics at save time
     loss = models.FloatField(null=True, blank=True)
     grad_norm = models.FloatField(null=True, blank=True)
     learning_rate = models.FloatField(null=True, blank=True)
-    
-    # Дополнительные метрики (если считали)
+
+    # Additional metrics (if computed)
     metrics = models.JSONField(default=dict, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -356,28 +355,28 @@ class FineTuningCheckpoint(models.Model):
 
 
 class FineTuningEvaluation(models.Model):
-    """Оценка дообученной модели на тестовых данных"""
-    
+    """Evaluation of the fine-tuned model on test data."""
+
     job = models.ForeignKey(
         FineTuningJob,
         on_delete=models.CASCADE,
         related_name='evaluations'
     )
-    
-    # Датасет для оценки
+
+    # Evaluation dataset
     dataset = models.ForeignKey(
         'EvaluationDataset',
         on_delete=models.CASCADE,
         related_name='fine_tuning_evaluations'
     )
     
-    # Метрики
+    # Metrics
     metrics = models.JSONField(
         default=dict,
         help_text=_("Метрики оценки (rouge, bleu, bertscore)")
     )
-    
-    # Детальные результаты
+
+    # Detailed results
     detailed_results = models.JSONField(
         default=list,
         help_text=_("Результаты по каждому примеру")
@@ -394,38 +393,38 @@ class FineTuningEvaluation(models.Model):
 
 
 class FineTuningTemplate(models.Model):
-    """Шаблон конфигурации fine-tuning"""
+    """Fine-tuning configuration template."""
     
     name = models.CharField(max_length=255, verbose_name=_("Название шаблона"))
     description = models.TextField(blank=True, verbose_name=_("Описание"))
     
-    # Параметры метода
+    # Method parameters
     method = models.CharField(
         max_length=20,
         choices=FineTuningMethod.choices,
         default=FineTuningMethod.RAFT,
         verbose_name=_("Метод обучения")
     )
-    
-    # Рекомендуемые модели (JSON список HF IDs)
+
+    # Recommended models (JSON list of HF IDs)
     recommended_models = models.JSONField(
         default=list,
         help_text=_("Список рекомендуемых моделей (HF IDs)")
     )
     
-    # Параметры LoRA
+    # LoRA parameters
     lora_r = models.IntegerField(default=16)
     lora_alpha = models.IntegerField(default=32)
     lora_dropout = models.FloatField(default=0.05)
     
-    # Гиперпараметры
+    # Hyperparameters
     learning_rate = models.FloatField(default=5e-5)
     batch_size = models.IntegerField(default=4)
     gradient_accumulation_steps = models.IntegerField(default=4)
     num_epochs = models.IntegerField(default=3)
     max_seq_length = models.IntegerField(default=2048)
-    
-    # Параметры RAFT
+
+    # RAFT parameters
     distractors_per_example = models.IntegerField(default=3)
     oracle_ratio = models.FloatField(default=0.3)
     distractor_ratio = models.FloatField(default=0.5)
@@ -434,7 +433,7 @@ class FineTuningTemplate(models.Model):
     kl_lambda = models.FloatField(default=0.1)
     general_instructions_ratio = models.FloatField(default=0.2)
     
-    # Категория и теги
+    # Category and tags
     category = models.CharField(
         max_length=50,
         choices=[
@@ -447,11 +446,11 @@ class FineTuningTemplate(models.Model):
     )
     tags = models.JSONField(default=list, blank=True)
     
-    # Статистика использования
+    # Usage stats
     usage_count = models.IntegerField(default=0)
     avg_rating = models.FloatField(null=True, blank=True)
-    
-    # Кто создал
+
+    # Author
     created_by = models.CharField(max_length=255, blank=True)
     is_public = models.BooleanField(default=True)
     
@@ -467,14 +466,14 @@ class FineTuningTemplate(models.Model):
         return f"{self.name} ({self.get_method_display()})"
     
     def increment_usage(self):
-        """Увеличить счетчик использования"""
+        """Increment the usage counter."""
         self.usage_count += 1
         self.save(update_fields=['usage_count'])
 
 
 class TrainingMetric(models.Model):
     """
-    Пошаговые метрики обучения для детального мониторинга.
+    Per-step training metrics for detailed monitoring.
     """
     job = models.ForeignKey('FineTuningJob', on_delete=models.CASCADE, related_name='metrics')
     step = models.IntegerField(help_text=_("Номер шага (итерации)"))
@@ -509,7 +508,7 @@ class TrainingMetric(models.Model):
 #############################################################################
 class ModelConversionJob(models.Model):
     """
-    Задача конвертации модели в формат GGUF.
+    Model conversion job to GGUF format.
     """
     STATUS_CHOICES = [
         ('PENDING', 'В ожидании'),
@@ -533,7 +532,7 @@ class ModelConversionJob(models.Model):
     name = models.CharField(max_length=255, verbose_name=_("Название задачи"))
     description = models.TextField(blank=True, verbose_name=_("Описание"))
 
-    # Исходная модель (ModelCheckpoint)
+    # Source model (ModelCheckpoint)
     source_model = models.ForeignKey(
         'ModelCheckpoint',
         on_delete=models.CASCADE,
@@ -541,7 +540,7 @@ class ModelConversionJob(models.Model):
         verbose_name=_("Исходная модель")
     )
 
-    # Выходная модель (после конвертации) – тоже будет ModelCheckpoint
+    # Output model (after conversion) — also a ModelCheckpoint
     output_model = models.ForeignKey(
         'ModelCheckpoint',
         on_delete=models.SET_NULL,
@@ -551,7 +550,7 @@ class ModelConversionJob(models.Model):
         verbose_name=_("Результирующая модель")
     )
 
-    # Параметры конвертации
+    # Conversion parameters
     quantization = models.CharField(
         max_length=10,
         choices=QUANTIZATION_CHOICES,
@@ -559,14 +558,14 @@ class ModelConversionJob(models.Model):
         verbose_name=_("Тип квантизации")
     )
 
-    # Дополнительные параметры (можно расширить)
+    # Extra parameters (extensible)
     config = models.JSONField(
         default=dict,
         blank=True,
         help_text=_("Дополнительные параметры конвертации")
     )
 
-    # Статус и прогресс
+    # Status and progress
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -575,15 +574,15 @@ class ModelConversionJob(models.Model):
     progress = models.FloatField(default=0.0)
     current_step = models.CharField(max_length=255, blank=True)
 
-    # Логи и ошибки
+    # Logs and errors
     logs = models.TextField(blank=True)
     error_message = models.TextField(blank=True)
     error_details = models.JSONField(default=dict, blank=True)
 
-    # Ссылка на задачу Celery
+    # Celery task reference
     celery_task_id = models.CharField(max_length=255, blank=True)
 
-    # Временные метки
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)

@@ -74,11 +74,11 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# ЧАТ
+# CHAT
 # ============================================================================
 @login_required
 def chat_view(request, session_id=None):
-    """Основное представление чата с поддержкой создания новой сессии и проверки статуса модели."""
+    """Main chat view with new session creation and model status check."""
     from ..models import ChatSession, ModelCheckpoint
     from ..services.chat_service import chat_service
     from ..services.redis_model_service import redis_model_manager
@@ -90,13 +90,13 @@ def chat_view(request, session_id=None):
     
     logger.info(f"🚀 chat_view called with session_id={session_id}")
 
-    # Запускаем синхронизацию статусов моделей в фоне (не блокируем)
+    # Start model status sync in the background (non-blocking)
     try:
         sync_model_statuses_task.delay()
     except Exception as e:
-        logger.error(f"Ошибка запуска синхронизации моделей: {e}")
+        logger.error(f"Failed to start model sync: {e}")
 
-    # Получаем все активные модели с информацией о загрузке
+    # Get all active models with load info
     available_models = ModelCheckpoint.objects.filter(is_active=True).order_by('-status', 'name')
     models_with_info = []
     loaded_models_count = 0
@@ -109,7 +109,7 @@ def chat_view(request, session_id=None):
         if is_loaded:
             loaded_models_count += 1
 
-        # Форматируем количество параметров
+        # Format parameter count
         params = model.parameter_count
         if params >= 1_000_000_000:
             params_h = f"{params / 1_000_000_000:.1f}B"
@@ -131,26 +131,26 @@ def chat_view(request, session_id=None):
             'size_gb': model.size_gb,
         })
 
-    # Определяем, нужно ли создать новую сессию
+    # Determine whether to create a new session
     create_new = request.GET.get('new') == 'true'
     force_new = request.GET.get('force_new') == 'true'
 
     chat_session = None
     session_data = None
 
-    # Если явно запрошено создание новой сессии
+    # If a new session was explicitly requested
     if create_new or force_new:
-        # Пытаемся создать сессию с первой загруженной моделью (если есть)
+        # Try to create a session with the first loaded model (if any)
         default_model_id = None
         for minfo in models_with_info:
             if minfo['is_loaded']:
                 default_model_id = minfo['model'].id
                 break
-        # Если нет загруженных, создаём сессию без модели
+        # If none are loaded, create a session without a model
         creation_result = chat_service.create_session(str(request.user.id), default_model_id)
         session_id = creation_result['session_id']
         session_data = chat_service.get_session(session_id)
-        # Создаём запись в БД, если её ещё нет
+        # Create the DB record if it does not exist yet
         try:
             chat_session = ChatSession.objects.get(session_id=session_id)
         except ChatSession.DoesNotExist:
@@ -169,13 +169,13 @@ def chat_view(request, session_id=None):
                 last_activity=timezone.now(),
                 generation_config={}
             )
-        logger.info(f"✅ Создана новая сессия по запросу: {session_id}")
+        logger.info(f"✅ Created a new session on request: {session_id}")
         return redirect('chat_session', session_id=session_id)
 
-    # Если передан session_id, пытаемся получить сессию
+    # If a session_id was passed, try to fetch the session
     elif session_id:
         try:
-            # Сначала пробуем получить сессию из БД
+            # First try to get the session from the DB
             try:
                 chat_session = ChatSession.objects.get(
                     session_id=session_id,
@@ -186,10 +186,10 @@ def chat_view(request, session_id=None):
                 logger.warning(f"Session {session_id} not found in DB, redirecting to management")
                 return redirect('chat_sessions_management')
             
-            # Затем получаем данные из Redis (без force_refresh, чтобы не потерять сообщения)
+            # Then get data from Redis (no force_refresh to avoid losing messages)
             session_data = chat_service.get_session(session_id)
             
-            # Если в Redis нет данных, восстанавливаем из БД
+            # If no data in Redis, restore from DB
             if not session_data:
                 logger.info(f"Session {session_id} not in Redis, restoring from DB")
                 session_data = {
@@ -204,15 +204,15 @@ def chat_view(request, session_id=None):
                     },
                     'rag_config': {},
                 }
-                # Сохраняем в Redis для будущих запросов
+                # Save to Redis for future requests
                 redis_key = f"chat:session:{session_id}"
                 chat_service.redis_manager.redis.setex(
                     redis_key, 86400, 
                     json.dumps(session_data, default=str)
                 )
             
-            # Проверяем, есть ли сообщения в Redis, но не было ли их в БД
-            # Это может произойти при проблемах с записью в БД
+            # Check for messages present in Redis but missing from the DB
+            # This can happen on DB write failures
             if session_data.get('conversation_history') and not chat_session.conversation_history:
                 logger.info(f"Session {session_id} has history in Redis but not in DB, updating DB")
                 for msg in session_data['conversation_history']:
@@ -223,14 +223,14 @@ def chat_view(request, session_id=None):
                                                 msg.get('metadata', {}))
             
         except Exception as e:
-            logger.error(f"Ошибка получения сессии {session_id}: {e}")
+            logger.error(f"Failed to get session {session_id}: {e}")
             return redirect('chat_sessions_management')
 
-    # Если сессия не указана и не создаём новую, пытаемся взять последнюю активную
+    # If no session given and not creating a new one, try the last active one
     if not session_id:
         return redirect('chat_sessions_management')
 
-    # Получаем историю сообщений - приоритет у Redis
+    # Get message history - Redis takes priority
     messages_history = []
     if session_data:
         messages_history = session_data.get('conversation_history', [])
@@ -241,7 +241,7 @@ def chat_view(request, session_id=None):
     user_msgs = [m for m in messages_history if m.get('role') == 'user']
     logger.info(f"👤 User messages count: {len(user_msgs)}")
 
-    # Контекст для шаблона
+    # Template context
     context = {
         'chat_session': chat_session,
         'session_data': session_data,
@@ -253,7 +253,7 @@ def chat_view(request, session_id=None):
         'active_tab': 'chat',
     }
 
-    # Добавляем отладочную информацию при DEBUG
+    # Add debug info when DEBUG
     if settings.DEBUG:
         context['debug'] = {
             'session_id': session_id,
@@ -266,7 +266,7 @@ def chat_view(request, session_id=None):
 
 @login_required
 def create_chat_session(request):
-    """Создание новой чат-сессии."""
+    """Create a new chat session."""
     model_id = request.POST.get('model_id')
     if not model_id:
         messages.error(request, _('Не выбрана модель'))
@@ -283,7 +283,7 @@ def create_chat_session(request):
 @login_required
 @require_POST
 def send_message(request, session_id):
-    """Отправка сообщения в чат (AJAX)."""
+    """Send a chat message (AJAX)."""
     try:
         data = json.loads(request.body)
         message = data.get('message', '').strip()
@@ -298,15 +298,15 @@ def send_message(request, session_id):
 
 @login_required
 def chat_sessions_management(request):
-    """Страница управления сессиями."""
+    """Session management page."""
     sessions = chat_service.list_user_sessions(str(request.user.id))
     available_models = ModelCheckpoint.objects.filter(is_active=True).order_by('name')
     for m in available_models:
         m.is_loaded_in_memory_cache = bool(redis_model_manager.get_model_info(m.huggingface_id or m.name))
 
-    # Статистика
+    # Stats
     total_sessions = len(sessions)
-    active_sessions = total_sessions  # поскольку мы уже фильтруем только активные
+    active_sessions = total_sessions  # we already filter active ones only
     loaded_models_count = sum(1 for s in sessions if s.get('model_loaded', False))
 
     context = {
@@ -330,7 +330,7 @@ def rename_chat_session(request, session_id):
         session = ChatSession.objects.get(session_id=session_id, user_id=str(request.user.id))
         session.notes = new_name
         session.save()
-        # Обновляем в Redis
+        # Update in Redis
         redis_data = chat_service.get_session(session_id)
         if redis_data:
             redis_data['display_name'] = new_name
@@ -374,7 +374,7 @@ def change_chat_session_model(request, session_id):
         new_model = ModelCheckpoint.objects.get(id=model_id, is_active=True)
         session.checkpoint = new_model
         session.save()
-        # Обновляем Redis
+        # Update Redis
         redis_data = chat_service.get_session(session_id)
         if redis_data:
             redis_data['model_id'] = model_id
@@ -392,7 +392,7 @@ def change_chat_session_model(request, session_id):
 @login_required
 @require_POST
 def export_chat_session(request, session_id):
-    """Экспорт сессии в JSON."""
+    """Export a session to JSON."""
     session = get_object_or_404(ChatSession, session_id=session_id, user_id=str(request.user.id))
     redis_data = chat_service.get_session(session_id) or {}
     export = {
@@ -419,7 +419,7 @@ def export_chat_session(request, session_id):
 
 
 # ============================================================================
-# СРАВНЕНИЕ МОДЕЛЕЙ (заглушка, для совместимости)
+# MODEL COMPARISON (stub, for compatibility)
 # ============================================================================
 class ComparisonView(LoginRequiredMixin, ListView):
     model = ModelComparison

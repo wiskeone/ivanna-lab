@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
-    """Сериализатор для сообщений чата"""
+    """Serializer for chat messages"""
     session_id = serializers.CharField(source='session.session_id', read_only=True)
     role_display = serializers.CharField(source='get_role_display', read_only=True)
     
@@ -39,11 +39,11 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
 
 class ChatSessionSerializer(serializers.ModelSerializer):
-    """Сериализатор для чат-сессий"""
+    """Serializer for chat sessions"""
     checkpoint_display = serializers.CharField(source='checkpoint.display_name', read_only=True)
     model_type = serializers.CharField(source='checkpoint.model_type', read_only=True)
     
-    # Новые поля для конфигурации
+    # New config fields
     session_config = serializers.SerializerMethodField()
     merged_config = serializers.SerializerMethodField()
     available_presets = serializers.SerializerMethodField()
@@ -64,7 +64,7 @@ class ChatSessionSerializer(serializers.ModelSerializer):
         ]
     
     def get_session_config(self, obj):
-        """Получает session_config из Redis"""
+        """Get session_config from Redis"""
         from ..services.chat_service import chat_service
         try:
             session = chat_service.get_session(obj.session_id)
@@ -79,7 +79,7 @@ class ChatSessionSerializer(serializers.ModelSerializer):
         }
     
     def get_merged_config(self, obj):
-        """Вычисляет объединенную конфигурацию"""
+        """Compute the merged config"""
         from ..services.chat_service import chat_service
         try:
             session = chat_service.get_session(obj.session_id)
@@ -93,7 +93,7 @@ class ChatSessionSerializer(serializers.ModelSerializer):
         return {}
     
     def get_available_presets(self, obj):
-        """Возвращает доступные пресеты для модели сессии"""
+        """Return available presets for the session model"""
         if not obj.checkpoint:
             return []
         
@@ -115,24 +115,24 @@ class ChatSessionSerializer(serializers.ModelSerializer):
         return presets
     
     def update(self, instance, validated_data):
-        # Обрабатываем generation_config отдельно для обратной совместимости
+        # Handle generation_config separately for backward compatibility
         generation_config = validated_data.pop('generation_config', None)
         if generation_config:
             from ..services.chat_service import chat_service
-            # Получаем текущую сессию из Redis
+            # Get the current session from Redis
             session = chat_service.get_session(instance.session_id)
             if session:
                 if 'session_config' not in session:
                     session['session_config'] = {}
                 session['session_config']['generation_config'] = generation_config
-                # Сохраняем обратно в Redis
+                # Save back to Redis
                 redis_key = f"chat:session:{instance.session_id}"
                 chat_service.redis_manager.redis.setex(
                     redis_key, 86400, 
                     json.dumps(session, default=str)
                 )
         
-        # Обрабатываем system_prompt
+        # Handle system_prompt
         system_prompt = validated_data.pop('system_prompt', None)
         if system_prompt is not None:
             from ..services.chat_service import chat_service
@@ -151,7 +151,7 @@ class ChatSessionSerializer(serializers.ModelSerializer):
 
 
 class ModelComparisonSerializer(serializers.ModelSerializer):
-    """Сериализатор для сравнения моделей"""
+    """Serializer for model comparisons"""
     prompts_count = serializers.SerializerMethodField()
     models_count = serializers.SerializerMethodField()
     
@@ -171,7 +171,7 @@ class ModelComparisonSerializer(serializers.ModelSerializer):
 
 
 class ChatConfigUpdateSerializer(serializers.Serializer):
-    """Сериализатор для обновления конфигурации чат-сессии"""
+    """Serializer for updating chat session config"""
     
     loader_overrides = serializers.DictField(
         required=False,
@@ -194,7 +194,7 @@ class ChatConfigUpdateSerializer(serializers.Serializer):
     )
     
     def validate_loader_overrides(self, value):
-        """Валидация переопределений загрузки"""
+        """Validate loader overrides"""
         if not isinstance(value, dict):
             raise serializers.ValidationError("loader_overrides должен быть словарем")
         
@@ -204,13 +204,13 @@ class ChatConfigUpdateSerializer(serializers.Serializer):
             'dtype', 'max_memory', 'low_cpu_mem_usage'
         }
         
-        # Фильтруем только разрешенные ключи
+        # Keep only allowed keys
         filtered = {}
         for k, v in value.items():
             if k in allowed_keys:
                 filtered[k] = v
         
-        # Валидация torch_dtype/dtype
+        # Validate torch_dtype/dtype
         dtype_value = filtered.get('torch_dtype') or filtered.get('dtype')
         if dtype_value:
             allowed_dtypes = {'float32', 'float16', 'bfloat16', 'auto'}
@@ -223,13 +223,13 @@ class ChatConfigUpdateSerializer(serializers.Serializer):
         return filtered
     
     def validate_generation_config(self, value):
-        """Валидация параметров генерации"""
+        """Validate generation parameters"""
         if not isinstance(value, dict):
             raise serializers.ValidationError("generation_config должен быть словарем")
         
         validated = {}
         
-        # Максимальное количество токенов
+        # Max token count
         if 'max_tokens' in value:
             max_tokens = value['max_tokens']
             if not isinstance(max_tokens, int) or max_tokens < 1 or max_tokens > 8192:
@@ -238,7 +238,7 @@ class ChatConfigUpdateSerializer(serializers.Serializer):
                 )
             validated['max_tokens'] = max_tokens
         
-        # Температура
+        # Temperature
         if 'temperature' in value:
             temp = value['temperature']
             try:
@@ -295,8 +295,8 @@ class ChatConfigUpdateSerializer(serializers.Serializer):
         return validated
     
     def validate(self, data):
-        """Общая валидация"""
-        # Если оба пустые, ничего не делаем
+        """Cross-field validation"""
+        # If everything is empty, nothing to do
         if not data.get('loader_overrides') and not data.get('generation_config') and not data.get('system_prompt'):
             raise serializers.ValidationError("Нет данных для обновления конфигурации")
         
@@ -304,7 +304,7 @@ class ChatConfigUpdateSerializer(serializers.Serializer):
 
 
 class ChatSessionConfigSerializer(serializers.Serializer):
-    """Сериализатор для получения полной конфигурации сессии"""
+    """Serializer for the full session config"""
     
     session_id = serializers.CharField(read_only=True)
     model_id = serializers.IntegerField(read_only=True)
@@ -318,7 +318,7 @@ class ChatSessionConfigSerializer(serializers.Serializer):
 
 
 class ChatSessionCreateSerializer(serializers.Serializer):
-    """Сериализатор для создания чат-сессии с конфигурацией"""
+    """Serializer for creating a chat session with config"""
     
     model_id = serializers.IntegerField(required=True)
     system_prompt = serializers.CharField(required=False, allow_blank=True, max_length=5000)

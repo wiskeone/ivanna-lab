@@ -10,12 +10,12 @@ from ..models import DocumentChunk
 
 logger = logging.getLogger(__name__)
 
-# Глобальный экземпляр менеджера (синглтон)
+# Global manager instance (singleton)
 _vector_store_manager = None
 
 
 def get_vector_store_manager():
-    """Получить глобальный экземпляр VectorStoreManager."""
+    """Get the global VectorStoreManager instance."""
     global _vector_store_manager
     if _vector_store_manager is None:
         _vector_store_manager = VectorStoreManager()
@@ -24,10 +24,10 @@ def get_vector_store_manager():
 
 class VectorStoreManager:
     """
-    Менеджер векторных хранилищ на базе FAISS.
-    - Управляет кэшем загруженных индексов (FAISSService) для коллекций.
-    - Предоставляет высокоуровневые методы для индексации, поиска, удаления.
-    - Сохраняет совместимость с существующим кодом (tasks.py).
+    FAISS-based vector store manager.
+    - Manages the cache of loaded indexes (FAISSService) for collections.
+    - Provides high-level methods for indexing, search and deletion.
+    - Keeps compatibility with existing code (tasks.py).
     """
 
     def __init__(self):
@@ -44,8 +44,8 @@ class VectorStoreManager:
 
     def _get_faiss_service(self, collection_id: Optional[int] = None) -> FAISSService:
         """
-        Получить FAISSService для указанной коллекции.
-        Если коллекция не указана, создаётся новый сервис без индекса.
+        Get a FAISSService for the given collection.
+        If no collection is given, a new service without an index is created.
         """
         if collection_id is None:
             return FAISSService()
@@ -55,12 +55,12 @@ class VectorStoreManager:
             if svc.load_index(collection_id):
                 self._index_cache[collection_id] = svc
             else:
-                # Индекс не загружен, но вернём пустой сервис — позже можно будет создать
+                # Index not loaded, but return the empty service — it can be created later
                 self._index_cache[collection_id] = svc
         return self._index_cache[collection_id]
 
     # ----------------------------------------------------------------------
-    # Индексация чанков
+    # Chunk indexing
     # ----------------------------------------------------------------------
     def index_chunks(
         self,
@@ -68,21 +68,21 @@ class VectorStoreManager:
         collection_id: Optional[int] = None
     ) -> int:
         """
-        Индексировать список чанков в FAISS.
-        - chunks: список чанков (должны иметь embedding_vector).
-        - collection_id: ID коллекции (обязателен, если нужно сохранить индекс).
-        Возвращает количество успешно добавленных векторов.
+        Index a list of chunks into FAISS.
+        - chunks: list of chunks (must have embedding_vector).
+        - collection_id: collection ID (required to save the index).
+        Returns the number of vectors successfully added.
         """
         if not chunks:
             return 0
 
-        # Фильтруем чанки с эмбеддингами
+        # Filter chunks that have embeddings
         valid_chunks = [c for c in chunks if c.has_embedding and c.embedding_vector is not None]
         if not valid_chunks:
             logger.warning("No chunks with embeddings to index")
             return 0
 
-        # Собираем векторы и ID
+        # Collect vectors and IDs
         vectors = []
         chunk_ids = []
         dimension = None
@@ -104,28 +104,28 @@ class VectorStoreManager:
 
         vectors_array = np.stack(vectors).astype('float32')
 
-        # Получаем или создаём индекс для коллекции
+        # Get or create the index for the collection
         if collection_id is not None:
             svc = self._get_faiss_service(collection_id)
-            # Если индекс не создан, создаём его
+            # If the index does not exist, create it
             if svc.index is None:
                 svc.create_index(
                     dimension=dimension,
-                    index_type='flat',  # можно параметризовать, но для простоты flat
+                    index_type='flat',  # could be parameterized, flat for simplicity
                     metric=self._default_metric
                 )
-            # Добавляем векторы
+            # Add the vectors
             added = svc.add_vectors(vectors_array, chunk_ids)
-            # Сохраняем индекс на диск
+            # Save the index to disk
             svc.save_index(collection_id)
             return added
         else:
-            # Без коллекции не сохраняем, просто возвращаем количество
+            # Without a collection, do not save, just return the count
             logger.warning("Indexing without collection_id: not saved to disk")
             return len(vectors)
 
     # ----------------------------------------------------------------------
-    # Поиск
+    # Search
     # ----------------------------------------------------------------------
     def search(
         self,
@@ -135,13 +135,13 @@ class VectorStoreManager:
         filters: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """
-        Поиск по векторному индексу.
-        - query_embedding: вектор запроса (1D или 2D).
-        - collection_id: ID коллекции (обязателен).
-        - k: количество результатов.
-        - filters: игнорируются в этой реализации (оставлено для совместимости).
-        Возвращает список результатов с ключами:
-            - chunk_id, score, metadata (содержит chunk_id, document_id и т.д.)
+        Search the vector index.
+        - query_embedding: query vector (1D or 2D).
+        - collection_id: collection ID (required).
+        - k: number of results.
+        - filters: ignored in this implementation (kept for compatibility).
+        Returns a list of results with keys:
+            - chunk_id, score, metadata (contains chunk_id, document_id, etc.)
         """
         if collection_id is None:
             logger.error("Search requires collection_id")
@@ -152,10 +152,10 @@ class VectorStoreManager:
             logger.warning(f"No index loaded for collection {collection_id}")
             return []
 
-        # Выполняем поиск
+        # Run the search
         results = svc.search(query_embedding, k=k)
 
-        # Форматируем результат
+        # Format the result
         formatted = []
         for chunk_id, score in results:
             formatted.append({
@@ -169,7 +169,7 @@ class VectorStoreManager:
         return formatted
 
     # ----------------------------------------------------------------------
-    # Удаление чанков из индекса
+    # Chunk removal from index
     # ----------------------------------------------------------------------
     def delete_chunks(
         self,
@@ -177,29 +177,29 @@ class VectorStoreManager:
         collection_id: Optional[int] = None
     ) -> int:
         """
-        Удалить чанки из индекса.
-        В текущей реализации FAISS не поддерживает удаление отдельных векторов.
-        Поэтому помечаем чанки как is_active=False в БД, а индекс перестраиваем целиком.
-        Возвращает количество удалённых векторов (всегда 0, если не перестраивали).
+        Remove chunks from the index.
+        FAISS does not support removing individual vectors in this implementation.
+        Therefore chunks are marked is_active=False in the DB and the index is rebuilt entirely.
+        Returns the number of removed vectors (always 0 if not rebuilt).
         """
         if not chunk_ids or collection_id is None:
             return 0
 
-        # Помечаем чанки как неактивные
+        # Mark chunks as inactive
         DocumentChunk.objects.filter(id__in=chunk_ids).update(is_active=False)
 
-        # Перестраиваем индекс полностью (можно запустить задачу)
+        # Rebuild the index completely (a task can be launched)
         # Audit fix: rebuild_collection_index_task does not exist — the import
         # raised ImportError on every call
         from ..tasks import build_faiss_index_task
         build_faiss_index_task.delay(collection_id)
 
         logger.info(f"Marked {len(chunk_ids)} chunks as inactive, rebuild scheduled")
-        return len(chunk_ids)  # для совместимости
+        return len(chunk_ids)  # for compatibility
 
     def remove_stale_vectors(self, collection_id: int, stale_chunk_ids: List[int]) -> int:
         """
-        Удалить векторы деактивированных чанков из индекса.
+        Remove vectors of deactivated chunks from the index.
 
         Audit fix: deactivated chunks kept their vectors in FAISS forever —
         search returned stale duplicates until a full rebuild. For flat
@@ -248,7 +248,7 @@ class VectorStoreManager:
         return removed
 
     # ----------------------------------------------------------------------
-    # Управление индексом коллекции
+    # Collection index management
     # ----------------------------------------------------------------------
     def build_index(
         self,
@@ -257,16 +257,16 @@ class VectorStoreManager:
         force: bool = False
     ) -> bool:
         """
-        Построить индекс для коллекции с нуля.
-        - Собирает все чанки коллекции с эмбеддингами.
-        - Создаёт FAISS индекс.
-        - Сохраняет на диск.
+        Build an index for the collection from scratch.
+        - Collects all chunks of the collection that have embeddings.
+        - Creates a FAISS index.
+        - Saves it to disk.
         """
         from ..models import DocumentChunk
         import numpy as np
         from django.utils import timezone
 
-        # Получаем все чанки коллекции с эмбеддингами
+        # Fetch all chunks of the collection with embeddings
         chunks = DocumentChunk.objects.filter(
             document__collection_id=collection_id,
             has_embedding=True,
@@ -277,22 +277,22 @@ class VectorStoreManager:
             logger.warning(f"No chunks with embeddings for collection {collection_id}")
             return False
 
-        # Определяем размерность
+        # Determine the dimension
         sample_vec = chunks.first().embedding_vector
         dimension = len(sample_vec) if isinstance(sample_vec, list) else sample_vec.shape[0]
 
-        # Создаём новый сервис
+        # Create a new service
         svc = FAISSService()
         svc.create_index(dimension=dimension, index_type=index_type, metric=self._default_metric)
 
-        # Добавляем векторы
+        # Add the vectors
         vectors = []
         chunk_ids = []
         for chunk in chunks.iterator():
             vec = np.array(chunk.embedding_vector, dtype='float32')
             vectors.append(vec)
             chunk_ids.append(chunk.id)
-            if len(vectors) >= 1000:  # добавляем батчами
+            if len(vectors) >= 1000:  # add in batches
                 svc.add_vectors(np.stack(vectors), chunk_ids)
                 vectors = []
                 chunk_ids = []
@@ -300,13 +300,13 @@ class VectorStoreManager:
         if vectors:
             svc.add_vectors(np.stack(vectors), chunk_ids)
 
-        # Сохраняем
+        # Save
         svc.save_index(collection_id)
 
-        # Обновляем кэш
+        # Update the cache
         self._index_cache[collection_id] = svc
 
-        # Обновляем поле коллекции
+        # Update the collection fields
         from ..models import DocumentCollection
         now_iso = timezone.now().isoformat()
         DocumentCollection.objects.filter(id=collection_id).update(
@@ -330,7 +330,7 @@ class VectorStoreManager:
 
     def update_index(self, collection_id: int) -> int:
         """
-        Обновить индекс: добавить новые чанки, появившиеся после последней индексации.
+        Update the index: add new chunks created after the last indexing.
         """
         from ..models import DocumentChunk, DocumentCollection
 
@@ -339,7 +339,7 @@ class VectorStoreManager:
             logger.warning(f"Collection {collection_id} has no index, cannot update")
             return 0
 
-        # Определяем дату последнего обновления из метаданных
+        # Determine the last update date from metadata
         last_update = collection.index_metadata.get('last_update')
         if last_update:
             from datetime import datetime
@@ -349,7 +349,7 @@ class VectorStoreManager:
                 except ValueError:
                     last_update = None
 
-        # Новые чанки с эмбеддингами
+        # New chunks with embeddings
         query = DocumentChunk.objects.filter(
             document__collection_id=collection_id,
             has_embedding=True,
@@ -363,10 +363,10 @@ class VectorStoreManager:
         if not new_chunks:
             return 0
 
-        # Добавляем в индекс
+        # Add to the index
         added = self.index_chunks(new_chunks, collection_id)
 
-        # Обновляем метаданные
+        # Update the metadata
         collection.total_vectors = self._get_faiss_service(collection_id).index.ntotal
         collection.index_metadata['last_update'] = timezone.now().isoformat()
         collection.index_metadata['last_update_count'] = added
@@ -376,14 +376,14 @@ class VectorStoreManager:
         return added
 
     # ----------------------------------------------------------------------
-    # Статистика
+    # Statistics
     # ----------------------------------------------------------------------
     def get_statistics(self, collection_id: Optional[int] = None) -> Dict[str, Any]:
         """
-        Получить статистику векторного хранилища.
+        Get vector store statistics.
         """
         if collection_id is None:
-            # Общая статистика по всем коллекциям
+            # Aggregate statistics across all collections
             from ..models import DocumentCollection
             collections = DocumentCollection.objects.filter(is_active=True)
             return {
@@ -398,9 +398,9 @@ class VectorStoreManager:
             return stats
 
     # ----------------------------------------------------------------------
-    # Очистка кэша
+    # Cache cleanup
     # ----------------------------------------------------------------------
     def clear_cache(self):
-        """Очистить кэш загруженных индексов."""
+        """Clear the cache of loaded indexes."""
         self._index_cache.clear()
         logger.info("Vector store cache cleared")

@@ -29,7 +29,7 @@ from .registry import ModelCheckpoint
 
 
 class ChatSession(models.Model):
-    """Сессия чата с моделью"""
+    """Chat session with a model."""
     session_id = models.CharField(max_length=100, unique=True)
     user_id = models.CharField(max_length=100, blank=True)
     checkpoint = models.ForeignKey(
@@ -40,17 +40,17 @@ class ChatSession(models.Model):
         blank=True
     )
     
-    # Поле для переименования сессии
+    # Field for renaming the session
     notes = models.CharField(max_length=200, blank=True, help_text=_("Пользовательское название сессии"))
-    
-    # Контекст чата
+
+    # Chat context
     system_prompt = models.TextField(blank=True, help_text=_("Системный промпт для сессии"))
     conversation_history = models.JSONField(
         default=list,
         help_text=_("История диалога в формате [{'role': 'user', 'content': '...'}, ...]")
     )
     
-    # Техническая информация
+    # Technical info
     model_config = models.JSONField(
         default=dict,
         help_text=_("Конфигурация модели при создании сессии")
@@ -60,25 +60,25 @@ class ChatSession(models.Model):
         help_text=_("Параметры генерации")
     )
     
-    # Статистика
+    # Statistics
     total_messages = models.IntegerField(default=0)
     total_input_tokens = models.IntegerField(default=0)
     total_output_tokens = models.IntegerField(default=0)
     
-    # Статус
+    # Status
     is_active = models.BooleanField(default=True)
-    
-    # Временные метки
+
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_activity = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         ordering = ['-last_activity']
         indexes = [
             models.Index(fields=['session_id', 'is_active']),
             models.Index(fields=['checkpoint', 'last_activity']),
-            models.Index(fields=['user_id', 'is_active']),  # Добавим индекс для быстрого поиска
+            models.Index(fields=['user_id', 'is_active']),  # Index for faster lookups
         ]
     
     def __str__(self):
@@ -86,7 +86,7 @@ class ChatSession(models.Model):
         return f"Chat {display_name} with {self.checkpoint.name if self.checkpoint else 'no model'}"
 
     def add_message(self, role: str, content: str, metadata: dict = None):
-        """Добавить сообщение в историю диалога"""
+        """Append a message to the conversation history."""
         message = {
             'role': role,
             'content': content,
@@ -96,14 +96,14 @@ class ChatSession(models.Model):
         if metadata:
             message['metadata'] = metadata
         
-        # Получаем текущую историю
+        # Get the current history
         current_history = self.conversation_history or []
         current_history.append(message)
-        
-        # Обновляем историю
+
+        # Update the history
         self.conversation_history = current_history
-        
-        # Обновляем счетчики, извлекая токены из metadata['tokens']
+
+        # Update counters, extracting tokens from metadata['tokens']
         if metadata and 'tokens' in metadata:
             tokens = metadata['tokens']
             if role == 'user':
@@ -117,19 +117,19 @@ class ChatSession(models.Model):
 
     @property
     def total_tokens(self):
-        """Общее количество токенов в сессии"""
+        """Total token count for the session."""
         return self.total_input_tokens + self.total_output_tokens
 
 
 class ChatMessage(models.Model):
-    """Детализированное сообщение чата с технической информацией"""
+    """Detailed chat message with technical info."""
     session = models.ForeignKey(
         ChatSession,
         on_delete=models.CASCADE,
         related_name='detailed_messages'
     )
     
-    # Основное содержание
+    # Main content
     role = models.CharField(
         max_length=20,
         choices=[
@@ -142,13 +142,13 @@ class ChatMessage(models.Model):
     )
     content = models.TextField()
     
-    # Техническая информация о генерации
+    # Generation technical info
     generation_metadata = models.JSONField(
         default=dict,
         help_text=_("Метаданные генерации: токены, время, температура и т.д.")
     )
     
-    # Родительское сообщение (для древовидных структур)
+    # Parent message (for tree structures)
     parent = models.ForeignKey(
         'self',
         null=True,
@@ -157,9 +157,9 @@ class ChatMessage(models.Model):
         related_name='children'
     )
     
-    # Временные метки
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['session', 'created_at']
         indexes = [
@@ -171,35 +171,35 @@ class ChatMessage(models.Model):
 
 
 class ModelComparison(models.Model):
-    """Сравнение ответов разных моделей на одни и те же промпты"""
+    """Comparison of model responses to the same prompts."""
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    
-    # Набор промптов для сравнения
+
+    # Prompt set for comparison
     prompts = models.JSONField(
         default=list,
         help_text=_("Список промптов для сравнения [{'id': 1, 'text': '...'}]")
     )
     
-    # Результаты сравнения
+    # Comparison results
     results = models.JSONField(
         default=dict,
         help_text=_("Результаты по моделям {model_id: {prompt_id: {...}}}")
     )
     
-    # Метрики сравнения
+    # Comparison metrics
     metrics = models.JSONField(
         default=dict,
         help_text=_("Вычисленные метрики сравнения")
     )
     
-    # Статус
+    # Status
     is_complete = models.BooleanField(default=False)
-    
-    # Временные метки
+
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         ordering = ['-created_at']
     
@@ -207,7 +207,7 @@ class ModelComparison(models.Model):
         return f"Comparison: {self.name}"
     
     def add_model_result(self, model, prompt_id, response, metadata=None):
-        """Добавить результат модели для промпта"""
+        """Add a model result for a prompt."""
         if str(model.id) not in self.results:
             self.results[str(model.id)] = {}
         
@@ -224,8 +224,8 @@ class ModelComparison(models.Model):
         self.save()
     
     def calculate_metrics(self):
-        """Вычислить метрики сравнения (заглушка)"""
-        # Здесь можно реализовать вычисление BLEU, ROUGE, косинусного сходства и т.д.
+        """Compute comparison metrics (stub)."""
+        # BLEU, ROUGE, cosine similarity, etc. can be implemented here
         self.metrics = {
             'calculated_at': timezone.now().isoformat(),
             'note': 'Метрики требуют реализации'

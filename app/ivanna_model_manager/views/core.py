@@ -75,7 +75,7 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def profile_view(request):
-    # Создаём профиль, если его ещё нет
+    # Create profile if it does not exist yet
     try:
         profile = request.user.profile
     except UserProfile.DoesNotExist:
@@ -98,7 +98,7 @@ def profile_view(request):
 
 
 # ============================================================================
-# ГЛАВНАЯ ПАНЕЛЬ
+# DASHBOARD
 # ============================================================================
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'ivanna_model_manager/dashboard.html'
@@ -108,70 +108,70 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         user = self.request.user
         user_id_str = str(user.id)
 
-        # Глобальная статистика (модели общие)
+        # Global stats (models are shared)
         context['total_models'] = ModelCheckpoint.objects.filter(is_active=True).count()
         context['loaded_models'] = ModelCheckpoint.objects.filter(status='LOADED', is_active=True).count()
         context['downloading_models'] = ModelCheckpoint.objects.filter(status='DOWNLOADING', is_active=True).count()
         context['error_models'] = ModelCheckpoint.objects.filter(status='ERROR', is_active=True).count()
         context['active_experiments'] = Experiment.objects.filter(is_active=True).count()
 
-        # Статистика пользователя
-        # Мои коллекции и документы (RAG)
+        # User stats
+        # My collections and documents (RAG)
         my_collections = DocumentCollection.objects.filter(owner_id=user_id_str, is_active=True)
         context['my_collections_count'] = my_collections.count()
         context['my_documents_count'] = Document.objects.filter(collection__in=my_collections, is_active=True).count()
 
-        # Мои чат-сессии
+        # My chat sessions
         context['my_chat_sessions'] = ChatSession.objects.filter(user_id=user_id_str, is_active=True).count()
 
-        # Мои задачи оценки
+        # My evaluation tasks
         my_evaluation_tasks = ModelEvaluationTask.objects.filter(created_by=user.username)
         context['my_evaluation_tasks_total'] = my_evaluation_tasks.count()
         context['my_evaluation_tasks_active'] = my_evaluation_tasks.filter(status__in=['PENDING', 'RUNNING']).count()
         context['my_evaluation_tasks_completed'] = my_evaluation_tasks.filter(status='COMPLETED').count()
 
-        # Мои задачи fine-tuning
+        # My fine-tuning jobs
         my_ft_jobs = FineTuningJob.objects.filter(created_by=user.username)
         context['my_ft_jobs_total'] = my_ft_jobs.count()
         context['my_ft_jobs_active'] = my_ft_jobs.filter(status__in=['PREPARING', 'TRAINING']).count()
         context['my_ft_jobs_completed'] = my_ft_jobs.filter(status='COMPLETED').count()
 
-        # Мои задачи конвертации (GGUF)
+        # My conversion jobs (GGUF)
         my_conv_jobs = ModelConversionJob.objects.filter(created_by=user.username)
         context['my_conv_jobs_total'] = my_conv_jobs.count()
         context['my_conv_jobs_active'] = my_conv_jobs.filter(status__in=['PENDING', 'PREPARING', 'CONVERTING']).count()
         context['my_conv_jobs_completed'] = my_conv_jobs.filter(status='COMPLETED').count()
 
-        # Мои задачи слияния (глобально, пока без фильтрации по пользователю)
+        # My merge jobs (global, no per-user filtering yet)
         context['merge_jobs_active'] = ModelMergeJob.objects.filter(status__in=['PENDING', 'VALIDATING', 'RUNNING']).count()
 
-        # Статистика эмбеддингов
+        # Embedding stats
         embedding_models = EmbeddingModel.objects.filter(is_active=True)
         context['embedding_total'] = embedding_models.count()
         context['embedding_downloaded'] = embedding_models.filter(is_downloaded=True).count()
         context['embedding_downloading'] = embedding_models.filter(download_status='downloading').count()
         context['embedding_failed'] = embedding_models.filter(download_status='failed').count()
 
-        # Недавние загрузки эмбеддингов (для списка)
+        # Recent embedding downloads (for the list)
         context['recent_embeddings'] = embedding_models.exclude(download_status='not_started').order_by('-updated_at')[:5]
 
-        # ========== НОВЫЕ БЛОКИ ДЛЯ ДИСТИЛЛЯЦИИ ==========
-        # Мои наборы для дистилляции (вопросы)
+        # ========== NEW BLOCKS FOR DISTILLATION ==========
+        # My distillation question sets
         my_question_sets = DistillationQuestionSet.objects.filter(created_by=user.username)
         context['my_question_sets_total'] = my_question_sets.count()
         context['my_question_sets_active'] = my_question_sets.filter(status__in=['PENDING', 'RUNNING']).count()
         context['my_question_sets_completed'] = my_question_sets.filter(status='COMPLETED').count()
 
-        # Мои задачи генерации ответов
+        # My answer generation jobs
         my_answer_jobs = DistillationAnswerJob.objects.filter(created_by=user.username)
         context['my_answer_jobs_total'] = my_answer_jobs.count()
         context['my_answer_jobs_active'] = my_answer_jobs.filter(status__in=['PENDING', 'RUNNING']).count()
         context['my_answer_jobs_completed'] = my_answer_jobs.filter(status='COMPLETED').count()
 
-        # Объединённые активные задачи пользователя (для списка последних)
+        # Merged active user tasks (for the recent list)
         recent_tasks = []
 
-        # Задачи оценки
+        # Evaluation tasks
         for task in my_evaluation_tasks.order_by('-created_at')[:3]:
             recent_tasks.append({
                 'id': task.id,
@@ -183,7 +183,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'url': reverse('evaluation_task_detail', args=[task.id])
             })
 
-        # Задачи fine-tuning
+        # Fine-tuning jobs
         for job in my_ft_jobs.order_by('-created_at')[:3]:
             recent_tasks.append({
                 'id': job.id,
@@ -195,7 +195,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'url': reverse('fine_tuning_detail', args=[job.id])
             })
 
-        # Задачи конвертации
+        # Conversion jobs
         for job in my_conv_jobs.order_by('-created_at')[:3]:
             recent_tasks.append({
                 'id': job.id,
@@ -207,7 +207,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'url': reverse('conversion_detail', args=[job.id])
             })
 
-        # Задачи дистилляции (генерация вопросов)
+        # Distillation tasks (question generation)
         for qset in my_question_sets.order_by('-created_at')[:3]:
             recent_tasks.append({
                 'id': qset.id,
@@ -219,7 +219,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'url': reverse('distillation_question_set_detail', args=[qset.id])
             })
 
-        # Задачи дистилляции (генерация ответов)
+        # Distillation tasks (answer generation)
         for job in my_answer_jobs.order_by('-created_at')[:3]:
             recent_tasks.append({
                 'id': job.id,
@@ -231,8 +231,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'url': reverse('distillation_answer_job_detail', args=[job.id])
             })
 
-        # Сортировка по дате создания
-        # v5.2: Soft MoE / WSP-абляция (job.goal различает тип на карточке)
+        # Sort by creation date
+        # v5.2: Soft MoE / WSP ablation (job.goal distinguishes the card type)
         my_moe_jobs = (MoEExpertJob.objects.all() if user.is_staff
                        else MoEExpertJob.objects.filter(created_by=user.username))
         for job in my_moe_jobs.order_by('-created_at')[:3]:
@@ -246,7 +246,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'url': reverse('moe_job_detail', args=[job.id])
             })
 
-        # v5.2: сборка FAISS-индексов коллекций (последние пересборки)
+        # v5.2: collection FAISS index builds (recent rebuilds)
         for coll in DocumentCollection.objects.filter(
                 is_active=True, vector_index_created=True).order_by('-updated_at')[:3]:
             recent_tasks.append({
@@ -287,13 +287,13 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                                          -x['created_at'].timestamp()))
         context['recent_tasks'] = recent_tasks[:5]
 
-        # Последние модели (глобальные)
+        # Recent models (global)
         context['recent_models'] = ModelCheckpoint.objects.filter(is_active=True).order_by('-created_at')[:10]
 
-        # Активные задачи слияния (глобальные)
+        # Active merge jobs (global)
         context['recent_jobs'] = ModelMergeJob.objects.filter(status__in=['PENDING', 'VALIDATING', 'RUNNING']).order_by('-created_at')[:5]
 
-        # Метрики пользователя (общее количество сгенерированных токенов)
+        # User metrics (total generated tokens)
         user_sessions = InferenceSession.objects.filter(api_key=user.username)
         total_tokens = user_sessions.aggregate(total=Sum('input_tokens') + Sum('output_tokens'))['total'] or 0
         context['user_total_tokens'] = total_tokens
@@ -302,7 +302,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
 
 # ============================================================================
-# СИСТЕМНЫЕ МЕТРИКИ И СТАТУСЫ
+# SYSTEM METRICS AND STATUS
 # ============================================================================
 class SystemMetricsView(LoginRequiredMixin, TemplateView):
     template_name = 'ivanna_model_manager/metrics.html'
@@ -322,7 +322,7 @@ class SystemMetricsView(LoginRequiredMixin, TemplateView):
 
 @login_required
 def gpu_status_view(request):
-    """Страница статуса GPU."""
+    """GPU status page."""
     import torch
     gpu_info = {'available': False, 'count': 0}
     if torch.cuda.is_available():
@@ -344,7 +344,7 @@ def gpu_status_view(request):
 
 @login_required
 def health_check_view(request):
-    """Единый health-check эндпоинт (JSON)."""
+    """Unified health-check endpoint (JSON)."""
     try:
         from django.db import connection
         with connection.cursor() as c:
@@ -363,7 +363,7 @@ def health_check_view(request):
         'timestamp': timezone.now().isoformat(),
         'database': 'connected' if db_ok else 'disconnected',
         'redis': 'connected' if redis_ok else 'disconnected',
-        'celery': 'running',  # предположим
+        'celery': 'running',  # assumed
         'models': {
             'total': ModelCheckpoint.objects.filter(is_active=True).count(),
             'loaded': ModelCheckpoint.objects.filter(status='LOADED', is_active=True).count(),
@@ -373,7 +373,7 @@ def health_check_view(request):
 
 @login_required
 def task_status(request, task_id):
-    """Статус задачи Celery (AJAX)."""
+    """Celery task status (AJAX)."""
     from celery.result import AsyncResult
     try:
         res = AsyncResult(task_id)
@@ -389,7 +389,7 @@ def task_status(request, task_id):
 
 
 # ============================================================================
-# СТАТИЧЕСКИЕ СТРАНИЦЫ
+# STATIC PAGES
 # ============================================================================
 class AboutView(LoginRequiredMixin, TemplateView):
     template_name = 'ivanna_model_manager/about.html'
@@ -406,10 +406,10 @@ class DocumentationView(LoginRequiredMixin, TemplateView):
 
 
 # ============================================================================
-# API-ПОДОБНЫЕ ВЬЮХИ ДЛЯ ШАБЛОНОВ (НЕ DRF)
+# TEMPLATE-FACING API-LIKE VIEWS (NOT DRF)
 # ============================================================================
 class SupportedModelTypesView(LoginRequiredMixin, TemplateView):
-    """Для шаблонов, возвращает JSON."""
+    """For templates, returns JSON."""
     def get(self, request):
         data = [{'value': c[0], 'display': c[1]} for c in ModelCheckpoint.MODEL_TYPE_CHOICES]
         return JsonResponse(data, safe=False)

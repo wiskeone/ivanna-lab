@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 class InstructionTrainer:
     """
-    Обучение модели на инструкциях (формат вопрос-ответ).
-    Completion-only маскирование: loss считается только по ответу (+EOS).
+    Model training on instructions (question-answer format).
+    Completion-only masking: loss is computed over the answer only (+EOS).
     """
 
     def __init__(self, job: FineTuningJob, device=None, resume: bool = False):
@@ -161,7 +161,7 @@ class InstructionTrainer:
             model.gradient_checkpointing_enable(
                 gradient_checkpointing_kwargs={'use_reentrant': False})
 
-        # Логируем размещение модели
+        # Log the model placement
         if hasattr(model, 'hf_device_map'):
             logger.info(f"📌 Device map: {model.hf_device_map}")
             devices = set(model.hf_device_map.values())

@@ -1,15 +1,15 @@
 """
-v5.0: клиент vLLM (OpenAI-совместимый API).
+v5.0: vLLM client (OpenAI-compatible API).
 
-Позволяет направлять инференс сессий на внешний vLLM-сервер вместо
-in-process transformers. Контракт результата совпадает с
-redis_model_manager.generate_text — вызывающий код (generate_text_task)
-не меняет форму ответа.
+Routes session inference to an external vLLM server instead of
+in-process transformers. The result contract matches
+redis_model_manager.generate_text — calling code (generate_text_task)
+does not change the response shape.
 
-Конфигурация (settings.py / .env):
-    VLLM_BASE_URL   — базовый URL, например http://vllm:8001/v1
-    VLLM_API_KEY    — токен, если сервер за прокси (по умолчанию не нужен)
-    VLLM_TIMEOUT    — таймаут запроса, сек (дефолт 300 — длинные генерации)
+Configuration (settings.py / .env):
+    VLLM_BASE_URL   — base URL, e.g. http://vllm:8001/v1
+    VLLM_API_KEY    — token, if the server sits behind a proxy (not required by default)
+    VLLM_TIMEOUT    — request timeout, sec (default 300 — long generations)
 """
 import logging
 import time
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class VLLMError(Exception):
-    """Ошибка обращения к vLLM-серверу."""
+    """vLLM server request error."""
 
 
 class VLLMClient:
@@ -39,7 +39,7 @@ class VLLMClient:
         return h
 
     def health(self) -> bool:
-        """GET /health — жив ли сервер (без /v1 префикса)."""
+        """GET /health — server liveness check (without the /v1 prefix)."""
         try:
             base = self.base_url.rsplit('/v1', 1)[0]
             r = requests.get(f'{base}/health', timeout=10)
@@ -48,7 +48,7 @@ class VLLMClient:
             return False
 
     def list_models(self) -> list:
-        """GET /v1/models — какие модели засервированы."""
+        """GET /v1/models — which models are served."""
         try:
             r = requests.get(f'{self.base_url}/models', headers=self._headers(), timeout=30)
             r.raise_for_status()
@@ -64,9 +64,9 @@ class VLLMClient:
                       temperature: float = 0.7, top_p: float = 1.0,
                       top_k: int = -1, repetition_penalty: float = 0.0,
                       stop: list = None, **dropped) -> dict:
-        """Собирает payload /v1/completions. Неизвестные kwargs отбрасываются
-        (совместимость с gen_config сессии), vLLM-расширения (top_k,
-        repetition_penalty) передаются верхним уровнем — vLLM их понимает."""
+        """Build the /v1/completions payload. Unknown kwargs are dropped
+        (compatibility with the session gen_config); vLLM extensions (top_k,
+        repetition_penalty) are passed to the top level — vLLM understands them."""
         payload = {
             'model': model,
             'prompt': prompt,
@@ -85,10 +85,10 @@ class VLLMClient:
 
     def generate(self, model: str, prompt: str, **kwargs) -> dict:
         """
-        POST /v1/completions — flat-промпт (паритет с transformers-путём,
-        где тоже подаётся собранный текст с System/User/Assistant).
+        POST /v1/completions — flat prompt (parity with the transformers path,
+        which also receives the assembled text with System/User/Assistant).
 
-        Возвращает словарь той же формы, что redis_model_manager.generate_text:
+        Returns a dict of the same shape as redis_model_manager.generate_text:
         {'success', 'response', 'input_tokens', 'output_tokens', 'total_tokens',
          'generation_time', 'tokens_per_second', 'device'}
         """
@@ -145,8 +145,8 @@ class VLLMClient:
 
     def chat(self, model: str, messages: list, **kwargs) -> dict:
         """
-        POST /v1/chat/completions — для сценариев с шаблоном диалога.
-        messages — стандартный OpenAI-формат [{'role', 'content'}, ...].
+        POST /v1/chat/completions — for scenarios with a dialogue template.
+        messages — standard OpenAI format [{'role', 'content'}, ...].
         """
         payload = {
             'model': model,

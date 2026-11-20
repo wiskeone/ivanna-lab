@@ -76,7 +76,7 @@ from .utils import get_document_type, sanitize_filename
 
 
 # ============================================================================
-# RAG: КОЛЛЕКЦИИ, ДОКУМЕНТЫ, ПОИСК, ЧАТ
+# RAG: COLLECTIONS, DOCUMENTS, SEARCH, CHAT
 # ============================================================================
 @login_required
 def rag_collection_list(request):
@@ -104,7 +104,7 @@ def rag_collection_detail(request, pk):
         is_active=True
     )
     documents = collection.documents.filter(is_active=True).order_by('-uploaded_at')
-    # Аннотируем количество чанков и эмбеддингов
+    # Annotate chunk and embedding counts
     documents = documents.annotate(
         ann_chunk_count=Count('chunks', filter=Q(chunks__is_active=True)),
         ann_embedding_count=Count('chunks', filter=Q(chunks__has_embedding=True))
@@ -180,14 +180,14 @@ def document_list(request, collection_id=None):
         )
         docs = collection.documents.filter(is_active=True)
     else:
-        # Все документы из доступных коллекций
+        # All documents from accessible collections
         collections = DocumentCollection.objects.filter(
             Q(owner_id=str(request.user.id)) | Q(is_public=True),
             is_active=True
         ).values_list('id', flat=True)
         docs = Document.objects.filter(collection_id__in=list(collections), is_active=True)
 
-    # Фильтры
+    # Filters
     if request.GET.get('status'):
         docs = docs.filter(status=request.GET['status'])
     if request.GET.get('type'):
@@ -231,7 +231,7 @@ def document_list(request, collection_id=None):
 @login_required
 def document_detail(request, pk):
     doc = get_object_or_404(Document, pk=pk, is_active=True)
-    # Проверка доступа
+    # Access check
     if doc.collection:
         if doc.collection.owner_id != str(request.user.id) and not doc.collection.is_public:
             raise PermissionDenied
@@ -271,13 +271,13 @@ def document_detail(request, pk):
 @login_required
 def document_edit(request, pk):
     """
-    Редактирование метаданных документа.
-    Поддерживает AJAX и обычные POST-запросы.
-    При установке флага regenerate_chunks запускает задачу пересоздания чанков.
+    Edit document metadata.
+    Supports both AJAX and regular POST requests.
+    When the regenerate_chunks flag is set, launches a chunk regeneration task.
     """
     document = get_object_or_404(Document, pk=pk, is_active=True)
 
-    # Проверка прав: владелец коллекции или администратор
+    # Permission check: collection owner or admin
     if not request.user.is_staff:
         if document.collection and document.collection.owner_id != str(request.user.id):
             raise PermissionDenied("You do not have permission to edit this document.")
@@ -286,7 +286,7 @@ def document_edit(request, pk):
         form = DocumentEditForm(request.POST, instance=document, user=request.user)
         if form.is_valid():
             doc = form.save(commit=False)
-            # Обновляем метаданные из полей формы (chunk_size, chunk_overlap)
+            # Update metadata from form fields (chunk_size, chunk_overlap)
             metadata = doc.metadata or {}
             chunk_size = form.cleaned_data.get('chunk_size')
             chunk_overlap = form.cleaned_data.get('chunk_overlap')
@@ -297,7 +297,7 @@ def document_edit(request, pk):
             doc.metadata = metadata
             doc.save()
 
-            # Если отмечена опция пересоздания чанков – запускаем задачу
+            # If the regenerate chunks option is checked, launch the task
             task_id = None
             if form.cleaned_data.get('regenerate_chunks'):
                 task = regenerate_document_chunks_task.delay(doc.id)
@@ -306,7 +306,7 @@ def document_edit(request, pk):
             else:
                 msg = "Документ успешно обновлён."
 
-            # Ответ для AJAX
+            # AJAX response
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
@@ -314,19 +314,19 @@ def document_edit(request, pk):
                     'redirect_url': reverse('document_detail', args=[doc.id]),
                     'task_id': task_id
                 })
-            # Обычный POST – редирект с сообщением
+            # Regular POST - redirect with a message
             messages.success(request, msg)
             return redirect('document_detail', pk=doc.id)
         else:
-            # Ошибки валидации
+            # Validation errors
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 errors = {field: [str(e) for e in errs] for field, errs in form.errors.items()}
                 return JsonResponse({'success': False, 'errors': errors}, status=400)
-            # При обычном POST покажем форму с ошибками (рендер ниже)
+            # For a regular POST, show the form with errors (render below)
     else:
         form = DocumentEditForm(instance=document, user=request.user)
 
-    # Для GET или не AJAX POST с ошибками – рендерим шаблон
+    # For GET or non-AJAX POST with errors - render the template
     collections = DocumentCollection.objects.filter(
         Q(owner_id=str(request.user.id)) | Q(is_public=True),
         is_active=True
@@ -341,7 +341,7 @@ def document_edit(request, pk):
 
 
 # --------------------------------------------------------------------------
-# УДАЛЕНИЕ ДОКУМЕНТА (мягкое удаление)
+# DOCUMENT DELETION (soft delete)
 # --------------------------------------------------------------------------
 @login_required
 @require_POST
@@ -353,7 +353,7 @@ def document_delete(request, pk):
             if document.collection and document.collection.owner_id != str(request.user.id):
                 return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
 
-        # Логируем удаление
+        # Log the deletion
         DeletedDocumentLog.objects.create(
             original_name=document.original_filename,
             title=document.title,
@@ -388,18 +388,18 @@ def document_delete(request, pk):
 
 
 # --------------------------------------------------------------------------
-# ПЕРЕЗАГРУЗКА (ЗАМЕНА) ФАЙЛА ДОКУМЕНТА
+# DOCUMENT FILE RELOAD (REPLACE)
 # --------------------------------------------------------------------------
 @login_required
 @require_POST
 def document_reload(request, pk):
     """
-    Замена файла документа. Принимает новый файл, сохраняет его,
-    обновляет метаданные и запускает полную переобработку (process_document_task).
+    Replace a document file. Accepts a new file, saves it,
+    updates metadata and starts full reprocessing (process_document_task).
     """
     document = get_object_or_404(Document, pk=pk, is_active=True)
 
-    # Проверка прав
+    # Permission check
     if not request.user.is_staff:
         if document.collection and document.collection.owner_id != str(request.user.id):
             return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
@@ -409,7 +409,7 @@ def document_reload(request, pk):
 
     uploaded_file = request.FILES['file']
 
-    # Валидация расширения (можно вынести в отдельную функцию)
+    # Extension validation (could be extracted into a helper)
     ext = os.path.splitext(uploaded_file.name)[1].lower()
     allowed_extensions = getattr(settings, 'ALLOWED_DOCUMENT_EXTENSIONS', {
         '.pdf': 'PDF', '.docx': 'DOCX', '.doc': 'DOCX',
@@ -420,43 +420,43 @@ def document_reload(request, pk):
     if ext not in allowed_extensions:
         return JsonResponse({'success': False, 'error': f'File type {ext} not allowed'}, status=400)
 
-    # Генерируем уникальное имя для сохранения
+    # Generate a unique name for saving
     safe_name = f"{uuid.uuid4().hex[:8]}_{uploaded_file.name}"
     upload_dir = os.path.join(settings.MEDIA_ROOT, 'documents')
     os.makedirs(upload_dir, exist_ok=True)
     file_path = os.path.join(upload_dir, safe_name)
 
-    # Сохраняем файл
+    # Save the file
     with open(file_path, 'wb+') as dest:
         for chunk in uploaded_file.chunks():
             dest.write(chunk)
 
-    # Удаляем старый файл (если он существует и не используется другими документами)
+    # Delete the old file (if it exists and is not used by other documents)
     if document.file_path and os.path.exists(document.full_file_path):
         try:
             os.remove(document.full_file_path)
         except OSError as e:
             logger.warning(f"Could not delete old file {document.full_file_path}: {e}")
 
-    # Обновляем поля документа
+    # Update document fields
     document.original_filename = uploaded_file.name
     document.file_path = os.path.join('documents', safe_name)
     document.file_size_mb = uploaded_file.size / (1024 * 1024)
     document.document_type = allowed_extensions.get(ext, 'UNKNOWN')
-    document.content_hash = ''  # будет вычислено при обработке
+    document.content_hash = ''  # computed during processing
     document.raw_content = ''
     document.processed_content = ''
-    # Сбрасываем статус
+    # Reset status
     document.status = 'UPLOADED'
     document.processing_progress = 0
     document.error_message = ''
     document.processed_at = None
     document.indexed_at = None
-    # Деактивируем старые чанки (они будут удалены задачей или позже)
+    # Deactivate old chunks (they will be removed by the task or later)
     document.chunks.update(is_active=False)
     document.save()
 
-    # Запускаем обработку
+    # Start processing
     task = process_document_task.delay(document.id)
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -474,15 +474,15 @@ def document_reload(request, pk):
 @login_required
 def rag_search_page(request, collection_id=None):
     """
-    Страница расширенного поиска по документам RAG.
-    Поддерживает выбор коллекции, тип поиска, параметры гибридного поиска,
-    историю запросов и сохранённые поиски.
+    Advanced RAG document search page.
+    Supports collection selection, search type, hybrid search parameters,
+    query history and saved searches.
     """
     from ..models import DocumentCollection, SearchQuery, DocumentChunk
     from django.db.models import Q, Count, Avg
     from django.core.paginator import Paginator
 
-    # Доступные коллекции
+    # Accessible collections
     collections = DocumentCollection.objects.filter(
         Q(owner_id=str(request.user.id)) | Q(is_public=True),
         is_active=True
@@ -492,7 +492,7 @@ def rag_search_page(request, collection_id=None):
         has_embeddings=Count('documents__chunks', filter=Q(documents__chunks__has_embedding=True))
     ).order_by('-created_at')
 
-    # Выбранная коллекция
+    # Selected collection
     selected_collection = None
     collection_stats = None
     if collection_id:
@@ -524,12 +524,12 @@ def rag_search_page(request, collection_id=None):
         except DocumentCollection.DoesNotExist:
             messages.warning(request, _('Коллекция не найдена или нет доступа'))
 
-    # История поиска
+    # Search history
     search_history = SearchQuery.objects.filter(
         user_id=str(request.user.id)
     ).select_related('collection_filter').order_by('-created_at')[:20]
 
-    # Популярные запросы
+    # Popular queries
     popular_queries = SearchQuery.objects.filter(
         user_id=str(request.user.id)
     ).values('query_text').annotate(
@@ -537,7 +537,7 @@ def rag_search_page(request, collection_id=None):
         avg_time=Avg('processing_time_ms')
     ).order_by('-count')[:10]
 
-    # Сохранённые поиски (если модель существует)
+    # Saved searches (if the model exists)
     saved_searches = []
     try:
         from ..models import SavedSearch
@@ -547,7 +547,7 @@ def rag_search_page(request, collection_id=None):
     except ImportError:
         pass
 
-    # Статистика
+    # Stats
     total_searches = SearchQuery.objects.filter(user_id=str(request.user.id)).count()
     searches_today = SearchQuery.objects.filter(
         user_id=str(request.user.id),
@@ -570,7 +570,7 @@ def rag_search_page(request, collection_id=None):
             'searches_today': searches_today,
             'avg_response_time': round(avg_response_time, 2),
         },
-        # Параметры по умолчанию (будут использоваться в JavaScript)
+        # Default parameters (used in JavaScript)
         'default_search_type': 'hybrid',
         'default_top_k': 10,
         'default_semantic_weight': 0.7,
@@ -586,8 +586,8 @@ def rag_search_page(request, collection_id=None):
 @require_POST
 def ajax_rag_advanced_search(request):
     """
-    AJAX-эндпоинт для расширенного поиска.
-    Использует EnhancedSearchService.
+    AJAX endpoint for advanced search.
+    Uses EnhancedSearchService.
     """
     import json
     from ..services.rag_service import EnhancedSearchService
@@ -627,7 +627,7 @@ def ajax_rag_advanced_search(request):
         except DocumentCollection.DoesNotExist:
             return JsonResponse({'success': False, 'error': _('Коллекция не найдена')}, status=404)
 
-        # Выполняем поиск
+        # Run the search
         search_service = EnhancedSearchService()
         start_time = timezone.now()
 
@@ -650,7 +650,7 @@ def ajax_rag_advanced_search(request):
 
         processing_time = (timezone.now() - start_time).total_seconds() * 1000
 
-        # Сохраняем запрос, если требуется
+        # Save the query if requested
         search_query = None
         if save_query:
             search_query = SearchQuery.objects.create(
@@ -670,16 +670,16 @@ def ajax_rag_advanced_search(request):
                     'search_name': search_name,
                 }
             )
-            # Сохраняем результаты
+            # Save the results
             for i, res in enumerate(results[:k]):
                 try:
                     chunk = DocumentChunk.objects.get(id=res['chunk_id'])
-                    # Подготовим metadata, сериализуемый в JSON
+                    # Prepare JSON-serializable metadata
                     metadata = res.copy()
-                    # Преобразуем datetime в строку, если есть
+                    # Convert datetime to string if present
                     if 'document_uploaded_at' in metadata and metadata['document_uploaded_at']:
                         metadata['document_uploaded_at'] = metadata['document_uploaded_at'].isoformat()
-                    # Также проверяем другие возможные datetime поля (например, created_at, если есть)
+                    # Also check other possible datetime fields (e.g. created_at)
                     for key in list(metadata.keys()):
                         if hasattr(metadata[key], 'isoformat'):
                             metadata[key] = metadata[key].isoformat()
@@ -694,7 +694,7 @@ def ajax_rag_advanced_search(request):
                 except DocumentChunk.DoesNotExist:
                     continue
 
-        # Форматируем для фронтенда
+        # Format for the frontend
         formatted_results = []
         for res in results[:k]:
             try:
@@ -780,7 +780,7 @@ def document_download(request, pk):
 @login_required
 def rag_upload_documents(request):
     """
-    Загрузка одного или нескольких документов в коллекцию.
+    Upload one or several documents into a collection.
     """
     from django.conf import settings
 
@@ -811,7 +811,7 @@ def rag_upload_documents(request):
                         for chunk in f.chunks():
                             dest.write(chunk)
 
-                    # Извлекаем текст для raw_content (упрощённо)
+                    # Extract text for raw_content (simplified)
                     raw_content = ""
                     ext = os.path.splitext(f.name)[1].lower()
                     if ext == '.pdf':
@@ -884,10 +884,10 @@ def rag_upload_documents(request):
         is_active=True
     ).order_by('name')
 
-    # Статистика для отображения в шаблоне
+    # Stats for template display
     upload_stats = {
         'max_file_size': f"{settings.MAX_UPLOAD_SIZE // (1024 * 1024)} MB",
-        'max_files': 10,  # можно вынести в settings
+        'max_files': 10,  # could be moved to settings
         'allowed_formats': ', '.join(settings.ALLOWED_DOCUMENT_EXTENSIONS.keys()),
     }
 
@@ -987,7 +987,7 @@ def document_bulk_action(request):
 
 @login_required
 def rag_chat_view(request):
-    """Веб-интерфейс RAG-чата."""
+    """RAG chat web UI."""
     collections = DocumentCollection.objects.filter(
         Q(owner_id=str(request.user.id)) | Q(is_public=True),
         is_active=True
@@ -1017,7 +1017,7 @@ def rag_chat_view(request):
 @login_required
 @require_POST
 def ajax_rag_chat(request):
-    """AJAX-эндпоинт для RAG-чата."""
+    """AJAX endpoint for RAG chat."""
     import json
     try:
         data = json.loads(request.body)
@@ -1044,9 +1044,9 @@ def ajax_rag_chat(request):
 
 @login_required
 def ajax_document_status(request, document_id):
-    """Статус обработки документа (AJAX)."""
+    """Document processing status (AJAX)."""
     doc = get_object_or_404(Document, id=document_id, is_active=True)
-    # Проверка доступа
+    # Access check
     if doc.collection:
         if doc.collection.owner_id != str(request.user.id) and not doc.collection.is_public:
             return JsonResponse({'error': 'Access denied'}, status=403)
@@ -1088,7 +1088,7 @@ def ajax_document_status(request, document_id):
 @login_required
 @require_POST
 def create_collection_embeddings(request, pk):
-    """Создание эмбеддингов для коллекции (AJAX)."""
+    """Create collection embeddings (AJAX)."""
     collection = get_object_or_404(
         DocumentCollection,
         pk=pk,
@@ -1107,7 +1107,7 @@ def create_collection_embeddings(request, pk):
 @login_required
 @require_POST
 def build_collection_index(request, pk):
-    """Построить FAISS индекс для коллекции."""
+    """Build a FAISS index for the collection."""
     collection = get_object_or_404(
         DocumentCollection,
         pk=pk,
@@ -1121,7 +1121,7 @@ def build_collection_index(request, pk):
 @login_required
 @require_POST
 def update_collection_index(request, pk):
-    """Обновить FAISS индекс (добавить новые векторы)."""
+    """Update the FAISS index (add new vectors)."""
     collection = get_object_or_404(
         DocumentCollection,
         pk=pk,
@@ -1134,7 +1134,7 @@ def update_collection_index(request, pk):
 @login_required
 @require_GET
 def get_index_stats(request, pk):
-    """Статистика FAISS индекса коллекции."""
+    """FAISS index stats for the collection."""
     collection = get_object_or_404(
         DocumentCollection,
         Q(owner_id=str(request.user.id)) | Q(is_public=True),
@@ -1152,14 +1152,14 @@ def get_index_stats(request, pk):
 @login_required
 @require_GET
 def get_collection_vector_stats(request, pk):
-    """Статистика векторного индекса коллекции (альтернативный метод)."""
+    """Collection vector index stats (alternative method)."""
     return get_index_stats(request, pk)
 
 
 @login_required
 @require_GET
 def check_index_files(request, collection_id):
-    """Проверить наличие файлов индекса на диске."""
+    """Check for index files on disk."""
     from ..services.faiss_service import FAISSService
     faiss = FAISSService()
     index_path = faiss._get_index_path(collection_id)
@@ -1173,7 +1173,7 @@ def check_index_files(request, collection_id):
 
 @login_required
 def document_page_render(request, pk, page):
-    """PNG-рендер страницы PDF для превью чанков (PyMuPDF)."""
+    """PNG render of a PDF page for chunk previews (PyMuPDF)."""
     from ..models import Document
 
     doc = get_object_or_404(Document, pk=pk)

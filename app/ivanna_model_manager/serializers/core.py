@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelDownloadJobSerializer(serializers.ModelSerializer):
-    """Сериализатор для задач загрузки моделей"""
+    """Serializer for model download jobs"""
     checkpoint_name = serializers.CharField(source='checkpoint.display_name', read_only=True)
     checkpoint_model_type = serializers.CharField(source='checkpoint.get_model_type_display', read_only=True)
     
@@ -43,7 +43,7 @@ class ModelDownloadJobSerializer(serializers.ModelSerializer):
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
-    """Обновленный сериализатор для экспериментов"""
+    """Updated serializer for experiments"""
     models_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -55,7 +55,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
 
 
 class ModelVersionSerializer(serializers.ModelSerializer):
-    """Обновленный сериализатор для версий моделей"""
+    """Updated serializer for model versions"""
     checkpoint_name = serializers.CharField(source='checkpoint.display_name', read_only=True)
     
     class Meta:
@@ -65,7 +65,7 @@ class ModelVersionSerializer(serializers.ModelSerializer):
 
 
 class InferenceSessionSerializer(serializers.ModelSerializer):
-    """Обновленный сериализатор для сессий инференса"""
+    """Updated serializer for inference sessions"""
     checkpoint_name = serializers.CharField(source='checkpoint.display_name', read_only=True)
     checkpoint_model_type = serializers.CharField(source='checkpoint.get_model_type_display', read_only=True)
     
@@ -87,7 +87,7 @@ class InferenceSessionSerializer(serializers.ModelSerializer):
 
 
 class ModelEvaluationSerializer(serializers.ModelSerializer):
-    """Сериализатор для оценок моделей"""
+    """Serializer for model evaluations"""
     checkpoint_name = serializers.SerializerMethodField()
     
     class Meta:
@@ -104,9 +104,9 @@ class ModelEvaluationSerializer(serializers.ModelSerializer):
         return obj.checkpoint.name if obj.checkpoint else None
 
 
-# Простые сериализаторы для списков (меньше данных)
+# Lightweight list serializers (less data)
 class ModelCheckpointListSerializer(serializers.ModelSerializer):
-    """Упрощенный сериализатор для списка моделей"""
+    """Simplified serializer for the model list"""
     size_gb = serializers.SerializerMethodField()
     
     class Meta:
@@ -122,7 +122,7 @@ class ModelCheckpointListSerializer(serializers.ModelSerializer):
 
 
 class ExperimentListSerializer(serializers.ModelSerializer):
-    """Упрощенный сериализатор для списка экспериментов"""
+    """Simplified serializer for the experiment list"""
     model_count = serializers.IntegerField(read_only=True)
     
     class Meta:
@@ -133,9 +133,9 @@ class ExperimentListSerializer(serializers.ModelSerializer):
         ]
 
 
-# Сериализатор для генерации текста
+# Text generation serializer
 class TextGenerationSerializer(serializers.Serializer):
-    """Сериализатор для генерации текста"""
+    """Text generation serializer"""
     prompt = serializers.CharField(required=True, max_length=10000)
     max_tokens = serializers.IntegerField(default=512, min_value=1, max_value=8192)
     temperature = serializers.FloatField(default=0.7, min_value=0.0, max_value=2.0)
@@ -145,9 +145,9 @@ class TextGenerationSerializer(serializers.Serializer):
     system_prompt = serializers.CharField(required=False, allow_blank=True, max_length=5000)
 
 
-# Сериализатор для загрузки модели
+# Model load serializer
 class ModelLoadSerializer(serializers.Serializer):
-    """Сериализатор для загрузки модели в память"""
+    """Serializer for loading a model into memory"""
     quantization = serializers.ChoiceField(
         choices=['float32', 'float16', 'bfloat16', 'int8', 'int4'],
         default='float16'
@@ -158,16 +158,16 @@ class ModelLoadSerializer(serializers.Serializer):
     )
 
 
-# Сериализатор для статуса памяти
+# Memory status serializer
 class MemoryStatusSerializer(serializers.Serializer):
-    """Сериализатор для статуса памяти"""
+    """Memory status serializer"""
     device = serializers.CharField()
     memory = serializers.DictField()
     loaded_models = serializers.ListField(child=serializers.CharField())
 
 
 class ModelMergeJobSerializer(serializers.ModelSerializer):
-    """Обновленный сериализатор для задач слияния"""
+    """Updated serializer for merge jobs"""
     base_model_name = serializers.CharField(source='base_model.display_name', read_only=True)
     merge_model_name = serializers.CharField(source='merge_model.display_name', read_only=True)
     output_model_name = serializers.CharField(source='output_model.display_name', read_only=True)
@@ -179,7 +179,7 @@ class ModelMergeJobSerializer(serializers.ModelSerializer):
 
 
 class ModelCheckpointSerializer(serializers.ModelSerializer):
-    """Обновленный сериализатор для моделей с загрузками"""
+    """Updated model serializer with download jobs"""
     download_jobs = ModelDownloadJobSerializer(many=True, read_only=True)
     versions_count = serializers.SerializerMethodField()
     evaluations_count = serializers.SerializerMethodField()
@@ -217,7 +217,7 @@ class ModelCheckpointSerializer(serializers.ModelSerializer):
         return obj.is_loaded_in_memory()
     
     def get_download_progress(self, obj):
-        # Получаем последнюю задачу загрузки
+        # Get the latest download job
         latest_job = obj.download_jobs.last()
         if latest_job:
             if latest_job.status == 'DOWNLOADING':
@@ -240,19 +240,19 @@ class ModelCheckpointSerializer(serializers.ModelSerializer):
         return {'status': 'not_started'}
     
     def validate(self, data):
-        """Валидация с автоматическим заполнением loader_config"""
-        # Если loader_config не предоставлен, создаем пустой словарь
+        """Validation with automatic loader_config population"""
+        # Create an empty dict if loader_config is not provided
         if 'loader_config' not in data:
             data['loader_config'] = {}
         
-        # Определяем тип модели
+        # Determine the model type
         model_type = data.get('model_type', self.instance.model_type if self.instance else 'CUSTOM')
         
-        # Получаем конфигурацию по умолчанию для типа модели
+        # Get the default config for the model type
         from ..models import ModelCheckpoint
         default_config = ModelCheckpoint.get_default_config(model_type)
         
-        # Заполняем отсутствующие поля значениями по умолчанию
+        # Fill missing fields with defaults
         for key, value in default_config.items():
             if key not in data['loader_config']:
                 data['loader_config'][key] = value
@@ -260,18 +260,18 @@ class ModelCheckpointSerializer(serializers.ModelSerializer):
         return data
     
     def create(self, validated_data):
-        """Создание модели с автоматическим заполнением loader_config"""
+        """Create a model with automatic loader_config population"""
         instance = super().create(validated_data)
-        # Дополнительно вызываем fill_missing_loader_config на сохраненном экземпляре
+        # Also call fill_missing_loader_config on the saved instance
         instance.fill_missing_loader_config()
         instance.save()
         return instance
     
     def update(self, instance, validated_data):
-        # Обрабатываем loader_config отдельно
+        # Handle loader_config separately
         loader_config = validated_data.pop('loader_config', None)
         if loader_config is not None:
-            # Объединяем с существующим конфигом
+            # Merge with the existing config
             current_config = instance.loader_config or {}
             current_config.update(loader_config)
             instance.loader_config = current_config

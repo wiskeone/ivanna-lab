@@ -380,7 +380,7 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         (_('Прогресс и статус'), {
-            'fields': ('status', 'progress_bar', 'current_step', 'error_details')
+            'fields': ('status', 'progress_bar', 'current_step')
         }),
         (_('Результаты и метрики'), {
             'fields': ('performance_display', 'performance_metrics', 'error_details'),

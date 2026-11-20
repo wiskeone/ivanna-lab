@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelMerger:
-    """Сервис слияния моделей с использованием mergekit"""
+    """Model merging service using mergekit"""
 
     def __init__(self, config: Optional[Dict] = None):
         self.config = config or {}
@@ -27,23 +27,23 @@ class ModelMerger:
         **kwargs
     ) -> Dict[str, Any]:
         """
-        Выполняет слияние двух моделей с помощью mergekit.
+        Merge two models using mergekit.
 
         Args:
-            base_model_path: Путь к базовой модели (локальный)
-            merge_model_path: Путь к модели для слияния (локальный)
-            output_path: Путь для сохранения результата
-            method: Метод слияния ('linear', 'slerp', 'ties', 'dare')
-            merge_ratio: Коэффициент слияния (0.0-1.0). Для TIES/DARE игнорируется.
-            density: Плотность для TIES/DARE (0.0-1.0)
-            **kwargs: Дополнительные параметры (передаются в mergekit)
+            base_model_path: Path to the base model (local)
+            merge_model_path: Path to the model to merge (local)
+            output_path: Path to save the result
+            method: Merge method ('linear', 'slerp', 'ties', 'dare')
+            merge_ratio: Merge ratio (0.0-1.0). Ignored for TIES/DARE.
+            density: Density for TIES/DARE (0.0-1.0)
+            **kwargs: Additional parameters (passed to mergekit)
 
         Returns:
-            Словарь с результатом: {'success': bool, 'output_path': str, 'message': str}
+            Dict with the result: {'success': bool, 'output_path': str, 'message': str}
         """
         logger.info(f"Starting model merge: {base_model_path} + {merge_model_path} using {method}")
 
-        # Создаём временный файл конфигурации для mergekit
+        # Create a temporary mergekit config file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as tmp:
             config_yaml = self._build_merge_config(
                 base_model_path, merge_model_path, method, merge_ratio, density, **kwargs
@@ -52,15 +52,15 @@ class ModelMerger:
             tmp_path = tmp.name
 
         try:
-            # Запускаем mergekit
+            # Run mergekit
             cmd = [
                 'mergekit-yaml',
                 tmp_path,
                 output_path,
                 '--copy-tokenizer',
-                '--allow-crimes',  # разрешает некоторые операции, например, слияние разных архитектур
+                '--allow-crimes',  # allows certain operations, e.g. merging different architectures
             ]
-            # Если есть GPU, можно добавить --cuda
+            # If a GPU is available, --cuda can be added
             if torch.cuda.is_available():
                 cmd.append('--cuda')
 
@@ -101,7 +101,7 @@ class ModelMerger:
                 'message': f"Merge failed: {e}"
             }
         finally:
-            # Удаляем временный файл
+            # Remove the temporary file
             os.unlink(tmp_path)
 
     def _build_merge_config(
@@ -114,9 +114,9 @@ class ModelMerger:
         **kwargs
     ) -> str:
         """
-        Строит YAML конфигурацию для mergekit.
+        Build the mergekit YAML configuration.
         """
-        # Базовый конфиг
+        # Base config
         config = {
             'merge_method': method,
             'base_model': base_path,
@@ -127,29 +127,29 @@ class ModelMerger:
             'dtype': 'bfloat16',
         }
 
-        # Для TIES и DARE нужна дополнительная настройка
+        # TIES and DARE require additional settings
         if method in ('ties', 'dare'):
             config['parameters'] = {
                 'density': density,
                 'normalize': True
             }
-            # Для TIES можно указать другие параметры
+            # Additional parameters can be set for TIES
             if method == 'ties':
                 config['parameters']['merge_mechanism'] = 'ties'
 
-        # Добавляем дополнительные параметры из kwargs: скалярные ключи
-        # (dtype и т.п.) переопределяются вызывающим, структурные — защищены
+        # Add extra parameters from kwargs: scalar keys
+        # (dtype etc.) are overridden by the caller, structural ones are protected
         protected = ('merge_method', 'base_model', 'models', 'parameters')
         for key, value in kwargs.items():
             if key not in protected:
                 config[key] = value
 
-        # Преобразуем в YAML
+        # Convert to YAML
         import yaml
         return yaml.dump(config, default_flow_style=False)
 
     def validate_merge_config(self, config: Dict) -> bool:
-        """Проверяет, что в конфиге есть обязательные поля."""
+        """Check that the config contains the required fields."""
         required = ['base_model', 'merge_model', 'output_path']
         for field in required:
             if field not in config:
@@ -158,7 +158,7 @@ class ModelMerger:
         return True
 
     def estimate_merge_resources(self, model_size_gb: float) -> Dict[str, float]:
-        """Оценка ресурсов."""
+        """Estimate resources."""
         return {
             'estimated_memory_gb': round(model_size_gb * 2.5, 2),
             'estimated_disk_gb': round(model_size_gb * 1.2, 2),
@@ -166,6 +166,6 @@ class ModelMerger:
         }
 
 
-# Глобальный экземпляр
+# Global instance
 merger = ModelMerger()
 ModelMergerService = ModelMerger

@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 class FAISSService:
     """
-    Сервис для работы с FAISS индексами.
-    - Поддержка различных типов индексов (Flat, IVF, HNSW).
-    - Сохранение/загрузка индекса с метаданными.
-    - Поиск с возвратом chunk_id и расстояния/сходства.
-    - Статистика индекса.
+    Service for working with FAISS indexes.
+    - Supports various index types (Flat, IVF, HNSW).
+    - Saves/loads the index with metadata.
+    - Search returning chunk_id and distance/similarity.
+    - Index statistics.
     """
 
     def __init__(self, index_dir: Optional[str] = None):
@@ -24,13 +24,13 @@ class FAISSService:
         os.makedirs(self.index_dir, exist_ok=True)
 
         self.index: Optional[faiss.Index] = None
-        self.chunk_ids: List[int] = []          # соответствие позиции в FAISS -> ID чанка
+        self.chunk_ids: List[int] = []          # FAISS position -> chunk ID mapping
         self.dimension: Optional[int] = None
         self.is_trained: bool = False
         self.metric: str = 'cosine'            # 'cosine', 'l2', 'ip'
 
     # ----------------------------------------------------------------------
-    # Внутренние методы для работы с путями
+    # Internal path helpers
     # ----------------------------------------------------------------------
     def _get_index_path(self, collection_id: int) -> str:
         return os.path.join(self.index_dir, f'collection_{collection_id}.faiss')
@@ -39,7 +39,7 @@ class FAISSService:
         return os.path.join(self.index_dir, f'collection_{collection_id}_meta.pkl')
 
     # ----------------------------------------------------------------------
-    # Создание и настройка индекса
+    # Index creation and configuration
     # ----------------------------------------------------------------------
     def create_index(
         self,
@@ -48,17 +48,17 @@ class FAISSService:
         metric: str = 'cosine'
     ) -> faiss.Index:
         """
-        Создать новый FAISS индекс.
-        - flat: точный, но медленный для >100k векторов.
-        - ivf: инвертированный файл, быстрый, требует обучения.
-        - hnsw: графовый, быстрый и точный, но больше памяти.
+        Create a new FAISS index.
+        - flat: exact, but slow for >100k vectors.
+        - ivf: inverted file, fast, requires training.
+        - hnsw: graph-based, fast and accurate, but more memory.
         """
         self.dimension = dimension
         self.metric = metric
         self.chunk_ids = []
         self.is_trained = False
 
-        # Определяем метрику
+        # Resolve the metric
         if metric == 'cosine' or metric == 'ip':
             faiss_metric = faiss.METRIC_INNER_PRODUCT
         elif metric == 'l2':
@@ -66,22 +66,22 @@ class FAISSService:
         else:
             raise ValueError(f"Unsupported metric: {metric}")
 
-        # Создаём индекс в зависимости от типа
+        # Create the index according to the type
         if index_type == 'flat':
             self.index = faiss.IndexFlat(dimension, faiss_metric)
-            self.is_trained = True  # плоский индекс не требует обучения
+            self.is_trained = True  # flat index requires no training
             logger.info(f"✅ Created Flat index, dim={dimension}, metric={metric}")
 
         elif index_type == 'ivf':
-            nlist = 100  # количество кластеров
+            nlist = 100  # number of clusters
             quantizer = faiss.IndexFlatL2(dimension) if metric == 'l2' else faiss.IndexFlatIP(dimension)
             self.index = faiss.IndexIVFFlat(quantizer, dimension, nlist, faiss_metric)
             logger.info(f"✅ Created IVF index, dim={dimension}, nlist={nlist}, metric={metric}")
 
         elif index_type == 'hnsw':
-            M = 16  # количество связей на узел
+            M = 16  # number of connections per node
             self.index = faiss.IndexHNSWFlat(dimension, M, faiss_metric)
-            self.is_trained = True  # HNSW не требует отдельного обучения
+            self.is_trained = True  # HNSW requires no separate training
             logger.info(f"✅ Created HNSW index, dim={dimension}, M={M}, metric={metric}")
 
         else:
@@ -91,18 +91,18 @@ class FAISSService:
 
     def train(self, vectors: np.ndarray) -> None:
         """
-        Обучить индекс (необходимо для IVF).
-        Векторы должны быть float32, форма (n_vectors, dimension).
+        Train the index (required for IVF).
+        Vectors must be float32, shape (n_vectors, dimension).
         """
         if self.index is None:
             raise ValueError("Index not created. Call create_index first.")
         if hasattr(self.index, 'is_trained') and not self.index.is_trained:
             if vectors.shape[0] < 100:
                 logger.warning(f"Too few vectors for training ({vectors.shape[0]}), generating synthetic data")
-                # Генерируем синтетические данные
+                # Generate synthetic data
                 n_synthetic = max(10000, self.dimension * 2)
                 synthetic = np.random.randn(n_synthetic, self.dimension).astype('float32')
-                # Нормализуем для косинусной метрики
+                # Normalize for the cosine metric
                 if self.metric == 'cosine':
                     synthetic = synthetic / np.linalg.norm(synthetic, axis=1, keepdims=True)
                 self.index.train(synthetic)
@@ -113,12 +113,12 @@ class FAISSService:
             self.is_trained = True
 
     # ----------------------------------------------------------------------
-    # Добавление векторов
+    # Adding vectors
     # ----------------------------------------------------------------------
     def add_vectors(self, vectors: np.ndarray, chunk_ids: List[int]) -> int:
         """
-        Добавить векторы в индекс.
-        Возвращает количество успешно добавленных векторов.
+        Add vectors to the index.
+        Returns the number of vectors successfully added.
         """
         if self.index is None:
             raise ValueError("Index not created")
@@ -127,24 +127,24 @@ class FAISSService:
         if vectors.shape[1] != self.dimension:
             raise ValueError(f"Vector dimension {vectors.shape[1]} != index dimension {self.dimension}")
 
-        # Нормализуем для косинусной метрики
+        # Normalize for the cosine metric
         if self.metric == 'cosine':
             norms = np.linalg.norm(vectors, axis=1, keepdims=True)
             norms[norms == 0] = 1.0
             vectors = vectors / norms
 
-        # Обучение, если требуется
+        # Train if required
         if hasattr(self.index, 'is_trained') and not self.index.is_trained:
             self.train(vectors)
 
-        # Добавляем
+        # Add
         self.index.add(vectors.astype('float32'))
         self.chunk_ids.extend(chunk_ids)
         logger.info(f"➕ Added {len(vectors)} vectors, total: {self.index.ntotal}")
         return len(vectors)
 
     # ----------------------------------------------------------------------
-    # Поиск
+    # Search
     # ----------------------------------------------------------------------
     def search(
         self,
@@ -153,15 +153,15 @@ class FAISSService:
         nprobe: Optional[int] = None
     ) -> List[Tuple[int, float]]:
         """
-        Поиск k ближайших соседей.
-        Возвращает список кортежей (chunk_id, similarity_score).
-        similarity_score для cosine/ip = скалярное произведение (чем выше, тем лучше).
-        Для l2 — преобразуем в сходство (1/(1+distance)).
+        Search for the k nearest neighbors.
+        Returns a list of (chunk_id, similarity_score) tuples.
+        similarity_score for cosine/ip = inner product (higher is better).
+        For l2 — converted to similarity (1/(1+distance)).
         """
         if self.index is None or self.index.ntotal == 0:
             return []
 
-        # Подготовка вектора запроса
+        # Prepare the query vector
         if isinstance(query_vector, list):
             query_vector = np.array(query_vector).astype('float32')
         if query_vector.ndim == 1:
@@ -169,17 +169,17 @@ class FAISSService:
         if query_vector.shape[1] != self.dimension:
             raise ValueError(f"Query dim {query_vector.shape[1]} != index dim {self.dimension}")
 
-        # Нормализация для cosine
+        # Normalize for cosine
         if self.metric == 'cosine':
             norm = np.linalg.norm(query_vector)
             if norm > 0:
                 query_vector = query_vector / norm
 
-        # Для IVF можно задать количество зондов
+        # For IVF, the number of probes can be set
         if nprobe is not None and hasattr(self.index, 'nprobe'):
             self.index.nprobe = nprobe
 
-        # Поиск
+        # Search
         distances, indices = self.index.search(query_vector, min(k, self.index.ntotal))
 
         results = []
@@ -187,22 +187,22 @@ class FAISSService:
             if idx != -1 and idx < len(self.chunk_ids):
                 chunk_id = self.chunk_ids[idx]
                 dist = distances[0][i]
-                # Преобразование расстояния в оценку сходства
+                # Convert distance to a similarity score
                 if self.metric == 'l2':
                     score = 1.0 / (1.0 + dist)
                 else:  # cosine/ip
-                    score = float(dist)  # уже скалярное произведение (от -1 до 1)
+                    score = float(dist)  # already the inner product (from -1 to 1)
                 results.append((chunk_id, score))
 
         return results
 
     # ----------------------------------------------------------------------
-    # Сохранение / загрузка
+    # Save / load
     # ----------------------------------------------------------------------
     def save_index(self, collection_id: int) -> Tuple[str, str]:
         """
-        Сохранить индекс и метаданные на диск.
-        Возвращает (index_path, metadata_path).
+        Save the index and metadata to disk.
+        Returns (index_path, metadata_path).
         """
         if self.index is None:
             raise ValueError("No index to save")
@@ -228,8 +228,8 @@ class FAISSService:
 
     def load_index(self, collection_id: int) -> bool:
         """
-        Загрузить индекс с диска.
-        Возвращает True при успехе.
+        Load the index from disk.
+        Returns True on success.
         """
         index_path = self._get_index_path(collection_id)
         metadata_path = self._get_metadata_path(collection_id)
@@ -253,7 +253,7 @@ class FAISSService:
             return False
 
     def delete_index(self, collection_id: int) -> int:
-        """Удалить файлы индекса коллекции."""
+        """Delete the index files of a collection."""
         index_path = self._get_index_path(collection_id)
         metadata_path = self._get_metadata_path(collection_id)
         deleted = 0
@@ -263,7 +263,7 @@ class FAISSService:
                 deleted += 1
         if deleted:
             logger.info(f"🗑️ Deleted index files for collection {collection_id}")
-        # Сброс состояния
+        # Reset state
         self.index = None
         self.chunk_ids = []
         self.dimension = None
@@ -271,10 +271,10 @@ class FAISSService:
         return deleted
 
     # ----------------------------------------------------------------------
-    # Статистика
+    # Statistics
     # ----------------------------------------------------------------------
     def get_index_stats(self, collection_id: int) -> Dict[str, Any]:
-        """Получить статистику индекса (без загрузки в память)."""
+        """Get index statistics (without loading into memory)."""
         index_path = self._get_index_path(collection_id)
         metadata_path = self._get_metadata_path(collection_id)
 
@@ -291,7 +291,7 @@ class FAISSService:
         if os.path.exists(index_path):
             stats['exists'] = True
             stats['file_size_mb'] = os.path.getsize(index_path) / (1024 * 1024)
-            # Пытаемся прочитать заголовок индекса без полной загрузки
+            # Try to read the index header without a full load
             try:
                 index = faiss.read_index(index_path, faiss.IO_FLAG_ONDISK | faiss.IO_FLAG_READ_ONLY)
                 stats['total_vectors'] = index.ntotal
@@ -318,10 +318,10 @@ class FAISSService:
         return stats
 
     # ----------------------------------------------------------------------
-    # Вспомогательные методы
+    # Helper methods
     # ----------------------------------------------------------------------
     def _detect_index_type(self) -> str:
-        """Определить тип текущего индекса."""
+        """Detect the type of the current index."""
         if isinstance(self.index, faiss.IndexFlat):
             return 'flat'
         elif isinstance(self.index, faiss.IndexIVFFlat):
@@ -333,7 +333,7 @@ class FAISSService:
 
     @staticmethod
     def _detect_index_type_from_index(index: faiss.Index) -> str:
-        """Определить тип индекса по объекту FAISS."""
+        """Detect the index type from a FAISS object."""
         if isinstance(index, faiss.IndexFlat):
             return 'flat'
         elif isinstance(index, faiss.IndexIVFFlat):
@@ -344,5 +344,5 @@ class FAISSService:
             return 'unknown'
 
     def get_vectors_count(self) -> int:
-        """Количество векторов в загруженном индексе."""
+        """Number of vectors in the loaded index."""
         return self.index.ntotal if self.index else 0

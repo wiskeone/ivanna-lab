@@ -99,7 +99,7 @@ def moe_dashboard(request):
 
 
 def _theme_prompt_stats(theme):
-    """Статистика наборов промптов темы для карточек/деталки."""
+    """Theme prompt-set stats for cards/detail pages."""
     from ..services.soft_moe import prompts as moe_prompts
     out = {}
     for attr, fn in (('domain', theme.domain_prompts_path),
@@ -170,7 +170,7 @@ def moe_theme_detail(request, pk):
 @login_required
 @require_POST
 def moe_theme_validate(request, pk):
-    """Запуск гейта валидации наборов (CPU-задача)."""
+    """Run the prompt-set validation gate (CPU task)."""
     from ..models import MoETheme
     from ..tasks_moe import moe_validate_theme_task
 
@@ -187,7 +187,7 @@ def moe_theme_validate(request, pk):
 @login_required
 @require_POST
 def moe_theme_router_build(request, pk):
-    """Центроиды роутера + тест точности (CPU-задача)."""
+    """Router centroids + accuracy test (CPU task)."""
     from ..models import MoETheme
     from ..tasks_moe import moe_router_build_task
 
@@ -203,7 +203,7 @@ def moe_theme_router_build(request, pk):
 @login_required
 @require_POST
 def moe_theme_route_test(request, pk):
-    """Маршрут одного запроса через центроиды темы (синхронно, для проверки)."""
+    """Route one query through the theme centroids (synchronous, for testing)."""
     from ..models import MoETheme
     from ..services.soft_moe import router as moe_router
 
@@ -272,7 +272,7 @@ def moe_job_repatch(request, pk):
 
 @login_required
 def moe_job_create(request):
-    """Создание задачи сборки эксперта: валидации → джоба → GPU-очередь."""
+    """Create an expert build job: validation -> job -> GPU queue."""
     from ..forms import MoEExpertJobForm
     from ..models import MoEExpertJob, MoETheme
     from ..tasks_moe import moe_build_expert_task
@@ -310,7 +310,7 @@ def moe_job_create(request):
 
 
 def _moe_charts(job):
-    """Данные для Plotly-визуализации страницы джобы (v5.2)."""
+    """Plotly chart data for the job page (v5.2)."""
     import numpy as np
 
     charts = {}
@@ -331,7 +331,7 @@ def _moe_charts(job):
         ls = sorted(per_layer)
         charts['writers'] = {'layers': ls, 'proj': [round(per_layer[l], 2) for l in ls]}
 
-    # направления из npz: нормы по слоям + теплокарта |d̂| (слои × бакеты)
+    # Directions from npz: per-layer norms + |d̂| heatmap (layers x buckets)
     try:
         npz_path = os.path.join(job.job_dir(), 'scan_dirs.npz')
         if os.path.exists(npz_path):
@@ -368,7 +368,7 @@ def _moe_charts(job):
 
 
 def _moe_hints(job):
-    """Интерпретация результатов — «что с этим делать» (v5.2)."""
+    """Result interpretation - "what to do with it" (v5.2)."""
     from django.utils.translation import gettext as _
 
     hints = []
@@ -435,7 +435,7 @@ def moe_job_detail(request, pk):
 
 
 def _moe_eval_texts(job):
-    """Тексты eval-гейта для ручной выборочной проверки (парные base/expert)."""
+    """Eval-gate texts for manual spot checks (base/expert pairs)."""
     if not job.eval_report:
         return []
     eval_dir = os.path.join(job.job_dir(), 'eval')
@@ -455,7 +455,7 @@ def _moe_eval_texts(job):
 @login_required
 @require_GET
 def moe_job_status(request, pk):
-    """JSON-статус для polling-страницы джобы."""
+    """JSON status for the job polling page."""
     from ..models import MoEExpertJob
 
     job = get_object_or_404(MoEExpertJob, pk=pk)
@@ -476,7 +476,7 @@ def moe_job_status(request, pk):
 @login_required
 @require_POST
 def moe_job_push_hf(request, pk):
-    """Публикация готового эксперта на Hugging Face."""
+    """Publish a finished expert to Hugging Face."""
     from ..models import MoEExpertJob
     from ..tasks_moe import moe_push_to_hf_task
 
@@ -499,7 +499,7 @@ def moe_job_push_hf(request, pk):
 @login_required
 @require_POST
 def moe_interpret(request, pk):
-    """Кайллер-фича: отправить отчёт прогона в модель джобы на интерпретацию."""
+    """Killer feature: send the run report to the job's model for interpretation."""
     from ..models import MoEExpertJob
     from ..tasks_moe import moe_interpret_task
 

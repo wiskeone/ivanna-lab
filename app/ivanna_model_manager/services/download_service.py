@@ -9,29 +9,29 @@ import traceback
 
 from ..models import ModelCheckpoint, ModelDownloadJob
 
-# Устанавливаем зеркало по умолчанию, если не задано в окружении
+# Set the default mirror if not configured in the environment
 HF_ENDPOINT = os.environ.get('HF_ENDPOINT', 'https://huggingface.co')
-os.environ['HF_ENDPOINT'] = HF_ENDPOINT  # для snapshot_download и HfApi
+os.environ['HF_ENDPOINT'] = HF_ENDPOINT  # for snapshot_download and HfApi
 
 logger = logging.getLogger(__name__)
 
 
 class DownloadService:
     """
-    Сервис для загрузки моделей с Hugging Face Hub с поддержкой:
-    - прогресса (опционально),
-    - отмены зависших блокировок,
-    - сохранения информации о задаче в БД.
+    Service for downloading models from Hugging Face Hub with support for:
+    - progress reporting (optional),
+    - canceling stuck locks,
+    - storing job info in the DB.
     """
 
     def __init__(self):
-        # Отключаем проблемные оптимизации hf_transfer
+        # Disable problematic hf_transfer optimizations
         os.environ['HF_HUB_ENABLE_HF_TRANSFER'] = '0'
-        self.hf_token = None  # больше не храним токен глобально
+        self.hf_token = None  # no longer stored globally
         self.api = None
 
     def _init_api(self, token: Optional[str] = None):
-        """Инициализирует HfApi с переданным токеном и зеркалом."""
+        """Initialize HfApi with the given token and mirror."""
         effective_token = token or os.environ.get('HF_TOKEN')
         if effective_token:
             self.api = HfApi(token=effective_token, endpoint=HF_ENDPOINT)
@@ -51,20 +51,20 @@ class DownloadService:
         progress_callback: Optional[Callable[[int, str], None]] = None
     ) -> ModelCheckpoint:
         """
-        Синхронная загрузка модели с Hugging Face.
-        - Создаёт/обновляет запись ModelDownloadJob.
-        - Вызывает snapshot_download.
-        - При успехе обновляет статус модели на 'DOWNLOADED'.
-        - При ошибке — статус 'ERROR' и сохраняет сообщение.
+        Download a model from Hugging Face synchronously.
+        - Creates/updates a ModelDownloadJob record.
+        - Calls snapshot_download.
+        - On success updates the model status to 'DOWNLOADED'.
+        - On error sets status 'ERROR' and stores the message.
         """
         checkpoint = ModelCheckpoint.objects.get(id=checkpoint_id)
         if not checkpoint.huggingface_id:
             raise ValueError("Hugging Face ID не указан")
 
-        # Инициализируем API с переданным токеном
+        # Initialize the API with the given token
         effective_token = self._init_api(token)
 
-        # Создаём или получаем активную задачу загрузки
+        # Create or fetch the active download job
         download_job, created = ModelDownloadJob.objects.get_or_create(
             checkpoint=checkpoint,
             status__in=['PENDING', 'DOWNLOADING'],
@@ -92,21 +92,21 @@ class DownloadService:
         progress_cb(5, "Подготовка к загрузке...")
 
         try:
-            # Определяем путь для сохранения
+            # Determine the save path
             cache_dir = os.environ.get('MODEL_CACHE_DIR', '/app/media/model_cache')
             safe_name = checkpoint.safe_name
             local_dir = os.path.join(cache_dir, safe_name)
             os.makedirs(local_dir, exist_ok=True)
 
-            logger.info(f"⬇️ Загрузка {checkpoint.huggingface_id} -> {local_dir} (через {HF_ENDPOINT})")
+            logger.info(f"⬇️ Downloading {checkpoint.huggingface_id} -> {local_dir} (via {HF_ENDPOINT})")
 
-            # Получаем информацию о модели (размеры, файлы) для прогресса
+            # Fetch model info (sizes, files) for progress reporting
             param_count = 0
             try:
                 model_info = self.api.model_info(checkpoint.huggingface_id)
                 total_size = sum(s.size for s in model_info.siblings if s.size) if hasattr(model_info, 'siblings') else 0
-                logger.info(f"Общий размер модели: {total_size / (1024**3):.2f} GB")
-                # v5.2: число параметров — из метаданных safetensors (иначе size_gb в реестре = 0)
+                logger.info(f"Total model size: {total_size / (1024**3):.2f} GB")
+                # v5.2: parameter count comes from safetensors metadata (otherwise size_gb in the registry = 0)
                 st = getattr(model_info, 'safetensors', None)
                 if st and getattr(st, 'total_params', None):
                     param_count = int(st.total_params)
@@ -115,9 +115,9 @@ class DownloadService:
 
             progress_cb(10, "Начало загрузки...")
 
-            # Список файлов для игнорирования (чтобы не качать лишнее).
-            # GGUF/GGML режем только если в репо есть другие веса: GGUF-репо
-            # (например, квантованные сборки) иначе скачивалось бы пустым.
+            # List of files to ignore (avoid downloading unnecessary data).
+            # GGUF/GGML are excluded only if the repo has other weights: a GGUF repo
+            # (e.g. quantized builds) would otherwise be downloaded empty.
             repo_files = [s.rfilename for s in (model_info.siblings or [])] \
                 if (model_info is not None and getattr(model_info, 'siblings', None)) else []
             has_other_weights = any(
@@ -129,30 +129,30 @@ class DownloadService:
                 "*.pdf",
                 "*.onnx",
                 "*.tflite",
-                "pytorch_model.bin",  # если есть safetensors, игнорируем bin
+                "pytorch_model.bin",  # ignore bin when safetensors exist
             ]
             if has_other_weights:
                 ignore_patterns += ["*.gguf", "*.ggml"]
             elif repo_files:
-                # GGUF-only репо: не тащим лишние стандартные файлы
+                # GGUF-only repo: do not drag in extra standard files
                 ignore_patterns += ["*.md", "*.gitattributes"]
 
-            # Используем snapshot_download с явным endpoint
+            # Use snapshot_download with an explicit endpoint
             local_path = snapshot_download(
                 repo_id=checkpoint.huggingface_id,
                 revision=checkpoint.huggingface_revision or "main",
                 cache_dir=cache_dir,
                 local_dir=local_dir,
-                local_dir_use_symlinks=False,  # копируем файлы
+                local_dir_use_symlinks=False,  # copy files
                 ignore_patterns=ignore_patterns,
                 token=effective_token,
                 resume_download=True,
-                endpoint=HF_ENDPOINT,          # явно передаём зеркало
+                endpoint=HF_ENDPOINT,          # pass the mirror explicitly
             )
 
             progress_cb(90, "Файлы загружены, обновление статуса...")
 
-            # Обновляем модель
+            # Update the model
             checkpoint.local_path = local_path
             checkpoint.relative_path = f"models/{safe_name}"
             checkpoint.status = 'DOWNLOADED'
@@ -161,18 +161,18 @@ class DownloadService:
                 checkpoint.parameter_count = param_count
             checkpoint.save()
 
-            # Обновляем задачу
+            # Update the job
             download_job.status = 'COMPLETED'
             download_job.completed_at = timezone.now()
             download_job.local_path = local_path
             download_job.progress = 100
             download_job.save()
 
-            logger.info(f"✅ Модель {checkpoint.huggingface_id} успешно загружена")
+            logger.info(f"✅ Model {checkpoint.huggingface_id} downloaded successfully")
             return checkpoint
 
         except GatedRepoError as e:
-            logger.error(f"❌ Модель требует токен, но он не предоставлен или недействителен: {e}")
+            logger.error(f"❌ Model requires a token, but it was not provided or is invalid: {e}")
             checkpoint.status = 'ERROR'
             checkpoint.error_message = "Модель требует аутентификации. Добавьте токен Hugging Face в профиль."
             checkpoint.save()
@@ -183,7 +183,7 @@ class DownloadService:
             raise
 
         except (RepositoryNotFoundError, LocalEntryNotFoundError) as e:
-            logger.error(f"❌ Репозиторий не найден: {e}")
+            logger.error(f"❌ Repository not found: {e}")
             checkpoint.status = 'ERROR'
             checkpoint.error_message = f"Репозиторий не найден: {str(e)}"
             checkpoint.save()
@@ -194,7 +194,7 @@ class DownloadService:
             raise
 
         except Exception as e:
-            logger.error(f"❌ Ошибка загрузки модели {checkpoint.id}: {e}")
+            logger.error(f"❌ Model download error {checkpoint.id}: {e}")
             logger.error(traceback.format_exc())
             checkpoint.status = 'ERROR'
             checkpoint.error_message = str(e)
@@ -206,5 +206,5 @@ class DownloadService:
             raise
 
 
-# Глобальный экземпляр
+# Global instance
 download_service = DownloadService()

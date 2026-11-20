@@ -149,11 +149,11 @@ class DistillationQuestionSetUpdateView(LoginRequiredMixin, UpdateView):
 
 @login_required
 def distillation_question_set_edit_groups(request, pk):
-    """Редактирование групп чанков набора."""
+    """Edit the question set's chunk groups."""
     question_set = get_object_or_404(DistillationQuestionSet, pk=pk, created_by=request.user.username)
 
     if request.method == 'POST':
-        # Обработка действий: добавить группу, удалить, обновить чанки
+        # Handle actions: add group, delete, update chunks
         action = request.POST.get('action')
         if action == 'add_group':
             group = DistillationChunkGroup.objects.create(
@@ -177,7 +177,7 @@ def distillation_question_set_edit_groups(request, pk):
                 group.save()
         return redirect('distillation_question_set_detail', pk=question_set.id)
 
-    # GET: показываем форму
+    # GET: show the form
     all_chunks = DocumentChunk.objects.filter(
         document__collection=question_set.collection,
         is_active=True
@@ -194,7 +194,7 @@ def distillation_question_set_edit_groups(request, pk):
 @login_required
 @require_POST
 def distillation_start_question_generation(request, pk):
-    """Запуск генерации вопросов для набора (через Celery)."""
+    """Start question generation for the set (via Celery)."""
     question_set = get_object_or_404(DistillationQuestionSet, pk=pk, created_by=request.user.username)
 
     teacher_model_id = request.POST.get('teacher_model_id')
@@ -203,7 +203,7 @@ def distillation_start_question_generation(request, pk):
         messages.error(request, _('Не выбрана модель-учитель'))
         return redirect('distillation_question_set_detail', pk=question_set.id)
 
-    # Обновляем конфигурацию, если передана
+    # Update the config if provided
     gen_config = {}
     if request.POST.get('prompt_template'):
         gen_config['prompt_template'] = request.POST['prompt_template']
@@ -221,7 +221,7 @@ def distillation_start_question_generation(request, pk):
 
 
 class DistillationQuestionListView(LoginRequiredMixin, ListView):
-    """Список вопросов (можно фильтровать по набору)."""
+    """List questions (filterable by set)."""
     model = DistillationQuestion
     template_name = 'ivanna_model_manager/distillation/question_list.html'
     context_object_name = 'questions'
@@ -245,7 +245,7 @@ class DistillationQuestionListView(LoginRequiredMixin, ListView):
 
 @login_required
 def distillation_question_edit(request, pk):
-    """Редактирование вопроса (вручную изменить текст вопроса и ответа)."""
+    """Edit a question (manually change question and answer text)."""
     question = get_object_or_404(DistillationQuestion, pk=pk, group__question_set__created_by=request.user.username)
 
     if request.method == 'POST':
@@ -291,10 +291,10 @@ class DistillationAnswerJobCreateView(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        # Устанавливаем created_by
+        # Set created_by
         form.instance.created_by = self.request.user.username
 
-        # Собираем generation_config из POST-параметров
+        # Build generation_config from POST parameters
         generation_config = {
             'max_tokens': int(self.request.POST.get('max_tokens', 1024)),
             'temperature': float(self.request.POST.get('temperature', 0.6)),
@@ -307,15 +307,15 @@ class DistillationAnswerJobCreateView(LoginRequiredMixin, CreateView):
             generation_config['prompt_template'] = prompt_template
         form.instance.generation_config = generation_config
 
-        # Обработка выбора вопросов
+        # Question selection handling
         question_set = form.cleaned_data.get('question_set')
-        question_ids_str = self.request.POST.get('question_ids_str', '')   # ключ должен совпадать с именем поля в шаблоне
+        question_ids_str = self.request.POST.get('question_ids_str', '')   # key must match the template field name
 
         if question_set:
-            questions = DistillationQuestion.objects.filter(group__question_set=question_set)   # исправлено
+            questions = DistillationQuestion.objects.filter(group__question_set=question_set)   # fixed
             form.instance.question_ids = list(questions.values_list('id', flat=True))
             form.instance.planned_count = questions.count()
-            form.instance.question_set = question_set   # убедимся, что question_set установлен
+            form.instance.question_set = question_set   # make sure question_set is set
         elif question_ids_str:
             question_ids = [int(id.strip()) for id in question_ids_str.split(',') if id.strip().isdigit()]
             form.instance.question_ids = question_ids
@@ -325,7 +325,7 @@ class DistillationAnswerJobCreateView(LoginRequiredMixin, CreateView):
             form.add_error(None, 'Необходимо выбрать набор вопросов или указать ID конкретных вопросов.')
             return self.form_invalid(form)
 
-        # Сохраняем объект
+        # Save the object
         response = super().form_valid(form)
         messages.success(self.request, f'Задача "{self.object.name}" успешно создана. Генерация ответов начнётся после запуска.')
         return response
@@ -344,7 +344,7 @@ class DistillationAnswerJobDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Получаем вопросы
+        # Get the questions
         if self.object.question_ids:
             questions = DistillationQuestion.objects.filter(id__in=self.object.question_ids)
         elif self.object.question_set:
@@ -352,12 +352,12 @@ class DistillationAnswerJobDetailView(LoginRequiredMixin, DetailView):
         else:
             questions = DistillationQuestion.objects.none()
         
-        # Получаем все ответы для этой задачи, отсортированные по убыванию даты
+        # Get all answers for this job, newest first
         answers = DistillationAnswer.objects.filter(
             answer_job=self.object
         ).select_related('question').order_by('-created_at')
         
-        # Группируем ответы по вопросам
+        # Group answers by question
         answers_by_question = {}
         for ans in answers:
             if ans.question_id not in answers_by_question:
@@ -371,7 +371,7 @@ class DistillationAnswerJobDetailView(LoginRequiredMixin, DetailView):
             qa_pairs.append({
                 'question': q,
                 'answer': latest_answer,
-                'all_answers': question_answers,  # для истории версий
+                'all_answers': question_answers,  # for version history
                 'has_multiple_answers': len(question_answers) > 1
             })
         
@@ -386,7 +386,7 @@ class DistillationAnswerJobDetailView(LoginRequiredMixin, DetailView):
 @login_required
 @require_POST
 def distillation_start_answer_generation(request, pk):
-    """Запуск генерации ответов для задачи."""
+    """Start answer generation for the job."""
     job = get_object_or_404(DistillationAnswerJob, pk=pk, created_by=request.user.username)
 
     teacher_model_id = request.POST.get('teacher_model_id')
@@ -395,7 +395,7 @@ def distillation_start_answer_generation(request, pk):
         messages.error(request, _('Не выбрана модель-учитель'))
         return redirect('distillation_answer_job_detail', pk=job.id)
 
-    # Обновляем конфигурацию
+    # Update the config
     gen_config = {}
     if request.POST.get('prompt_template'):
         gen_config['prompt_template'] = request.POST['prompt_template']
@@ -437,7 +437,7 @@ def distillation_resume_question_generation(request, pk):
 @login_required
 @require_POST
 def distillation_resume_answer_generation(request, pk):
-    """Возобновление задачи генерации ответов из чекпоинта."""
+    """Resume the answer generation job from a checkpoint."""
     job = get_object_or_404(DistillationAnswerJob, pk=pk, created_by=request.user.username)
 
     if not job.checkpoint_data:
@@ -448,17 +448,17 @@ def distillation_resume_answer_generation(request, pk):
         messages.error(request, _('Задача уже выполняется'))
         return redirect('distillation_answer_job_detail', pk=job.id)
 
-    # Берём параметры из чекпоинта (модель-учитель, квантизация)
+    # Take parameters from the checkpoint (teacher model, quantization)
     teacher_model_id = job.checkpoint_data.get('teacher_model_id')
     quantization = job.checkpoint_data.get('quantization', 'int4')
     if not teacher_model_id:
         messages.error(request, _('В чекпоинте не указана модель-учитель'))
         return redirect('distillation_answer_job_detail', pk=job.id)
 
-    # Запускаем задачу (она сама продолжит с сохранённого чекпоинта)
+    # Launch the task (it will resume from the saved checkpoint on its own)
     task = generate_answers_for_questions_task.delay(job.id, teacher_model_id, quantization)
     job.celery_task_id = task.id
-    job.status = 'PENDING'  # задача сама переведёт в RUNNING
+    job.status = 'PENDING'  # the task will switch to RUNNING itself
     job.save(update_fields=['celery_task_id', 'status'])
 
     messages.success(request, f'Задача на генерацию ответов возобновлена (ID: {task.id})')
@@ -468,7 +468,7 @@ def distillation_resume_answer_generation(request, pk):
 @login_required
 @require_POST
 def distillation_delete_answer_job(request, pk):
-    """Удаление задачи генерации ответов."""
+    """Delete an answer generation job."""
     job = get_object_or_404(DistillationAnswerJob, pk=pk, created_by=request.user.username)
     DistillationAnswer.objects.filter(answer_job=job).delete()
     job.delete()
@@ -478,7 +478,7 @@ def distillation_delete_answer_job(request, pk):
 @login_required
 @require_POST
 def distillation_restart_answer_job(request, pk):
-    """Перезапуск задачи: удаление всех ответов и сброс статуса."""
+    """Restart the job: delete all answers and reset the status."""
     job = get_object_or_404(DistillationAnswerJob, pk=pk, created_by=request.user.username)
     deleted_count = DistillationAnswer.objects.filter(answer_job=job).count()
     DistillationAnswer.objects.filter(answer_job=job).delete()
@@ -498,11 +498,11 @@ class DistillationDatasetListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        # Объединяем DistillationDataset и ManualInstructionSet
+        # Merge DistillationDataset and ManualInstructionSet
         distillation_datasets = DistillationDataset.objects.filter(created_by=self.request.user.username)
         manual_sets = ManualInstructionSet.objects.filter(created_by=self.request.user.username)
 
-        # Преобразуем в список словарей с общими полями
+        # Convert to a list of dicts with common fields
         combined = []
         for ds in distillation_datasets:
             combined.append({
@@ -527,13 +527,13 @@ class DistillationDatasetListView(LoginRequiredMixin, ListView):
                 'url_export': reverse('manual_instruction_set_export', args=[ms.id]),
             })
 
-        # Сортировка
+        # Sorting
         sort = self.request.GET.get('sort', '-created_at')
         reverse_sort = sort.startswith('-')
         key_field = sort.lstrip('-')
         combined.sort(key=lambda x: x[key_field], reverse=reverse_sort)
 
-        # Поиск по имени
+        # Name search
         q = self.request.GET.get('q', '')
         if q:
             combined = [d for d in combined if q.lower() in d['name'].lower()]
@@ -553,7 +553,7 @@ class DistillationDatasetDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Добавим возможность фильтрации? Пока ничего не добавляем
+        # Could add filtering here; nothing added for now
         return context
 
 
@@ -631,7 +631,7 @@ def manual_instruction_set_export(request, pk):
 
 
 # ============================================================================
-# ХФ датасеты
+# HF datasets
 # ============================================================================
 class HuggingFaceDatasetListView(LoginRequiredMixin, ListView):
     model = HuggingFaceDataset

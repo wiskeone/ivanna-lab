@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 
 class GenerationPreset(models.Model):
     """
-    v5.0: именованный профиль параметров генерации.
+    v5.0: named generation parameter profile.
 
-    Переиспользуется в чат-сессиях и сравнениях: применение пресета
-    мержит его конфиг в generation_config сессии (не заменяет целиком).
+    Reused in chat sessions and comparisons: applying a preset merges
+    its config into the session generation_config (does not replace it).
     """
     name = models.CharField(
         max_length=100,
@@ -59,10 +59,10 @@ class GenerationPreset(models.Model):
 
 
 class MoETheme(models.Model):
-    """Тема (домен) для мягкого MoE: наборы промптов + артефакты роутера.
+    """Theme (domain) for soft MoE: prompt sets + router artifacts.
 
-    Наборы — txt-файлы (1 промпт = строка) в MEDIA_ROOT/moe_themes/<slug>/.
-    Гейт валидации: cross cos(domain, contrast) < 0.5 (эмбеддинги).
+    Sets are txt files (1 prompt per line) in MEDIA_ROOT/moe_themes/<slug>/.
+    Validation gate: cross cos(domain, contrast) < 0.5 (embeddings).
     """
     VALIDATION_CHOICES = [
         ('NONE', _('Не проверена')),
@@ -76,7 +76,7 @@ class MoETheme(models.Model):
                             verbose_name=_("Слаг (для файлов)"))
     description = models.TextField(blank=True, verbose_name=_("Описание домена"))
 
-    # Файлы наборов (относительные пути от MEDIA_ROOT)
+    # Prompt set files (relative paths from MEDIA_ROOT)
     domain_prompts_file = models.CharField(max_length=500, blank=True,
                                            verbose_name=_("Файл доменных промптов"))
     contrast_prompts_file = models.CharField(max_length=500, blank=True,
@@ -86,17 +86,17 @@ class MoETheme(models.Model):
     eval_contrast_file = models.CharField(max_length=500, blank=True,
                                           verbose_name=_("Файл eval-общих промптов"))
 
-    # Валидация наборов (гейт Этапа 0)
+    # Set validation (Stage 0 gate)
     validation_status = models.CharField(max_length=10, choices=VALIDATION_CHOICES,
                                          default='NONE')
     validation_report = models.JSONField(default=dict, blank=True)
 
-    # Эмбеддинг-модель для валидации и роутера
+    # Embedding model for validation and the router
     embedding_model = models.ForeignKey(
         'EmbeddingModel', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='moe_themes', verbose_name=_("Модель эмбеддингов"))
 
-    # Роутер (Этап 4)
+    # Router (Stage 4)
     router_threshold = models.FloatField(default=0.08,
                                          help_text=_("margin cos(тема)−cos(контраст) > порога → эксперт"))
     router_report = models.JSONField(default=dict, blank=True)
@@ -126,7 +126,7 @@ class MoETheme(models.Model):
             self.slug = slug
         super().save(*args, **kwargs)
 
-    # Пути к файлам наборов
+    # Prompt set file paths
     def _media_path(self, rel):
         from django.conf import settings
         return os.path.join(settings.MEDIA_ROOT, rel) if rel else None
@@ -152,7 +152,7 @@ class MoETheme(models.Model):
 
 
 class MoEExpertJob(models.Model):
-    """Задача создания мягкого MoE-эксперта из плотной модели (скан → патч → гейты)."""
+    """Job building a soft MoE expert from a dense model (scan → patch → gates)."""
     STATUS_CHOICES = [
         ('PENDING', _('В очереди')),
         ('VALIDATING', _('Проверка входа')),
@@ -181,15 +181,15 @@ class MoEExpertJob(models.Model):
         'ModelCheckpoint', on_delete=models.CASCADE,
         related_name='moe_expert_jobs', verbose_name=_("Базовая плотная модель"))
 
-    # Параметры патча (по умолчанию — значения, проверенные в лабе)
+    # Patch parameters (defaults verified in the lab)
     mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='steer')
-    # v5.2: цель весовой операции — усилить тему (мягкий MoE) или подавить
-    # (WSP-абляция, как Эксп.1 с think-направлением: W ← (I−α·d̂d̂ᵀ)W)
+    # v5.2: goal of the weight operation — amplify the theme (soft MoE) or
+    # suppress it (WSP ablation, like Exp. 1 with the think direction: W ← (I−α·d̂d̂ᵀ)W)
     goal = models.CharField(max_length=10, choices=[
         ('amplify', _('amplify — усилить тему (мягкий MoE)')),
         ('ablate', _('ablate — подавить тему (WSP-абляция, как Эксп. 1)')),
     ], default='amplify', verbose_name=_("Цель операции"))
-    # v5.2: режим анализа — только скан и отчёты (основа решения «до сборки»)
+    # v5.2: analysis mode — scan and reports only (basis of the "pre-build" decision)
     do_patch = models.BooleanField(default=True,
                                    help_text=_("Снять флажок = только скан и визуализация, без патча и чекпойнта"))
     alpha = models.FloatField(default=0.2,
@@ -203,28 +203,28 @@ class MoEExpertJob(models.Model):
     holdout_seed = models.IntegerField(default=7)
     load_mode = models.CharField(max_length=10, choices=LOAD_MODE_CHOICES, default='auto')
 
-    # Опциональные этапы
+    # Optional stages
     do_eval = models.BooleanField(default=True,
                                   help_text=_("Eval-гейт: генерация base vs expert на eval-наборах темы"))
     do_router = models.BooleanField(default=True,
                                     help_text=_("Построить центроиды роутера и прогнать тест точности"))
 
-    # Статус и прогресс (паттерн FineTuningJob)
+    # Status and progress (FineTuningJob pattern)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     progress = models.FloatField(default=0.0)
     current_step = models.CharField(max_length=255, blank=True)
 
-    # Отчёты этапов
+    # Stage reports
     scan_report = models.JSONField(default=dict, blank=True)
     patch_report = models.JSONField(default=dict, blank=True)
     eval_report = models.JSONField(default=dict, blank=True)
     router_report = models.JSONField(default=dict, blank=True)
 
-    # v5.2: LLM-интерпретация результатов (killer feature) — текст, сгенерированный
-    # моделью по дайджесту отчётов скана/патча/eval/роутера
+    # v5.2: LLM interpretation of results (killer feature) — text generated
+    # by the model from a digest of the scan/patch/eval/router reports
     interpretation = models.TextField(blank=True, default='',
                                       help_text=_("LLM-интерпретация результатов прогона"))
-    # v5.3: клик-инструмент re-patch — конфиг из выделения на теплокартах
+    # v5.3: re-patch click tool — config from the heatmap selection
     patch_config = models.JSONField(default=dict, blank=True,
                                     help_text=_("Слои/группы размерностей из выделения на теплокартах"))
     reuse_scan_from = models.ForeignKey(
@@ -232,14 +232,14 @@ class MoEExpertJob(models.Model):
         related_name='repatch_children',
         help_text=_("Родительская джоба: переиспользовать её скан (npz/scan_report), пропустить скан-фазу"))
 
-    # Выход
+    # Output
     output_model = models.ForeignKey(
         'ModelCheckpoint', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='moe_output_of', verbose_name=_("Модель-эксперт"))
     hf_repo_id = models.CharField(max_length=300, blank=True,
                                   verbose_name=_("HF-репозиторий (после публикации)"))
 
-    # Логи и ошибки
+    # Logs and errors
     logs = models.TextField(blank=True)
     error_message = models.TextField(blank=True)
     error_details = models.JSONField(default=dict, blank=True)
@@ -263,7 +263,7 @@ class MoEExpertJob(models.Model):
         return f"{self.name} ({self.get_status_display()})"
 
     def job_dir(self):
-        """Каталог артефактов джобы: scan npz/отчёт + выходная модель."""
+        """Job artifact directory: scan npz/report + output model."""
         from django.conf import settings
         return os.path.join(settings.MEDIA_ROOT, 'moe_experts', str(self.pk))
 

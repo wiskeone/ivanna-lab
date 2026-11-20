@@ -27,13 +27,13 @@ logger = logging.getLogger(__name__)
 # Sentinel for "no shared version recorded yet" (None means never invalidated)
 _BM25_NO_VERSION = '__none__'
 
-# HF endpoint: не перебивать окружение зеркалом жёстко — этот модуль
-# импортируется первым через services/__init__ и отравлял os.environ
-# для download_service (скачивание моделей падало FileMetadataError).
+# HF endpoint: do not force the mirror into the environment — this module
+# is imported first via services/__init__ and used to poison os.environ
+# for download_service (model downloads failed with FileMetadataError).
 os.environ.setdefault('HF_ENDPOINT', 'https://huggingface.co')
 
 # ----------------------------------------------------------------------
-# Вспомогательная функция очистки кэша для указанной модели
+# Helper: clean the HF cache for the given model
 # ----------------------------------------------------------------------
 def _clean_hf_cache_for_model(repo_id: str):
     try:
@@ -42,11 +42,11 @@ def _clean_hf_cache_for_model(repo_id: str):
         if not repos_to_delete:
             logger.info(f"No cache entries found for {repo_id}")
             return
-        # Собираем строковые идентификаторы ревизий
+        # Collect string revision identifiers
         revisions = []
         for repo in repos_to_delete:
             for rev in repo.revisions:
-                revisions.append(rev.commit_hash)  # или rev.revision, смотря что есть
+                revisions.append(rev.commit_hash)  # or rev.revision, depending on availability
         strategy = cache_info.delete_revisions(*revisions)
         strategy.execute()
         logger.info(f"Cleaned global HF cache for {repo_id}")
@@ -55,26 +55,26 @@ def _clean_hf_cache_for_model(repo_id: str):
 
 class EnhancedSearchService:
     """
-    Улучшенный сервис поиска с поддержкой:
-    - семантического поиска (FAISS) с использованием моделей эмбеддингов из БД
-    - ключевого поиска (BM25)
-    - гибридного поиска с весами
-    - учёта свежести документа
-    - реранжирования (кросс-энкодер с автоопределением языка)
-    - поддержки нескольких коллекций
+    Enhanced search service supporting:
+    - semantic search (FAISS) using embedding models from the DB
+    - keyword search (BM25)
+    - hybrid search with weights
+    - document freshness scoring
+    - reranking (cross-encoder with automatic language detection)
+    - multiple collection support
     """
 
     def __init__(self):
         self.embedding = embedding_service
         self.faiss = FAISSService()
         self._faiss_index_cache = {}
-        self._rerankers = {}  # язык -> модель
+        self._rerankers = {}  # language -> model
         self.bm25_service = BM25Service() if getattr(settings, 'KEYWORD_SEARCH_ENGINE', 'bm25') == 'bm25' else None
-        self._bm25_index_built = set()  # коллекции, для которых построен BM25 индекс
-        self._bm25_index_versions = {}  # коллекция -> версия из общего кэша при построении
+        self._bm25_index_built = set()  # collections with a built BM25 index
+        self._bm25_index_versions = {}  # collection -> shared cache version at build time
 
     def _clean_hf_cache_for_model(self, repo_id: str):
-        """Удаляет все ревизии указанной модели из глобального кэша Hugging Face."""
+        """Removes all revisions of the given model from the global Hugging Face cache."""
         try:
             cache_info = scan_cache_dir()
             repos_to_delete = [r for r in cache_info.repos if r.repo_id == repo_id]
@@ -92,7 +92,7 @@ class EnhancedSearchService:
             logger.warning(f"Failed to clean HF cache for {repo_id}: {e}")
 
     def _load_cross_encoder_with_retry(self, model_name: str, max_retries: int = 2) -> Optional[CrossEncoder]:
-        """Загружает кросс-энкодер с повторными попытками, используя CPU при OOM."""
+        """Loads the cross-encoder with retries, falling back to CPU on OOM."""
         devices_to_try = ['cuda' if torch.cuda.is_available() else 'cpu', 'cpu']
         for attempt in range(max_retries):
             for device in devices_to_try:
@@ -110,7 +110,7 @@ class EnhancedSearchService:
                 except Exception as e:
                     logger.warning(f"Failed to load {model_name} on {device}: {e}")
 
-            # Если не удалось загрузить на этом проходе, чистим кэш и повторяем
+            # If loading failed on this pass, clean the cache and retry
             if attempt < max_retries - 1:
                 self._clean_hf_cache_for_model(model_name)
                 time.sleep(2)
@@ -119,8 +119,8 @@ class EnhancedSearchService:
 
     def _get_reranker(self, query: str, reranker_model=None):
         """
-        v5.2: если у коллекции выбран реранкер (RerankerModel) — загружаем его.
-        Иначе — авто по языку запроса (DiTy/cross-encoder-russian-msmarco для ru).
+        v5.2: if the collection has a selected reranker (RerankerModel), load it.
+        Otherwise auto-select by query language (DiTy/cross-encoder-russian-msmarco for ru).
         """
         if reranker_model is not None:
             mid = reranker_model.model_id
@@ -135,7 +135,7 @@ class EnhancedSearchService:
                 except Exception:
                     lang = 'en'
                 return self._rerankers[mid], lang
-            logger.warning(f"Collection reranker {mid} недоступен — fallback на авто-выбор")
+            logger.warning(f"Collection reranker {mid} unavailable — falling back to auto-selection")
         try:
             lang = langdetect.detect(query)
         except:
@@ -167,7 +167,7 @@ class EnhancedSearchService:
             return self._rerankers[model_name_en], lang
 
     # ----------------------------------------------------------------------
-    # Семантический поиск (FAISS)
+    # Semantic search (FAISS)
     # ----------------------------------------------------------------------
     def semantic_search(
         self,
@@ -197,7 +197,7 @@ class EnhancedSearchService:
                     return []
             faiss_svc = self._faiss_index_cache[collection_id]
 
-            # Проверка размерности
+            # Dimension check
             if query_emb.ndim == 1:
                 query_emb = query_emb.reshape(1, -1)
             if query_emb.shape[1] != faiss_svc.dimension:
@@ -235,7 +235,7 @@ class EnhancedSearchService:
             return []
 
     # ----------------------------------------------------------------------
-    # Ключевой поиск (BM25)
+    # Keyword search (BM25)
     # ----------------------------------------------------------------------
     def keyword_search(
         self,
@@ -245,7 +245,7 @@ class EnhancedSearchService:
         use_bm25: bool = True
     ) -> List[Dict[str, Any]]:
         """
-        Поиск по ключевым словам с использованием BM25.
+        Keyword search using BM25.
         """
         logger.info(f"keyword_search: query='{query[:50]}...', collection_id={collection_id}, k={k}, use_bm25={use_bm25}")
         if not collection_id:
@@ -253,7 +253,7 @@ class EnhancedSearchService:
             return []
 
         if use_bm25 and self.bm25_service:
-            # Получаем все чанки коллекции (активные)
+            # Fetch all chunks of the collection (active)
             chunks_qs = DocumentChunk.objects.filter(
                 document__collection_id=collection_id,
                 is_active=True
@@ -263,7 +263,7 @@ class EnhancedSearchService:
             if not chunks_list:
                 return []
 
-            # Проверяем, есть ли уже индекс в кэше
+            # Check whether the index is already cached
             # Audit fix: the in-memory index is per-process — a version key in
             # the shared Django cache makes invalidation visible to other
             # processes (web vs celery workers)
@@ -277,11 +277,11 @@ class EnhancedSearchService:
                 self._bm25_index_versions[collection_id] = shared_ver
                 logger.info(f"BM25 index built for collection {collection_id} (shared version={shared_ver})")
 
-            # Выполняем поиск
+            # Run the search
             bm25_results = self.bm25_service.search(query, collection_id, top_k=k)
             logger.info(f"BM25 returned {len(bm25_results)} results")
 
-            # Преобразуем в формат, ожидаемый другими методами
+            # Convert to the format expected by other methods
             results = []
             for res in bm25_results:
                 chunk_id = res['chunk_id']
@@ -303,7 +303,7 @@ class EnhancedSearchService:
             return results[:k]
 
         else:
-            # Fallback на старый метод с извлечением ключевых слов
+            # Fallback to the old keyword-extraction method
             logger.info("BM25 not available, falling back to keyword extraction")
             keywords = self._extract_keywords(query)
             if not keywords:
@@ -334,7 +334,7 @@ class EnhancedSearchService:
             return results[:k]
 
     # ----------------------------------------------------------------------
-    # Гибридный поиск (объединение семантики и ключевых слов)
+    # Hybrid search (merging semantic and keyword results)
     # ----------------------------------------------------------------------
     def enhanced_hybrid_search(
         self,
@@ -348,8 +348,8 @@ class EnhancedSearchService:
         use_reranking: bool = True
     ) -> List[Dict[str, Any]]:
         """
-        Гибридный поиск с объединением результатов по нескольким коллекциям.
-        embedding_model_id передаётся в семантический поиск.
+        Hybrid search merging results across multiple collections.
+        embedding_model_id is passed to semantic search.
         """
         logger.info(f"enhanced_hybrid_search: query='{query[:50]}...', collection_ids={collection_ids}, k={k}, weights: s={semantic_weight}, kw={keyword_weight}, f={freshness_weight}, reranking={use_reranking}")
         if collection_ids is None:
@@ -359,7 +359,7 @@ class EnhancedSearchService:
 
         all_results = []
         for cid in collection_ids:
-            # Выполняем поиск по каждой коллекции
+            # Search each collection
             logger.info(f"Processing collection {cid}")
             semantic_results = self.semantic_search(
                 query,
@@ -383,7 +383,7 @@ class EnhancedSearchService:
             all_results.extend(merged)
             logger.info(f"After merge (with freshness), collection {cid} contributed {len(merged)} results")
 
-        # Объединяем результаты, удаляем дубликаты по chunk_id
+        # Merge results, deduplicate by chunk_id
         seen = set()
         unique_results = []
         for r in all_results:
@@ -393,7 +393,7 @@ class EnhancedSearchService:
 
         logger.info(f"After deduplication: {len(unique_results)} results")
 
-        # Реранжирование по общему пулу
+        # Rerank the common pool
         if use_reranking and unique_results:
             # Audit fix: the reranker block used to iterate an undefined
             # `collections` name (NameError on every hybrid search) — fetch
@@ -416,11 +416,11 @@ class EnhancedSearchService:
         return final
 
     # ----------------------------------------------------------------------
-    # Вспомогательные методы
+    # Helper methods
     # ----------------------------------------------------------------------
     @staticmethod
     def _extract_keywords(query: str) -> List[str]:
-        """Извлечение значимых ключевых слов из запроса (fallback)."""
+        """Extract meaningful keywords from the query (fallback)."""
         import re
         words = re.findall(r'\b[а-яА-ЯёЁa-zA-Z]{3,}\b', query.lower())
         stop_words = {'и', 'в', 'на', 'с', 'по', 'для', 'от', 'до', 'не', 'что',
@@ -430,7 +430,7 @@ class EnhancedSearchService:
 
     @staticmethod
     def _calculate_keyword_score(content: str, keywords: List[str], use_bm25: bool = True) -> float:
-        """Вычисление релевантности по ключевым словам (fallback)."""
+        """Compute keyword-based relevance (fallback)."""
         if not keywords or not content:
             return 0.0
 
@@ -439,7 +439,7 @@ class EnhancedSearchService:
         for kw in keywords:
             freq = content_lower.count(kw)
             if freq > 0:
-                # Упрощённый BM25 без нормализации по длине
+                # Simplified BM25 without length normalization
                 k1 = 1.2
                 total_score += (freq * (k1 + 1)) / (freq + k1)
         return total_score / len(keywords)
@@ -451,7 +451,7 @@ class EnhancedSearchService:
         semantic_weight: float = 0.7,
         keyword_weight: float = 0.2
     ) -> List[Dict]:
-        """Объединение результатов семантического и ключевого поиска.
+        """Merge semantic and keyword search results.
 
         Audit fix: BM25 scores are unbounded (0..15+) while semantic scores
         live in 0..1 — weighted sum let keyword hits dominate everything.
@@ -490,7 +490,7 @@ class EnhancedSearchService:
 
     @staticmethod
     def _add_freshness_score(results: List[Dict], weight: float = 0.1) -> List[Dict]:
-        """Добавление веса свежести документа."""
+        """Add a document freshness weight."""
         if not results:
             return results
 
@@ -515,7 +515,7 @@ class EnhancedSearchService:
         return results
 
     def _rerank_results(self, query: str, results: List[Dict], reranker_model=None) -> List[Dict]:
-        """Реренжирование результатов кросс-энкодером (v5.2: выбор коллекции)."""
+        """Rerank results with a cross-encoder (v5.2: collection choice)."""
         reranker, lang = self._get_reranker(query, reranker_model=reranker_model)
         if reranker is None:
             logger.warning("No reranker available, skipping reranking")
@@ -541,7 +541,7 @@ class EnhancedSearchService:
 
     def invalidate_bm25_cache(self, collection_id: int):
         """
-        Инвалидирует кэш BM25 для коллекции (например, после изменения документов).
+        Invalidate the BM25 cache for a collection (e.g. after document changes).
         Audit fix: also bump a shared version key in the Django cache so that
         other processes (web, other workers) rebuild their in-memory index on
         the next search — previously only the local (usually empty) cache of
@@ -559,10 +559,10 @@ class EnhancedSearchService:
 
 class RAGService:
     """
-    Основной сервис для RAG (Retrieval-Augmented Generation).
-    - Обработка запроса: поиск + генерация ответа.
-    - Управление сессиями RAG.
-    - Fallback-механизмы при отсутствии индекса.
+    Main service for RAG (Retrieval-Augmented Generation).
+    - Query processing: search + answer generation.
+    - RAG session management.
+    - Fallback mechanisms when no index is available.
     """
 
     def __init__(self):
@@ -582,8 +582,8 @@ class RAGService:
         generation_config: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """
-        Полный цикл RAG: поиск + генерация ответа.
-        Если embedding_model_id не указан, используется модель из коллекции (если есть) или глобальная по умолчанию.
+        Full RAG cycle: search + answer generation.
+        If embedding_model_id is not provided, the collection's model (if any) or the global default is used.
         """
         from datetime import datetime
         # Audit fix: session_id is unique and was second-granular — two queries
@@ -597,14 +597,14 @@ class RAGService:
         )
 
         try:
-            # 1. Выбор модели эмбеддингов
+            # 1. Select the embedding model
             if embedding_model_id:
                 embedding_model = EmbeddingModel.objects.get(id=embedding_model_id)
             else:
                 embedding_model = EmbeddingModel.objects.filter(is_default=True).first()
             rag_session.embedding_model = embedding_model
 
-            # 2. Выбор LLM
+            # 2. Select the LLM
             if llm_model_id:
                 llm_model = ModelCheckpoint.objects.get(id=llm_model_id, is_active=True)
             else:
@@ -617,7 +617,7 @@ class RAGService:
             rag_session.llm_model = llm_model
             rag_session.save()
 
-            # 3. Поиск релевантных чанков
+            # 3. Search for relevant chunks
             search_start = timezone.now()
             collection = None
             if collection_id:
@@ -625,7 +625,7 @@ class RAGService:
                 if not collection:
                     return self._error_response(rag_session, f"Collection {collection_id} not found")
 
-            # Определяем, какую модель эмбеддингов использовать для поиска
+            # Determine which embedding model to use for the search
             effective_embedding_id = None
             if collection and collection.embedding_model:
                 effective_embedding_id = collection.embedding_model.id
@@ -668,7 +668,7 @@ class RAGService:
                     'session_id': rag_session.session_id
                 }
 
-            # 4. Сохраняем поисковый запрос
+            # 4. Store the search query
             search_query = SearchQuery.objects.create(
                 query_text=query,
                 search_type='HYBRID_ENHANCED' if collection_id and collection and collection.vector_index_created else 'TEXT_FALLBACK',
@@ -679,7 +679,7 @@ class RAGService:
             )
             rag_session.search_query = search_query
 
-            # 5. Сохраняем результаты в SearchResult и RetrievedChunk
+            # 5. Store results in SearchResult and RetrievedChunk
             # Audit fix: search_config=None crashed here (AttributeError) — the
             # ajax chat view passes the value as-is from the client
             top_k_limit = (search_config or {}).get('top_k', 5)
@@ -719,13 +719,13 @@ class RAGService:
 
             rag_session.mark_search_completed(search_time, search_query)
 
-            # 6. Формируем контекст и промпт
+            # 6. Build context and prompt
             context = self._build_context(search_results[:5])
             augmented_prompt = self._augment_prompt(query, context, system_prompt)
             rag_session.augmented_prompt = augmented_prompt
             rag_session.save()
 
-            # 7. Генерация ответа через LLM
+            # 7. Generate the answer via the LLM
             if llm_model and llm_model.status == 'LOADED':
                 from .redis_model_service import redis_model_manager
 
@@ -809,7 +809,7 @@ class RAGService:
             return self._error_response(rag_session, str(e))
 
     # ----------------------------------------------------------------------
-    # Поиск только (без генерации)
+    # Search only (no generation)
     # ----------------------------------------------------------------------
     def search(
         self,
@@ -823,8 +823,8 @@ class RAGService:
         **kwargs
     ) -> Dict[str, Any]:
         """
-        Только поиск документов, без генерации ответа.
-        Если embedding_model_id не указан, используется глобальная модель по умолчанию.
+        Search documents only, no answer generation.
+        If embedding_model_id is not provided, the global default model is used.
         """
         logger.info(f"=== RAGService.search called ===")
         logger.info(f"  query: {query[:100]}")
@@ -833,7 +833,7 @@ class RAGService:
         logger.info(f"  search_type: {search_type}")
         logger.info(f"  embedding_model_id: {embedding_model_id}")
 
-        # Определяем модель эмбеддингов
+        # Determine the embedding model
         effective_embedding_id = embedding_model_id
         if not effective_embedding_id:
             default_model = EmbeddingModel.objects.filter(is_default=True).first()
@@ -843,7 +843,7 @@ class RAGService:
             effective_embedding_id = default_model.id
             logger.info(f"Using default embedding model: {default_model.name} (ID={effective_embedding_id})")
         else:
-            # Получаем модель по ID для логирования
+            # Fetch the model by ID for logging
             try:
                 model_obj = EmbeddingModel.objects.get(id=effective_embedding_id)
                 logger.info(f"Using specified embedding model: {model_obj.name} (ID={effective_embedding_id})")
@@ -916,7 +916,7 @@ class RAGService:
         }
 
     # ----------------------------------------------------------------------
-    # Вспомогательные методы
+    # Helper methods
     # ----------------------------------------------------------------------
     @staticmethod
     def _build_context(search_results: List[Dict]) -> str:

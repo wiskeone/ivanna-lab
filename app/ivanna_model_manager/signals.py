@@ -17,7 +17,7 @@ from .models import Document, DeletedDocumentLog, UserProfile
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# СИГНАЛЫ (добавить в signals.py или в конец models.py)
+# SIGNALS (add to signals.py or to the end of models.py)
 # ============================================================================
 
 from django.db.models.signals import post_save, pre_delete
@@ -25,13 +25,13 @@ from django.dispatch import receiver
 
 @receiver(post_save, sender=Document)
 def update_collection_stats(sender, instance, **kwargs):
-    """Обновить статистику коллекции при изменении документа"""
+    """Update collection statistics when a document changes."""
     if instance.collection:
         instance.collection.update_statistics()
 
 @receiver(pre_delete, sender=Document)
 def log_deleted_document(sender, instance, **kwargs):
-    """Записать лог при удалении документа"""
+    """Log a document deletion."""
     try:
         DeletedDocumentLog.objects.create(
             original_name=instance.original_filename,
@@ -47,17 +47,17 @@ def log_deleted_document(sender, instance, **kwargs):
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
-    """Создаёт профиль пользователя сразу после создания учётной записи."""
+    """Create a user profile right after account creation."""
     if created:
         UserProfile.objects.create(user=instance)
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    """Сохраняет профиль при сохранении пользователя."""
-    # Используем try/except на случай, если профиль ещё не создан (например, при миграции)
+    """Save the profile when the user is saved."""
+    # try/except in case the profile has not been created yet (e.g. during a migration)
     try:
         instance.profile.save()
     except UserProfile.DoesNotExist:
-        # Если профиля нет, создаём (на всякий случай)
+        # Profile missing; create it as a fallback
         UserProfile.objects.create(user=instance)
 

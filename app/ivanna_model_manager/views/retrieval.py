@@ -89,7 +89,7 @@ class EmbeddingModelListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Добавляем статистику
+        # Add stats
         context['total_models'] = EmbeddingModel.objects.count()
         context['downloaded_models'] = EmbeddingModel.objects.filter(is_downloaded=True).count()
         return context
@@ -128,7 +128,7 @@ class EmbeddingModelUpdateView(LoginRequiredMixin, UpdateView):
 @require_POST
 def embedding_model_delete(request, pk):
     model = get_object_or_404(EmbeddingModel, pk=pk)
-    # Не даём удалить модель по умолчанию, если есть другие
+    # Do not allow deleting the default model while others exist
     if model.is_default and EmbeddingModel.objects.filter(is_default=True).count() <= 1:
         return JsonResponse({'success': False, 'error': 'Cannot delete the default model'}, status=400)
 
@@ -139,7 +139,7 @@ def embedding_model_delete(request, pk):
 @login_required
 @require_POST
 def embedding_model_download(request, pk):
-    """Запуск загрузки модели эмбеддингов."""
+    """Start embedding model download."""
     model = get_object_or_404(EmbeddingModel, pk=pk, is_active=True)
 
     if model.is_downloaded:
@@ -148,13 +148,13 @@ def embedding_model_download(request, pk):
     if model.download_status == 'downloading':
         return JsonResponse({'success': False, 'error': 'Model is already downloading'})
 
-    # Сбрасываем статус
+    # Reset status
     model.download_status = 'not_started'
     model.download_progress = 0
     model.download_error = ''
     model.save()
 
-    # Запускаем задачу с user_id
+    # Launch the task with user_id
     from ..tasks_embedding import download_embedding_model_task
     task = download_embedding_model_task.delay(model.id, user_id=request.user.id)
     return JsonResponse({'success': True, 'task_id': task.id})
@@ -162,7 +162,7 @@ def embedding_model_download(request, pk):
 
 @login_required
 def embedding_model_download_status(request, pk):
-    """Возвращает статус загрузки модели."""
+    """Return the model download status."""
     model = get_object_or_404(EmbeddingModel, pk=pk)
     return JsonResponse({
         'is_downloaded': model.is_downloaded,
@@ -176,18 +176,18 @@ def embedding_model_download_status(request, pk):
 @require_POST
 def embedding_model_reset_download(request, pk):
     """
-    Сбрасывает статус загрузки модели и удаляет Redis-блокировку.
+    Reset the model download status and remove the Redis lock.
     """
     model = get_object_or_404(EmbeddingModel, pk=pk)
-    # Сбрасываем статус
+    # Reset status
     model.download_status = 'not_started'
     model.download_progress = 0
     model.download_error = ''
     model.save(update_fields=['download_status', 'download_progress', 'download_error'])
-    # Удаляем Redis-блокировку
+    # Remove the Redis lock
     from django.core.cache import cache
     cache.delete(f"download_embedding_model:{model.id}")
-    logger.info(f"Сброшен статус загрузки для модели {model.name} (ID={model.id})")
+    logger.info(f"Reset download status for model {model.name} (ID={model.id})")
     return JsonResponse({'success': True})
 
 
@@ -217,10 +217,10 @@ def rebuild_embeddings_index(request, pk):
 @login_required
 @require_POST
 def rebuild_collection_embeddings(request, pk):
-    """Полная перестройка эмбеддингов и FAISS индекса для коллекции."""
+    """Fully rebuild embeddings and the FAISS index for a collection."""
     logger.info(f"rebuild_collection_embeddings called by {request.user}, headers: {request.headers}")
     collection = get_object_or_404(DocumentCollection, pk=pk, is_active=True)
-    # Проверка прав
+    # Permission check
     if not request.user.is_staff and collection.owner_id != str(request.user.id):
         return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
 
@@ -239,7 +239,7 @@ def rebuild_collection_embeddings(request, pk):
 def change_collection_embedding_model(request, pk):
     logger.info(f"Changing embedding model for collection {pk}, data: {request.POST}")  
     """
-    Изменяет модель эмбеддингов для коллекции.
+    Change the embedding model for a collection.
     """
     collection = get_object_or_404(
         DocumentCollection,
@@ -251,7 +251,7 @@ def change_collection_embedding_model(request, pk):
     if not model_id:
         return JsonResponse({'success': False, 'error': 'No model ID provided'})
     try:
-        # Проверяем, что модель существует и активна
+        # Ensure the model exists and is active
         model = EmbeddingModel.objects.get(id=model_id, is_active=True)
         collection.embedding_model = model
         collection.save()
@@ -267,7 +267,7 @@ def change_collection_embedding_model(request, pk):
 
 @login_required
 def reranker_list(request):
-    """Реестр реранкеров: список + создание + скачивание (по образцу эмбеддингов)."""
+    """Reranker registry: list + create + download (modeled on embeddings)."""
     from ..models import RerankerModel
     from ..forms import RerankerModelForm
 
@@ -306,7 +306,7 @@ def reranker_delete(request, pk):
 @login_required
 @require_POST
 def change_collection_reranker(request, pk):
-    """Выбор реранкера коллекции (null = авто по языку)."""
+    """Select the collection reranker (null = auto by language)."""
     from ..models import DocumentCollection, RerankerModel
 
     coll = get_object_or_404(DocumentCollection, pk=pk)

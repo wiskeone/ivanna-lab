@@ -2,7 +2,7 @@ from .base import BaseModelHandler
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 class MistralHandler(BaseModelHandler):
-    """Обработчик для моделей Mistral"""
+    """Handler for Mistral models"""
     
     def get_model_class(self):
         return AutoModelForCausalLM

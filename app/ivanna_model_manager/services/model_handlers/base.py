@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class BaseModelHandler(ABC):
-    """Абстрактный базовый класс для обработчиков моделей"""
+    """Abstract base class for model handlers"""
     
     def __init__(self, model_config):
         self.model_config = model_config
@@ -17,25 +17,25 @@ class BaseModelHandler(ABC):
     
     @abstractmethod
     def get_model_class(self):
-        """Возвращает класс модели для загрузки"""
+        """Returns the model class to load"""
         pass
     
     @abstractmethod
     def get_tokenizer_class(self):
-        """Возвращает класс токенизатора"""
+        """Returns the tokenizer class"""
         pass
     
     @abstractmethod
     def get_special_tokens(self):
-        """Возвращает специальные токены для модели"""
+        """Returns special tokens for the model"""
         pass
     
     def load_model(self, device_map="auto"):
-        """Загружает модель с Hugging Face"""
+        """Loads the model from Hugging Face"""
         try:
-            logger.info(f"Загрузка модели {self.model_id} с конфигом: {self.model_config}")
-            
-            # Конфигурация квантизации
+            logger.info(f"Loading model {self.model_id} with config: {self.model_config}")
+
+            # Quantization configuration
             bnb_config = None
             if self.quantization:
                 bnb_config = BitsAndBytesConfig(
@@ -45,7 +45,7 @@ class BaseModelHandler(ABC):
                     bnb_4bit_quant_type="nf4"
                 )
             
-            # Загрузка модели
+            # Load the model
             model_class = self.get_model_class()
             self.model = model_class.from_pretrained(
                 self.model_id,
@@ -55,29 +55,29 @@ class BaseModelHandler(ABC):
                 **self.model_config.get('model_kwargs', {})
             )
             
-            # Загрузка токенизатора
+            # Load the tokenizer
             tokenizer_class = self.get_tokenizer_class()
             self.tokenizer = tokenizer_class.from_pretrained(
                 self.model_id,
                 trust_remote_code=self.model_config.get('trust_remote_code', True)
             )
             
-            # Установка специальных токенов
+            # Set special tokens
             special_tokens = self.get_special_tokens()
             if special_tokens:
                 self.tokenizer.add_special_tokens(special_tokens)
                 if hasattr(self.model, 'resize_token_embeddings'):
                     self.model.resize_token_embeddings(len(self.tokenizer))
             
-            logger.info(f"Модель {self.model_id} успешно загружена")
+            logger.info(f"Model {self.model_id} loaded successfully")
             return self.model, self.tokenizer
             
         except Exception as e:
-            logger.error(f"Ошибка загрузки модели {self.model_id}: {str(e)}")
+            logger.error(f"Model loading error {self.model_id}: {str(e)}")
             raise
     
     def generate(self, prompt, **kwargs):
-        """Генерирует текст на основе промпта"""
+        """Generates text from the prompt"""
         if not self.model or not self.tokenizer:
             raise ValueError("Модель не загружена. Сначала вызовите load_model()")
         
@@ -98,7 +98,7 @@ class BaseModelHandler(ABC):
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
     
     def get_model_info(self):
-        """Возвращает информацию о модели"""
+        """Returns model info"""
         if not self.model:
             return {"error": "Модель не загружена"}
         

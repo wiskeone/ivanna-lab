@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class FineTuningJobSerializer(serializers.ModelSerializer):
-    """Сериализатор для задач дообучения"""
+    """Serializer for fine-tuning jobs"""
     base_model_name = serializers.CharField(source='base_model.display_name', read_only=True)
     output_model_name = serializers.CharField(source='output_model.display_name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
@@ -48,7 +48,7 @@ class FineTuningJobSerializer(serializers.ModelSerializer):
 
 
 class FineTuningJobSerializer(serializers.ModelSerializer):
-    """Сериализатор для задач fine-tuning"""
+    """Serializer for fine-tuning jobs"""
     
     base_model_name = serializers.CharField(
         source='base_model.display_name',

@@ -29,7 +29,7 @@ from .registry import ModelCheckpoint
 
 
 class EvaluationDataset(models.Model):
-    """Датасет вопросов для оценки моделей"""
+    """Dataset of questions for model evaluation."""
     name = models.CharField(max_length=255, unique=True, help_text=_("Уникальное имя датасета"))
     description = models.TextField(blank=True, help_text=_("Описание датасета"))
     file_path = models.CharField(max_length=500, blank=True, help_text=_("Путь к файлу с вопросами"))
@@ -73,7 +73,7 @@ class EvaluationDataset(models.Model):
         super().save(*args, **kwargs)
     
     def add_questions_from_file(self, file_path, file_format='auto'):
-        """Добавить вопросы из файла"""
+        """Add questions from a file."""
         import json
         import csv
 
@@ -153,7 +153,7 @@ class EvaluationDataset(models.Model):
 
 
 class ModelEvaluationTask(models.Model):
-    """Задача оценки модели на датасете"""
+    """Model evaluation task on a dataset."""
     STATUS_CHOICES = [
         ('PENDING', 'В ожидании'),
         ('RUNNING', 'Выполняется'),
@@ -165,68 +165,68 @@ class ModelEvaluationTask(models.Model):
     name = models.CharField(max_length=255, help_text=_("Название задачи оценки"))
     description = models.TextField(blank=True, help_text=_("Описание задачи"))
     
-    # Модели для оценки
-    evaluation_models = models.ManyToManyField(  # Изменили имя с models на evaluation_models
+    # Models to evaluate
+    evaluation_models = models.ManyToManyField(  # Renamed from models to evaluation_models
         ModelCheckpoint,
         related_name='evaluation_tasks',
         help_text=_("Модели для оценки")
     )
     
-    # Датасет для оценки
+    # Evaluation dataset
     dataset = models.ForeignKey(
         EvaluationDataset,
         on_delete=models.CASCADE,
         related_name='evaluation_tasks'
     )
     
-    # Конфигурация генерации
+    # Generation configuration
     generation_config = models.JSONField(
         default=dict,
         help_text=_("Параметры генерации для всех моделей")
     )
     
-    # Статус и прогресс
+    # Status and progress
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     progress = models.FloatField(default=0.0, help_text=_("Прогресс выполнения (0-100)"))
     current_step = models.CharField(max_length=100, blank=True, help_text=_("Текущий шаг"))
     
-    # Результаты
+    # Results
     results = models.JSONField(
         default=dict,
         help_text=_("Результаты оценки {'model_id': {'question_id': {'response': '...', 'metrics': {...}}}}")
     )
     
-    # Оценки
+    # Ratings
     ratings = models.JSONField(
         default=dict,
         help_text=_("Ручные оценки {'model_id': {'question_id': rating}}")
     )
     
-    # Сводные метрики
+    # Summary metrics
     summary_metrics = models.JSONField(
         default=dict,
         help_text=_("Сводные метрики по моделям {'model_id': {'total_score': X, 'avg_score': Y}}")
     )
 
-    # задачи Celery для отслеживания
+    # Celery task for tracking
     celery_task_id = models.CharField(
         max_length=255,
         blank=True,
         null=True,
         help_text=_("ID задачи Celery для отслеживания")
     )
-    # чекпоинты
+    # checkpoints
     metadata = models.JSONField(
         default=dict,
         blank=True,
         help_text=_("Метаданные задачи, включая чекпоинты")
     )
     
-    # Логи и ошибки
+    # Logs and errors
     logs = models.TextField(blank=True)
     error_message = models.TextField(blank=True)
-    
-    # Временные метки
+
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -246,7 +246,7 @@ class ModelEvaluationTask(models.Model):
     
     @property
     def total_models(self):
-        return self.evaluation_models.count()  # Исправлено с models на evaluation_models
+        return self.evaluation_models.count()  # Fixed: renamed from models to evaluation_models
     
     @property
     def total_questions(self):
@@ -254,18 +254,18 @@ class ModelEvaluationTask(models.Model):
     
     @property
     def estimated_time_minutes(self):
-        """Примерное время выполнения"""
-        return self.total_questions * self.total_models * 2  # ~2 секунды на ответ
-    
+        """Estimated runtime."""
+        return self.total_questions * self.total_models * 2  # ~2 seconds per response
+
     def start_evaluation(self):
-        """Начать выполнение задачи"""
+        """Start the evaluation task."""
         self.status = 'RUNNING'
         self.started_at = timezone.now()
         self.current_step = 'Инициализация'
         self.save()
     
     def complete_evaluation(self):
-        """Завершить задачу успешно"""
+        """Mark the task as completed."""
         self.status = 'COMPLETED'
         self.completed_at = timezone.now()
         self.progress = 100.0
@@ -273,21 +273,21 @@ class ModelEvaluationTask(models.Model):
         self.save()
     
     def fail_evaluation(self, error_message):
-        """Завершить задачу с ошибкой"""
+        """Mark the task as failed."""
         self.status = 'FAILED'
         self.completed_at = timezone.now()
         self.error_message = error_message
         self.save()
     
     def update_progress(self, progress, step=""):
-        """Обновить прогресс выполнения"""
+        """Update task progress."""
         self.progress = max(0.0, min(100.0, progress))
         if step:
             self.current_step = step
         self.save(update_fields=['progress', 'current_step'])
     
     def add_model_result(self, model_id, question_id, response, metadata=None):
-        """Добавить результат модели для вопроса"""
+        """Add a model result for a question."""
         if str(model_id) not in self.results:
             self.results[str(model_id)] = {}
         
@@ -301,7 +301,7 @@ class ModelEvaluationTask(models.Model):
         self.save()
     
     def add_rating(self, model_id, question_id, rating, user_id=None):
-        """Добавить оценку для ответа модели"""
+        """Add a rating for a model response."""
         if str(model_id) not in self.ratings:
             self.ratings[str(model_id)] = {}
         
@@ -314,11 +314,11 @@ class ModelEvaluationTask(models.Model):
         self.ratings[str(model_id)][str(question_id)] = rating_data
         self.save()
         
-        # Пересчитать сводные метрики
+        # Recompute summary metrics
         self.calculate_summary_metrics()
-    
+
     def calculate_summary_metrics(self):
-        """Вычислить сводные метрики"""
+        """Compute summary metrics."""
         summary = {}
         
         for model_id, ratings_dict in self.ratings.items():
@@ -348,25 +348,25 @@ class ModelEvaluationTask(models.Model):
 
 
 class EvaluationResult(models.Model):
-    """Детализированные результаты оценки для конкретной модели и вопроса"""
+    """Detailed evaluation results for a specific model and question."""
     task = models.ForeignKey(ModelEvaluationTask, on_delete=models.CASCADE, related_name='detailed_results')
     model = models.ForeignKey(ModelCheckpoint, on_delete=models.CASCADE, related_name='evaluation_results')
     
     question_id = models.IntegerField(help_text=_("ID вопроса из датасета"))
     question_text = models.TextField(help_text=_("Текст вопроса"))
     
-    # Ответы и метрики
+    # Responses and metrics
     model_response = models.TextField(help_text=_("Ответ модели"))
     response_time = models.FloatField(default=0.0, help_text=_("Время генерации в секундах"))
     tokens_used = models.IntegerField(default=0, help_text=_("Количество использованных токенов"))
     
-    # Автоматические метрики
+    # Automatic metrics
     automatic_metrics = models.JSONField(
         default=dict,
         help_text=_("Автоматически вычисленные метрики")
     )
     
-    # Ручные оценки
+    # Manual ratings
     manual_rating = models.IntegerField(
         null=True, blank=True,
         validators=[MinValueValidator(1), MaxValueValidator(5)],
@@ -376,14 +376,14 @@ class EvaluationResult(models.Model):
     rated_by = models.CharField(max_length=100, blank=True, help_text=_("Кто оценил"))
     rated_at = models.DateTimeField(null=True, blank=True)
     
-    # ДОБАВЛЯЕМ ПОЛЕ METADATA
+    # metadata field
     metadata = models.JSONField(
         default=dict,
         blank=True,
         help_text=_("Дополнительные метаданные (RAG флаги, источники и т.д.)")
     )
     
-    # Статистика
+    # Statistics
     retry_count = models.IntegerField(default=0, help_text=_("Количество попыток генерации"))
     error_log = models.TextField(blank=True, help_text=_("Лог ошибок при генерации"))
     

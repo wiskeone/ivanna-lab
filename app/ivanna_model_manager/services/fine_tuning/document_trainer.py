@@ -17,7 +17,7 @@ from .lora import build_lora_config, apply_lora_plus
 from datasets import Dataset
 
 from ...models import FineTuningJob, DocumentChunk
-from .callbacks import ProgressCallback, PauseCallback, PauseRequested   # ваш существующий callback
+from .callbacks import ProgressCallback, PauseCallback, PauseRequested   # existing callback
 from .dataset_sources import collect_document_texts, collect_document_collections
 
 logger = logging.getLogger(__name__)
@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 class DocumentTrainer:
     """
-    Обучение модели на документах (языковое моделирование) с поддержкой квантизации,
-    автоматическим распределением модели (device_map='auto') и чекпоинтами на ключевых этапах.
+    Model training on documents (language modeling) with quantization support,
+    automatic model placement (device_map='auto') and checkpoints at key stages.
     """
 
     def __init__(self, job: FineTuningJob, device: Optional[str] = None):
@@ -38,7 +38,7 @@ class DocumentTrainer:
         logger.info(f"Initializing DocumentTrainer for job {job.id} on {self.device}")
 
     def prepare_dataset(self) -> Dataset:
-        """Загружает тексты из коллекций и подготавливает датасет."""
+        """Loads texts from collections and prepares the dataset."""
         logger.info("Preparing document dataset...")
         self.job.add_log("📄 Preparing document dataset...")
 
@@ -54,7 +54,7 @@ class DocumentTrainer:
             chunks = DocumentChunk.objects.filter(
                 document__collection=collection,
                 is_active=True
-            ).values_list('content', flat=True)[:10000]  # лимит для теста
+            ).values_list('content', flat=True)[:10000]  # limit for testing
             texts.extend(chunks)
 
         if not texts:
@@ -88,8 +88,8 @@ class DocumentTrainer:
 
     def setup_model(self):
         """
-        Настройка модели с автоматическим распределением (device_map='auto').
-        Для GPU используется bitsandbytes (int4/int8), для CPU – quanto (если доступен).
+        Set up the model with automatic placement (device_map='auto').
+        bitsandbytes (int4/int8) is used for GPU, quanto (if available) for CPU.
         """
         logger.info(f"Setting up model on {self.device}...")
         self.job.add_log(f"⚙️ Setting up model on {self.device}...")
@@ -195,7 +195,7 @@ class DocumentTrainer:
             model.gradient_checkpointing_enable(
                 gradient_checkpointing_kwargs={'use_reentrant': False})
 
-        # Логируем размещение модели
+        # Log the model placement
         if hasattr(model, 'hf_device_map'):
             logger.info(f"📌 Device map: {model.hf_device_map}")
             devices = set(model.hf_device_map.values())
@@ -217,9 +217,9 @@ class DocumentTrainer:
         return model, lora_config
 
     def train(self, resume: bool = False):
-        """Запуск обучения с чекпоинтами и отслеживанием прогресса."""
+        """Run training with checkpoints and progress tracking."""
         try:
-            # Включаем оптимизации CuDNN
+            # Enable CuDNN optimizations
             torch.backends.cudnn.benchmark = True
             torch.backends.cudnn.deterministic = False
 
@@ -270,8 +270,8 @@ class DocumentTrainer:
                 learning_rate=self.job.learning_rate,
                 fp16=self.device.type == 'cuda',
                 optim="adamw_8bit" if self.device.type == 'cuda' else "adamw_torch",
-                logging_steps=1,                          # логируем каждый шаг в консоль
-                save_steps=500,                            # сохраняем реже (каждые 500 шагов)
+                logging_steps=1,                          # log every step to the console
+                save_steps=500,                            # save less often (every 500 steps)
                 save_total_limit=3,
                 eval_strategy="steps",
                 eval_steps=500,

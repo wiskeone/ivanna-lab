@@ -31,21 +31,21 @@ from .search import SearchQuery
 
 class ProcessingPipeline(models.Model):
     """
-    Конфигурация пайплайна обработки документов.
+    Document processing pipeline configuration.
     """
     name = models.CharField(max_length=255, unique=True, help_text=_("Название пайплайна"))
     description = models.TextField(blank=True, help_text=_("Описание пайплайна"))
     
-    # Этапы обработки
+    # Processing steps
     steps = models.JSONField(
         default=list,
         help_text=_("Список этапов обработки [{'name': 'extract', 'module': '...', 'config': {...}}]")
     )
     
-    # Конфигурация
+    # Configuration
     config = models.JSONField(default=dict, blank=True, help_text=_("Общая конфигурация пайплайна"))
-    
-    # Производительность
+
+    # Performance
     avg_processing_time_ms = models.FloatField(null=True, blank=True, help_text=_("Среднее время обработки документа"))
     success_rate = models.FloatField(
         null=True,
@@ -54,7 +54,7 @@ class ProcessingPipeline(models.Model):
         help_text=_("Процент успешной обработки")
     )
     
-    # Статус
+    # Status
     is_active = models.BooleanField(default=True)
     is_default = models.BooleanField(default=False, help_text=_("Пайплайн по умолчанию"))
     
@@ -70,14 +70,14 @@ class ProcessingPipeline(models.Model):
         return f"Пайплайн: {self.name}"
     
     def clean(self):
-        """Валидация пайплайна"""
+        """Validate the pipeline."""
         if self.is_default and self.pk:
             ProcessingPipeline.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
 
 
 class DocumentProcessor(models.Model):
     """
-    Лог обработки документов для мониторинга и отладки.
+    Document processing log for monitoring and debugging.
     """
     document = models.ForeignKey(
         Document,
@@ -92,7 +92,7 @@ class DocumentProcessor(models.Model):
         related_name='processing_logs'
     )
     
-    # Статус и прогресс
+    # Status and progress
     status = models.CharField(
         max_length=20,
         choices=[
@@ -108,20 +108,20 @@ class DocumentProcessor(models.Model):
     )
     progress = models.FloatField(default=0.0, help_text=_("Прогресс обработки (0-100)"))
     
-    # Ресурсы и производительность
+    # Resources and performance
     worker_id = models.CharField(max_length=100, blank=True, help_text=_("ID воркера"))
     memory_usage_mb = models.FloatField(null=True, blank=True, help_text=_("Использование памяти (МБ)"))
     processing_time_ms = models.FloatField(null=True, blank=True, help_text=_("Время обработки (мс)"))
     
-    # Результаты
+    # Results
     chunks_created = models.IntegerField(default=0, help_text=_("Создано чанков"))
     embeddings_created = models.IntegerField(default=0, help_text=_("Создано эмбеддингов"))
     
-    # Ошибки
+    # Errors
     error_message = models.TextField(blank=True)
     error_details = models.JSONField(default=dict, blank=True, help_text=_("Детали ошибки"))
-    
-    # Временные метки
+
+    # Timestamps
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     
@@ -139,7 +139,7 @@ class DocumentProcessor(models.Model):
 
 
 class DeletedDocumentLog(models.Model):
-    """Лог удаленных документов"""
+    """Log of deleted documents."""
     original_name = models.CharField(max_length=500)
     title = models.CharField(max_length=500, blank=True)
     document_type = models.CharField(max_length=20, choices=Document.DOCUMENT_TYPE_CHOICES)
@@ -158,15 +158,15 @@ class DeletedDocumentLog(models.Model):
 
 
 def fix_document_file_paths():
-    """Исправляет пути файлов для существующих документов"""
+    """Fix file paths for existing documents."""
     for document in Document.objects.filter(is_active=True):
         full_path = document.full_file_path
-        
-        # Проверяем существование файла
+
+        # Check whether the file exists
         if not os.path.exists(full_path):
             print(f"Файл не найден: {full_path}")
-            
-            # Попробуем найти файл по имени в папке documents
+
+            # Try to find the file by name in the documents folder
             possible_locations = [
                 os.path.join(settings.MEDIA_ROOT, 'documents', document.original_filename),
                 os.path.join(settings.MEDIA_ROOT, 'documents', str(document.id), document.original_filename),
@@ -175,7 +175,7 @@ def fix_document_file_paths():
             
             for location in possible_locations:
                 if os.path.exists(location):
-                    # Обновляем file_path
+                    # Update file_path
                     relative_path = os.path.relpath(location, settings.MEDIA_ROOT)
                     document.file_path = relative_path
                     document.save()
@@ -184,7 +184,7 @@ def fix_document_file_paths():
 
 
 class SavedSearch(models.Model):
-    """Сохраненные поисковые запросы"""
+    """Saved search queries."""
     name = models.CharField(max_length=255, verbose_name=_("Название"))
     description = models.TextField(blank=True, verbose_name=_("Описание"))
     query_text = models.TextField(verbose_name=_("Текст запроса"))
@@ -231,7 +231,7 @@ class SavedSearch(models.Model):
         return f"{self.name} ({self.user_id})"
     
     def use(self):
-        """Увеличить счетчик использования"""
+        """Increment the usage counter."""
         self.usage_count += 1
         self.last_used_at = timezone.now()
         self.save(update_fields=['usage_count', 'last_used_at'])

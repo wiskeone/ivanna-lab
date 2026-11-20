@@ -74,7 +74,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# ЭКСПЕРИМЕНТЫ
+# EXPERIMENTS
 # ============================================================================
 class ExperimentListView(LoginRequiredMixin, ListView):
     model = Experiment
@@ -188,7 +188,7 @@ def create_checkpoint_from_experiment(request, pk):
 
 
 # ============================================================================
-# СЛИЯНИЕ МОДЕЛЕЙ
+# MODEL MERGING
 # ============================================================================
 class ModelMergeView(LoginRequiredMixin, CreateView):
     model = ModelMergeJob
@@ -211,7 +211,7 @@ class ModelMergeView(LoginRequiredMixin, CreateView):
         return initial
 
     def form_valid(self, form):
-        # Проверка совместимости моделей
+        # Model compatibility check
         base = form.cleaned_data['base_model']
         merge = form.cleaned_data['merge_model']
         if base.model_type != merge.model_type:
@@ -221,14 +221,14 @@ class ModelMergeView(LoginRequiredMixin, CreateView):
             form.add_error(None, 'Модели должны иметь одинаковое количество параметров')
             return self.form_invalid(form)
         response = super().form_valid(form)
-        # Запускаем задачу слияния
+        # Launch the merge job
         merge_models_task.delay(self.object.id)
         messages.success(self.request, f'Задача слияния "{self.object.name}" запущена')
         return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Модели, доступные для слияния (должны быть скачаны локально)
+        # Models available for merging (must be downloaded locally)
         context['base_models'] = ModelCheckpoint.objects.filter(
             is_active=True,
             status__in=['DOWNLOADED', 'LOADED']
@@ -243,7 +243,7 @@ class ModelMergeView(LoginRequiredMixin, CreateView):
 
 @login_required
 def start_merge_view(request, pk):
-    """Быстрый старт слияния из карточки модели."""
+    """Quick merge start from the model card."""
     base = get_object_or_404(ModelCheckpoint, pk=pk, is_active=True)
     merge_id = request.POST.get('merge_model_id')
     if not merge_id:

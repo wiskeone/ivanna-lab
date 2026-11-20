@@ -67,7 +67,7 @@ class DistillationDatasetSerializer(serializers.ModelSerializer):
 
 
 # ============================================================================
-# СЕРИАЛИЗАТОРЫ ДЛЯ ИНСТРУКЦИЙ
+# INSTRUCTION SERIALIZERS
 # ============================================================================
 class ManualInstructionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -87,7 +87,7 @@ class ManualInstructionSetSerializer(serializers.ModelSerializer):
 
 
 # ============================================================================
-# СЕРИАЛИЗАТОР ДЛЯ ЗАГРУЗКИ ДАТАСЕТОВ С ХФ
+# HUGGING FACE DATASET UPLOAD SERIALIZER
 # ============================================================================
 class HuggingFaceDatasetSerializer(serializers.ModelSerializer):
     class Meta:

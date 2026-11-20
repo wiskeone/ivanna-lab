@@ -49,7 +49,7 @@ class DocumentCollectionSerializer(serializers.ModelSerializer):
 
 
 class DocumentChunkSerializer(serializers.ModelSerializer):
-    """Сериализатор для чанков документов"""
+    """Serializer for document chunks"""
     document_title = serializers.CharField(source='document.title', read_only=True)
     preview = serializers.CharField(read_only=True)
     
@@ -60,7 +60,7 @@ class DocumentChunkSerializer(serializers.ModelSerializer):
 
 
 class DocumentSerializer(serializers.ModelSerializer):
-    """Сериализатор для документов"""
+    """Serializer for documents"""
     collection_name = serializers.CharField(source='collection.name', read_only=True)
     chunk_count = serializers.IntegerField(read_only=True)
     has_embeddings = serializers.BooleanField(read_only=True)
@@ -74,7 +74,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 
 class EmbeddingModelSerializer(serializers.ModelSerializer):
-    """Сериализатор для моделей эмбеддингов"""
+    """Serializer for embedding models"""
     total_tokens_processed_formatted = serializers.SerializerMethodField()
     
     class Meta:
@@ -84,7 +84,7 @@ class EmbeddingModelSerializer(serializers.ModelSerializer):
                            'total_requests')
     
     def get_total_tokens_processed_formatted(self, obj):
-        """Форматированное отображение обработанных токенов"""
+        """Formatted display of processed tokens"""
         if obj.total_tokens_processed >= 1_000_000_000:
             return f"{obj.total_tokens_processed / 1_000_000_000:.1f}B"
         elif obj.total_tokens_processed >= 1_000_000:
@@ -95,7 +95,7 @@ class EmbeddingModelSerializer(serializers.ModelSerializer):
 
 
 class SearchQuerySerializer(serializers.ModelSerializer):
-    """Сериализатор для поисковых запросов"""
+    """Serializer for search queries"""
     results_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -104,12 +104,12 @@ class SearchQuerySerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at', 'processing_time_ms')
     
     def get_results_count(self, obj):
-        """Количество результатов поиска"""
+        """Number of search results"""
         return obj.results.count() if hasattr(obj, 'results') else 0
 
 
 class SearchResultSerializer(serializers.ModelSerializer):
-    """Сериализатор для результатов поиска"""
+    """Serializer for search results"""
     chunk_content = serializers.CharField(source='chunk.content', read_only=True)
     chunk_preview = serializers.CharField(source='chunk.preview', read_only=True)
     document_title = serializers.CharField(source='chunk.document.title', read_only=True)
@@ -121,7 +121,7 @@ class SearchResultSerializer(serializers.ModelSerializer):
 
 
 class RetrievedChunkSerializer(serializers.ModelSerializer):
-    """Сериализатор для извлеченных чанков"""
+    """Serializer for retrieved chunks"""
     chunk_content = serializers.CharField(source='chunk.content', read_only=True)
     chunk_document = serializers.CharField(source='chunk.document.title', read_only=True)
     
@@ -132,7 +132,7 @@ class RetrievedChunkSerializer(serializers.ModelSerializer):
 
 
 class RAGSessionSerializer(serializers.ModelSerializer):
-    """Сериализатор для RAG сессий"""
+    """Serializer for RAG sessions"""
     llm_model_name = serializers.CharField(source='llm_model.display_name', read_only=True)
     embedding_model_name = serializers.CharField(source='embedding_model.name', read_only=True)
     total_tokens = serializers.IntegerField(read_only=True)
@@ -146,12 +146,12 @@ class RAGSessionSerializer(serializers.ModelSerializer):
                            'generation_time_ms', 'input_tokens', 'output_tokens')
     
     def get_retrieved_chunks_count(self, obj):
-        """Количество извлеченных чанков"""
+        """Number of retrieved chunks"""
         return obj.retrieved_chunks.count() if hasattr(obj, 'retrieved_chunks') else 0
 
 
 class RAGChatRequestSerializer(serializers.Serializer):
-    """Сериализатор для запроса RAG чата"""
+    """Serializer for the RAG chat request"""
     query = serializers.CharField(required=True, max_length=1000)
     collection_id = serializers.IntegerField(required=False)
     document_ids = serializers.ListField(
@@ -174,7 +174,7 @@ class RAGChatRequestSerializer(serializers.Serializer):
 
 
 class SearchQualityFeedbackSerializer(serializers.ModelSerializer):
-    """Сериализатор для обратной связи по качеству поиска"""
+    """Serializer for search quality feedback"""
     user_username = serializers.SerializerMethodField()
     
     class Meta:
@@ -183,7 +183,7 @@ class SearchQualityFeedbackSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at', 'resolved_at')
     
     def get_user_username(self, obj):
-        """Получить имя пользователя"""
+        """Get the username"""
         from django.contrib.auth.models import User
         try:
             user = User.objects.get(id=obj.user_id) if obj.user_id else None
@@ -193,7 +193,7 @@ class SearchQualityFeedbackSerializer(serializers.ModelSerializer):
 
 
 class RAGEvaluationSerializer(serializers.ModelSerializer):
-    """Сериализатор для оценки RAG системы"""
+    """Serializer for RAG system evaluation"""
     total_queries = serializers.IntegerField(read_only=True)
     improvement_display = serializers.SerializerMethodField()
     
@@ -204,7 +204,7 @@ class RAGEvaluationSerializer(serializers.ModelSerializer):
                            'actual_metrics', 'detailed_results')
     
     def get_improvement_display(self, obj):
-        """Отображение улучшения"""
+        """Improvement display"""
         if obj.improvement_percentage:
             return f"{obj.improvement_percentage:.1f}%"
         return "—"

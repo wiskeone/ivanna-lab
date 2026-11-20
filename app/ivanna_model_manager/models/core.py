@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class SecurityError(Exception):
-    """Кастомная ошибка безопасности"""
+    """Custom security error."""
     pass
 
 
@@ -38,7 +38,7 @@ class UserProfile(models.Model):
         blank=True,
         help_text=_("Токен Hugging Face для доступа к gated моделям")
     )
-    # Можно добавить другие поля: аватар, настройки и т.д.
+    # Additional fields can be added here: avatar, settings, etc.
 
     def __str__(self):
         return f"Профиль {self.user.username}"
@@ -46,8 +46,8 @@ class UserProfile(models.Model):
 
 class Experiment(models.Model):
     """
-    Контейнер для изолированных экспериментов с моделями.
-    Позволяет группировать модели и легко откатывать изменения.
+    Container for isolated model experiments.
+    Allows grouping models and easily rolling back changes.
     """
     name = models.CharField(
         max_length=255,
@@ -81,7 +81,7 @@ class Experiment(models.Model):
         return f"{self.name} ({'active' if self.is_active else 'inactive'})"
     
     def deactivate(self):
-        """Деактивирует эксперимент и все связанные модели"""
+        """Deactivates the experiment and all its related models."""
         self.is_active = False
         self.save()
         self.checkpoints.update(is_active=False)

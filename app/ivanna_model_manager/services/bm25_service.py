@@ -8,21 +8,21 @@ logger = logging.getLogger(__name__)
 
 class BM25Service:
     """
-    Сервис для ранжирования документов по алгоритму BM25.
+    Service for document ranking using the BM25 algorithm.
     """
 
     def __init__(self):
         self._bm25_cache = {}  # collection_id -> (BM25, texts)
-        self._id_map_cache = {}  # collection_id -> list of chunk_ids (порядок соответствует индексам)
+        self._id_map_cache = {}  # collection_id -> list of chunk_ids (ordered to match indexes)
         logger.info("BM25Service initialized")
 
     def _tokenize(self, text: str) -> List[str]:
-        """Простая токенизация по словам (можно заменить на более продвинутую)."""
+        """Simple word tokenization (can be replaced with something more advanced)."""
         return text.lower().split()
 
     def build_index(self, collection_id: int, texts: List[str], chunk_ids: List[int]) -> None:
         """
-        Строит BM25 индекс для коллекции и сохраняет в кэше.
+        Build a BM25 index for the collection and store it in the cache.
         """
         tokenized_corpus = [self._tokenize(doc) for doc in texts]
         bm25 = BM25Okapi(tokenized_corpus)
@@ -32,11 +32,11 @@ class BM25Service:
 
     def search(self, query: str, collection_id: int, top_k: int = 10) -> List[Dict[str, Any]]:
         """
-        Выполняет поиск по коллекции с использованием BM25.
-        Возвращает список результатов с полями:
-        - chunk_id: идентификатор чанка
+        Search the collection using BM25.
+        Returns a list of results with the fields:
+        - chunk_id: chunk identifier
         - score: BM25 score
-        - text: текст документа (опционально)
+        - text: document text (optional)
         """
         if collection_id not in self._bm25_cache:
             raise ValueError(f"BM25 index for collection {collection_id} not built. Call build_index first.")
@@ -47,7 +47,7 @@ class BM25Service:
         tokenized_query = self._tokenize(query)
         scores = bm25.get_scores(tokenized_query)
 
-        # Сортируем по убыванию
+        # Sort in descending order
         top_indices = np.argsort(scores)[::-1][:top_k]
         results = []
         for idx in top_indices:
@@ -55,13 +55,13 @@ class BM25Service:
                 results.append({
                     'chunk_id': chunk_ids[idx],
                     'score': float(scores[idx]),
-                    'text': None  # текст можно не возвращать, он будет получен отдельно
+                    'text': None  # text may be omitted; fetched separately
                 })
         return results
 
     def clear_cache(self, collection_id: Optional[int] = None):
         """
-        Очищает кэш BM25 для указанной коллекции или всего.
+        Clear the BM25 cache for the given collection or everything.
         """
         if collection_id:
             self._bm25_cache.pop(collection_id, None)

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class EvaluationDatasetSerializer(serializers.ModelSerializer):
-    """Сериализатор для датасетов оценки"""
+    """Serializer for evaluation datasets"""
     questions_count = serializers.SerializerMethodField()
     created_by_username = serializers.CharField(source='created_by', read_only=True)
     
@@ -43,7 +43,7 @@ class EvaluationDatasetSerializer(serializers.ModelSerializer):
 
 
 class ModelEvaluationTaskSerializer(serializers.ModelSerializer):
-    """Сериализатор для задач оценки моделей"""
+    """Serializer for model evaluation tasks"""
     models = serializers.PrimaryKeyRelatedField(source='evaluation_models', many=True, read_only=True)
     models_info = serializers.SerializerMethodField()
     dataset_info = serializers.SerializerMethodField()
@@ -97,7 +97,7 @@ class ModelEvaluationTaskSerializer(serializers.ModelSerializer):
         return obj.summary_metrics
     
     def validate_generation_config(self, value):
-        """Валидация конфигурации генерации"""
+        """Validate the generation config"""
         required_fields = ['max_tokens', 'temperature']
         for field in required_fields:
             if field not in value:
@@ -106,7 +106,7 @@ class ModelEvaluationTaskSerializer(serializers.ModelSerializer):
 
 
 class EvaluationResultSerializer(serializers.ModelSerializer):
-    """Сериализатор для детализированных результатов оценки"""
+    """Serializer for detailed evaluation results"""
     model_name = serializers.CharField(source='model.display_name', read_only=True)
     task_name = serializers.CharField(source='task.name', read_only=True)
     
@@ -127,7 +127,7 @@ class EvaluationResultSerializer(serializers.ModelSerializer):
 
 
 class QuestionUploadSerializer(serializers.Serializer):
-    """Сериализатор для загрузки вопросов из файла"""
+    """Serializer for uploading questions from a file"""
     name = serializers.CharField(max_length=255, required=True)
     description = serializers.CharField(required=False, allow_blank=True)
     file = serializers.FileField(required=True)
@@ -143,7 +143,7 @@ class QuestionUploadSerializer(serializers.Serializer):
 
 
 class StartEvaluationSerializer(serializers.Serializer):
-    """Сериализатор для запуска оценки"""
+    """Serializer for starting an evaluation"""
     name = serializers.CharField(max_length=255, required=True)
     description = serializers.CharField(required=False, allow_blank=True)
     model_ids = serializers.ListField(
@@ -165,7 +165,7 @@ class StartEvaluationSerializer(serializers.Serializer):
 
 
 class RatingSerializer(serializers.Serializer):
-    """Сериализатор для оценки ответа"""
+    """Serializer for rating a response"""
     task_id = serializers.IntegerField(required=True)
     model_id = serializers.IntegerField(required=True)
     question_id = serializers.IntegerField(required=True)

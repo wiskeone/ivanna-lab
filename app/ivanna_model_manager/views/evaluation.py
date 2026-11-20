@@ -74,11 +74,11 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# ОЦЕНКА МОДЕЛЕЙ (EVALUATION)
+# MODEL EVALUATION
 # ============================================================================
 @login_required
 def evaluation_dashboard(request):
-    """Панель управления оценкой."""
+    """Evaluation dashboard."""
     context = {
         'title': 'Оценка моделей',
         'total_datasets': EvaluationDataset.objects.count(),
@@ -119,7 +119,7 @@ class EvaluationDatasetDetailView(LoginRequiredMixin, DetailView):
 
 @login_required
 def upload_dataset_view(request):
-    """Загрузка датасета из файла."""
+    """Upload a dataset from a file."""
     if request.method == 'POST':
         form = QuestionUploadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -154,7 +154,7 @@ def upload_dataset_view(request):
 
 @login_required
 def create_dataset_manual_view(request):
-    """Создание датасета вручную."""
+    """Create a dataset manually."""
     if request.method == 'POST':
         form = EvaluationDatasetForm(request.POST)
         if form.is_valid():
@@ -175,14 +175,14 @@ def create_dataset_manual_view(request):
     return render(request, 'ivanna_model_manager/evaluation_dataset_create.html', {'form': form})
 
 
-LARGE_DATASET_THRESHOLD = 10000  # датасеты больше этого считаем большими
+LARGE_DATASET_THRESHOLD = 10000  # datasets above this are considered large
 
 
 @login_required
 def edit_dataset_questions_view(request, pk):
     dataset = get_object_or_404(EvaluationDataset, pk=pk)
 
-    # Убедимся, что файл существует
+    # Make sure the file exists
     if not dataset.file_path:
         file_name = f"dataset_{dataset.id}.jsonl"
         dataset.file_path = os.path.join(settings.MEDIA_ROOT, 'evaluation_datasets', file_name)
@@ -192,10 +192,10 @@ def edit_dataset_questions_view(request, pk):
 
     total_questions = dataset.total_questions
 
-    # Определяем, большой ли датасет
+    # Determine whether the dataset is large
     has_large_dataset = total_questions > LARGE_DATASET_THRESHOLD
 
-    # Загружаем вопросы только для некрупных датасетов
+    # Load questions only for smaller datasets
     questions = []
     if not has_large_dataset and file_exists:
         try:
@@ -219,9 +219,9 @@ def edit_dataset_questions_view(request, pk):
         logger.warning(f"Dataset file not found: {file_path}")
         messages.warning(request, _('Файл датасета не найден. Возможно, импорт не завершился.'))
 
-    # Для GET-запроса
+    # GET request
     if request.method == 'GET':
-        # Для больших датасетов не передаём JSON, только предупреждение
+        # For large datasets, pass no JSON, only a warning
         questions_json = json.dumps(questions, ensure_ascii=False, indent=2) if not has_large_dataset else ''
         context = {
             'dataset': dataset,
@@ -233,7 +233,7 @@ def edit_dataset_questions_view(request, pk):
         }
         return render(request, 'ivanna_model_manager/evaluation_dataset_edit.html', context)
 
-    # Обработка POST (только для некрупных датасетов)
+    # POST handling (smaller datasets only)
     if has_large_dataset:
         messages.error(request, _('Редактирование большого датасета через веб-интерфейс невозможно. Используйте экспорт/импорт.'))
         return redirect('evaluation_dataset_detail', pk=dataset.id)
@@ -244,14 +244,14 @@ def edit_dataset_questions_view(request, pk):
         if not isinstance(new_questions, list):
             raise ValueError('Данные должны быть массивом')
 
-        # Проверка структуры
+        # Structure check
         for q in new_questions:
             if 'text' not in q and 'instruction' not in q:
                 raise ValueError('Каждый вопрос должен иметь поле "text" или "instruction"')
             if 'answer' not in q and 'output' not in q:
                 raise ValueError('Каждый вопрос должен иметь поле "answer" или "output"')
 
-        # Сохраняем в файл
+        # Save to file
         normalized = []
         with open(file_path, 'w', encoding='utf-8') as f:
             for i, q in enumerate(new_questions, 1):
@@ -300,7 +300,7 @@ def export_evaluation_dataset(request, pk):
 
 @login_required
 def evaluation_task_list_view(request):
-    """Список задач оценки."""
+    """List of evaluation tasks."""
     tasks = ModelEvaluationTask.objects.select_related('dataset').prefetch_related('evaluation_models')
     if request.GET.get('status'):
         tasks = tasks.filter(status=request.GET['status'])
@@ -316,14 +316,14 @@ def evaluation_task_list_view(request):
 
 @login_required
 def evaluation_task_detail_view(request, pk):
-    """Детали задачи оценки."""
+    """Evaluation task details."""
     task = get_object_or_404(ModelEvaluationTask.objects.select_related('dataset'), pk=pk)
     results = EvaluationResult.objects.filter(task=task).select_related('model')
     results_by_model = {}
     for r in results:
         results_by_model.setdefault(r.model.id, {'model': r.model, 'results': []})['results'].append(r)
     
-    # Проверяем, активна ли Celery задача
+    # Check whether the Celery task is still active
     task_active = False
     if task.celery_task_id and task.status in ['RUNNING', 'PENDING']:
         from celery.result import AsyncResult
@@ -338,7 +338,7 @@ def evaluation_task_detail_view(request, pk):
         'task_ratings': task.ratings or {},
         'summary_metrics': task.summary_metrics or {},
         'models': task.evaluation_models.all(),
-        'task_active': task_active,  # Добавляем флаг
+        'task_active': task_active,  # add the flag
     }
     return render(request, 'ivanna_model_manager/evaluation_task_detail.html', context)
 
@@ -346,21 +346,21 @@ def evaluation_task_detail_view(request, pk):
 @login_required
 @require_POST
 def force_reset_stuck_task(request, task_id):
-    """Принудительный сброс зависшей задачи (без перезапуска)"""
+    """Force-reset a stuck task (without restarting)"""
     task = get_object_or_404(ModelEvaluationTask, id=task_id)
     
-    # Проверяем права
+    # Permission check
     if task.created_by != request.user.username and not request.user.is_staff:
         return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
     
-    # Сбрасываем статус
+    # Reset status
     old_status = task.status
     task.status = 'FAILED'
     task.error_message = f"Task was stuck in {old_status} state and manually reset"
     task.completed_at = timezone.now()
     task.save()
     
-    # Отменяем Celery задачу если есть
+    # Revoke the Celery task if any
     if task.celery_task_id:
         from celery.result import AsyncResult
         AsyncResult(task.celery_task_id).revoke(terminate=True)
@@ -377,28 +377,28 @@ def force_reset_stuck_task(request, task_id):
 @login_required
 def create_evaluation_task_view(request):
     """
-    Создание задачи оценки.
-    Теперь с опцией RAG: можно выбрать коллекции и использовать RAG-поиск.
-    Использует transaction.on_commit для гарантии, что задача Celery
-    запускается только после полного сохранения объекта в БД.
+    Create an evaluation task.
+    Now with a RAG option: collections can be selected for RAG search.
+    Uses transaction.on_commit to ensure the Celery task is launched
+    only after the object is fully saved to the DB.
     """
     logger = logging.getLogger(__name__)
 
     if request.method == 'POST':
         form = CreateEvaluationTaskForm(request.POST)
         
-        # Извлекаем RAG-параметры из POST
+        # Extract RAG parameters from POST
         use_rag = request.POST.get('use_rag') == 'on'
         collection_ids = request.POST.getlist('rag_collections')
-        # Преобразуем в int, отбрасываем нечисловые
+        # Convert to int, drop non-numeric values
         collection_ids = [int(cid) for cid in collection_ids if cid.isdigit()]
         
-        # ЛОГИРОВАНИЕ
+        # LOGGING
         logger.info(f"Creating evaluation task: use_rag={use_rag}, collection_ids={collection_ids}")
         
         if form.is_valid():
             try:
-                # Получаем значение квантизации (может быть пустым)
+                # Get the quantization value (may be empty)
                 quantization = form.cleaned_data.get('quantization') or None
 
                 task = ModelEvaluationTask.objects.create(
@@ -420,7 +420,7 @@ def create_evaluation_task_view(request):
                 task.evaluation_models.set(form.cleaned_data['models'])
                 task.save()
 
-                # Запускаем задачу после коммита транзакции
+                # Launch the task after transaction commit
                 transaction.on_commit(lambda: run_evaluation_task.delay(
                     task.id,
                     use_rag=use_rag,
@@ -436,7 +436,7 @@ def create_evaluation_task_view(request):
     else:
         form = CreateEvaluationTaskForm()
 
-    # Подготовка данных для шаблона
+    # Prepare template data
     collections = DocumentCollection.objects.filter(
         Q(owner_id=str(request.user.id)) | Q(is_public=True),
         is_active=True
@@ -456,7 +456,7 @@ def create_evaluation_task_view(request):
 
 @login_required
 def evaluation_task_progress_view(request, task_id):
-    """Прогресс выполнения задачи (AJAX)."""
+    """Task progress (AJAX)."""
     try:
         task = ModelEvaluationTask.objects.get(id=task_id)
         from celery.result import AsyncResult
@@ -483,7 +483,7 @@ def evaluation_task_progress_view(request, task_id):
 @login_required
 @require_POST
 def rate_response_view(request):
-    """Оценка ответа модели (AJAX)."""
+    """Rate a model response (AJAX)."""
     try:
         task_id = request.POST.get('task_id')
         model_id = request.POST.get('model_id')
@@ -517,7 +517,7 @@ def rate_response_view(request):
 
 @login_required
 def compare_models_view(request, task_id):
-    """Сравнение ответов моделей (страница)."""
+    """Compare model responses (page)."""
     from ..models import ModelEvaluationTask, EvaluationResult
     import logging
     logger = logging.getLogger(__name__)
@@ -543,7 +543,7 @@ def compare_models_view(request, task_id):
             'no_data': True
         })
 
-    # Загружаем все EvaluationResult для этой задачи
+    # Load all EvaluationResult records for this task
     eval_results = EvaluationResult.objects.filter(task=task).select_related('model')
     er_dict = {}
     for er in eval_results:
@@ -561,7 +561,7 @@ def compare_models_view(request, task_id):
         model_responses = []
         for m in models:
             m_id = str(m.id)
-            # Данные из task.results
+            # Data from task.results
             resp = results.get(m_id, {}).get(q_id, {})
             response_text = resp.get('response', '')
             rag_used = resp.get('rag_used', False)
@@ -569,7 +569,7 @@ def compare_models_view(request, task_id):
             tokens_used = resp.get('tokens_used', 0)
             response_time = resp.get('response_time', 0)
 
-            # Если есть EvaluationResult, используем его данные (приоритет)
+            # If an EvaluationResult exists, prefer its data
             er = er_dict.get((m.id, int(q_id)))
             if er:
                 if not response_text and er.model_response:
@@ -598,7 +598,7 @@ def compare_models_view(request, task_id):
             'model_responses': model_responses,
         })
 
-    # Формируем словарь рейтингов по вопросам
+    # Build per-question ratings dict
     question_ratings = {}
     for q in questions:
         q_id = str(q.get('id'))
@@ -620,7 +620,7 @@ def compare_models_view(request, task_id):
         else:
             question_ratings[q_id] = None
 
-    # Сводная статистика по моделям
+    # Per-model summary stats
     summary_stats = {}
     if models and questions_with_answers:
         avg_times = []
@@ -659,20 +659,20 @@ def compare_models_view(request, task_id):
 def restart_evaluation_task(request, task_id):
     task = get_object_or_404(ModelEvaluationTask, id=task_id)
     
-    # Проверяем права
+    # Permission check
     if task.created_by != request.user.username and not request.user.is_staff:
         return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
     
-    # Определяем режим рестарта
+    # Determine restart mode
     resume = request.POST.get('resume') == 'true'
     
     if resume and task.metadata.get('checkpoint'):
-        # Возобновляем с чекпоинта
-        task.status = 'PENDING'  # Celery начнет с чекпоинта
+        # Resume from checkpoint
+        task.status = 'PENDING'  # Celery will start from the checkpoint
         task.error_message = ''
         logger.info(f"🔄 Resuming task {task_id} from checkpoint")
     else:
-        # Полный рестарт
+        # Full restart
         task.status = 'PENDING'
         task.progress = 0
         task.current_step = ''
@@ -682,20 +682,20 @@ def restart_evaluation_task(request, task_id):
         task.error_message = ''
         task.started_at = None
         task.completed_at = None
-        task.metadata = {}  # очищаем метаданные
+        task.metadata = {}  # clear metadata
         task.save()
         
-        # Удаляем старые результаты
+        # Delete old results
         from ..models import EvaluationResult
         deleted, _ = EvaluationResult.objects.filter(task=task).delete()
         logger.info(f"Deleted {deleted} old evaluation results for task {task_id}")
     
-    # Отменяем старую задачу
+    # Revoke the old task
     if task.celery_task_id:
         from celery.result import AsyncResult
         AsyncResult(task.celery_task_id).revoke(terminate=True)
     
-    # Запускаем новую
+    # Launch the new one
     celery_task = run_evaluation_task.delay(task.id)
     task.celery_task_id = celery_task.id
     task.save()
@@ -712,7 +712,7 @@ def restart_evaluation_task(request, task_id):
 def delete_evaluation_task(request, task_id):
     task = get_object_or_404(ModelEvaluationTask, id=task_id)
     
-    # Отменяем Celery задачу, если она ещё выполняется
+    # Revoke the Celery task if it is still running
     if task.celery_task_id and task.status == 'RUNNING':
         from celery.result import AsyncResult
         AsyncResult(task.celery_task_id).revoke(terminate=True)
@@ -724,7 +724,7 @@ def delete_evaluation_task(request, task_id):
 
 @login_required
 def get_model_results(request, task_id, model_id):
-    """Детальные результаты конкретной модели (AJAX)."""
+    """Detailed results for a specific model (AJAX)."""
     task = get_object_or_404(ModelEvaluationTask, id=task_id)
     model = get_object_or_404(ModelCheckpoint, id=model_id)
     results = EvaluationResult.objects.filter(task=task, model=model).order_by('question_id')

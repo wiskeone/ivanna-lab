@@ -6,14 +6,14 @@ from typing import Dict, Optional, Tuple, Any
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from ..models import ModelCheckpoint  # Исправлено: поднялись на уровень выше
-from .quantization_router import QuantizationRouter  # quantization_router в той же папке
-from .redis_model_service import redis_model_manager  # redis_model_service в той же папке
+from ..models import ModelCheckpoint  # fixed: moved up one level
+from .quantization_router import QuantizationRouter  # quantization_router in the same folder
+from .redis_model_service import redis_model_manager  # redis_model_service in the same folder
 
 logger = logging.getLogger(__name__)
 
 class ModelCache:
-    """Единый кэш загруженных моделей для всех задач Celery."""
+    """Single cache of loaded models shared by all Celery tasks."""
     
     def __init__(self):
         self._cache: Dict[int, Tuple[AutoModelForCausalLM, AutoTokenizer, Dict[str, Any]]] = {}
@@ -21,8 +21,8 @@ class ModelCache:
     
     def get_model(self, model_id: int, quantization: Optional[str] = None) -> Optional[Tuple[AutoModelForCausalLM, AutoTokenizer]]:
         """
-        Получить модель из кэша или загрузить её.
-        Возвращает (model, tokenizer) или (None, None) при ошибке.
+        Get a model from the cache or load it.
+        Returns (model, tokenizer) or (None, None) on error.
         """
         with self._lock:
             if model_id in self._cache:
@@ -61,10 +61,10 @@ class ModelCache:
                     tokenizer.pad_token = tokenizer.eos_token
 
                 if isinstance(quant_config, dict) and quant_config.get('method') == 'quanto':
-                    # Используем функцию из tasks.py, но чтобы избежать циклического импорта, лучше вынести в отдельный модуль
-                    # Пока оставим заглушку, но в реальности нужно либо импортировать, либо дублировать логику
-                    # Временно используем прямой импорт (но это может вызвать цикл)
-                    from ..tasks import _load_model_with_quanto  # Импорт из tasks
+                    # Use the function from tasks.py; to avoid a circular import it should
+                    # be moved to a separate module. For now keep it simple: a direct
+                    # import (which may still create a cycle).
+                    from ..tasks import _load_model_with_quanto  # import from tasks
                     model, tokenizer = _load_model_with_quanto(
                         checkpoint.local_path,
                         quantization=quant_config['quantization']
@@ -124,5 +124,5 @@ class ModelCache:
             self._cache.clear()
             logger.info("Model cache cleared")
 
-# Глобальный экземпляр
+# Global instance
 model_cache = ModelCache()

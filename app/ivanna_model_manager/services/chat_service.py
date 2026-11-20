@@ -6,17 +6,17 @@ from django.utils import timezone
 from django.db import IntegrityError
 
 from .redis_model_service import redis_model_manager
-from .rag_service import EnhancedSearchService, RAGService  # RAG остаётся крутым
+from .rag_service import EnhancedSearchService, RAGService  # RAG stays awesome
 from ..tasks import generate_text_task
 logger = logging.getLogger(__name__)
 
 
 class ChatService:
     """
-    Сервис чата с интеграцией Redis и RAG.
-    - Управление сессиями (создание, получение, добавление сообщений).
-    - Генерация ответов через redis_model_manager.
-    - Интеграция с RAG (поиск документов, добавление контекста).
+    Chat service with Redis and RAG integration.
+    - Session management (create, fetch, append messages).
+    - Answer generation via redis_model_manager.
+    - RAG integration (document search, context augmentation).
     """
 
     def __init__(self):
@@ -25,14 +25,14 @@ class ChatService:
         self.search_service = EnhancedSearchService()
 
     # ----------------------------------------------------------------------
-    # Управление сессиями (Redis + БД)
+    # Session management (Redis + DB)
     # ----------------------------------------------------------------------
     def create_session(self, user_id: str, model_id: str = None) -> Dict[str, Any]:
         """
-        Создаёт новую сессию чата.
-        - Генерирует уникальный session_id.
-        - Сохраняет базовую информацию в Redis (TTL 1 день).
-        - Создаёт запись в БД ChatSession.
+        Create a new chat session.
+        - Generates a unique session_id.
+        - Stores basic info in Redis (TTL 1 day).
+        - Creates a ChatSession DB record.
         """
         from ..models import ChatSession, ModelCheckpoint
 
@@ -40,7 +40,7 @@ class ChatService:
         random_suffix = int(time.time() * 1000) % 10000
         session_id = f"chat_{user_id}_{timestamp}_{random_suffix}"
 
-        # Конфигурация по умолчанию
+        # Default configuration
         generation_config = {}
         model = None
         if model_id:
@@ -50,7 +50,7 @@ class ChatService:
             except ModelCheckpoint.DoesNotExist:
                 logger.warning(f"Model {model_id} not found, session created without model")
 
-        # Данные для Redis
+        # Data for Redis
         session_data = {
             'session_id': session_id,
             'user_id': user_id,
@@ -59,13 +59,13 @@ class ChatService:
             'created_at': timezone.now().isoformat(),
             'last_activity': timezone.now().isoformat(),
             'conversation_history': [],
-            # Объединённая конфигурация для сессии
+            # Merged session configuration
             'session_config': {
                 'loader_overrides': {},
                 'generation_config': generation_config,
                 'system_prompt': 'Ты полезный ассистент. Отвечай на русском языке.',
             },
-            # RAG настройки (по умолчанию выключены)
+            # RAG settings (disabled by default)
             'rag_config': {
                 'enabled': False,
                 'selected_collections': [],
@@ -77,11 +77,11 @@ class ChatService:
             }
         }
 
-        # Сохраняем в Redis
+        # Save to Redis
         redis_key = f"chat:session:{session_id}"
         self.redis_manager.redis.setex(redis_key, 86400, json.dumps(session_data, default=str))
 
-        # Создаём в БД
+        # Create the DB record
         try:
             chat_session = ChatSession.objects.create(
                 session_id=session_id,
@@ -98,7 +98,7 @@ class ChatService:
                 chat_session.save()
             logger.info(f"✅ Chat session created: {session_id}")
         except IntegrityError:
-            # Если вдруг такой session_id уже есть (крайне маловероятно)
+            # In case this session_id already exists (extremely unlikely)
             session_id = f"chat_{user_id}_{timestamp}_{int(time.time() * 1000000) % 1000000}"
             session_data['session_id'] = session_id
             self.redis_manager.redis.setex(f"chat:session:{session_id}", 86400, json.dumps(session_data, default=str))
@@ -127,34 +127,34 @@ class ChatService:
 
     def get_session(self, session_id: str, force_refresh: bool = False) -> Optional[Dict[str, Any]]:
         """
-        Получить сессию из Redis.
-        Если в Redis нет, пытается восстановить из БД.
-        
+        Fetch a session from Redis.
+        If not in Redis, tries to restore it from the DB.
+
         Args:
-            session_id: ID сессии
-            force_refresh: если True, игнорирует возможный локальный кэш и всегда берет из Redis
+            session_id: Session ID
+            force_refresh: if True, ignores any local cache and always reads from Redis
         """
         redis_key = f"chat:session:{session_id}"
-        
-        # Логируем вызов
+
+        # Log the call
         logger.info(f"🔍 get_session: session={session_id}, force_refresh={force_refresh}")
-        
-        # Если force_refresh, удаляем ключ из Redis, чтобы получить свежие данные
+
+        # If force_refresh, delete the Redis key to get fresh data
         if force_refresh:
             logger.info(f"🔄 Force refresh for session {session_id}")
-            # Можно не удалять, а просто читать заново, но для гарантии удалим
+            # Could skip deletion and simply re-read, but delete for safety
             # self.redis_manager.redis.delete(redis_key)
-            # Но лучше просто читаем заново без удаления
-        
-        # Получаем данные из Redis
+            # Better to just re-read without deletion
+
+        # Fetch data from Redis
         session_data = self.redis_manager.redis.get(redis_key)
 
         if session_data:
             try:
                 session = json.loads(session_data)
-                # Обновляем время последней активности
+                # Update last activity time
                 session['last_activity'] = timezone.now().isoformat()
-                # Продлеваем TTL
+                # Extend the TTL
                 self.redis_manager.redis.setex(redis_key, 86400, json.dumps(session, default=str))
                 logger.info(f"✅ Session {session_id} loaded from Redis, history length: {len(session.get('conversation_history', []))}")
                 return session
@@ -162,7 +162,7 @@ class ChatService:
                 logger.error(f"❌ Invalid session data for {session_id}: {e}")
                 return None
 
-        # Если в Redis нет, восстанавливаем из БД
+        # Not in Redis — restore from the DB
         logger.info(f"🔄 Session {session_id} not in Redis, restoring from DB")
         try:
             from ..models import ChatSession
@@ -182,9 +182,9 @@ class ChatService:
                     'generation_config': generation_config,
                     'system_prompt': chat_session.system_prompt or 'Ты полезный ассистент. Отвечай на русском языке.',
                 },
-                'rag_config': {},  # можно будет расширить
+                'rag_config': {},  # can be extended later
             }
-            # Сохраняем в Redis
+            # Save to Redis
             self.redis_manager.redis.setex(redis_key, 86400, json.dumps(session_data, default=str))
             logger.info(f"✅ Session {session_id} restored from DB, history length: {len(session_data.get('conversation_history', []))}")
             return session_data
@@ -197,14 +197,14 @@ class ChatService:
 
     def add_message(self, session_id: str, role: str, content: str, metadata: Dict = None) -> bool:
         """
-        Добавить сообщение в историю диалога.
-        Обновляет Redis и БД.
+        Add a message to the conversation history.
+        Updates Redis and the DB.
         """
         import traceback
-        
+
         logger.info(f"🔵 [add_message] START: session={session_id}, role={role}, content_len={len(content)}")
-        
-        # 1. Получаем сессию
+
+        # 1. Fetch the session
         session = self.get_session(session_id)
         if not session:
             logger.error(f"❌ [add_message] Session {session_id} not found")
@@ -212,7 +212,7 @@ class ChatService:
         
         logger.info(f"✅ [add_message] Session found, current history length: {len(session.get('conversation_history', []))}")
         
-        # 2. Создаём сообщение
+        # 2. Build the message
         message = {
             'role': role,
             'content': content,
@@ -222,7 +222,7 @@ class ChatService:
             message['metadata'] = self._serialize_metadata(metadata)
             logger.info(f"📝 [add_message] Metadata included: {list(metadata.keys())}")
         
-        # 3. Добавляем в Redis
+        # 3. Append in Redis
         if 'conversation_history' not in session:
             session['conversation_history'] = []
             logger.info("📝 [add_message] Created new conversation_history array")
@@ -232,7 +232,7 @@ class ChatService:
         after_count = len(session['conversation_history'])
         logger.info(f"📝 [add_message] History size: {before_count} → {after_count}")
         
-        # Ограничим историю 50 сообщениями
+        # Cap the history at 50 messages
         if after_count > 50:
             session['conversation_history'] = session['conversation_history'][-50:]
             logger.info(f"✂️ [add_message] Trimmed history to 50 messages")
@@ -240,7 +240,7 @@ class ChatService:
         session['last_activity'] = timezone.now().isoformat()
         redis_key = f"chat:session:{session_id}"
         
-        # 4. Сохраняем в Redis
+        # 4. Save to Redis
         try:
             serialized = json.dumps(session, default=str)
             self.redis_manager.redis.setex(redis_key, 86400, serialized)
@@ -250,7 +250,7 @@ class ChatService:
             logger.error(traceback.format_exc())
             return False
         
-        # 5. Обновляем БД
+        # 5. Update the DB
         try:
             from ..models import ChatSession
             chat_session = ChatSession.objects.get(session_id=session_id)
@@ -272,7 +272,7 @@ class ChatService:
         return True
 
     def get_conversation_history(self, session_id: str, limit: int = None) -> List[Dict[str, Any]]:
-        """Получить историю диалога из Redis."""
+        """Get the conversation history from Redis."""
         session = self.get_session(session_id)
         if not session:
             return []
@@ -282,7 +282,7 @@ class ChatService:
         return history
 
     def clear_history(self, session_id: str) -> bool:
-        """Очистить историю чата."""
+        """Clear the chat history."""
         session = self.get_session(session_id)
         if not session:
             return False
@@ -304,7 +304,7 @@ class ChatService:
         return True
 
     def close_session(self, session_id: str) -> bool:
-        """Закрыть сессию (деактивировать и удалить из Redis)."""
+        """Close a session (deactivate and remove from Redis)."""
         try:
             from ..models import ChatSession
             chat_session = ChatSession.objects.get(session_id=session_id)
@@ -331,7 +331,7 @@ class ChatService:
             history = redis_data.get('conversation_history', s.conversation_history or []) if redis_data else s.conversation_history or []
             last_msg = history[-1].get('content', '')[:100] if history else ''
 
-            # Проверяем, загружена ли модель
+            # Check whether the model is loaded
             model_loaded = False
             if s.checkpoint:
                 model_id = s.checkpoint.huggingface_id or s.checkpoint.name
@@ -344,7 +344,7 @@ class ChatService:
                 'session_id': s.session_id,
                 'model_id': s.checkpoint.id if s.checkpoint else None,
                 'model_name': s.checkpoint.display_name if s.checkpoint else None,
-                'model_loaded': model_loaded,   # новое поле
+                'model_loaded': model_loaded,   # new field
                 'notes': s.notes or f"Сессия от {s.created_at.strftime('%d.%m.%Y')}",
                 'created_at': s.created_at.isoformat(),
                 'last_activity': s.last_activity.isoformat(),
@@ -358,22 +358,22 @@ class ChatService:
         return result
 
     # ----------------------------------------------------------------------
-    # Генерация ответов (обычный чат)
+    # Answer generation (plain chat)
     # ----------------------------------------------------------------------
 
     from celery.result import AsyncResult
     from ..tasks import generate_text_task
 
     # ----------------------------------------------------------------------
-    # Генерация ответов с RAG
+    # Answer generation with RAG
     # ----------------------------------------------------------------------
     def generate_response(self, session_id: str, message: str,
                           generation_config_overrides: Dict = None,
                           use_rag: bool = None,
                           rag_config: Dict = None) -> Dict[str, Any]:
         """
-        Генерация ответа ассистента.
-        Если переданы use_rag и rag_config, они имеют приоритет над сохранёнными в сессии.
+        Generate an assistant answer.
+        If use_rag and rag_config are passed, they take priority over the values stored in the session.
         """
         logger.info(f"🟡 [generate_response] START: session={session_id}, message_len={len(message)}")
 
@@ -389,7 +389,7 @@ class ChatService:
 
         logger.info(f"✅ [generate_response] Session found, model_id={model_id}")
 
-        # Получаем конфигурацию из сессии
+        # Load the configuration from the session
         session_config = session.get('session_config', {})
         system_prompt = session_config.get('system_prompt', 'Ты полезный ассистент. Отвечай на русском языке.')
         gen_config = session_config.get('generation_config', {}).copy()
@@ -397,29 +397,29 @@ class ChatService:
             gen_config.update(generation_config_overrides)
             logger.info(f"⚙️ [generate_response] Generation config overrides applied")
 
-        # Определяем финальные RAG-параметры
+        # Resolve the final RAG parameters
         session_rag = session.get('rag_config', {})
         final_use_rag = use_rag if use_rag is not None else session_rag.get('enabled', False)
         final_rag_config = rag_config if rag_config is not None else session_rag
 
-        # Проверяем, включён ли RAG и есть ли выбранные коллекции
+        # Check whether RAG is enabled and collections are selected
         use_rag_enabled = final_use_rag and final_rag_config.get('selected_collections', [])
         logger.info(f"🔍 [generate_response] RAG enabled: {use_rag_enabled}, collections: {final_rag_config.get('selected_collections', [])}")
 
-        # Добавляем сообщение пользователя в историю
+        # Append the user message to the history
         logger.info(f"📝 [generate_response] Calling add_message for user message...")
         add_result = self.add_message(session_id, 'user', message)
         if not add_result:
             logger.error(f"❌ [generate_response] Failed to add user message to session {session_id}")
             return {'success': False, 'error': 'Failed to save message'}
 
-        # Получаем обновлённую сессию для формирования промпта
+        # Fetch the refreshed session to build the prompt
         session = self.get_session(session_id, force_refresh=True)
         if not session:
             logger.error(f"❌ [generate_response] Session {session_id} not found after adding message")
             return {'success': False, 'error': 'Session not found'}
 
-        # Собираем промпт с историей
+        # Build the prompt from the history
         history = session.get('conversation_history', [])
         prompt_parts = [f"System: {system_prompt}"]
         for msg in history:
@@ -428,7 +428,7 @@ class ChatService:
         prompt_parts.append("Assistant:")
         full_prompt = "\n".join(prompt_parts)
 
-        # Запускаем задачу Celery с RAG-параметрами
+        # Launch the Celery task with RAG parameters
         try:
             task = generate_text_task.delay(
                 model_id=int(model_id),
@@ -443,7 +443,7 @@ class ChatService:
             logger.error(f"❌ [generate_response] Failed to create task: {e}", exc_info=True)
             return {'success': False, 'error': str(e)}
 
-        # Сохраняем ID задачи в Redis
+        # Store the task ID in Redis
         session['last_task_id'] = task.id
         session['pending_messages'] = session.get('pending_messages', 0) + 1
         redis_key = f"chat:session:{session_id}"
@@ -457,12 +457,12 @@ class ChatService:
         }
 
     # ----------------------------------------------------------------------
-    # RAG: поиск документов, управление коллекциями
+    # RAG: document search, collection management
     # ----------------------------------------------------------------------
     def search_documents(self, session_id: str, query: str,
                          collection_ids: List[int] = None) -> Dict[str, Any]:
         """
-        Поиск по документам RAG. Использует EnhancedSearchService.
+        Search RAG documents. Uses EnhancedSearchService.
         """
         session = self.get_session(session_id)
         if not session:
@@ -474,7 +474,7 @@ class ChatService:
             return {'success': False, 'error': 'No collections selected for search'}
 
         try:
-            # Используем улучшенный гибридный поиск
+            # Use enhanced hybrid search
             rag_config = session.get('rag_config', {})
             # Audit fix: the service signature is collection_ids — the old call
             # passed collection_id (TypeError for a single collection, empty
@@ -507,7 +507,7 @@ class ChatService:
                     'source': r.get('source', 'hybrid'),
                 })
 
-            # Сохраняем последний поиск в сессию
+            # Store the last search in the session
             session['rag_config'] = session.get('rag_config', {})
             session['rag_config']['last_search'] = {
                 'query': query,
@@ -525,7 +525,7 @@ class ChatService:
             return {'success': False, 'error': f'Search error: {str(e)}'}
 
     def update_rag_config(self, session_id: str, rag_config: Dict) -> bool:
-        """Обновить RAG-конфигурацию сессии."""
+        """Update the session RAG configuration."""
         session = self.get_session(session_id)
         if not session:
             return False
@@ -538,7 +538,7 @@ class ChatService:
         return True
 
     def get_user_collections(self, user_id: str) -> List[Dict[str, Any]]:
-        """Получить список коллекций, доступных пользователю."""
+        """Get the list of collections available to the user."""
         try:
             from ..models import DocumentCollection
             from django.db.models import Q, Count
@@ -575,7 +575,7 @@ class ChatService:
             return []
 
     def _get_rag_context(self, session_id: str, query: str, rag_config: Dict) -> str:
-        """Получает контекст из RAG для запроса."""
+        """Get RAG context for the query."""
         collection_ids = rag_config.get('selected_collections', [])
         if not collection_ids:
             return ""
@@ -606,11 +606,11 @@ class ChatService:
             return ""
 
     # ----------------------------------------------------------------------
-    # Вспомогательные методы
+    # Helper methods
     # ----------------------------------------------------------------------
     @staticmethod
     def _serialize_metadata(metadata: Dict) -> Dict:
-        """Сериализация метаданных для JSON (преобразование datetime, etc)."""
+        """Serialize metadata for JSON (datetime conversion, etc.)."""
         if not metadata:
             return {}
         serialized = {}
@@ -630,5 +630,5 @@ class ChatService:
         return serialized
 
 
-# Глобальный экземпляр
+# Global instance
 chat_service = ChatService()

@@ -74,7 +74,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# МОДЕЛИ
+# MODELS
 # ============================================================================
 class ModelListView(LoginRequiredMixin, ListView):
     template_name = 'ivanna_model_manager/model_list.html'
@@ -83,7 +83,7 @@ class ModelListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = ModelCheckpoint.objects.filter(is_active=True)
-        # Фильтры
+        # Filters
         if self.request.GET.get('model_type'):
             qs = qs.filter(model_type=self.request.GET['model_type'])
         if self.request.GET.get('status'):
@@ -92,14 +92,14 @@ class ModelListView(LoginRequiredMixin, ListView):
             qs = qs.filter(experiment_id=self.request.GET['experiment_id'])
         if self.request.GET.get('q'):
             qs = qs.filter(Q(name__icontains=self.request.GET['q']) | Q(display_name__icontains=self.request.GET['q']))
-        # Сортировка
+        # Sorting
         sort = self.request.GET.get('sort_by', '-created_at')
         if sort.lstrip('-') in ['name', 'display_name', 'created_at', 'parameter_count']:
             qs = qs.order_by(sort)
         else:
             qs = qs.order_by('-created_at')
-        # HF-репо, куда модель выложена через платформу (soft MoE push):
-        # Subquery по новейшей MoE-джобе с непустым repo_id — без N+1
+        # HF repo the model was published to via the platform (soft MoE push):
+        # Subquery on the newest MoE job with a non-empty repo_id — no N+1
         published_repo = (MoEExpertJob.objects.filter(output_model=OuterRef('pk'))
                           .exclude(hf_repo_id='').order_by('-id'))
         return qs.select_related('experiment', 'parent').annotate(
@@ -119,12 +119,12 @@ class ModelListView(LoginRequiredMixin, ListView):
             if model.is_quantized:
                 quantized_models += 1
 
-            # Проверяем, загружена ли модель в память (Redis)
+            # Check if the model is loaded in memory (Redis)
             model_id = model.huggingface_id or model.name
             info = redis_model_manager.get_model_info(model_id)
             model.is_loaded_in_memory = bool(info and info.get('loaded'))
 
-        # Получаем текущее значение сортировки из запроса (для сохранения в фильтрах)
+        # Current sort value from the request (to keep in filters)
         current_sort = self.request.GET.get('sort_by', '-created_at')
 
         context.update({
@@ -147,7 +147,7 @@ class ModelListView(LoginRequiredMixin, ListView):
 
 
 class ModelDetailView(LoginRequiredMixin, DetailView):
-    """Детальная информация о модели с отображением конфигурации."""
+    """Model detail view with configuration display."""
     model = ModelCheckpoint
     template_name = 'ivanna_model_manager/model_detail.html'
     context_object_name = 'model'
@@ -157,15 +157,15 @@ class ModelDetailView(LoginRequiredMixin, DetailView):
         obj = self.object
         context['has_local_copy'] = bool(obj.local_path and os.path.exists(obj.local_path))
 
-        # Загружаем конфигурацию loader_config в JSON для отображения
+        # Load loader_config into JSON for display
         import json
         config_json = json.dumps(obj.loader_config, indent=2, ensure_ascii=False)
         context['config_json'] = config_json
 
-        # Версии модели
+        # Model versions
         context['versions'] = obj.versions.order_by('-created_at')[:10]
 
-        # Оценки
+        # Evaluations
         context['evaluations'] = obj.evaluations.filter(is_valid=True).order_by('-evaluated_at')[:5]
 
         # v5.3: scores of this model per benchmark (latest completed run per pair)
@@ -184,10 +184,10 @@ class ModelDetailView(LoginRequiredMixin, DetailView):
                     })
         context['bench_scores'] = bench_scores
 
-        # Активные сессии
+        # Active sessions
         context['active_sessions'] = obj.inference_sessions.filter(is_active=True).order_by('-last_activity')[:5]
 
-        # Подходящие модели для слияния
+        # Merge candidate models
         context['merge_candidates'] = ModelCheckpoint.objects.filter(
             status='LOADED',
             is_active=True,
@@ -195,12 +195,12 @@ class ModelDetailView(LoginRequiredMixin, DetailView):
             parameter_count=obj.parameter_count
         ).exclude(id=obj.id)[:10]
 
-        # Последние задачи слияния
+        # Recent merge jobs
         context['merge_jobs'] = ModelMergeJob.objects.filter(
             Q(base_model=obj) | Q(merge_model=obj)
         ).order_by('-created_at')[:5]
 
-        # Размер и квантизация
+        # Size and quantization
         context['size_gb'] = obj.size_gb
         context['is_quantized'] = obj.is_quantized
 
@@ -208,9 +208,9 @@ class ModelDetailView(LoginRequiredMixin, DetailView):
 
 
 class LocalModelCreateView(LoginRequiredMixin, CreateView):
-    """Создание модели с локальным путём (без Hugging Face)."""
+    """Create a model from a local path (no Hugging Face)."""
     template_name = 'ivanna_model_manager/local_model_form.html'
-    form_class = LocalModelForm  # которую нужно создать
+    form_class = LocalModelForm  # to be created
     success_url = reverse_lazy('model_list')
 
     def get_context_data(self, **kwargs):
@@ -285,7 +285,7 @@ class ModelUpdateView(LoginRequiredMixin, UpdateView):
 
 @login_required
 def download_model_view(request, pk):
-    """Запуск загрузки модели (синхронный запуск задачи)."""
+    """Start model download (synchronous task launch)."""
     model = get_object_or_404(ModelCheckpoint, pk=pk, is_active=True)
     if model.status == 'LOADED':
         messages.warning(request, _('Модель уже загружена'))
@@ -302,10 +302,10 @@ def download_model_view(request, pk):
 @login_required
 @permission_required('ivanna_model_manager.can_delete_protected', raise_exception=True)
 def model_delete_view(request, pk):
-    """Мягкое удаление модели (деактивация)."""
+    """Soft-delete a model (deactivation)."""
     model = get_object_or_404(ModelCheckpoint, pk=pk)
     if request.method == 'POST':
-        # Отменяем активные загрузки
+        # Cancel active downloads
         ModelDownloadJob.objects.filter(
             checkpoint=model,
             status__in=['PENDING', 'DOWNLOADING']
@@ -335,7 +335,7 @@ def model_delete_view(request, pk):
 
 @login_required
 def model_config_view(request, pk):
-    """Просмотр конфигурации модели."""
+    """View model configuration."""
     import json
     model = get_object_or_404(ModelCheckpoint, pk=pk, is_active=True)
     if not model.loader_config:
@@ -349,7 +349,7 @@ def model_config_view(request, pk):
 
 @login_required
 def create_model_version_view(request, pk):
-    """Создание новой версии модели."""
+    """Create a new model version."""
     model = get_object_or_404(ModelCheckpoint, pk=pk, is_active=True)
     version_name = request.POST.get('version_name', f'v{model.versions.count() + 1}')
     notes = request.POST.get('notes', '')
@@ -360,7 +360,7 @@ def create_model_version_view(request, pk):
 
 @login_required
 def restore_model_version_view(request, model_pk, version_pk):
-    """Восстановление версии модели."""
+    """Restore a model version."""
     model = get_object_or_404(ModelCheckpoint, pk=model_pk, is_active=True)
     version = get_object_or_404(ModelVersion, pk=version_pk, checkpoint=model)
     version.restore()
@@ -369,7 +369,7 @@ def restore_model_version_view(request, model_pk, version_pk):
 
 
 # ============================================================================
-# ТЕСТИРОВАНИЕ МОДЕЛИ (ИНФЕРЕНС)
+# MODEL TESTING (INFERENCE)
 # ============================================================================
 class InferenceTestView(LoginRequiredMixin, DetailView):
     model = ModelCheckpoint
@@ -388,7 +388,7 @@ class InferenceTestView(LoginRequiredMixin, DetailView):
             return render(request, self.template_name, {'form': form, 'model': self.object})
 
         model_id = self.object.huggingface_id or self.object.name
-        # Проверяем, загружена ли модель
+        # Check if the model is loaded
         info = redis_model_manager.get_model_info(model_id)
         if not info or not info.get('loaded'):
             messages.error(request, _('Модель не загружена в память'))

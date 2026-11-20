@@ -78,7 +78,7 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsAuthenticated])
 def api_chat_session_preview(request, session_id):
     """
-    Возвращает последние сообщения сессии для предпросмотра.
+    Returns the latest session messages for preview.
     """
     from ..models import ChatSession
     from ..services.chat_service import chat_service
@@ -88,31 +88,31 @@ def api_chat_session_preview(request, session_id):
     except ChatSession.DoesNotExist:
         return Response({'success': False, 'error': 'Session not found'}, status=404)
 
-    # Пытаемся получить из Redis, иначе из БД
+    # Try Redis first, fall back to the DB
     redis_session = chat_service.get_session(session_id)
     if redis_session and redis_session.get('conversation_history'):
-        messages = redis_session['conversation_history'][-5:]  # последние 5
+        messages = redis_session['conversation_history'][-5:]  # last 5
     else:
         messages = session.conversation_history[-5:] if session.conversation_history else []
 
-    # Убираем лишние поля, если нужно
+    # Trim extra fields if needed
     simplified = [{'role': m['role'], 'content': m['content'][:200]} for m in messages]
 
     return Response({'success': True, 'messages': simplified})
 
 
 class ChatSessionViewSet(viewsets.ModelViewSet):
-    """API для чат-сессий."""
+    """API for chat sessions."""
     queryset = ChatSession.objects.all()
     serializer_class = ChatSessionSerializer
     permission_classes = [IsAuthenticated]
-    lookup_field = 'session_id'  # теперь URL используют session_id вместо pk
+    lookup_field = 'session_id'  # URLs now use session_id instead of pk
 
     def get_queryset(self):
         return self.queryset.filter(user_id=str(self.request.user.id), is_active=True)
 
     def create(self, request, *args, **kwargs):
-        """Создание сессии с моделью."""
+        """Create a session with a model."""
         model_id = request.data.get('checkpoint_id') or request.data.get('model_id')
         if not model_id:
             return Response({'error': 'model_id required'}, status=400)
@@ -149,14 +149,14 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def clear(self, request, session_id=None):
-        """Очистить историю."""
+        """Clear history."""
         session = self.get_object()
         success = chat_service.clear_history(session.session_id)
         return Response({'success': success})
 
     @action(detail=True, methods=['post'])
     def change_model(self, request, session_id=None):
-        """Сменить модель."""
+        """Change the model."""
         session = self.get_object()
         model_id = request.data.get('model_id')
         if not model_id:
@@ -165,7 +165,7 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
             new_model = ModelCheckpoint.objects.get(id=model_id, is_active=True)
             session.checkpoint = new_model
             session.save()
-            # Обновить в Redis
+            # Update in Redis
             redis_data = chat_service.get_session(session.session_id)
             if redis_data:
                 redis_data['model_id'] = model_id
@@ -180,7 +180,7 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def my_sessions(self, request):
-        """Список сессий пользователя."""
+        """List the user's sessions."""
         sessions = chat_service.list_user_sessions(str(request.user.id))
         return Response({'success': True, 'sessions': sessions})
 
@@ -188,7 +188,7 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_chat_update_rag_config(request, session_id):
-    """Обновление RAG конфигурации для сессии."""
+    """Update the RAG config for a session."""
     from ..services.chat_service import chat_service
     
     try:
@@ -209,12 +209,12 @@ def api_chat_update_rag_config(request, session_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_chat_send_message(request, session_id):
-    """Отправка сообщения в чат (асинхронная)."""
+    """Send a chat message (async)."""
     from ..services.chat_service import chat_service
     from ..serializers import TextGenerationSerializer
 
     try:
-        # Проверяем существование сессии
+        # Check that the session exists
         session = chat_service.get_session(session_id)
         if not session:
             return Response({'error': 'Session not found'}, status=404)
@@ -223,7 +223,7 @@ def api_chat_send_message(request, session_id):
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
 
-        # Извлекаем RAG-параметры
+        # Extract RAG parameters
         use_rag = request.data.get('use_rag', False)
         rag_config = request.data.get('rag_config', None)
 
@@ -250,7 +250,7 @@ def api_chat_send_message(request, session_id):
 @login_required
 @require_http_methods(["GET"])
 def api_generation_presets_list(request):
-    """Список пресетов генерации (для дропдауна в чате/сравнениях)."""
+    """List generation presets (for the chat/comparison dropdown)."""
     from ..models import GenerationPreset
     presets = GenerationPreset.objects.all().values(
         'id', 'name', 'description', 'config', 'created_at'
@@ -261,8 +261,8 @@ def api_generation_presets_list(request):
 @login_required
 @require_http_methods(["POST"])
 def api_generation_preset_create(request):
-    """Создание пресета: {name, description?, config} — конфиг валидируется
-    и нормализуется (whitelist ключей, clamp диапазонов)."""
+    """Create a preset: {name, description?, config} — the config is validated
+    and normalized (key whitelist, range clamping)."""
     import json as _json
     from ..models import GenerationPreset
     from ..services.generation_presets import normalize_preset_config
@@ -294,7 +294,7 @@ def api_generation_preset_delete(request, preset_id):
     preset = GenerationPreset.objects.filter(id=preset_id).first()
     if not preset:
         return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
-    # удалять может автор или staff
+    # only the author or staff can delete
     if not (request.user.is_staff or preset.created_by_id == request.user.id):
         return JsonResponse({'success': False, 'error': 'No permissions'}, status=403)
     preset.delete()
@@ -304,8 +304,8 @@ def api_generation_preset_delete(request, preset_id):
 @login_required
 @require_http_methods(["POST"])
 def api_chat_apply_preset(request, session_id):
-    """Применение пресета к сессии: мерж в generation_config сессии (Redis)
-    + возврат конфига клиенту для синхронизации input'ов."""
+    """Apply a preset to a session: merge into the session generation_config (Redis)
+    + return the config to the client for input synchronization."""
     import json as _json
     from ..models import GenerationPreset
     from ..services.chat_service import chat_service
@@ -324,7 +324,7 @@ def api_chat_apply_preset(request, session_id):
         return JsonResponse({'success': False, 'error': 'Session not found'}, status=404)
 
     session = apply_preset_to_config(session, {'generation_config': preset.config})
-    # персист в Redis тем же механизмом, что update_rag_config
+    # Persist to Redis the same way update_rag_config does
     redis_key = f"chat:session:{session_id}"
     chat_service.redis_manager.redis.setex(redis_key, 86400,
                                            _json.dumps(session, default=str))

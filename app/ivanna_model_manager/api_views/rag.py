@@ -77,7 +77,7 @@ from .core import IsCollectionOwnerOrPublic
 
 
 # ============================================================================
-# ПОИСК
+# SEARCH
 # ============================================================================
 @api_view(['POST'])
 @login_required
@@ -112,7 +112,7 @@ def rag_search(request):
     except DocumentCollection.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Collection not found'}, status=404)
 
-    # Определяем модель эмбеддингов, которая использовалась для индексации
+    # Determine the embedding model used for indexing
     embedding_model = collection.get_effective_embedding_model()
     embedding_model_id = embedding_model.id if embedding_model else None
 
@@ -131,7 +131,7 @@ def rag_search(request):
         results = search_service.enhanced_hybrid_search(
             query=query,
             collection_ids=collection_id,
-            embedding_model_id=embedding_model_id,  # <-- важно!
+            embedding_model_id=embedding_model_id,  # <-- important!
             k=top_k,
             semantic_weight=semantic_weight,
             keyword_weight=keyword_weight,
@@ -142,7 +142,7 @@ def rag_search(request):
     processing_time = (time.time() - start) * 1000
     logger.info(f"Search returned {len(results)} results in {processing_time:.2f} ms")
 
-    # Форматируем результат
+    # Format the results
     formatted_results = []
     for r in results:
         formatted_results.append({
@@ -174,7 +174,7 @@ def rag_search(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_rag_search_suggestions(request):
-    """Возвращает подсказки для поиска по коллекции."""
+    """Returns search suggestions for a collection."""
     query = request.GET.get('q', '').strip()
     collection_id = request.GET.get('collection_id')
     limit = int(request.GET.get('limit', 8))
@@ -192,7 +192,7 @@ def api_rag_search_suggestions(request):
     
     suggestions = []
     
-    # Поиск по заголовкам документов
+    # Search document titles
     doc_titles = list(collection.documents.filter(
         Q(title__icontains=query) | Q(original_filename__icontains=query),
         is_active=True
@@ -202,7 +202,7 @@ def api_rag_search_suggestions(request):
         if title:
             suggestions.append({'text': title, 'type': 'document_title'})
     
-    # Если осталось место, ищем по содержимому чанков
+    # If room remains, search chunk content
     if len(suggestions) < limit:
         chunks = DocumentChunk.objects.filter(
             document__collection=collection,
@@ -225,7 +225,7 @@ def api_rag_search_suggestions(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_rag_collection_stats(request, collection_id):
-    """Возвращает статистику коллекции."""
+    """Returns collection statistics."""
     try:
         collection = DocumentCollection.objects.get(
             Q(id=collection_id) & (Q(owner_id=str(request.user.id)) | Q(is_public=True)),
@@ -255,7 +255,7 @@ def api_rag_collection_stats(request, collection_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_rag_search_history(request):
-    """Возвращает историю поисков пользователя."""
+    """Returns the user's search history."""
     collection_id = request.GET.get('collection_id')
     limit = int(request.GET.get('limit', 10))
     
@@ -281,7 +281,7 @@ def api_rag_search_history(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_rag_export_search_results(request):
-    """Экспорт результатов поиска в JSON или CSV."""
+    """Export search results to JSON or CSV."""
     data = request.data
     results = data.get('results', [])
     format = data.get('format', 'json')
@@ -324,7 +324,7 @@ def api_rag_export_search_results(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_document_preview(request, document_id):
-    """Возвращает содержимое документа или конкретного чанка для предпросмотра."""
+    """Returns document content or a specific chunk for preview."""
     try:
         doc = Document.objects.get(id=document_id, is_active=True)
         if doc.collection:
@@ -357,11 +357,11 @@ def api_document_preview(request, document_id):
 @permission_classes([IsAuthenticated])
 def api_document_chunk_detail(request, chunk_id):
     """
-    Возвращает детальную информацию о чанке документа.
+    Returns detailed information about a document chunk.
     """
     try:
         chunk = DocumentChunk.objects.select_related('document').get(id=chunk_id, is_active=True)
-        # Проверка доступа
+        # Access check
         if chunk.document.collection:
             if (chunk.document.collection.owner_id != str(request.user.id) and 
                 not chunk.document.collection.is_public):
@@ -376,7 +376,7 @@ def api_document_chunk_detail(request, chunk_id):
 # RAG API
 # ============================================================================
 class DocumentCollectionViewSet(viewsets.ModelViewSet):
-    """API для коллекций документов."""
+    """API for document collections."""
     queryset = DocumentCollection.objects.filter(is_active=True)
     serializer_class = DocumentCollectionSerializer
     permission_classes = [IsAuthenticated, IsCollectionOwnerOrPublic]
@@ -459,14 +459,14 @@ class DocumentCollectionViewSet(viewsets.ModelViewSet):
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
-    """API для документов."""
+    """API for documents."""
     queryset = Document.objects.filter(is_active=True)
     serializer_class = DocumentSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        # Доступные коллекции
+        # Accessible collections
         coll_ids = DocumentCollection.objects.filter(
             Q(owner_id=str(user.id)) | Q(is_public=True), is_active=True
         ).values_list('id', flat=True)
@@ -503,7 +503,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
 
 class RAGSessionViewSet(viewsets.ModelViewSet):
-    """API для RAG-сессий."""
+    """API for RAG sessions."""
     queryset = RAGSession.objects.all()
     serializer_class = RAGSessionSerializer
     permission_classes = [IsAuthenticated]
@@ -513,7 +513,7 @@ class RAGSessionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def chat(self, request):
-        """RAG-чат: поиск + генерация."""
+        """RAG chat: search + generation."""
         rag = RAGService()
         result = rag.process_query(
             query=request.data.get('query'),
@@ -548,18 +548,18 @@ class RAGSessionViewSet(viewsets.ModelViewSet):
 @permission_classes([IsAuthenticated])
 def api_rag_statistics(request):
     """
-    Возвращает статистику RAG для текущего пользователя: количество коллекций и документов.
+    Returns RAG statistics for the current user: number of collections and documents.
     """
     from ..models import DocumentCollection, Document
 
-    # Коллекции, доступные пользователю (свои + публичные)
+    # Collections available to the user (own + public)
     collections = DocumentCollection.objects.filter(
         Q(owner_id=str(request.user.id)) | Q(is_public=True),
         is_active=True
     )
     total_collections = collections.count()
 
-    # Документы в этих коллекциях
+    # Documents in these collections
     documents = Document.objects.filter(
         collection__in=collections,
         is_active=True
@@ -583,7 +583,7 @@ class EmbeddingModelViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def set_default(self, request, pk=None):
         model = self.get_object()
-        # Снимаем флаг is_default со всех других моделей
+        # Clear the is_default flag on all other models
         EmbeddingModel.objects.filter(is_default=True).update(is_default=False)
         model.is_default = True
         model.save()
@@ -599,19 +599,19 @@ class EmbeddingModelViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def load(self, request, pk=None):
-        # Загрузить модель в память (если нужно)
-        # Может быть заглушкой, так как модели эмбеддингов обычно лёгкие
+        # Load the model into memory (if needed)
+        # May be a near no-op since embedding models are usually lightweight
         model = self.get_object()
         from ..services.embedding_service import embedding_service
         try:
-            embedding_service.get_model(model.model_id)  # загрузит в кэш
+            embedding_service.get_model(model.model_id)  # caches the model
             return Response({'status': 'loaded'})
         except Exception as e:
             return Response({'error': str(e)}, status=500)
 
     @action(detail=True, methods=['post'])
     def unload(self, request, pk=None):
-        # Выгрузить из памяти
+        # Unload from memory
         model = self.get_object()
         from ..services.embedding_service import embedding_service
         embedding_service._model_cache.pop(model.model_id, None)
@@ -619,9 +619,9 @@ class EmbeddingModelViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def search_hf(self, request):
-        # Поиск моделей эмбеддингов на Hugging Face
+        # Search embedding models on Hugging Face
         query = request.GET.get('q', '')
-        # Используем HuggingFace API для поиска моделей с тегом sentence-transformers или feature-extraction
+        # Use the Hugging Face API to search models tagged sentence-transformers or feature-extraction
         from huggingface_hub import HfApi
         api = HfApi()
         models = api.list_models(
@@ -644,9 +644,9 @@ class EmbeddingModelViewSet(viewsets.ModelViewSet):
         return Response(results)
 
 
-# ── v5.2: реестр реранкеров ───────────────────────────────────────────────
+# ── v5.2: reranker registry ───────────────────────────────────────────────
 class RerankerModelViewSet(viewsets.ModelViewSet):
-    """CRUD моделей реранкинга (cross-encoders) для RAG-поиска."""
+    """CRUD for reranking models (cross-encoders) for RAG search."""
     queryset = RerankerModel.objects.all()
     serializer_class = RerankerModelSerializer
     permission_classes = [IsAuthenticated]

@@ -29,7 +29,7 @@ from .moe import MoEExpertJob
 
 
 class ModelCheckpoint(models.Model):
-    """Модель для хранения метаинформации о чекпоинтах"""
+    """Model for storing checkpoint metadata."""
     MODEL_TYPE_CHOICES = [
         ('QWEN', 'Qwen'),
         ('LLAMA', 'Llama'),
@@ -66,13 +66,13 @@ class ModelCheckpoint(models.Model):
         ('quanto_int8', 'Quanto INT8 (CPU)'), 
     ]
 
-    # v5.0: бэкенд инференса — in-process transformers или внешний vLLM
+    # v5.0: inference backend — in-process transformers or external vLLM
     SERVING_BACKEND_CHOICES = [
         ('transformers', _('Transformers (in-process)')),
         ('vllm', _('vLLM (OpenAI API)')),
     ]
     
-    # Базовые поля
+    # Base fields
     name = models.CharField(
         max_length=255,
         unique=True,
@@ -89,7 +89,7 @@ class ModelCheckpoint(models.Model):
         default='CUSTOM'
     )
     
-    # Безопасная загрузка с Hugging Face
+    # Safe Hugging Face download
     huggingface_id = models.CharField(
         max_length=300,
         blank=True,
@@ -102,14 +102,14 @@ class ModelCheckpoint(models.Model):
         help_text=_("Ревизия/ветка на Hugging Face")
     )
     
-    # Конфигурация загрузки с валидацией
+    # Loader configuration with validation
     loader_config = models.JSONField(
         default=dict,
         blank=True,
         help_text=_("Конфигурация для загрузки модели в формате JSON")
     )
     
-    # Пути и статус
+    # Paths and status
     local_path = models.CharField(
         max_length=500,
         blank=True,
@@ -126,7 +126,7 @@ class ModelCheckpoint(models.Model):
         default='PENDING'
     )
 
-    # v5.0: бэкенд инференса
+    # v5.0: inference backend
     serving_backend = models.CharField(
         max_length=20,
         choices=SERVING_BACKEND_CHOICES,
@@ -135,7 +135,7 @@ class ModelCheckpoint(models.Model):
     )
     error_message = models.TextField(blank=True)
     
-    # Метаданные модели
+    # Model metadata
     parameter_count = models.BigIntegerField(
         default=0,
         help_text=_("Количество параметров (например, 7000000000 для 7B)")
@@ -148,7 +148,7 @@ class ModelCheckpoint(models.Model):
     context_length = models.IntegerField(default=4096)
     vocab_size = models.IntegerField(null=True, blank=True)
     
-    # Лицензия и безопасность
+    # License and safety
     license_type = models.CharField(
         max_length=100,
         blank=True,
@@ -165,7 +165,7 @@ class ModelCheckpoint(models.Model):
         help_text=_("Оценка безопасности (чем выше, тем безопаснее)")
     )
     
-    # Производительность и метрики
+    # Performance and metrics
     inference_speed = models.FloatField(
         null=True,
         blank=True,
@@ -183,11 +183,11 @@ class ModelCheckpoint(models.Model):
         help_text=_("Расширенные метрики оценки {'mmlu': 0.75, 'hellaswag': 0.82}")
     )
     
-    # Хеши для проверки целостности
+    # Integrity check hashes
     config_hash = models.CharField(max_length=64, blank=True)
     weights_hash = models.CharField(max_length=64, blank=True)
     
-    # Связи
+    # Relations
     experiment = models.ForeignKey(
         'Experiment',
         on_delete=models.SET_NULL,
@@ -205,7 +205,7 @@ class ModelCheckpoint(models.Model):
         help_text=_("Родительская модель (для отслеживания происхождения)")
     )
     
-    # Системные поля
+    # System fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
@@ -214,7 +214,7 @@ class ModelCheckpoint(models.Model):
         help_text=_("Доступна ли модель другим пользователям")
     )
     
-    # Теги для фильтрации
+    # Tags for filtering
     tags = models.JSONField(
         default=list,
         blank=True,
@@ -242,13 +242,13 @@ class ModelCheckpoint(models.Model):
         return f"{display} ({self.get_model_type_display()}, {self.size_gb}GB)"
     
     def fill_missing_loader_config(self):
-        """Заполняет недостающие поля в loader_config значениями по умолчанию"""
+        """Fills missing loader_config fields with default values."""
         if not self.loader_config:
             self.loader_config = {}
-        
+
         default_config = self.get_default_config()
-        
-        # Заполняем только отсутствующие поля или поля со значением None
+
+        # Fill only missing fields or fields set to None
         for key, value in default_config.items():
             if key not in self.loader_config or self.loader_config[key] is None:
                 self.loader_config[key] = value
@@ -256,39 +256,39 @@ class ModelCheckpoint(models.Model):
         return self
     
     def clean(self):
-        """Валидация модели перед сохранением"""
+        """Validate the model before saving."""
         super().clean()
-        
-        # Проверка Hugging Face ID если указан
+
+        # Validate Hugging Face ID if provided
         if self.huggingface_id and not self._validate_huggingface_id():
             raise ValidationError(
                 f"Hugging Face ID '{self.huggingface_id}' не соответствует формату или не в белом списке"
             )
         
-        # Автоматическое заполнение loader_config перед валидацией
+        # Auto-fill loader_config before validation
         self.fill_missing_loader_config()
-        
-        # Проверка конфигурации (теперь только проверяет, не вызывает ошибок)
+
+        # Config validation (now only fills in, never raises)
         self._validate_loader_config()
-        
-        # Проверка лицензии для публичных моделей
+
+        # License check for public models
         if self.is_public and not self.license_type:
             raise ValidationError(
                 "Публичные модели должны иметь указанную лицензию"
             )
         
-        # Убеждаемся, что evaluation_metrics и tags не пустые
+        # Ensure evaluation_metrics and tags are non-empty
         if not self.evaluation_metrics:
             self.evaluation_metrics = {}
         if not self.tags:
             self.tags = []
-    
-    def _validate_huggingface_id(self) -> bool:
-        """Проверяет формат Hugging Face ID: owner/name из безопасных символов.
 
-        v5.2: организационный белый список снят — self-hosted лаборатория
-        предполагает собственные репозитории (в т.ч. свои выкладки на HF).
-        Формат: 'owner/name', безопасные символы, без path-traversal.
+    def _validate_huggingface_id(self) -> bool:
+        """Validate Hugging Face ID format: owner/name with safe characters.
+
+        v5.2: the organizational allowlist was removed — a self-hosted lab
+        assumes its own repos (including its own HF uploads).
+        Format: 'owner/name', safe characters, no path traversal.
         """
         if not self.huggingface_id:
             return True
@@ -301,65 +301,65 @@ class ModelCheckpoint(models.Model):
         return bool(safe.match(owner) and safe.match(name))
     
     def _validate_loader_config(self):
-        """Валидация конфигурации загрузки - теперь только заполняет недостающие поля"""
+        """Loader config validation — now only fills in missing fields."""
         self.fill_missing_loader_config()
-    
+
     def save(self, *args, **kwargs):
-        """Переопределение save с генерацией хешей"""
-        # Заполняем недостающие поля в loader_config
+        """save() override with hash generation."""
+        # Fill missing loader_config fields
         self.fill_missing_loader_config()
-        
-        # Генерация хеша конфигурации
+
+        # Generate config hash
         if self.loader_config:
             config_str = json.dumps(self.loader_config, sort_keys=True)
             self.config_hash = hashlib.sha256(config_str.encode()).hexdigest()[:64]
-        
-        # Автоматическое создание display_name
+
+        # Auto-create display_name
         if not self.display_name:
             self.display_name = self.name.replace('_', ' ').title()
-        
-        # Установка значения по умолчанию для параметра model_type
+
+        # Default value for model_type
         if not self.model_type:
             self.model_type = 'CUSTOM'
-        
-        # Убеждаемся, что evaluation_metrics и tags не пустые
+
+        # Ensure evaluation_metrics and tags are non-empty
         if not self.evaluation_metrics:
             self.evaluation_metrics = {}
         if not self.tags:
             self.tags = []
-        
-        # Вызов валидации
+
+        # Run validation
         self.full_clean()
         super().save(*args, **kwargs)
     
     @property
     def size_gb(self):
-        """Приблизительный размер модели в GB"""
+        """Approximate model size in GB."""
         if self.parameter_count <= 0:
             return 0
-        
-        # Байт на параметр в зависимости от квантизации
+
+        # Bytes per parameter depending on quantization
         bytes_per_param = {
             'float32': 4,
             'float16': 2,
             'bfloat16': 2,
             'int8': 1,
             'int4': 0.5,
-            'gptq': 0.5,  # примерно
-            'awq': 0.5,   # примерно
-        }.get(self.quantization, 2)  # по умолчанию float16
+            'gptq': 0.5,  # approximate
+            'awq': 0.5,   # approximate
+        }.get(self.quantization, 2)  # default: float16
         
         size_bytes = self.parameter_count * bytes_per_param
         return round(size_bytes / (1024**3), 2)
     
     @property
     def is_quantized(self):
-        """Проверка, квантизирована ли модель"""
+        """Whether the model is quantized."""
         return self.quantization in ['int8', 'int4', 'gptq', 'awq']
-    
+
     @property
     def huggingface_url(self):
-        """URL модели на Hugging Face"""
+        """Model URL on Hugging Face."""
         if self.huggingface_id:
             return f"https://huggingface.co/{self.huggingface_id}"
         return None
@@ -386,15 +386,15 @@ class ModelCheckpoint(models.Model):
 
     @property
     def safe_name(self):
-        """Безопасное имя для файловой системы"""
+        """Filesystem-safe name."""
         import re
         name = self.name or self.display_name or ''
-        # Удаляем специальные символы
+        # Strip special characters
         safe_name = re.sub(r'[^\w\-_]', '_', name)
         return safe_name.lower()
-    
+
     def get_default_config(self):
-        """Возвращает конфигурацию по умолчанию для типа модели"""
+        """Return the default config for the model type."""
         defaults = {
             'QWEN': {
                 'architecture': 'Qwen2ForCausalLM',
@@ -526,12 +526,12 @@ class ModelCheckpoint(models.Model):
         return defaults.get(self.model_type, defaults['CUSTOM'])
     
     def update_config(self, **kwargs):
-        """Обновляет конфигурацию модели с логированием изменений"""
+        """Updates the model config with change logging."""
         old_config = self.loader_config.copy()
         self.loader_config.update(kwargs)
-        
-        # Создание записи в истории изменений
-        if self.pk:  # Только если модель уже сохранена
+
+        # Create a change-history entry
+        if self.pk:  # Only if the model is already saved
             ModelVersion.objects.create(
                 checkpoint=self,
                 version=f"config_update_{timezone.now().strftime('%Y%m%d_%H%M%S')}",
@@ -546,7 +546,7 @@ class ModelCheckpoint(models.Model):
         self.save(update_fields=['loader_config'])
     
     def mark_as_safe(self, score: float, reason: str = ""):
-        """Пометить модель как безопасную"""
+        """Mark the model as safe."""
         self.is_safe = True
         self.safety_score = score
         if reason:
@@ -554,7 +554,7 @@ class ModelCheckpoint(models.Model):
         self.save()
     
     def create_version(self, version_name: str, notes: str = "") -> 'ModelVersion':
-        """Создать новую версию модели"""
+        """Create a new model version."""
         return ModelVersion.objects.create(
             checkpoint=self,
             version=version_name,
@@ -564,19 +564,19 @@ class ModelCheckpoint(models.Model):
         )
     
     def _calculate_file_hash(self) -> str:
-        """Вычисляет хеш файлов модели (упрощенная версия)"""
-        # В реальности нужно хешировать все файлы модели
+        """Computes the model file hash (simplified version)."""
+        # In reality all model files should be hashed
         return hashlib.sha256(self.local_path.encode()).hexdigest()[:64]
-    
+
     def get_download_size_mb(self) -> float:
-        """Предполагаемый размер загрузки в MB"""
+        """Estimated download size in MB."""
         size_gb = self.size_gb
         if self.is_quantized:
-            size_gb *= 0.5  # Квантизированные модели меньше
+            size_gb *= 0.5  # Quantized models are smaller
         return round(size_gb * 1024, 2)
 
     def download_model(self):
-        """Запускаем загрузку модели в фоне"""
+        """Start downloading the model in the background."""
         try:
             from ..tasks import download_model_task
             return download_model_task.delay(self.id)
@@ -585,7 +585,7 @@ class ModelCheckpoint(models.Model):
             return None
     
     def load_to_memory(self):
-        """Загружаем модель в память"""
+        """Load the model into memory."""
         try:
             from ..tasks import load_model_to_memory_task
             return load_model_to_memory_task.delay(self.id)
@@ -594,7 +594,7 @@ class ModelCheckpoint(models.Model):
             return None
     
     def unload_from_memory(self):
-        """Выгружаем модель из памяти"""
+        """Unload the model from memory."""
         try:
             from ..tasks import unload_model_from_memory_task
             model_id = self.huggingface_id or self.name
@@ -604,7 +604,7 @@ class ModelCheckpoint(models.Model):
             return None
     
     def is_loaded_in_memory(self):
-        """Проверяем, загружена ли модель в память - используя Redis"""
+        """Check whether the model is loaded in memory, via Redis."""
         try:
             from ..services.redis_model_service import redis_model_manager
         except ImportError as e:
@@ -613,13 +613,13 @@ class ModelCheckpoint(models.Model):
         
         model_id = self.huggingface_id or self.name
         
-        # Проверяем через Redis
+        # Check via Redis
         info = redis_model_manager.get_model_info(model_id)
-        
+
         if info and info.get('loaded', False):
             device_info = info.get('device', 'unknown')
-            
-            # Определяем тип устройства для отображения
+
+            # Determine device type for display
             device_str = str(device_info).lower()
             is_on_cpu = 'cpu' in device_str
             is_on_gpu = 'cuda' in device_str or 'gpu' in device_str
@@ -643,7 +643,7 @@ class ModelCheckpoint(models.Model):
         return None
 
     def get_loading_status(self):
-        """Получает текущий статус загрузки модели"""
+        """Get the current model loading status."""
         try:
             from ..services.redis_model_service import redis_model_manager
             model_id = self.huggingface_id or self.name
@@ -656,7 +656,7 @@ class ModelCheckpoint(models.Model):
             return {'status': 'ERROR', 'error': str(e)}
 
     def _get_device_display(self, device_info, is_on_cpu, is_on_gpu, is_mixed):
-        """Получаем понятное отображение устройства"""
+        """Get a human-readable device label."""
         if is_mixed:
             if is_on_gpu and is_on_cpu:
                 return "Смешанно (CPU/GPU)"
@@ -674,7 +674,7 @@ class ModelCheckpoint(models.Model):
             return str(device_info)[:30]
 
     def _get_device_summary(self, device_info, is_on_cpu, is_on_gpu, is_mixed):
-        """Получаем понятное описание устройства"""
+        """Get a human-readable device description."""
         if is_mixed:
             if is_on_gpu and is_on_cpu:
                 return "mixed (CPU/GPU)"
@@ -692,8 +692,8 @@ class ModelCheckpoint(models.Model):
             return str(device_info)[:30]
     
     def get_model_info(self, model_id: str) -> Optional[Dict[str, Any]]:
-        """Получает информацию о загруженной модели"""
-        # Используем импорт для избежания циклических зависимостей
+        """Get information about a loaded model."""
+        # Import here to avoid circular dependencies
         try:
             from ..services.redis_model_service import redis_model_manager
             return redis_model_manager.get_model_info(model_id)
@@ -706,7 +706,7 @@ class ModelCheckpoint(models.Model):
             return None
     
     def generate_text(self, prompt: str, **kwargs):
-        """Генерируем текст с помощью модели"""
+        """Generate text with the model."""
         try:
             from ..services.redis_model_service import redis_model_manager
         except ImportError as e:
@@ -718,8 +718,8 @@ class ModelCheckpoint(models.Model):
             }
         
         model_id = self.huggingface_id or self.name
-        
-        # Проверяем, загружена ли модель
+
+        # Check whether the model is loaded
         if not self.is_loaded_in_memory():
             return {
                 "response": "Модель не загружена в память. Загрузите модель сначала.",
@@ -727,7 +727,7 @@ class ModelCheckpoint(models.Model):
                 "error": "MODEL_NOT_LOADED"
             }
         
-        # Подготавливаем параметры
+        # Prepare parameters
         generation_params = {
             'max_tokens': kwargs.get('max_tokens', 512),
             'temperature': kwargs.get('temperature', 0.7),
@@ -736,12 +736,12 @@ class ModelCheckpoint(models.Model):
             'repetition_penalty': kwargs.get('repetition_penalty', 1.0),
         }
         
-        # Добавляем системный промпт если есть
+        # Prepend the system prompt if provided
         system_prompt = kwargs.get('system_prompt', '')
         if system_prompt:
             prompt = f"{system_prompt}\n\n{prompt}"
         
-        # Генерируем текст
+        # Generate text
         result = redis_model_manager.generate_text(
             model_id=model_id,
             prompt=prompt,
@@ -751,7 +751,7 @@ class ModelCheckpoint(models.Model):
         return result
 
     def sync_loading_status(self):
-        """Синхронизирует статус загрузки в базе с фактическим состоянием"""
+        """Sync the DB loading status with the actual state."""
         try:
             from ..services.redis_model_service import redis_model_manager
         except ImportError as e:
@@ -774,13 +774,13 @@ class ModelCheckpoint(models.Model):
             logger.info(f"Synced status for model {self.name}: {current_status} -> {new_status}")
             return True
         
-        return False  # Статус не изменился
+        return False  # Status unchanged
 
 
 class ModelVersion(models.Model):
     """
-    Версионирование моделей для отслеживания изменений.
-    Каждая версия - снимок состояния модели.
+    Model versioning for tracking changes.
+    Each version is a snapshot of the model state.
     """
     checkpoint = models.ForeignKey(
         ModelCheckpoint,
@@ -799,7 +799,7 @@ class ModelVersion(models.Model):
         related_name='children'
     )
     
-    # Снимок состояния
+    # State snapshot
     config_snapshot = models.JSONField(
         help_text=_("Полная конфигурация на момент создания версии")
     )
@@ -808,7 +808,7 @@ class ModelVersion(models.Model):
         help_text=_("Хеш файлов модели для проверки целостности")
     )
     
-    # Метаданные
+    # Metadata
     notes = models.TextField(blank=True)
     changes = models.JSONField(
         default=dict,
@@ -835,11 +835,11 @@ class ModelVersion(models.Model):
         return f"{self.checkpoint.name} - {self.version}"
     
     def restore(self):
-        """Восстанавливает эту версию как текущую"""
+        """Restore this version as the current one."""
         self.checkpoint.loader_config = self.config_snapshot
         self.checkpoint.save()
-        
-        # Создаем новую версию для отслеживания восстановления
+
+        # Create a new version to track the restore
         ModelVersion.objects.create(
             checkpoint=self.checkpoint,
             version=f"restore_{timezone.now().strftime('%Y%m%d_%H%M%S')}",
@@ -853,7 +853,7 @@ class ModelVersion(models.Model):
 
 
 class ModelMergeJob(models.Model):
-    """Задачи слияния моделей с расширенным отслеживанием"""
+    """Model merge jobs with extended tracking."""
     MERGE_METHOD_CHOICES = [
         ('SLERP', 'SLERP (Spherical Linear Interpolation)'),
         ('TIES', 'TIES (Task Arithmetic)'),
@@ -871,11 +871,11 @@ class ModelMergeJob(models.Model):
         ('CANCELLED', 'Отменено'),
     ]
     
-    # Основные поля
+    # Main fields
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    
-    # Входные модели
+
+    # Input models
     base_model = models.ForeignKey(
         ModelCheckpoint,
         related_name='base_merges',
@@ -887,7 +887,7 @@ class ModelMergeJob(models.Model):
         on_delete=models.CASCADE
     )
     
-    # Выходная модель (создается после слияния)
+    # Output model (created after the merge)
     output_model = models.ForeignKey(
         ModelCheckpoint,
         related_name='output_merges',
@@ -896,7 +896,7 @@ class ModelMergeJob(models.Model):
         blank=True
     )
     
-    # Настройки слияния
+    # Merge settings
     merge_method = models.CharField(
         max_length=20,
         choices=MERGE_METHOD_CHOICES,
@@ -908,13 +908,13 @@ class ModelMergeJob(models.Model):
         help_text=_("Доля merge_model в результате (0 = только base, 1 = только merge)")
     )
     
-    # Расширенная конфигурация
+    # Advanced configuration
     merge_config = models.JSONField(
         default=dict,
         help_text=_("Дополнительные параметры слияния")
     )
     
-    # Ресурсы и лимиты
+    # Resources and limits
     gpu_memory_limit_gb = models.FloatField(
         default=8.0,
         help_text=_("Лимит памяти GPU для слияния (GB)")
@@ -924,7 +924,7 @@ class ModelMergeJob(models.Model):
         help_text=_("Таймаут выполнения в минутах")
     )
     
-    # Прогресс и статус
+    # Progress and status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     progress = models.FloatField(
         default=0.0,
@@ -932,7 +932,7 @@ class ModelMergeJob(models.Model):
     )
     current_step = models.CharField(max_length=100, blank=True)
     
-    # Логи и результаты
+    # Logs and results
     logs = models.TextField(blank=True)
     error_details = models.JSONField(default=dict, help_text=_("Детали ошибки"))
     performance_metrics = models.JSONField(
@@ -940,13 +940,13 @@ class ModelMergeJob(models.Model):
         help_text=_("Метрики производительности слияния")
     )
     
-    # Временные метки
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     validated_at = models.DateTimeField(null=True, blank=True)
-    
-    # Контроль версий
+
+    # Version control
     parent_job = models.ForeignKey(
         'self',
         null=True,
@@ -970,10 +970,10 @@ class ModelMergeJob(models.Model):
         return f"Merge: {self.base_model.name} + {self.merge_model.name} ({self.get_status_display()})"
     
     def clean(self):
-        """Валидация задачи слияния"""
+        """Validate the merge job."""
         super().clean()
-        
-        # Проверка совместимости моделей
+
+        # Model compatibility check
         if self.base_model and self.merge_model:
             if self.base_model.model_type != self.merge_model.model_type:
                 raise ValidationError(
@@ -985,12 +985,12 @@ class ModelMergeJob(models.Model):
                     "Модели имеют разное количество параметров, слияние невозможно"
                 )
         
-        # Проверка метода слияния
+        # Merge method check
         if self.merge_method == 'SLERP' and not (0 <= self.merge_ratio <= 1):
             raise ValidationError("Для SLERP merge_ratio должен быть между 0 и 1")
     
     def save(self, *args, **kwargs):
-        """Переопределение save с автоматическим именем"""
+        """save() override with automatic naming."""
         if not self.name:
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
             self.name = f"merge_{timestamp}"
@@ -999,14 +999,14 @@ class ModelMergeJob(models.Model):
     
     @property
     def duration_seconds(self):
-        """Длительность выполнения в секундах"""
+        """Job duration in seconds."""
         if not self.started_at or not self.completed_at:
             return None
         return (self.completed_at - self.started_at).total_seconds()
     
     @property
     def is_compatible(self):
-        """Проверка совместимости моделей для слияния"""
+        """Whether the models are compatible for merging."""
         if not self.base_model or not self.merge_model:
             return False
         
@@ -1017,14 +1017,14 @@ class ModelMergeJob(models.Model):
         )
     
     def start(self):
-        """Начать выполнение задачи"""
+        """Start the job."""
         self.status = 'RUNNING'
         self.started_at = timezone.now()
         self.current_step = 'initialization'
         self.save()
     
     def complete(self, output_checkpoint: ModelCheckpoint):
-        """Завершить задачу успешно"""
+        """Mark the job as completed."""
         self.status = 'COMPLETED'
         self.completed_at = timezone.now()
         self.output_model = output_checkpoint
@@ -1033,7 +1033,7 @@ class ModelMergeJob(models.Model):
         self.save()
     
     def fail(self, error_message: str, error_details: dict = None):
-        """Завершить задачу с ошибкой"""
+        """Mark the job as failed."""
         self.status = 'FAILED'
         self.completed_at = timezone.now()
         self.error_message = error_message
@@ -1041,7 +1041,7 @@ class ModelMergeJob(models.Model):
         self.save()
     
     def update_progress(self, progress: float, step: str = ""):
-        """Обновить прогресс выполнения"""
+        """Update job progress."""
         self.progress = max(0.0, min(100.0, progress))
         if step:
             self.current_step = step
@@ -1050,7 +1050,7 @@ class ModelMergeJob(models.Model):
 
 class InferenceSession(models.Model):
     """
-    Сессии инференса для мониторинга использования и производительности.
+    Inference sessions for usage and performance monitoring.
     """
     checkpoint = models.ForeignKey(
         ModelCheckpoint,
@@ -1063,28 +1063,28 @@ class InferenceSession(models.Model):
         help_text=_("Уникальный ID сессии")
     )
     
-    # Пользовательская информация
+    # User info
     user_ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
     api_key = models.CharField(max_length=100, blank=True)
     
-    # Статистика использования
+    # Usage stats
     input_tokens = models.IntegerField(default=0)
     output_tokens = models.IntegerField(default=0)
     total_requests = models.IntegerField(default=0)
     
-    # Производительность
+    # Performance
     total_duration = models.FloatField(default=0.0, help_text=_("Общая длительность в секундах"))
     avg_response_time = models.FloatField(default=0.0, help_text=_("Среднее время ответа в секундах"))
     
-    # Ошибки
+    # Errors
     error_count = models.IntegerField(default=0)
     last_error = models.TextField(blank=True)
     
-    # Статус
+    # Status
     is_active = models.BooleanField(default=True)
-    
-    # Временные метки
+
+    # Timestamps
     started_at = models.DateTimeField(auto_now_add=True)
     last_activity = models.DateTimeField(auto_now=True)
     ended_at = models.DateTimeField(null=True, blank=True)
@@ -1101,7 +1101,7 @@ class InferenceSession(models.Model):
     
     @property
     def tokens_per_second(self):
-        """Скорость обработки токенов в секунду"""
+        """Token processing speed per second."""
         if self.total_duration > 0:
             return (self.input_tokens + self.output_tokens) / self.total_duration
         return 0.0
@@ -1116,20 +1116,20 @@ class InferenceSession(models.Model):
         return 0.0
     
     def add_request(self, input_tokens: int, output_tokens: int, duration: float):
-        """Добавить запрос к статистике"""
+        """Add a request to the statistics."""
         self.input_tokens += input_tokens
         self.output_tokens += output_tokens
         self.total_requests += 1
         self.total_duration += duration
-        
-        # Пересчет среднего
+
+        # Recompute the average
         if self.total_requests > 0:
             self.avg_response_time = self.total_duration / self.total_requests
         
         self.save()
     
     def end_session(self):
-        """Завершить сессию"""
+        """End the session."""
         self.is_active = False
         self.ended_at = timezone.now()
         self.save()
@@ -1137,7 +1137,7 @@ class InferenceSession(models.Model):
 
 class ModelEvaluation(models.Model):
     """
-    Результаты оценки моделей на стандартных датасетах.
+    Model evaluation results on standard datasets.
     """
     checkpoint = models.ForeignKey(
         ModelCheckpoint,
@@ -1145,7 +1145,7 @@ class ModelEvaluation(models.Model):
         related_name='evaluations'
     )
     
-    # Конфигурация оценки
+    # Evaluation configuration
     dataset_name = models.CharField(max_length=100)
     dataset_split = models.CharField(max_length=50, default='validation')
     evaluation_type = models.CharField(
@@ -1158,7 +1158,7 @@ class ModelEvaluation(models.Model):
         default='AUTOMATIC'
     )
     
-    # Результаты
+    # Results
     metrics = models.JSONField(
         default=dict,
         help_text=_("Метрики оценки {'accuracy': 0.85, 'f1': 0.82}")
@@ -1168,7 +1168,7 @@ class ModelEvaluation(models.Model):
         help_text=_("Сырые результаты для анализа")
     )
     
-    # Системная информация
+    # System info
     evaluated_at = models.DateTimeField(auto_now_add=True)
     evaluator_version = models.CharField(max_length=50, blank=True)
     hardware_info = models.JSONField(
@@ -1176,7 +1176,7 @@ class ModelEvaluation(models.Model):
         help_text=_("Информация о железе {'gpu': 'RTX 4090', 'memory_gb': 24}")
     )
     
-    # Валидация
+    # Validation
     is_valid = models.BooleanField(default=True)
     validation_notes = models.TextField(blank=True)
     
@@ -1192,8 +1192,8 @@ class ModelEvaluation(models.Model):
     
     @property
     def primary_metric(self):
-        """Основная метрика для данного датасета"""
-        # Для разных датасетов разные основные метрики
+        """Primary metric for this dataset."""
+        # Different datasets use different primary metrics
         metric_map = {
             'mmlu': 'accuracy',
             'hellaswag': 'accuracy',
@@ -1207,7 +1207,7 @@ class ModelEvaluation(models.Model):
 
 
 class ModelDownloadJob(models.Model):
-    """Задача загрузки модели"""
+    """Model download job."""
     STATUS_CHOICES = [
         ('PENDING', 'Ожидает'),
         ('DOWNLOADING', 'Загружается'),
@@ -1234,22 +1234,22 @@ class ModelDownloadJob(models.Model):
 
 
 class DeletedModelLog(models.Model):
-    """Лог удаленных моделей"""
+    """Log of deleted models."""
     original_name = models.CharField(max_length=255)
     display_name = models.CharField(max_length=255)
     model_type = models.CharField(max_length=20, choices=ModelCheckpoint.MODEL_TYPE_CHOICES)
     huggingface_id = models.CharField(max_length=300, blank=True)
     
-    # Информация о файлах
+    # File info
     local_path = models.CharField(max_length=500, blank=True)
     relative_path = models.CharField(max_length=500, blank=True)
     had_local_files = models.BooleanField(default=False)
     
-    # Техническая информация
+    # Technical info
     size_gb = models.FloatField(default=0.0)
     parameter_count = models.BigIntegerField(default=0)
     
-    # Информация об удалении
+    # Deletion info
     deleted_by = models.CharField(max_length=100)
     deletion_reason = models.TextField(blank=True)
     deleted_at = models.DateTimeField(auto_now_add=True)

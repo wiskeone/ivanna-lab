@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProcessingPipelineSerializer(serializers.ModelSerializer):
-    """Сериализатор для пайплайнов обработки"""
+    """Serializer for processing pipelines"""
     success_rate_percentage = serializers.SerializerMethodField()
     
     class Meta:
@@ -34,14 +34,14 @@ class ProcessingPipelineSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at', 'updated_at')
     
     def get_success_rate_percentage(self, obj):
-        """Процент успешной обработки"""
+        """Processing success rate"""
         if obj.success_rate:
             return f"{obj.success_rate * 100:.1f}%"
         return "—"
 
 
 class DocumentProcessorSerializer(serializers.ModelSerializer):
-    """Сериализатор для логов обработки документов"""
+    """Serializer for document processing logs"""
     document_title = serializers.CharField(source='document.title', read_only=True)
     processing_time_seconds = serializers.SerializerMethodField()
     
@@ -51,7 +51,7 @@ class DocumentProcessorSerializer(serializers.ModelSerializer):
         read_only_fields = ('started_at', 'completed_at')
     
     def get_processing_time_seconds(self, obj):
-        """Время обработки в секундах"""
+        """Processing time in seconds"""
         if obj.processing_time_ms:
             return f"{obj.processing_time_ms / 1000:.1f} сек"
         return "—"

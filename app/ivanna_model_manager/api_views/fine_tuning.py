@@ -75,7 +75,7 @@ logger = logging.getLogger(__name__)
 
 
 class FineTuningJobViewSet(viewsets.ModelViewSet):
-    """API для задач fine-tuning"""
+    """API for fine-tuning jobs"""
     queryset = FineTuningJob.objects.all()
     serializer_class = FineTuningJobSerializer
     permission_classes = [IsAuthenticated]
@@ -88,9 +88,9 @@ class FineTuningJobViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def start(self, request, pk=None):
-        """Запуск задачи fine-tuning"""
+        """Start a fine-tuning job"""
         job = self.get_object()
-        # Если нужно принимать флаг restart, он может быть в request.data
+        # The restart flag, if accepted, comes in request.data
         restart = request.data.get('restart', False)
         
         if job.status not in ['PENDING', 'FAILED', 'CANCELLED']:
@@ -108,7 +108,7 @@ class FineTuningJobViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
-        """Отмена задачи"""
+        """Cancel a job"""
         job = self.get_object()
         
         if job.status in ['TRAINING', 'PREPARING'] and job.celery_task_id:
@@ -125,13 +125,13 @@ class FineTuningJobViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['get'])
     def logs(self, request, pk=None):
-        """Получение логов задачи"""
+        """Get job logs"""
         job = self.get_object()
         return Response({'logs': job.logs})
     
     @action(detail=True, methods=['post'])
     def evaluate(self, request, pk=None):
-        """Запуск оценки на датасете"""
+        """Start evaluation on a dataset"""
         job = self.get_object()
         dataset_id = request.data.get('dataset_id')
         
@@ -189,8 +189,8 @@ class ModelConversionJobViewSet(viewsets.ModelViewSet):
 @login_required
 @require_http_methods(["POST"])
 def api_fine_tuning_pause(request, job_id):
-    """Запросить паузу: тренер остановится на ближайшем шаге, чекпоинт
-    сохранится, статус станет PAUSED."""
+    """Request a pause: the trainer stops at the nearest step, the checkpoint
+    is saved and the status becomes PAUSED."""
     from ..models import FineTuningJob
     job = FineTuningJob.objects.filter(id=job_id).first()
     if not job:
@@ -207,8 +207,8 @@ def api_fine_tuning_pause(request, job_id):
 @login_required
 @require_http_methods(["POST"])
 def api_fine_tuning_resume(request, job_id):
-    """Резюме: сброс паузы и повторная постановка в очередь — тренер
-    подхватит последний чекпоинт."""
+    """Resume: clear the pause and re-enqueue — the trainer
+    picks up from the last checkpoint."""
     from ..models import FineTuningJob
     job = FineTuningJob.objects.filter(id=job_id).first()
     if not job:

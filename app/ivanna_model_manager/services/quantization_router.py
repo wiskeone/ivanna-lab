@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 
 class QuantizationRouter:
     """
-    Маршрутизатор квантизации с каскадной системой fallback'ов.
+    Quantization router with a cascading fallback system.
 
-    Стратегия понижения:
+    Downgrade strategy:
     int4 GPU → int4 CPU → int8 GPU → int8 CPU → bfloat16 GPU → float16 GPU → float32 GPU → float32 CPU
     """
 
-    # Иерархия методов квантизации (от самого экономного к самому точному)
+    # Quantization method hierarchy (from most memory-efficient to most accurate)
     QUANTIZATION_HIERARCHY = [
         ('int4', 'gpu', 1),
         ('int4', 'cpu', 2),
@@ -23,7 +23,7 @@ class QuantizationRouter:
         ('int8', 'cpu', 4),
         ('bfloat16', 'gpu', 5),
         ('float16', 'gpu', 6),
-        ('float32', 'gpu', 7),   # Добавлен float32 на GPU как наиболее точный (без квантизации)
+        ('float32', 'gpu', 7),   # float32 on GPU added as the most accurate option (no quantization)
         ('float32', 'cpu', 8),
     ]
 
@@ -35,12 +35,12 @@ class QuantizationRouter:
         preferred_device: str = 'auto'
     ) -> Tuple[Optional[Any], str, str]:
         """
-        Возвращает конфигурацию квантизации, проходя по иерархии fallback'ов.
+        Return a quantization configuration by walking the fallback hierarchy.
 
         Args:
-            requested_quant: Запрошенный тип квантизации (int4, int8, float16, bfloat16, None)
-            model_size_gb: Размер модели в GB
-            preferred_device: Предпочтительное устройство ('auto', 'cuda', 'cpu')
+            requested_quant: Requested quantization type (int4, int8, float16, bfloat16, None)
+            model_size_gb: Model size in GB
+            preferred_device: Preferred device ('auto', 'cuda', 'cpu')
 
         Returns:
             (config, actual_quantization, target_device)
@@ -68,7 +68,7 @@ class QuantizationRouter:
     @classmethod
     def _get_available_options(cls, requested_quant: Optional[str]) -> List[Tuple[str, str]]:
         """
-        Возвращает список опций для попытки на основе запрошенной квантизации.
+        Return the list of options to try based on the requested quantization.
         """
         option_map = {
             'int4': [
@@ -100,7 +100,7 @@ class QuantizationRouter:
                 ('float32', 'gpu'),
                 ('float32', 'cpu'),
             ],
-            None: [  # Без квантизации – сначала пробуем float32 на GPU, затем float16, затем CPU float32
+            None: [  # No quantization — try float32 on GPU first, then float16, then CPU float32
                 ('float32', 'gpu'),
                 ('float16', 'gpu'),
                 ('float32', 'cpu'),
@@ -121,11 +121,11 @@ class QuantizationRouter:
         model_size_gb: float
     ) -> Tuple[bool, Optional[Any], str, str]:
         """
-        Пытается создать конфигурацию для конкретного метода и устройства.
-        Возвращает (успех, конфиг, фактический_метод, устройство).
+        Try to build a configuration for a specific method and device.
+        Returns (success, config, actual_method, device).
         """
         try:
-            # Проверяем доступность GPU если нужно
+            # Check GPU availability if needed
             if device == 'gpu':
                 if not torch.cuda.is_available():
                     logger.debug(f"GPU not available for {quant_method}")
@@ -134,20 +134,20 @@ class QuantizationRouter:
                 free_memory, total_memory = torch.cuda.mem_get_info()
                 free_gb = free_memory / 1024**3
 
-                # Оценка потребности в памяти
+                # Estimate the memory requirement
                 if quant_method in ('int4', 'int8'):
                     required_gb = model_size_gb * (0.5 if quant_method == 'int4' else 1.0)
                 else:
                     required_gb = model_size_gb
 
-                # Добавляем запас 20%
+                # Add a 20% buffer
                 required_gb_with_buffer = required_gb * 1.2
 
                 if free_gb < required_gb_with_buffer:
                     logger.debug(f"Not enough GPU memory for {quant_method}: need {required_gb_with_buffer:.2f}GB, have {free_gb:.2f}GB")
                     return False, None, quant_method, 'cpu'
 
-            # Создаём конфигурацию в зависимости от метода
+            # Build the configuration depending on the method
             if quant_method in ('int4', 'int8') and device == 'gpu':
                 config = cls._get_gpu_config(quant_method)
                 return True, config, quant_method, 'cuda'
@@ -157,14 +157,14 @@ class QuantizationRouter:
                 return True, config, f"quanto_{quant_method}", 'cpu'
 
             elif quant_method == 'float32' and device == 'gpu':
-                # Обычная загрузка на GPU в float32 (без квантизации)
+                # Plain load on GPU in float32 (no quantization)
                 return True, None, 'float32', 'cuda'
 
             elif quant_method == 'float32' and device == 'cpu':
                 return True, None, 'float32', 'cpu'
 
             elif quant_method in ('float16', 'bfloat16') and device == 'gpu':
-                # Обычная загрузка на GPU с указанным типом
+                # Plain load on GPU with the given dtype
                 return True, None, quant_method, 'cuda'
 
             return False, None, quant_method, device
@@ -175,7 +175,7 @@ class QuantizationRouter:
 
     @staticmethod
     def _get_gpu_config(quantization: str) -> Optional[BitsAndBytesConfig]:
-        """Конфигурация для bitsandbytes на GPU."""
+        """bitsandbytes configuration for GPU."""
         if quantization == 'int4':
             return BitsAndBytesConfig(
                 load_in_4bit=True,
@@ -186,6 +186,6 @@ class QuantizationRouter:
         elif quantization == 'int8':
             return BitsAndBytesConfig(
                 load_in_8bit=True,
-                llm_int8_enable_fp32_cpu_offload=True  # <-- добавляем эту строку
+                llm_int8_enable_fp32_cpu_offload=True  # <-- added this line
             )
         return None

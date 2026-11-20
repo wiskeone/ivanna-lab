@@ -1,15 +1,15 @@
 """
-v5.0: пресеты параметров генерации — валидация и нормализация.
+v5.0: generation parameter presets — validation and normalization.
 
-Чистая логика без Django-зависимостей (кроме логгера) — покрыта
-юнит-тестами. Whitelist ключей: всё, что не входит, отбрасывается,
-значения приводятся к допустимым диапазонам.
+Pure logic with no Django dependencies (except the logger) — covered
+by unit tests. Key whitelist: anything not on it is dropped; values
+are clamped to the allowed ranges.
 """
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Допустимые ключи → (тип, минимум, максимум)
+# Allowed keys -> (type, min, max)
 PARAM_SPECS = {
     'temperature': (float, 0.0, 2.0),
     'max_tokens': (int, 1, 32768),
@@ -27,12 +27,12 @@ DEFAULTS = {
 
 def normalize_preset_config(raw: dict) -> tuple[dict, list]:
     """
-    Приводит конфиг пресета к валидному виду.
+    Normalize a preset config into a valid form.
 
-    Возвращает (config, errors): config — только whitelisted-ключи с
-    приведёнными типами и значениями в диапазоне (вне диапазона — clamp
-    к границе), errors — человекочитаемые предупреждения о том, что было
-    отброшено/скорректировано.
+    Returns (config, errors): config contains only whitelisted keys with
+    coerced types and in-range values (out-of-range values are clamped
+    to the boundary); errors holds human-readable warnings about what was
+    dropped/corrected.
     """
     config, errors = {}, []
     if not isinstance(raw, dict):
@@ -54,7 +54,7 @@ def normalize_preset_config(raw: dict) -> tuple[dict, list]:
         if clamped != v:
             errors.append(f'"{key}"={v} out of range [{lo}, {hi}] — clamped to {clamped}')
         config[key] = clamped
-    # дефолты для базовых параметров, если не заданы
+    # defaults for base parameters, if not set
     for k, v in DEFAULTS.items():
         config.setdefault(k, v)
     return config, errors
@@ -62,8 +62,8 @@ def normalize_preset_config(raw: dict) -> tuple[dict, list]:
 
 def apply_preset_to_config(session_config: dict, preset_config: dict) -> dict:
     """
-    Мержит пресет в generation_config сессии (пресет имеет приоритет).
-    Возвращает обновлённый session_config (мутирует копию).
+    Merge a preset into the session generation_config (the preset wins).
+    Returns the updated session_config (mutates a copy).
     """
     merged = dict(session_config or {})
     gen = dict(merged.get('generation_config') or {})

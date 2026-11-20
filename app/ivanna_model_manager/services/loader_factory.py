@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ModelLoaderFactory:
-    """Фабрика для создания обработчиков моделей"""
+    """Factory for creating model handlers"""
     
     _handlers = {
         'QWEN': QwenHandler,
@@ -16,34 +16,34 @@ class ModelLoaderFactory:
     
     @classmethod
     def register_handler(cls, model_type, handler_class):
-        """Регистрирует новый обработчик"""
+        """Registers a new handler"""
         cls._handlers[model_type.upper()] = handler_class
-        logger.info(f"Зарегистрирован обработчик для типа: {model_type}")
+        logger.info(f"Handler registered for type: {model_type}")
     
     @classmethod
     def get_handler(cls, model_checkpoint):
-        """Создаёт обработчик для модели"""
+        """Creates a handler for the model"""
         model_type = model_checkpoint.model_type
-        
-        # Подготавливаем конфигурацию
+
+        # Prepare the configuration
         config = model_checkpoint.loader_config.copy()
         config.update({
             'huggingface_id': model_checkpoint.huggingface_id or model_checkpoint.name,
             'quantization': model_checkpoint.quantization == '4bit',
         })
         
-        # Получаем класс обработчика
+        # Get the handler class
         handler_class = cls._handlers.get(model_type)
         if not handler_class:
-            # Используем QwenHandler как fallback для неизвестных типов
-            logger.warning(f"Неизвестный тип модели {model_type}, используем QwenHandler")
+            # Use QwenHandler as the fallback for unknown types
+            logger.warning(f"Unknown model type {model_type}, using QwenHandler")
             handler_class = QwenHandler
             config['trust_remote_code'] = True
         
-        # Создаём экземпляр обработчика
+        # Create the handler instance
         return handler_class(config)
     
     @classmethod
     def get_supported_types(cls):
-        """Возвращает список поддерживаемых типов моделей"""
+        """Returns the list of supported model types"""
         return list(cls._handlers.keys())

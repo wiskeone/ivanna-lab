@@ -28,9 +28,9 @@ from .rag import Document, DocumentChunk, DocumentCollection, EmbeddingModel
 
 
 
-# v5.2: реестр реранкеров (cross-encoders) — по образцу EmbeddingModel
+# v5.2: reranker registry (cross-encoders) — modeled after EmbeddingModel
 class RerankerModel(models.Model):
-    """Модель реранкинга (cross-encoder) для гибридного поиска RAG."""
+    """Reranking model (cross-encoder) for hybrid RAG search."""
     name = models.CharField(max_length=255, unique=True, help_text=_("Название модели"))
     display_name = models.CharField(max_length=255, blank=True)
     model_id = models.CharField(max_length=500, help_text=_("Идентификатор на HF (например, DiTy/cross-encoder-russian-msmarco)"))
@@ -62,7 +62,7 @@ class RerankerModel(models.Model):
 
 class SearchQuery(models.Model):
     """
-    Поисковый запрос пользователя.
+    User search query.
     """
     SEARCH_TYPE_CHOICES = [
         ('SEMANTIC', 'Семантический (по эмбеддингам)'),
@@ -71,20 +71,20 @@ class SearchQuery(models.Model):
         ('FILTER', 'Фильтрация по метаданным'),
     ]
     
-    # Основная информация
+    # Basic info
     query_text = models.TextField(help_text=_("Текст поискового запроса"))
     normalized_query = models.TextField(blank=True, help_text=_("Нормализованный текст запроса"))
-    
-    # Тип поиска и конфигурация
+
+    # Search type and config
     search_type = models.CharField(max_length=20, choices=SEARCH_TYPE_CHOICES, default='HYBRID')
     search_config = models.JSONField(default=dict, blank=True, help_text=_("Конфигурация поиска"))
-    
-    # Контекст запроса
+
+    # Query context
     session_id = models.CharField(max_length=100, blank=True, help_text=_("ID сессии пользователя"))
     user_id = models.CharField(max_length=100, blank=True, help_text=_("ID пользователя"))
     context = models.JSONField(default=dict, blank=True, help_text=_("Дополнительный контекст запроса"))
-    
-    # Фильтры
+
+    # Filters
     collection_filter = models.ForeignKey(
         DocumentCollection,
         on_delete=models.SET_NULL,
@@ -94,7 +94,7 @@ class SearchQuery(models.Model):
     )
     metadata_filters = models.JSONField(default=dict, blank=True, help_text=_("Фильтры по метаданным"))
     
-    # Временные метки
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     processing_time_ms = models.FloatField(null=True, blank=True, help_text=_("Время обработки запроса в мс"))
     
@@ -114,10 +114,10 @@ class SearchQuery(models.Model):
 
 class SearchResult(models.Model):
     """
-    Результат поиска по запросу.
-    Связывает запрос, найденные чанки и их релевантность.
+    Search result for a query.
+    Links the query, matched chunks, and their relevance.
     """
-    # Связи
+    # Relations
     query = models.ForeignKey(
         SearchQuery,
         on_delete=models.CASCADE,
@@ -129,14 +129,14 @@ class SearchResult(models.Model):
         related_name='search_results'
     )
     
-    # Релевантность и ранжирование
+    # Relevance and ranking
     relevance_score = models.FloatField(
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
         help_text=_("Оценка релевантности (0-1)")
     )
     rank_position = models.IntegerField(help_text=_("Позиция в результатах поиска"))
     
-    # Метод вычисления релевантности
+    # Relevance scoring method
     scoring_method = models.CharField(
         max_length=50,
         default='cosine_similarity',
@@ -150,15 +150,15 @@ class SearchResult(models.Model):
         help_text=_("Метод вычисления релевантности")
     )
     
-    # Дополнительные метрики
+    # Additional metrics
     semantic_score = models.FloatField(null=True, blank=True, help_text=_("Семантическая оценка"))
     keyword_score = models.FloatField(null=True, blank=True, help_text=_("Оценка по ключевым словам"))
     
-    # Контекст результата
+    # Result context
     context_before = models.TextField(blank=True, help_text=_("Контекст перед чанком"))
     context_after = models.TextField(blank=True, help_text=_("Контекст после чанка"))
     
-    # Метаданные
+    # Metadata
     metadata = models.JSONField(default=dict, blank=True, help_text=_("Метаданные результата"))
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -179,18 +179,18 @@ class SearchResult(models.Model):
     
     @property
     def document_title(self):
-        """Название документа чанка"""
+        """Document title of the chunk."""
         return self.chunk.document.title
-    
+
     @property
     def chunk_preview(self):
-        """Превью содержимого чанка"""
+        """Chunk content preview."""
         return self.chunk.preview
 
 
 class RAGSession(models.Model):
     """
-    Сессия RAG: объединяет запрос, поиск, генерацию ответа и обратную связь.
+    RAG session: combines the query, search, answer generation, and feedback.
     """
     SESSION_STATUS_CHOICES = [
         ('SEARCHING', 'Поиск документов'),
@@ -200,21 +200,21 @@ class RAGSession(models.Model):
         ('EVALUATING', 'Оценка качества'),
     ]
     
-    # Идентификаторы
+    # Identifiers
     session_id = models.CharField(max_length=100, unique=True, help_text=_("Уникальный ID сессии"))
     conversation_id = models.CharField(max_length=100, blank=True, help_text=_("ID беседы (если часть диалога)"))
-    
-    # Пользовательская информация
+
+    # User info
     user_id = models.CharField(max_length=100, blank=True)
     user_ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
-    
-    # Контекст и промпт
+
+    # Context and prompts
     original_query = models.TextField(help_text=_("Исходный запрос пользователя"))
     system_prompt = models.TextField(blank=True, help_text=_("Системный промпт для LLM"))
     augmented_prompt = models.TextField(blank=True, help_text=_("Промпт с контекстом из поиска"))
     
-    # Модели
+    # Models
     embedding_model = models.ForeignKey(
         EmbeddingModel,
         on_delete=models.SET_NULL,
@@ -230,7 +230,7 @@ class RAGSession(models.Model):
         related_name='rag_sessions'
     )
     
-    # Поисковые результаты
+    # Search results
     search_query = models.ForeignKey(
         SearchQuery,
         on_delete=models.SET_NULL,
@@ -244,22 +244,22 @@ class RAGSession(models.Model):
         related_name='rag_sessions'
     )
     
-    # Генерация ответа
+    # Answer generation
     generated_answer = models.TextField(blank=True, help_text=_("Сгенерированный ответ"))
     generation_metadata = models.JSONField(default=dict, blank=True, help_text=_("Метаданные генерации"))
-    
-    # Статус и производительность
+
+    # Status and performance
     status = models.CharField(max_length=20, choices=SESSION_STATUS_CHOICES, default='SEARCHING')
     total_time_ms = models.FloatField(default=0.0, help_text=_("Общее время выполнения (мс)"))
     search_time_ms = models.FloatField(null=True, blank=True, help_text=_("Время поиска (мс)"))
     generation_time_ms = models.FloatField(null=True, blank=True, help_text=_("Время генерации (мс)"))
     
-    # Токены и стоимость
+    # Tokens and cost
     input_tokens = models.IntegerField(default=0, help_text=_("Входные токены"))
     output_tokens = models.IntegerField(default=0, help_text=_("Выходные токены"))
     estimated_cost = models.FloatField(null=True, blank=True, help_text=_("Примерная стоимость"))
     
-    # Качество ответа
+    # Answer quality
     confidence_score = models.FloatField(
         null=True,
         blank=True,
@@ -267,7 +267,7 @@ class RAGSession(models.Model):
         help_text=_("Уверенность модели в ответе")
     )
     
-    # Обратная связь
+    # Feedback
     has_feedback = models.BooleanField(default=False, help_text=_("Есть ли обратная связь"))
     feedback_score = models.IntegerField(
         null=True,
@@ -277,12 +277,12 @@ class RAGSession(models.Model):
     )
     feedback_comment = models.TextField(blank=True, help_text=_("Комментарий пользователя"))
     
-    # Временные метки
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     feedback_at = models.DateTimeField(null=True, blank=True)
-    
+
     class Meta:
         ordering = ['-created_at']
         indexes = [
@@ -299,23 +299,23 @@ class RAGSession(models.Model):
     
     @property
     def is_successful(self):
-        """Успешна ли сессия"""
+        """Whether the session succeeded."""
         return self.status == 'COMPLETED' and self.generated_answer
-    
+
     @property
     def total_tokens(self):
-        """Общее количество токенов"""
+        """Total token count."""
         return self.input_tokens + self.output_tokens
-    
+
     def mark_search_completed(self, search_time_ms, search_query):
-        """Отметить завершение поиска"""
+        """Mark search as completed."""
         self.status = 'GENERATING'
         self.search_time_ms = search_time_ms
         self.search_query = search_query
         self.save()
     
     def mark_generation_completed(self, answer, metadata, generation_time_ms, tokens):
-        """Отметить завершение генерации"""
+        """Mark generation as completed."""
         self.status = 'COMPLETED'
         self.generated_answer = answer
         self.generation_metadata = metadata
@@ -327,7 +327,7 @@ class RAGSession(models.Model):
         self.save()
     
     def add_feedback(self, score, comment=""):
-        """Добавить обратную связь от пользователя"""
+        """Add user feedback."""
         self.has_feedback = True
         self.feedback_score = score
         self.feedback_comment = comment
@@ -337,24 +337,24 @@ class RAGSession(models.Model):
 
 class RetrievedChunk(models.Model):
     """
-    Промежуточная модель для связи RAGSession и DocumentChunk.
-    Хранит дополнительную информацию о том, как чанк был использован в сессии.
+    Through model linking RAGSession and DocumentChunk.
+    Stores extra info on how the chunk was used in the session.
     """
     session = models.ForeignKey(RAGSession, on_delete=models.CASCADE)
     chunk = models.ForeignKey(DocumentChunk, on_delete=models.CASCADE)
-    
-    # Позиция в результатах
+
+    # Position in results
     retrieval_rank = models.IntegerField(help_text=_("Позиция при извлечении"))
     relevance_score = models.FloatField(
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
         help_text=_("Релевантность для этого запроса")
     )
     
-    # Как чанк был использован
+    # How the chunk was used
     used_in_context = models.BooleanField(default=False, help_text=_("Был ли использован в контексте для LLM"))
     context_position = models.IntegerField(null=True, blank=True, help_text=_("Позиция в контексте"))
-    
-    # Качество использования
+
+    # Usage quality
     attribution_score = models.FloatField(
         null=True,
         blank=True,
@@ -376,8 +376,8 @@ class RetrievedChunk(models.Model):
 
 class SearchQualityFeedback(models.Model):
     """
-    Обратная связь по качеству поиска от пользователей.
-    Используется для улучшения ранжирования и релевантности.
+    User feedback on search quality.
+    Used to improve ranking and relevance.
     """
     FEEDBACK_TYPE_CHOICES = [
         ('RELEVANCE', 'Релевантность'),
@@ -387,7 +387,7 @@ class SearchQualityFeedback(models.Model):
         ('OTHER', 'Другое'),
     ]
     
-    # Связи
+    # Relations
     search_result = models.ForeignKey(
         SearchResult,
         on_delete=models.CASCADE,
@@ -403,14 +403,14 @@ class SearchQualityFeedback(models.Model):
         blank=True
     )
     
-    # Оценка
+    # Rating
     feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPE_CHOICES, default='RELEVANCE')
     rating = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         help_text=_("Оценка качества (1-5)")
     )
     
-    # Детали обратной связи
+    # Feedback details
     comment = models.TextField(blank=True, help_text=_("Комментарий пользователя"))
     expected_document = models.ForeignKey(
         Document,
@@ -420,7 +420,7 @@ class SearchQualityFeedback(models.Model):
         help_text=_("Какой документ ожидался")
     )
     
-    # Контекст
+    # Context
     user_id = models.CharField(max_length=100, blank=True)
     user_expertise = models.CharField(
         max_length=50,
@@ -432,7 +432,7 @@ class SearchQualityFeedback(models.Model):
         ]
     )
     
-    # Системная информация
+    # System info
     is_resolved = models.BooleanField(default=False, help_text=_("Обработана ли обратная связь"))
     resolution_notes = models.TextField(blank=True, help_text=_("Заметки по обработке"))
     
@@ -453,7 +453,7 @@ class SearchQualityFeedback(models.Model):
         return f"Оценка {self.rating}/5 от {self.user_id or 'анонима'}"
     
     def mark_resolved(self, notes=""):
-        """Пометить обратную связь как обработанную"""
+        """Mark the feedback as resolved."""
         self.is_resolved = True
         self.resolution_notes = notes
         self.resolved_at = timezone.now()
@@ -462,7 +462,7 @@ class SearchQualityFeedback(models.Model):
 
 class RAGEvaluation(models.Model):
     """
-    Систематическая оценка качества RAG-системы.
+    Systematic evaluation of RAG system quality.
     """
     EVALUATION_TYPE_CHOICES = [
         ('AUTOMATED', 'Автоматическая'),
@@ -474,20 +474,20 @@ class RAGEvaluation(models.Model):
     name = models.CharField(max_length=255, help_text=_("Название оценки"))
     description = models.TextField(blank=True, help_text=_("Описание оценки"))
     
-    # Конфигурация
+    # Configuration
     evaluation_type = models.CharField(max_length=20, choices=EVALUATION_TYPE_CHOICES, default='AUTOMATED')
     test_queries = models.JSONField(
         default=list,
         help_text=_("Тестовые запросы [{'id': 1, 'text': '...', 'expected_docs': [doc_ids]}]")
     )
     
-    # Метрики
+    # Metrics
     target_metrics = models.JSONField(
         default=dict,
         help_text=_("Целевые метрики {'recall@5': 0.8, 'precision@3': 0.9}")
     )
     
-    # Результаты
+    # Results
     actual_metrics = models.JSONField(
         default=dict,
         blank=True,
@@ -499,7 +499,7 @@ class RAGEvaluation(models.Model):
         help_text=_("Детальные результаты по каждому запросу")
     )
     
-    # Сравнение
+    # Comparison
     baseline_evaluation = models.ForeignKey(
         'self',
         on_delete=models.SET_NULL,
@@ -509,7 +509,7 @@ class RAGEvaluation(models.Model):
     )
     improvement_percentage = models.FloatField(null=True, blank=True, help_text=_("Улучшение в %"))
     
-    # Статус
+    # Status
     status = models.CharField(
         max_length=20,
         default='PENDING',
@@ -521,11 +521,11 @@ class RAGEvaluation(models.Model):
         ]
     )
     
-    # Временные метки
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
-    
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Оценка RAG системы'
@@ -536,30 +536,30 @@ class RAGEvaluation(models.Model):
     
     @property
     def total_queries(self):
-        """Количество тестовых запросов"""
+        """Number of test queries."""
         return len(self.test_queries) if self.test_queries else 0
-    
+
     def start_evaluation(self):
-        """Начать оценку"""
+        """Start the evaluation."""
         self.status = 'RUNNING'
         self.started_at = timezone.now()
         self.save()
     
     def complete_evaluation(self, metrics, detailed_results):
-        """Завершить оценку"""
+        """Complete the evaluation."""
         self.status = 'COMPLETED'
         self.completed_at = timezone.now()
         self.actual_metrics = metrics
         self.detailed_results = detailed_results
-        
-        # Вычисляем улучшение если есть базовая оценка
+
+        # Compute improvement if a baseline exists
         if self.baseline_evaluation and self.baseline_evaluation.actual_metrics:
             self._calculate_improvement()
-        
+
         self.save()
-    
+
     def _calculate_improvement(self):
-        """Вычислить улучшение относительно базовой оценки"""
+        """Compute improvement relative to the baseline evaluation."""
         try:
             baseline_metrics = self.baseline_evaluation.actual_metrics
             
@@ -571,7 +571,7 @@ class RAGEvaluation(models.Model):
                     improvements[metric] = round(improvement, 2)
             
             if improvements:
-                # Среднее улучшение по всем метрикам
+                # Average improvement across all metrics
                 self.improvement_percentage = sum(improvements.values()) / len(improvements)
                 self.actual_metrics['improvements'] = improvements
         except Exception as e:

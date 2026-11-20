@@ -2,7 +2,7 @@ from .base import BaseModelHandler
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 class LlamaHandler(BaseModelHandler):
-    """Обработчик для моделей Llama"""
+    """Handler for Llama models"""
     
     def get_model_class(self):
         return AutoModelForCausalLM

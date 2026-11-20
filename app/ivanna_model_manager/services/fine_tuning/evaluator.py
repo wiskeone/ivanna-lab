@@ -13,22 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 class FineTuningEvaluator:
-    """Оценка дообученной модели на датасетах"""
-    
+    """Evaluate a fine-tuned model on datasets"""
+
     def __init__(self, job: FineTuningJob):
         self.job = job
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        
-        # Загружаем метрики
+
+        # Load the metrics
         self.rouge = evaluate.load('rouge')
         self.bertscore = evaluate.load('bertscore')
         self.bleu = evaluate.load('bleu')
     
     def evaluate(self, dataset: EvaluationDataset) -> Dict[str, Any]:
-        """Оценка модели на датасете"""
+        """Evaluate the model on a dataset"""
         logger.info(f"Evaluating model on dataset: {dataset.name}")
-        
-        # Загружаем модель
+
+        # Load the model
         model_path = self.job.output_model.local_path
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
@@ -41,7 +41,7 @@ class FineTuningEvaluator:
         predictions = []
         references = []
         
-        for q in dataset.questions[:50]:  # Ограничиваем для скорости
+        for q in dataset.questions[:50]:  # cap for speed
             # Audit fix: only 'answer' was accepted — datasets written with
             # 'output' (HF import / distillation export) were skipped entirely
             if 'answer' not in q and 'output' not in q:
@@ -60,14 +60,14 @@ class FineTuningEvaluator:
                 )
             
             response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # Извлекаем только ответ
+            # Extract the answer only
             if "### Response:" in response:
                 response = response.split("### Response:")[-1].strip()
             
             predictions.append(response)
             references.append(q.get('answer', q.get('output', '')))
         
-        # Вычисляем метрики
+        # Compute metrics
         rouge_scores = self.rouge.compute(
             predictions=predictions,
             references=references,
@@ -77,7 +77,7 @@ class FineTuningEvaluator:
         bert_scores = self.bertscore.compute(
             predictions=predictions,
             references=references,
-            lang="ru"  # или определять автоматически
+            lang="ru"  # or detect automatically
         )
         
         bleu_scores = self.bleu.compute(
@@ -93,14 +93,14 @@ class FineTuningEvaluator:
             'bleu': bleu_scores['bleu'],
         }
         
-        # Сохраняем результаты
+        # Store the results
         evaluation = FineTuningEvaluation.objects.create(
             job=self.job,
             dataset=dataset,
             metrics=metrics,
             detailed_results=[
                 {'prediction': p, 'reference': r} 
-                for p, r in zip(predictions[:10], references[:10])  # только первые 10
+                for p, r in zip(predictions[:10], references[:10])  # first 10 only
             ]
         )
         

@@ -27,13 +27,13 @@ logger = logging.getLogger(__name__)
 
 
 class DocumentManager(models.Manager):
-    """Кастомный менеджер для документов"""
-    
+    """Custom manager for documents."""
+
     def get_queryset(self):
-        """Возвращает только активные документы по умолчанию"""
-        # Безопасная проверка наличия поля is_active
+        """Return only active documents by default."""
+        # Safe check for the is_active field
         try:
-            # Проверяем, есть ли поле is_active в модели
+            # Check whether the model has the is_active field
             if hasattr(self.model, '_meta') and 'is_active' in [f.name for f in self.model._meta.get_fields()]:
                 return super().get_queryset().filter(is_active=True)
         except Exception:
@@ -41,19 +41,19 @@ class DocumentManager(models.Manager):
         return super().get_queryset()
     
     def all_documents(self):
-        """Получить ВСЕ документы (включая неактивные)"""
+        """Get ALL documents (including inactive ones)."""
         return super().get_queryset()
-    
+
     def find_similar_by_content(self, content, limit=5, min_similarity=0.7):
         """
-        Найти документы с похожим содержимым.
-        В реальной системе здесь будет поиск по векторным эмбеддингам.
+        Find documents with similar content.
+        In a real system this would use vector embedding search.
         """
-        # Пока используем простой текстовый поиск
+        # For now a simple text search is used
         documents = []
         content_words = set(content.lower().split())
-        
-        for doc in self.filter(status='INDEXED'):  # get_queryset уже фильтрует is_active=True
+
+        for doc in self.filter(status='INDEXED'):  # get_queryset already filters is_active=True
             if doc.processed_content:
                 doc_words = set(doc.processed_content.lower().split())
                 common_words = content_words.intersection(doc_words)
@@ -66,13 +66,13 @@ class DocumentManager(models.Manager):
                             'similarity': similarity
                         })
         
-        # Сортировка по схожести
+        # Sort by similarity
         documents.sort(key=lambda x: x['similarity'], reverse=True)
         return [doc['document'] for doc in documents[:limit]]
-    
+
     def get_by_collection_and_type(self, collection_id=None, doc_type=None):
-        """Получить документы по коллекции и типу"""
-        queryset = self.all()  # Используем self.all() чтобы получить активные
+        """Get documents by collection and type."""
+        queryset = self.all()  # self.all() returns active documents
         
         if collection_id:
             queryset = queryset.filter(collection_id=collection_id)
@@ -83,10 +83,10 @@ class DocumentManager(models.Manager):
         return queryset
     
     def get_statistics(self):
-        """Получить статистику по документам"""
+        """Get document statistics."""
         from django.db.models import Count, Avg, Sum
-        
-        stats = self.all().aggregate(  # Используем self.all() чтобы получить активные
+
+        stats = self.all().aggregate(  # self.all() returns active documents
             total=Count('id'),
             by_type=Count('document_type'),
             avg_size=Avg('file_size_mb'),
@@ -101,18 +101,18 @@ class DocumentManager(models.Manager):
 
 class DocumentCollection(models.Model):
     """
-    Коллекция документов для RAG.
-    Группирует связанные документы (например, по проекту, пользователю, теме).
+    Document collection for RAG.
+    Groups related documents (e.g. by project, user, or topic).
     """
     name = models.CharField(max_length=255, help_text=_("Название коллекции"))
     description = models.TextField(blank=True, help_text=_("Описание коллекции"))
     
-    # Владелец и доступ
+    # Owner and access
     owner_id = models.CharField(max_length=100, blank=True, help_text=_("ID владельца (пользователя/организации)"))
     is_public = models.BooleanField(default=False, help_text=_("Доступна ли коллекция другим пользователям"))
-    
-    # Модель эмбеддингов
-    # v5.2: реранкер коллекции (cross-encoder); null → авто по языку
+
+    # Embedding model
+    # v5.2: collection reranker (cross-encoder); null → auto by language
     reranker_model = models.ForeignKey(
         'RerankerModel', null=True, blank=True,
         on_delete=models.SET_NULL, related_name='collections',
@@ -126,13 +126,13 @@ class DocumentCollection(models.Model):
         help_text=_("Модель эмбеддингов для этой коллекции")
     )
     
-    # Статистика векторного индекса
+    # Vector index stats
     vector_index_created = models.BooleanField(default=False, help_text=_("Создан ли векторный индекс"))
     total_vectors = models.IntegerField(default=0, help_text=_("Количество векторов в индексе"))
     vector_dimension = models.IntegerField(null=True, blank=True, help_text=_("Размерность векторов"))
     index_metadata = models.JSONField(default=dict, blank=True, help_text=_("Метаданные векторного индекса"))
     
-    # Настройки обработки
+    # Processing settings
     chunking_strategy = models.CharField(
         max_length=50,
         default='recursive',
@@ -148,19 +148,19 @@ class DocumentCollection(models.Model):
     chunk_size = models.IntegerField(default=1000, help_text=_("Размер чанка в токенах/символах"))
     chunk_overlap = models.IntegerField(default=200, help_text=_("Перекрытие между чанками"))
     
-    # Метаданные фильтрации
+    # Metadata filters
     metadata_filters = models.JSONField(
         default=dict,
         blank=True,
         help_text=_("Фильтры по метаданным для этой коллекции {'doc_type': 'legal', 'year': 2023}")
     )
     
-    # Статистика
+    # Statistics
     total_documents = models.IntegerField(default=0, help_text=_("Общее количество документов"))
     total_chunks = models.IntegerField(default=0, help_text=_("Общее количество чанков"))
     total_size_mb = models.FloatField(default=0.0, help_text=_("Общий размер документов в МБ"))
     
-    # Системные поля
+    # System fields
     is_active = models.BooleanField(default=True)
     auto_process = models.BooleanField(default=True, help_text=_("Автоматически обрабатывать новые документы"))
     
@@ -182,18 +182,18 @@ class DocumentCollection(models.Model):
         return f"{self.name} ({self.total_documents} док.)"
     
     def clean(self):
-        """Валидация коллекции"""
+        """Validate the collection."""
         if self.chunk_overlap >= self.chunk_size:
             raise ValidationError("Перекрытие чанков должно быть меньше их размера")
-    
+
     def update_statistics(self):
-        """Обновить статистику коллекции"""
+        """Update collection statistics."""
         from django.db.models import Count, Sum
         
         docs = self.documents.filter(is_active=True)
         self.total_documents = docs.count()
         
-        # Считаем общее количество чанков и размер
+        # Count total chunks and size
         chunks_info = docs.aggregate(
             total_chunks=Count('chunks', filter=Q(chunks__is_active=True)),
             total_size=Sum('file_size_mb')
@@ -202,7 +202,7 @@ class DocumentCollection(models.Model):
         self.total_chunks = chunks_info['total_chunks'] or 0
         self.total_size_mb = chunks_info['total_size'] or 0.0
         
-        # Считаем количество векторов (чанков с эмбеддингами)
+        # Count vectors (chunks with embeddings)
         chunks_with_embeddings = DocumentChunk.objects.filter(
             document__collection=self,
             has_embedding=True,
@@ -211,7 +211,7 @@ class DocumentCollection(models.Model):
         
         self.total_vectors = chunks_with_embeddings
         
-        # Если есть векторы, устанавливаем размерность
+        # Set the vector dimension if vectors exist
         if chunks_with_embeddings > 0 and not self.vector_dimension:
             chunk_with_embedding = DocumentChunk.objects.filter(
                 document__collection=self,
@@ -225,7 +225,7 @@ class DocumentCollection(models.Model):
                                 'total_vectors', 'vector_dimension', 'updated_at'])
     
     def get_embedding_progress(self):
-        """Получить прогресс создания эмбеддингов"""
+        """Get embedding creation progress."""
         chunks_with_embeddings = DocumentChunk.objects.filter(
             document__collection=self,
             has_embedding=True,
@@ -259,7 +259,7 @@ class DocumentCollection(models.Model):
         }
 
     def build_vector_index(self, index_type='ivf'):
-        """Запустить создание векторного индекса"""
+        """Start building the vector index."""
         try:
             from ..tasks import build_faiss_index_task
             task = build_faiss_index_task.delay(self.id, index_type)
@@ -269,7 +269,7 @@ class DocumentCollection(models.Model):
             return None
 
     def search_in_index(self, query_vector: list, k: int = 10):
-        """Поиск в векторном индексе"""
+        """Search in the vector index."""
         try:
             from ..tasks import search_faiss_index_task
             result = search_faiss_index_task.delay(self.id, query_vector, k)
@@ -279,7 +279,7 @@ class DocumentCollection(models.Model):
             return None
 
     def update_vector_index(self):
-        """Обновить векторный индекс"""
+        """Update the vector index."""
         try:
             from ..tasks import update_faiss_index_task
             task = update_faiss_index_task.delay(self.id)
@@ -289,7 +289,7 @@ class DocumentCollection(models.Model):
             return None
 
     def get_index_stats(self):
-        """Получить статистику векторного индекса"""
+        """Get vector index statistics."""
         try:
             from ..services.faiss_service import FAISSService
             faiss_service = FAISSService()
@@ -300,7 +300,7 @@ class DocumentCollection(models.Model):
 
     @property
     def owner(self):
-        """Получить объект владельца"""
+        """Get the owner object."""
         from django.contrib.auth.models import User
         try:
             if self.owner_id:
@@ -310,20 +310,20 @@ class DocumentCollection(models.Model):
     
     @property
     def owner_username(self):
-        """Имя владельца"""
+        """Owner username."""
         owner = self.owner
         return owner.username if owner else self.owner_id or "Система"
     
     def get_owner_display(self):
-        """Отображаемое имя владельца"""
+        """Owner display name."""
         if self.owner:
             return f"{self.owner.username} ({self.owner.get_full_name() or self.owner.email})"
         return self.owner_id or "Система"
 
     def get_effective_embedding_model(self):
         """
-        Возвращает модель эмбеддингов, которая будет использоваться для этой коллекции.
-        Если у коллекции явно не задана модель, возвращается глобальная модель по умолчанию.
+        Return the embedding model used for this collection.
+        If the collection has no explicit model, the global default is used.
         """
         if self.embedding_model:
             return self.embedding_model
@@ -332,7 +332,7 @@ class DocumentCollection(models.Model):
 
 class Document(models.Model):
     """
-    Основная модель документа для RAG.
+    Main document model for RAG.
     """
     DOCUMENT_STATUS_CHOICES = [
         ('UPLOADED', 'Загружен'),
@@ -359,39 +359,39 @@ class Document(models.Model):
         ('UNKNOWN', 'Неизвестный'),
     ]
     
-    # Основная информация
+    # Basic info
     original_filename = models.CharField(max_length=500, help_text=_("Оригинальное имя файла"))
     title = models.CharField(max_length=500, blank=True, help_text=_("Название документа"))
     description = models.TextField(blank=True, help_text=_("Описание документа"))
     
-    # Тип и содержимое
+    # Type and content
     document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES, default='UNKNOWN')
     content_hash = models.CharField(max_length=64, help_text=_("SHA256 хеш содержимого для дедупликации"))
     raw_content = models.TextField(blank=True, help_text=_("Исходное текстовое содержимое"))
     processed_content = models.TextField(blank=True, help_text=_("Очищенное содержимое после обработки"))
     
-    # Пути и размеры
+    # Paths and sizes
     file_path = models.CharField(max_length=1000, blank=True, help_text=_("Путь к исходному файлу"))
     file_size_mb = models.FloatField(default=0.0, help_text=_("Размер файла в МБ"))
     file_encoding = models.CharField(max_length=50, default='utf-8', help_text=_("Кодировка файла"))
     
-    # Метаданные
+    # Metadata
     metadata = models.JSONField(
         default=dict,
         blank=True,
         help_text=_("Произвольные метаданные документа")
     )
-    
-    # Теги и категории
+
+    # Tags and categories
     tags = models.JSONField(default=list, blank=True, help_text=_("Теги документа"))
     category = models.CharField(max_length=100, blank=True, help_text=_("Категория документа"))
     
-    # Статус и обработка
+    # Status and processing
     status = models.CharField(max_length=20, choices=DOCUMENT_STATUS_CHOICES, default='UPLOADED')
     processing_progress = models.FloatField(default=0.0, help_text=_("Прогресс обработки (0-100)"))
     error_message = models.TextField(blank=True, help_text=_("Сообщение об ошибке обработки"))
     
-    # Качество и релевантность
+    # Quality and relevance
     quality_score = models.FloatField(
         null=True,
         blank=True,
@@ -399,7 +399,7 @@ class Document(models.Model):
         help_text=_("Оценка качества документа (0-1)")
     )
     
-    # Связи
+    # Relations
     collection = models.ForeignKey(
         DocumentCollection,
         on_delete=models.CASCADE,
@@ -408,12 +408,12 @@ class Document(models.Model):
         blank=True
     )
     
-    # Временные метки
+    # Timestamps
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     indexed_at = models.DateTimeField(null=True, blank=True)
     
-    # Системные поля
+    # System fields
     is_active = models.BooleanField(default=True)
     requires_reindexing = models.BooleanField(default=False, help_text=_("Требуется переиндексация"))
     objects = DocumentManager()
@@ -421,12 +421,12 @@ class Document(models.Model):
     class Meta:
         ordering = ['-uploaded_at']
         indexes = [
-            models.Index(fields=['content_hash']),  # Для дедупликации
+            models.Index(fields=['content_hash']),  # For deduplication
             models.Index(fields=['status', 'uploaded_at']),
             models.Index(fields=['collection', 'status']),
             models.Index(fields=['document_type', 'is_active']),
             models.Index(fields=['quality_score']),
-            models.Index(fields=['requires_reindexing']),  # Для поиска документов для переиндексации
+            models.Index(fields=['requires_reindexing']),  # For finding documents to reindex
         ]
         verbose_name = 'Документ'
         verbose_name_plural = 'Документы'
@@ -435,8 +435,8 @@ class Document(models.Model):
         return f"{self.title or self.original_filename} ({self.get_status_display()})"
     
     def clean(self):
-        """Валидация документа"""
-        # Автоматическое определение типа по расширению
+        """Validate the document."""
+        # Detect the type automatically from the extension
         if not self.document_type or self.document_type == 'UNKNOWN':
             ext = os.path.splitext(self.original_filename)[1].lower()
             ext_to_type = {
@@ -458,75 +458,75 @@ class Document(models.Model):
             self.document_type = ext_to_type.get(ext, 'UNKNOWN')
     
     def save(self, *args, **kwargs):
-        """Переопределение save с автоматическим вычислением хеша"""
-        # Вычисляем хеш содержимого если есть raw_content
+        """save() override with automatic hash computation."""
+        # Compute the content hash if raw_content is present
         if self.raw_content and not self.content_hash:
             self.content_hash = hashlib.sha256(self.raw_content.encode()).hexdigest()
-        
-        # Автоматически задаем заголовок если не задан
+
+        # Set the title automatically if missing
         if not self.title and self.original_filename:
             self.title = os.path.splitext(self.original_filename)[0]
-        
+
         super().save(*args, **kwargs)
-        
-        # Обновляем статистику коллекции
+
+        # Update collection statistics
         if self.collection:
             self.collection.update_statistics()
-    
+
     def file_url(self):
-        """URL для доступа к файлу через медиа"""
+        """Media URL for accessing the file."""
         if self.file_path:
-            # Убираем дублирование 'documents/' если оно есть
+            # Remove duplicate 'documents/' if present
             if self.file_path.startswith('documents/'):
-                # Уже содержит папку documents - используем как есть
+                # Already contains the documents folder — use as is
                 return f"{settings.MEDIA_URL}{self.file_path}"
             else:
-                # Добавляем папку documents
+                # Add the documents folder
                 return f"{settings.MEDIA_URL}documents/{self.file_path}"
         return None
 
     @property
     def full_file_path(self):
-        """Полный путь к файлу на диске"""
+        """Full file path on disk."""
         if not self.file_path:
             return None
-        
-        # Логирование для отладки
+
+        # Debug logging
         import logging
         logger = logging.getLogger(__name__)
-        
-        # Если путь уже абсолютный
+
+        # Path is already absolute
         if os.path.isabs(self.file_path):
             logger.debug(f"Absolute path for doc {self.id}: {self.file_path}")
             return self.file_path
-        
-        # Если начинается с 'documents/'
+
+        # Starts with 'documents/'
         if self.file_path.startswith('documents/'):
-            # Убираем возможное дублирование 'media/' если есть
+            # Remove possible duplicated 'media/'
             path = self.file_path
             if path.startswith('media/') and path.count('media/') > 1:
                 path = 'media/' + path.split('media/')[-1]
-            
-            # Строим путь относительно MEDIA_ROOT
+
+            # Build the path relative to MEDIA_ROOT
             full_path = os.path.join(settings.MEDIA_ROOT, path)
             logger.debug(f"Path with 'documents/' for doc {self.id}: {full_path}")
             return full_path
-        
-        # Просто имя файла - добавляем 'documents/'
+
+        # Bare filename — prepend 'documents/'
         full_path = os.path.join(settings.MEDIA_ROOT, 'documents', self.file_path)
         logger.debug(f"Path with added 'documents/' for doc {self.id}: {full_path}")
         return full_path
-    
+
     def file_exists(self):
-        """Проверяет существование файла"""
+        """Check whether the file exists."""
         full_path = self.full_file_path
         return full_path and os.path.exists(full_path)
     
     def get_file_response(self):
-        """Возвращает FileResponse для скачивания"""
+        """Return a FileResponse for download."""
         full_path = self.full_file_path
         if not full_path or not os.path.exists(full_path):
-            # Попробуем найти файл в других возможных местах
+            # Try to find the file in other possible locations
             possible_paths = [
                 full_path,
                 os.path.join(settings.MEDIA_ROOT, self.file_path) if self.file_path else None,
@@ -555,36 +555,36 @@ class Document(models.Model):
             
     @property
     def extension(self):
-        """Расширение файла"""
+        """File extension."""
         return os.path.splitext(self.original_filename)[1].lower()
-    
+
     @property
     def has_embeddings(self):
-        """Есть ли у документа эмбеддинги"""
+        """Whether the document has embeddings."""
         return self.chunks.filter(has_embedding=True).exists()
-    
+
     @property
     def chunk_count(self):
-        """Количество чанков документа"""
+        """Number of document chunks."""
         return self.chunks.filter(is_active=True).count()
-    
+
     def get_similar_documents(self, limit=5):
-        """Найти похожие документы (по эмбеддингам чанков)"""
-        # Находим эмбеддинги этого документа
+        """Find similar documents (via chunk embeddings)."""
+        # Collect this document's embeddings
         chunk_embeddings = list(self.chunks.filter(has_embedding=True).values_list('embedding_vector', flat=True))
-        
+
         if not chunk_embeddings:
             return Document.objects.none()
-        
-        # Здесь будет логика поиска похожих документов через векторную БД
-        # Пока возвращаем заглушку
+
+        # Real vector-DB similarity search would go here
+        # Placeholder for now
         return Document.objects.filter(
             collection=self.collection,
             is_active=True
         ).exclude(id=self.id)[:limit]
     
     def start_processing(self):
-        """Запустить обработку документа"""
+        """Start document processing."""
         try:
             from ..tasks import process_document_task
             return process_document_task.delay(self.id)
@@ -594,12 +594,12 @@ class Document(models.Model):
 
     @property
     def chunks_with_embeddings(self):
-        """Количество чанков с эмбеддингами"""
+        """Number of chunks with embeddings."""
         return self.chunks.filter(has_embedding=True, is_active=True).count()
-    
+
     @property
     def chunks_with_embeddings_from_collection_model(self):
-        """Количество чанков с эмбеддингами от модели коллекции"""
+        """Number of chunks with embeddings from the collection model."""
         if not self.collection or not self.collection.embedding_model:
             return 0
         return self.chunks.filter(
@@ -610,8 +610,8 @@ class Document(models.Model):
     
     @property
     def embedding_model_used(self):
-        """Модель эмбеддингов, используемая для этого документа."""
-        # Проверяем, есть ли чанки с эмбеддингами
+        """Embedding model used for this document."""
+        # Check whether there are chunks with embeddings
         chunk_with_emb = self.chunks.filter(
             has_embedding=True,
             is_active=True
@@ -620,23 +620,23 @@ class Document(models.Model):
         if chunk_with_emb and chunk_with_emb.embedding_model:
             return chunk_with_emb.embedding_model
         
-        # Если чанков с эмбеддингами нет, возвращаем модель коллекции
+        # No chunks with embeddings — fall back to the collection model
         return self.collection.embedding_model if self.collection else None
-    
+
     @property
     def embedding_dimension(self):
-        """Размерность эмбеддингов документа"""
+        """Embedding dimension of the document."""
         model = self.embedding_model_used
         return model.embedding_dim if model else None
     
     @property
     def has_embeddings(self):
-        """Есть ли у документа эмбеддинги (любые)"""
+        """Whether the document has any embeddings."""
         return self.chunks.filter(has_embedding=True, is_active=True).exists()
-    
+
     @property
     def has_complete_embeddings(self):
-        """Все ли чанки имеют эмбеддинги"""
+        """Whether all chunks have embeddings."""
         total_chunks = self.chunks.filter(is_active=True).count()
         if total_chunks == 0:
             return False
@@ -645,7 +645,7 @@ class Document(models.Model):
 
 class DocumentChunk(models.Model):
     """
-    Фрагмент (чанк) документа для векторного поиска.
+    Document fragment (chunk) for vector search.
     """
     CHUNK_STRATEGY_CHOICES = [
         ('recursive', _('Рекурсивный')),
@@ -656,27 +656,27 @@ class DocumentChunk(models.Model):
         ('code', _('Код')),
     ]
     
-    # Связь с документом
+    # Relation to the document
     document = models.ForeignKey(
         Document,
         on_delete=models.CASCADE,
         related_name='chunks'
     )
     
-    # Содержимое и позиция
-    # v5.2: страница источника (для PDF-превью чанка)
+    # Content and position
+    # v5.2: source page (for chunk PDF preview)
     page_number = models.IntegerField(null=True, blank=True, help_text=_('Номер страницы источника'))
     chunk_index = models.IntegerField(help_text=_("Порядковый номер чанка в документе"))
     content = models.TextField(help_text=_("Текстовое содержимое чанка"))
     token_count = models.IntegerField(default=0, help_text=_("Количество токенов в чанке"))
     
-    # Позиция в исходном документе
+    # Position in the source document
     start_char = models.IntegerField(help_text=_("Начальная позиция в исходном тексте"))
     end_char = models.IntegerField(help_text=_("Конечная позиция в исходном тексте"))
     start_line = models.IntegerField(null=True, blank=True, help_text=_("Начальная строка (если применимо)"))
     end_line = models.IntegerField(null=True, blank=True, help_text=_("Конечная строка (если применимо)"))
     
-    # Метаданные чанка
+    # Chunk metadata
     metadata = models.JSONField(default=dict, blank=True, help_text=_("Метаданные чанка"))
     chunk_strategy = models.CharField(
         max_length=20,
@@ -684,7 +684,7 @@ class DocumentChunk(models.Model):
         default='recursive'
     )
     
-    # Эмбеддинги
+    # Embeddings
     has_embedding = models.BooleanField(default=False, help_text=_("Создан ли эмбеддинг для чанка"))
     embedding_model = models.ForeignKey(
         'EmbeddingModel',
@@ -695,7 +695,7 @@ class DocumentChunk(models.Model):
     )
     embedding_version = models.CharField(max_length=50, blank=True, help_text=_("Версия модели эмбеддингов"))
     
-    # Векторное представление (в реальной системе это может храниться в векторной БД)
+    # Vector representation (in a real system this may live in a vector DB)
     embedding_vector = models.JSONField(
         null=True,
         blank=True,
@@ -703,7 +703,7 @@ class DocumentChunk(models.Model):
     )
     embedding_dim = models.IntegerField(null=True, blank=True, help_text=_("Размерность эмбеддинга"))
     
-    # Качество и релевантность
+    # Quality and relevance
     relevance_score = models.FloatField(
         null=True,
         blank=True,
@@ -712,11 +712,11 @@ class DocumentChunk(models.Model):
     )
     is_key_chunk = models.BooleanField(default=False, help_text=_("Ключевой чанк документа"))
     
-    # Статистика использования
+    # Usage stats
     usage_count = models.IntegerField(default=0, help_text=_("Сколько раз чанк был использован в поиске"))
     last_used = models.DateTimeField(null=True, blank=True)
-    
-    # Системные поля
+
+    # System fields
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -738,27 +738,27 @@ class DocumentChunk(models.Model):
     
     @property
     def preview(self):
-        """Короткий превью содержимого"""
+        """Short content preview."""
         return self.content[:100] + ('...' if len(self.content) > 100 else '')
-    
+
     @property
     def document_title(self):
-        """Название родительского документа"""
+        """Parent document title."""
         return self.document.title
-    
+
     def mark_used(self):
-        """Отметить использование чанка"""
+        """Mark the chunk as used."""
         self.usage_count += 1
         self.last_used = timezone.now()
         self.save(update_fields=['usage_count', 'last_used', 'updated_at'])
     
     def get_similar_chunks(self, limit=5):
-        """Найти похожие чанки (по эмбеддингам)"""
+        """Find similar chunks (via embeddings)."""
         if not self.has_embedding or not self.embedding_vector:
             return DocumentChunk.objects.none()
-        
-        # В реальной системе здесь будет поиск по векторной БД
-        # Пока возвращаем чанки из того же документа
+
+        # Real vector-DB search would go here
+        # Chunks from the same document are returned for now
         return DocumentChunk.objects.filter(
             document=self.document,
             is_active=True,
@@ -768,7 +768,7 @@ class DocumentChunk(models.Model):
 
 class EmbeddingModel(models.Model):
     """
-    Модель для создания эмбеддингов (векторных представлений текста).
+    Model for creating embeddings (vector representations of text).
     """
     MODEL_TYPE_CHOICES = [
         ('LOCAL', 'Локальная модель'),
@@ -782,16 +782,16 @@ class EmbeddingModel(models.Model):
     display_name = models.CharField(max_length=255, blank=True, help_text=_("Человекочитаемое имя для интерфейса"))
     model_type = models.CharField(max_length=30, choices=MODEL_TYPE_CHOICES, default='HUGGINGFACE')
     
-    # Идентификаторы моделей
+    # Model identifiers
     model_id = models.CharField(max_length=500, help_text=_("Идентификатор модели (на HF, в API и т.д.)"))
     model_version = models.CharField(max_length=100, default='latest', help_text=_("Версия модели"))
     
-    # Технические характеристики
+    # Technical specs
     embedding_dim = models.IntegerField(help_text=_("Размерность эмбеддингов"))
     max_tokens = models.IntegerField(default=512, help_text=_("Максимальное количество токенов на вход"))
     is_multilingual = models.BooleanField(default=False, help_text=_("Поддерживает ли несколько языков"))
     
-    # Производительность
+    # Performance
     speed_ms_per_token = models.FloatField(null=True, blank=True, help_text=_("Скорость обработки (мс/токен)"))
     accuracy_score = models.FloatField(
         null=True,
@@ -800,23 +800,23 @@ class EmbeddingModel(models.Model):
         help_text=_("Оценка точности на тестовых данных")
     )
     
-    # Конфигурация
+    # Configuration
     config = models.JSONField(default=dict, blank=True, help_text=_("Конфигурация модели"))
-    
-    # Лицензия и стоимость
+
+    # License and cost
     license_type = models.CharField(max_length=100, blank=True, help_text=_("Тип лицензии"))
     cost_per_1k_tokens = models.FloatField(null=True, blank=True, help_text=_("Стоимость за 1000 токенов (если API)"))
     
-    # Статистика использования
+    # Usage stats
     total_tokens_processed = models.BigIntegerField(default=0, help_text=_("Всего обработано токенов"))
     total_requests = models.IntegerField(default=0, help_text=_("Всего запросов к модели"))
     
-    # Статус
+    # Status
     is_active = models.BooleanField(default=True, help_text=_("Доступна для использования"))
     is_default = models.BooleanField(default=False, help_text=_("Модель по умолчанию для новых коллекций"))
     is_downloaded = models.BooleanField(default=False, help_text=_("Скачана ли модель локально"))
     
-    # Информация о загрузке
+    # Download info
     download_progress = models.IntegerField(default=0, help_text=_("Прогресс загрузки (0-100)"))
     download_status = models.CharField(
         max_length=20,
@@ -830,7 +830,7 @@ class EmbeddingModel(models.Model):
     )
     download_error = models.TextField(blank=True, help_text=_("Ошибка загрузки, если была"))
     
-    # Временные метки
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -848,19 +848,19 @@ class EmbeddingModel(models.Model):
         return f"{self.display_name or self.name} ({self.embedding_dim}d)"
     
     def clean(self):
-        """Валидация модели"""
+        """Validate the model."""
         if self.is_default and self.pk:
-            # Если делаем эту модель моделью по умолчанию, снимаем флаг с других
+            # When this model becomes the default, unset the flag on the others
             EmbeddingModel.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
-    
+
     def save(self, *args, **kwargs):
-        """Переопределение save для обработки is_default"""
-        # Если это первая модель и is_default не задан, устанавливаем его
+        """save() override handling is_default."""
+        # First model ever and no default set — make it the default
         if not self.pk and not EmbeddingModel.objects.filter(is_default=True).exists():
             self.is_default = True
-        
+
         super().save(*args, **kwargs)
-        
-        # Если установлен is_default, снимаем его с других моделей
+
+        # Unset is_default on the other models
         if self.is_default:
             EmbeddingModel.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)

@@ -2,7 +2,7 @@ from .base import BaseModelHandler
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 class QwenHandler(BaseModelHandler):
-    """Обработчик для моделей Qwen"""
+    """Handler for Qwen models"""
     
     def get_model_class(self):
         return AutoModelForCausalLM
@@ -18,6 +18,6 @@ class QwenHandler(BaseModelHandler):
         }
     
     def load_model(self, device_map="auto"):
-        # Qwen требует trust_remote_code=True
+        # Qwen requires trust_remote_code=True
         self.model_config['trust_remote_code'] = True
         return super().load_model(device_map)

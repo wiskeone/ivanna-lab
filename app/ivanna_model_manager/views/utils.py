@@ -74,7 +74,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# HELPER FUNCTIONS
 # ============================================================================
 def get_document_type(filename):
     ext = os.path.splitext(filename)[1].lower()

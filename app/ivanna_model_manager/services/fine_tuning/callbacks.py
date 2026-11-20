@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 class PauseRequested(Exception):
-    """v5.1: брошен PauseCallback-ом, когда пользователь запросил паузу.
+    """v5.1: raised by PauseCallback when the user requested a pause.
 
-    Ловится ВНЕ trainer.train(): чекпоинт к этому моменту уже сохранён
-    HF Trainer-ом (save_steps), resume подхватит его через
+    Caught OUTSIDE trainer.train(): by that point the checkpoint has already
+    been saved by the HF Trainer (save_steps); resume picks it up via
     resume_from_checkpoint."""
 
 from ...models import TrainingMetric
@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 class ProgressCallback(TrainerCallback):
     """
-    Callback для сохранения пошаговых метрик и гистограмм во время fine-tuning,
-    а также логирования каждого шага в консоль и каждых 10 шагов в лог задачи.
+    Callback that stores per-step metrics and histograms during fine-tuning,
+    logs every step to the console and every 10 steps to the job log.
     """
     def __init__(self, job, total_steps, save_metrics_every=10, histogram_interval=50):
         self.job = job
@@ -34,7 +34,7 @@ class ProgressCallback(TrainerCallback):
         self.target_layers = ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj']
 
     def _collect_histograms(self, model):
-        """Собирает гистограммы весов и градиентов для целевых слоёв."""
+        """Collects weight and gradient histograms for the target layers."""
         weights_hists = {}
         grad_hists = {}
         if model is None:
@@ -57,19 +57,19 @@ class ProgressCallback(TrainerCallback):
     def on_step_end(self, args, state, control, model=None, **kwargs):
         step = state.global_step
 
-        # Логируем каждый шаг в консоль
+        # Log every step to the console
         logger.info(f"Step {step}/{self.total_steps} completed")
 
-        # Каждые 10 шагов добавляем запись в лог задачи
+        # Every 10 steps, append an entry to the job log
         if step % 10 == 0:
             self.job.add_log(f"Step {step}/{self.total_steps} completed")
 
-        # Обновляем прогресс в задаче
+        # Update the job progress
         if self.total_steps:
             progress = 100.0 * step / self.total_steps
             self.job.update_progress(progress, f"Step {step}/{self.total_steps}")
 
-        # Сохраняем метрики и гистограммы с заданной периодичностью
+        # Save metrics and histograms at the configured interval
         if step % self.save_metrics_every != 0:
             return
 
@@ -112,12 +112,12 @@ class ProgressCallback(TrainerCallback):
 
 class PauseCallback(TrainerCallback):
     """
-    v5.1: пауза fine-tuning по флагу в БД.
+    v5.1: fine-tuning pause driven by a DB flag.
 
-    Каждый шаг обновляет job из БД; если пользователь нажал «Пауза»
-    (pause_requested=True) — бросает PauseRequested. HF Trainer к этому
-    моменту уже сохранил чекпоинт (save_steps), поэтому резюм подхватит
-    прогресс через resume_from_checkpoint без потери шагов.
+    Each step refreshes the job from the DB; if the user pressed "Pause"
+    (pause_requested=True) — raises PauseRequested. By that point the HF
+    Trainer has already saved the checkpoint (save_steps), so the resume
+    picks up progress via resume_from_checkpoint without losing steps.
     """
 
     def __init__(self, job, check_every: int = 5):
@@ -129,7 +129,7 @@ class PauseCallback(TrainerCallback):
         self._counter += 1
         if self._counter % self.check_every:
             return
-        # свежий флаг из БД (не из кэшированного объекта)
+        # fresh flag from the DB (not from the cached object)
         from ...models import FineTuningJob
         if FineTuningJob.objects.filter(
             pk=self.job.pk, pause_requested=True
