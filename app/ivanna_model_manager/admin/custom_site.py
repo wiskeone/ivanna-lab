@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.db.models import Count, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
-from .models import ModelCheckpoint, ModelMergeJob, InferenceSession
+from ..models import ModelCheckpoint, ModelMergeJob, InferenceSession
 
 
 @staff_member_required
