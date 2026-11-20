@@ -21,7 +21,7 @@ from .moe import MoEExpertJobAdmin, MoEThemeAdmin
 from .benchmarks import BenchmarkAdmin, BenchmarkRunAdmin
 
 
-# Регистрируем все модели через admin.site.register()
+# Register all models via admin.site.register()
 admin.site.register(Experiment, ExperimentAdmin)
 
 admin.site.register(ModelCheckpoint, ModelCheckpointAdmin)

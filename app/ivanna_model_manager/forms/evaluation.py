@@ -60,7 +60,7 @@ class EvaluationForm(forms.ModelForm):
 
 
 class EvaluationDatasetForm(forms.ModelForm):
-    """Форма для создания/редактирования датасета"""
+    """Form for creating/editing a dataset."""
     class Meta:
         model = EvaluationDataset
         fields = ['name', 'description', 'tags', 'source_type']
@@ -71,31 +71,31 @@ class EvaluationDatasetForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'russian, general, code, science'
             }),
-            'source_type': forms.HiddenInput(),  # Скрываем поле
+            'source_type': forms.HiddenInput(),  # Hide the field
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['tags'].required = False
         self.fields['description'].required = False
-        # Устанавливаем значение по умолчанию для source_type
+        # Set the default value for source_type
         self.fields['source_type'].initial = 'MANUAL'
     
     def clean_tags(self):
-        """Преобразуем строку тегов в JSON массив"""
+        """Convert the tags string into a JSON array."""
         tags = self.cleaned_data.get('tags', '')
         if isinstance(tags, str):
-            # Если это строка, преобразуем в список
+            # If it is a string, convert to a list
             tag_list = [tag.strip() for tag in tags.split(',') if tag.strip()]
             return tag_list
         elif isinstance(tags, list):
-            # Если уже список, возвращаем как есть
+            # If already a list, return as is
             return tags
         return []
 
 
 class QuestionUploadForm(forms.Form):
-    """Форма для загрузки вопросов из файла"""
+    """Form for uploading questions from a file."""
     name = forms.CharField(
         max_length=255,
         widget=forms.TextInput(attrs={'class': 'form-control'}),
@@ -145,11 +145,11 @@ class QuestionUploadForm(forms.Form):
     def clean_file(self):
         file = self.cleaned_data.get('file')
         if file:
-            # Проверяем размер файла (макс 10MB)
+            # Check file size (max 10MB)
             if file.size > 10 * 1024 * 1024:
                 raise ValidationError(_('Размер файла не должен превышать 10MB'))
             
-            # Проверяем расширение
+            # Check file extension
             valid_extensions = ['.txt', '.csv', '.json']
             if not any(file.name.lower().endswith(ext) for ext in valid_extensions):
                 raise ValidationError(_('Поддерживаются только файлы .txt, .csv, .json'))
@@ -158,7 +158,7 @@ class QuestionUploadForm(forms.Form):
 
 
 class CreateEvaluationTaskForm(forms.Form):
-    """Форма для создания задачи оценки"""
+    """Form for creating an evaluation task."""
     name = forms.CharField(
         max_length=255,
         widget=forms.TextInput(attrs={'class': 'form-control'}),
@@ -184,7 +184,7 @@ class CreateEvaluationTaskForm(forms.Form):
         label=_('Датасет для оценки')
     )
     
-    # Поле выбора квантизации
+    # Quantization selection field
     QUANTIZATION_CHOICES = [
         ('', '--- Без квантизации (использовать настройки модели) ---'),
         ('float16', 'FP16 (половинная точность)'),
@@ -200,7 +200,7 @@ class CreateEvaluationTaskForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
-    # Параметры генерации
+    # Generation parameters
     max_tokens = forms.IntegerField(
         initial=512,
         min_value=1,
@@ -245,7 +245,7 @@ class CreateEvaluationTaskForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['models'].queryset = ModelCheckpoint.objects.filter(
             is_active=True,
-            status='LOADED'  # только загруженные, чтобы не пришлось качать
+            status='LOADED'  # only loaded models to avoid extra downloads
         )
     
     def clean(self):
@@ -260,7 +260,7 @@ class CreateEvaluationTaskForm(forms.Form):
 
 
 class RatingForm(forms.Form):
-    """Форма для оценки ответа"""
+    """Form for rating a response."""
     rating = forms.ChoiceField(
         choices=[(i, str(i)) for i in range(1, 6)],
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),

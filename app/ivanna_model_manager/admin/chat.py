@@ -29,7 +29,7 @@ from ..models import (
 
 
 class ChatSessionStatusFilter(admin.SimpleListFilter):
-    """Фильтр по статусу чат-сессий"""
+    """Filter by chat session status."""
     title = 'Статус чата'
     parameter_name = 'chat_status'
     
@@ -53,7 +53,7 @@ class ChatSessionStatusFilter(admin.SimpleListFilter):
 
 
 class ChatMessageInline(admin.TabularInline):
-    """Inline для сообщений чата"""
+    """Inline for chat messages."""
     model = ChatMessage
     extra = 0
     readonly_fields = ('created_at', 'message_preview')
@@ -62,7 +62,7 @@ class ChatMessageInline(admin.TabularInline):
     show_change_link = True
     
     def message_preview(self, obj):
-        """Предпросмотр сообщения"""
+        """Message preview."""
         preview = obj.content[:100] + "..." if len(obj.content) > 100 else obj.content
         return format_html(
             '<span title="{}" style="cursor: help;">{}</span>',
@@ -76,7 +76,7 @@ class ChatMessageInline(admin.TabularInline):
 
 
 class ChatSessionAdminForm(forms.ModelForm):
-    """Кастомная форма для чат-сессий"""
+    """Custom form for chat sessions."""
     class Meta:
         model = ChatSession
         fields = '__all__'
@@ -173,12 +173,12 @@ class ChatSessionAdmin(admin.ModelAdmin):
     is_active_badge.short_description = 'Статус'
     
     def conversation_preview(self, obj):
-        """Предпросмотр истории диалога"""
+        """Conversation history preview."""
         if not obj.conversation_history:
             return "История диалога пуста"
         
         preview = []
-        for i, msg in enumerate(obj.conversation_history[-5:], 1):  # последние 5 сообщений
+        for i, msg in enumerate(obj.conversation_history[-5:], 1):  # last 5 messages
             role_icons = {
                 'system': '⚙️',
                 'user': '👤',
@@ -197,7 +197,7 @@ class ChatSessionAdmin(admin.ModelAdmin):
     conversation_preview.short_description = 'Последние сообщения'
     
     def session_stats(self, obj):
-        """Статистика сессии"""
+        """Session statistics."""
         stats = [
             f"<strong>Всего сообщений:</strong> {obj.total_messages}",
             f"<strong>Входные токены:</strong> {obj.total_input_tokens}",
@@ -208,7 +208,7 @@ class ChatSessionAdmin(admin.ModelAdmin):
     session_stats.short_description = 'Статистика'
     
     def model_info(self, obj):
-        """Информация о модели"""
+        """Model info."""
         if not obj.checkpoint:
             return "Модель не указана"
         
@@ -229,7 +229,7 @@ class ChatSessionAdmin(admin.ModelAdmin):
     model_info.short_description = 'Информация о модели'
     
     def generation_info(self, obj):
-        """Информация о конфигурации генерации"""
+        """Generation config info."""
         if not obj.generation_config:
             return "Конфигурация по умолчанию"
         
@@ -257,7 +257,7 @@ class ChatSessionAdmin(admin.ModelAdmin):
     
     @admin.action(description='Экспортировать диалоги')
     def export_conversations(self, request, queryset):
-        # Заглушка для экспорта
+        # Placeholder for export
         self.message_user(
             request, 
             f'Экспорт {queryset.count()} диалогов в фоновом режиме',
@@ -308,7 +308,7 @@ class ChatMessageAdmin(admin.ModelAdmin):
     session_link.short_description = 'Сессия'
     
     def role_badge(self, obj):
-        """Бейдж для роли"""
+        """Role badge."""
         colors = {
             'system': 'gray',
             'user': 'blue',
@@ -325,7 +325,7 @@ class ChatMessageAdmin(admin.ModelAdmin):
     role_badge.short_description = 'Роль'
     
     def content_preview(self, obj):
-        """Предпросмотр содержимого"""
+        """Content preview."""
         preview = obj.content[:150] + "..." if len(obj.content) > 150 else obj.content
         return format_html(
             '<span title="{}" style="cursor: help;">{}</span>',
@@ -335,7 +335,7 @@ class ChatMessageAdmin(admin.ModelAdmin):
     content_preview.short_description = 'Содержимое'
     
     def generation_info_badge(self, obj):
-        """Бейдж с информацией о генерации"""
+        """Generation info badge."""
         if not obj.generation_metadata:
             return format_html('<span style="color: gray;">—</span>')
         
@@ -354,7 +354,7 @@ class ChatMessageAdmin(admin.ModelAdmin):
     generation_info_badge.short_description = 'Генерация'
     
     def generation_metadata_display(self, obj):
-        """Красивое отображение метаданных"""
+        """Pretty-printed metadata."""
         if not obj.generation_metadata:
             return "Нет метаданных"
         
@@ -367,7 +367,7 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
 
 class ModelComparisonAdminForm(forms.ModelForm):
-    """Кастомная форма для сравнений"""
+    """Custom form for comparisons."""
     class Meta:
         model = ModelComparison
         fields = '__all__'
@@ -446,12 +446,12 @@ class ModelComparisonAdmin(admin.ModelAdmin):
     is_complete_badge.short_description = 'Статус'
     
     def results_preview(self, obj):
-        """Предпросмотр результатов"""
+        """Results preview."""
         if not obj.results:
             return "Нет результатов"
         
         preview = []
-        for model_id, model_data in list(obj.results.items())[:3]:  # первые 3 модели
+        for model_id, model_data in list(obj.results.items())[:3]:  # first 3 models
             model_name = next(iter(model_data.values())).get('model_name', 'Unknown') if model_data else 'Unknown'
             responses_count = len(model_data)
             preview.append(f"<strong>{model_name}:</strong> {responses_count} ответов")
@@ -460,7 +460,7 @@ class ModelComparisonAdmin(admin.ModelAdmin):
     results_preview.short_description = 'Предпросмотр результатов'
     
     def metrics_display(self, obj):
-        """Отображение метрик"""
+        """Metrics display."""
         if not obj.metrics:
             return "Метрики не вычислены"
         
@@ -481,7 +481,7 @@ class ModelComparisonAdmin(admin.ModelAdmin):
     metrics_display.short_description = 'Метрики сравнения'
     
     def comparison_stats(self, obj):
-        """Статистика сравнения"""
+        """Comparison statistics."""
         stats = [
             f"<strong>Промптов:</strong> {len(obj.prompts) if obj.prompts else 0}",
             f"<strong>Моделей:</strong> {len(obj.results) if obj.results else 0}",

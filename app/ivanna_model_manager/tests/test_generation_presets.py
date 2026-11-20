@@ -1,4 +1,4 @@
-"""v5.0: тесты валидатора/нормализатора пресетов генерации (чистая логика).
+"""v5.0: generation preset validator/normalizer tests (pure logic).
 
 Запускаются локально со стабами тяжёлых модулей и в CI внутри CPU-образа.
 """
@@ -33,7 +33,7 @@ class NormalizeConfigTests(SimpleTestCase):
 
     def test_non_numeric_dropped(self):
         cfg, errors = normalize_preset_config({'temperature': 'hot'})
-        # нечисловое отброшено → подставлен дефолт
+        # non-numeric value dropped -> default substituted
         self.assertEqual(cfg['temperature'], 0.7)
         self.assertTrue(any('not a number' in e for e in errors))
 
@@ -58,7 +58,7 @@ class ApplyPresetTests(SimpleTestCase):
         self.assertEqual(gen['temperature'], 0.2)   # пресет приоритетен
         self.assertEqual(gen['top_p'], 0.6)
         self.assertEqual(gen['top_k'], 40)          # не упомянут в пресете — сохранён
-        # исходная сессия не мутирует
+        # the original session is not mutated
         self.assertEqual(session['generation_config']['temperature'], 0.9)
 
     def test_apply_to_empty_session(self):

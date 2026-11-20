@@ -8,7 +8,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # -------------------------------------------------------------------------
-# Безопасность
+# Security
 # -------------------------------------------------------------------------
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-change-in-production')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
@@ -20,14 +20,14 @@ ALLOWED_HOSTS = [
     'web',
     'web:8000',
 ]
-# v61.5: i18n — русский исходник интерфейса, английский каркас (locale/)
+# v61.5: i18n — Russian UI source, English scaffold (locale/)
 from django.utils.translation import gettext_lazy as _
 LANGUAGE_CODE = 'ru'
 USE_I18N = True
 LANGUAGES = [('ru', _('Русский')), ('en', _('English'))]
 LOCALE_PATHS = [BASE_DIR / 'locale']
 
-# v5.0: vLLM — внешний OpenAI-совместимый инференс-бэкенд
+# v5.0: vLLM — external OpenAI-compatible inference backend
 VLLM_BASE_URL = os.getenv('VLLM_BASE_URL', 'http://vllm:8001/v1')
 VLLM_API_KEY = os.getenv('VLLM_API_KEY', '')
 VLLM_TIMEOUT = int(os.getenv('VLLM_TIMEOUT', '300'))
@@ -38,7 +38,7 @@ if env_hosts:
     ALLOWED_HOSTS.extend([host.strip() for host in env_hosts.split(',') if host.strip()])
 
 # -------------------------------------------------------------------------
-# Приложения и middleware
+# Apps and middleware
 # -------------------------------------------------------------------------
 INSTALLED_APPS = [
     'django_prometheus',
@@ -75,10 +75,10 @@ MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
-# Добавляем debug_toolbar middleware только если DEBUG=True
+# Add debug_toolbar middleware only when DEBUG=True
 if DEBUG:
     MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
-    # Для корректной работы debug_toolbar необходимо указать INTERNAL_IPS
+    # INTERNAL_IPS is required for debug_toolbar to work correctly
     INTERNAL_IPS = [
         '127.0.0.1',
         'localhost',
@@ -110,7 +110,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # -------------------------------------------------------------------------
-# База данных
+# Database
 # -------------------------------------------------------------------------
 DATABASES = {
     'default': {
@@ -124,7 +124,7 @@ DATABASES = {
 }
 
 # -------------------------------------------------------------------------
-# Кэш (Redis)
+# Cache (Redis)
 # -------------------------------------------------------------------------
 CACHES = {
     'default': {
@@ -147,9 +147,9 @@ CELERY_RESULT_SERIALIZER = 'pathaware_json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
-# Маршрутизация задач по очередям
+# Task routing by queues
 CELERY_TASK_ROUTES = {
-    # GPU задачи
+    # GPU tasks
     'ivanna_model_manager.tasks.load_model_to_memory_task': {'queue': 'gpu_tasks'},
     'ivanna_model_manager.tasks.unload_model_from_memory_task': {'queue': 'gpu_tasks'},
     'ivanna_model_manager.tasks.generate_text_task': {'queue': 'gpu_tasks'},
@@ -159,7 +159,7 @@ CELERY_TASK_ROUTES = {
     'ivanna_model_manager.tasks.create_embeddings_for_collection_task': {'queue': 'gpu_tasks'},
     'ivanna_model_manager.tasks.run_fine_tuning_task': {'queue': 'gpu_tasks'},
 
-    # CPU задачи
+    # CPU tasks
     'ivanna_model_manager.tasks.download_model_task': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks.cleanup_download_jobs': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks.sync_model_statuses_task': {'queue': 'cpu_tasks'},
@@ -180,7 +180,7 @@ CELERY_TASK_ROUTES = {
 CELERY_TASK_DEFAULT_RETRY_DELAY = 30
 CELERY_TASK_MAX_RETRIES = 3
 
-# Периодические задачи (Celery Beat)
+# Periodic tasks (Celery Beat)
 CELERY_BEAT_SCHEDULE = {
     'sync-model-statuses-every-5-minutes': {
         'task': 'ivanna_model_manager.tasks.sync_model_statuses_task',
@@ -230,7 +230,7 @@ REST_FRAMEWORK = {
 }
 
 # -------------------------------------------------------------------------
-# Пути для моделей и кэша
+# Model and cache paths
 # -------------------------------------------------------------------------
 MODEL_CACHE_DIR = BASE_DIR / 'media' / 'model_cache'
 MODEL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -268,13 +268,13 @@ VECTOR_STORE_CONFIG = {
 }
 
 # -------------------------------------------------------------------------
-# RAG / ПОИСК
+# RAG / SEARCH
 # -------------------------------------------------------------------------
-KEYWORD_SEARCH_ENGINE = os.getenv('KEYWORD_SEARCH_ENGINE', 'bm25')  # 'bm25' или 'elasticsearch'
-BM25_CACHE_SIZE = int(os.getenv('BM25_CACHE_SIZE', '10'))  # максимальное количество коллекций в кэше BM25
+KEYWORD_SEARCH_ENGINE = os.getenv('KEYWORD_SEARCH_ENGINE', 'bm25')  # 'bm25' or 'elasticsearch'
+BM25_CACHE_SIZE = int(os.getenv('BM25_CACHE_SIZE', '10'))  # max number of collections kept in the BM25 cache
 
 # -------------------------------------------------------------------------
-# Статические и медиа файлы
+# Static and media files
 # -------------------------------------------------------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'static'
@@ -305,19 +305,19 @@ ALLOWED_DOCUMENT_EXTENSIONS = {
 }
 
 # -------------------------------------------------------------------------
-# Ограничения загрузки (Django)
+# Upload limits (Django)
 # -------------------------------------------------------------------------
 DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE
 
 # -------------------------------------------------------------------------
-# Админка
+# Admin
 # -------------------------------------------------------------------------
 ADMIN_SITE_HEADER = "IvAna Lab - Управление LLM моделями"
 ADMIN_SITE_TITLE = "IvAna Lab Admin"
 ADMIN_INDEX_TITLE = "Панель управления моделями"
 
 # -------------------------------------------------------------------------
-# CORS и аутентификация
+# CORS and authentication
 # -------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
 CORS_ALLOW_CREDENTIALS = True
@@ -330,14 +330,14 @@ SESSION_COOKIE_AGE = 86400
 SESSION_SAVE_EVERY_REQUEST = True
 
 # -------------------------------------------------------------------------
-# Логирование
+# Logging
 # -------------------------------------------------------------------------
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        # v5.1: request/task id в каждом сообщении — сопоставление логов
-        # веб-запросов и Celery-задач через корреляционный ID
+        # v5.1: request/task id in every message — correlate web request
+        # and Celery task logs via a correlation ID
         'verbose': {
             'format': '{levelname} {asctime} [{name}] {module} {process:d} {task_id} {message}',
             'style': '{',

@@ -6,7 +6,7 @@ class IvannaModelManagerConfig(AppConfig):
     verbose_name = 'Ivanna Model Manager'
     
     def ready(self):
-        # Импортируем сигналы, если они есть
+        # Import signals if present
         try:
             import ivanna_model_manager.signals
         except ImportError:

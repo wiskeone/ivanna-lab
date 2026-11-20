@@ -1,4 +1,4 @@
-"""v5.1: тесты чистой логики трейнеров (RAFT/инструкции).
+"""v5.1: pure trainer logic tests (RAFT/instruction).
 
 prepare_raft_dataset требует модель и БД — здесь покрываются чистые
 функции: обрезка контекста, балансировка долей примеров, формат промпта.
@@ -12,7 +12,7 @@ from ivanna_model_manager.services.fine_tuning.raft_trainer import RAFTTrainer
 
 
 class FakeTokenizer:
-    """Детерминированный токенизатор: 1 слово = 1 токен."""
+    """Deterministic tokenizer: one word = one token."""
 
     pad_token = None
     eos_token = "</s>"
@@ -22,7 +22,7 @@ class FakeTokenizer:
 
 
 def make_trainer(ratios):
-    """RAFTTrainer без __init__ (torch-устройство не нужно)."""
+    """RAFTTrainer without __init__ (no torch device needed)."""
     t = RAFTTrainer.__new__(RAFTTrainer)
     t.job = MagicMock()
     t.job.oracle_ratio = ratios.get('oracle', 1.0)
@@ -43,7 +43,7 @@ class TruncateContextTests(SimpleTestCase):
         self.assertEqual(out, parts)
 
     def test_stops_at_budget(self):
-        # семантика: жадное заполнение, обрыв на ПЕРВОМ переполнении
+        # semantics: greedy packing, cut at the FIRST overflow
         parts = ["a b c", "d e f", "g h i"]   # по 3 токена
         out = self.t._truncate_context(parts, FakeTokenizer(), max_tokens=5)
         self.assertEqual(out, ["a b c"])      # 3 ≤ 5 ✓; 3+3=6 > 5 → break

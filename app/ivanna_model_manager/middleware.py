@@ -1,6 +1,6 @@
-"""v5.1: middleware для корреляционного ID — каждый HTTP-запрос получает
-UUID, который проходит через все логи (веб + Celery через брокер).
-v5.2: дефолт языка интерфейса — русский, независимо от Accept-Language браузера.
+"""v5.1: middleware for correlation ID — every HTTP request gets a UUID
+that flows through all logs (web + Celery via broker).
+v5.2: default interface language is Russian, regardless of browser Accept-Language.
 """
 import uuid
 
@@ -23,12 +23,12 @@ class RequestIdMiddleware:
 
 
 class DefaultLanguageMiddleware:
-    """Язык по умолчанию = settings.LANGUAGE_CODE (ru), если пользователь не
-    выбрал язык явно (cookie django_language от переключателя 🌐).
+    """Default language = settings.LANGUAGE_CODE (ru) unless the user has
+    explicitly chosen a language (django_language cookie from the 🌐 switch).
 
-    LocaleMiddleware подхватывает Accept-Language браузера, из-за чего у
-    англоязычных браузеров интерфейс по умолчанию был английским.
-    Должен стоять ПОСЛЕ LocaleMiddleware.
+    LocaleMiddleware picks up browser Accept-Language, which made the
+    interface default to English for English-language browsers.
+    Must be placed AFTER LocaleMiddleware.
     """
 
     def __init__(self, get_response):

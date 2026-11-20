@@ -10,7 +10,7 @@ from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown, task_postrun
 from kombu.serialization import register
 
-# Устанавливаем метод запуска процессов для избежания проблем с fork
+# Set process start method to avoid fork issues
 try:
     multiprocessing.set_start_method('spawn', force=True)
 except RuntimeError:
@@ -18,7 +18,7 @@ except RuntimeError:
 
 import torch
 
-# Кастомный JSON encoder для Path объектов
+# Custom JSON encoder for Path objects
 class PathAwareJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Path):
@@ -47,31 +47,31 @@ register(
     content_encoding='utf-8'
 )
 
-# Устанавливаем переменную окружения Django
+# Set Django settings module env var
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
-# Инициализация Django
+# Initialize Django
 import django
 django.setup()
 
-# Создаём экземпляр Celery
+# Create Celery app instance
 app = Celery('config')
 
-# Загружаем конфигурацию из Django settings (namespace CELERY)
+# Load config from Django settings (CELERY namespace)
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# Автоматически находим задачи в установленных приложениях
+# Autodiscover tasks in installed apps
 app.autodiscover_tasks()
-# v5.2: задачи мягкого MoE живут в отдельном модуле — autodiscover грузит
-# только <app>.tasks
+# v5.2: soft MoE tasks live in a separate module — autodiscover loads
+# only <app>.tasks
 app.conf.imports = ('ivanna_model_manager.tasks_moe',
                        'ivanna_model_manager.tasks_benchmarks',)
 
-# v5.1: корреляция логов веб↔Celery
+# v5.1: web<->Celery log correlation
 from ivanna_model_manager.log_context import setup_celery_log_signals
 setup_celery_log_signals(app)
 
-# Конфигурация очередей
+# Queue configuration
 app.conf.task_queues = {
     'gpu_tasks': {
         'exchange': 'gpu_tasks',
@@ -83,9 +83,9 @@ app.conf.task_queues = {
     },
 }
 
-# Маршрутизация задач
+# Task routing
 app.conf.task_routes = {
-    # GPU задачи (требуют CUDA)
+    # GPU tasks (require CUDA)
     'ivanna_model_manager.tasks.load_model_to_memory_task': {'queue': 'gpu_tasks'},
     'ivanna_model_manager.tasks.unload_model_from_memory_task': {'queue': 'gpu_tasks'},
     'ivanna_model_manager.tasks.generate_text_task': {'queue': 'gpu_tasks'},
@@ -94,17 +94,17 @@ app.conf.task_routes = {
     'ivanna_model_manager.tasks.run_fine_tuning_task': {'queue': 'gpu_tasks'},
     'ivanna_model_manager.tasks.process_document_task': {'queue': 'gpu_tasks'},
     'ivanna_model_manager.tasks.create_embeddings_for_collection_task': {'queue': 'gpu_tasks'},
-    # v5.2: мягкий MoE — скан+патч на GPU, остальное на CPU
+    # v5.2: soft MoE — scan+patch on GPU, rest on CPU
     'ivanna_model_manager.tasks_moe.moe_build_expert_task': {'queue': 'gpu_tasks'},
-    # v5.2: llama.cpp-конвертация — CPU-bound, никогда не роутилась и висла
-    # в дефолтной очереди 'celery', которую воркеры не слушают
+    # v5.2: llama.cpp conversion is CPU-bound, was never routed and stalled
+    # in the default 'celery' queue that no worker listens to
     'ivanna_model_manager.tasks.convert_model_to_gguf_task': {'queue': 'cpu_tasks'},
     # v5.3: benchmarks — catalog/install on CPU, generation runs on GPU
     'ivanna_model_manager.tasks_benchmarks.refresh_benchmark_catalog_task': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks_benchmarks.install_benchmark_task': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks_benchmarks.run_benchmark_task': {'queue': 'gpu_tasks'},
     
-    # CPU задачи (могут выполняться на любом воркере)
+    # CPU tasks (can run on any worker)
     'ivanna_model_manager.tasks.download_model_task': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks.cleanup_download_jobs': {'queue': 'cpu_tasks'},
     'ivanna_model_manager.tasks.sync_model_statuses_task': {'queue': 'cpu_tasks'},
@@ -138,7 +138,7 @@ def release_gpu_after_task(**kwargs):
 
 
 # --------------------------------------------------------------------------
-# Сигналы для инициализации/очистки GPU
+# GPU init/cleanup signals
 # --------------------------------------------------------------------------
 @worker_process_init.connect
 def init_worker(**kwargs):
@@ -147,7 +147,7 @@ def init_worker(**kwargs):
     logger.info("=" * 50)
     logger.info("Initializing Celery worker")
     
-    # Очищаем кэш моделей при старте воркера
+    # Clean model cache on worker start
     try:
         from ivanna_model_manager.services.redis_model_service import redis_model_manager
         redis_model_manager.clean_stale_locks()
@@ -160,12 +160,12 @@ def init_worker(**kwargs):
 
 @worker_process_shutdown.connect
 def shutdown_worker(**kwargs):
-    """Очистка при завершении воркера"""
+    """Cleanup on worker shutdown."""
     import logging
     logger = logging.getLogger(__name__)
     
     try:
-        # Выгружаем все модели, загруженные этим воркером
+        # Unload all models loaded by this worker
         from ivanna_model_manager.services.redis_model_service import redis_model_manager
         
         for model_id in list(redis_model_manager.local_models.keys()):
@@ -182,78 +182,78 @@ def shutdown_worker(**kwargs):
 
 
 # --------------------------------------------------------------------------
-# Периодические задачи (Celery Beat)
+# Periodic tasks (Celery Beat)
 # --------------------------------------------------------------------------
 from celery.schedules import crontab
 
 app.conf.beat_schedule = {
-    # Синхронизация статусов моделей каждые 5 минут
+    # Sync model statuses every 5 minutes
     'sync-model-statuses-every-5-minutes': {
         'task': 'ivanna_model_manager.tasks.sync_model_statuses_task',
         'schedule': crontab(minute='*/5'),
     },
     
-    # Обновление TTL моделей в Redis каждые 5 минут
+    # Refresh model TTL in Redis every 5 minutes
     'refresh-model-ttl-every-5-minutes': {
         'task': 'ivanna_model_manager.tasks.refresh_model_ttl',
         'schedule': 300.0,
     },
     
-    # Проверка здоровья каждые 15 минут
+    # Health check every 15 minutes
     'health-check-every-15-minutes': {
         'task': 'ivanna_model_manager.tasks.health_check_task',
         'schedule': 900.0,
     },
     
-    # Очистка завершённых задач загрузки ежедневно в 3:00
+    # Cleanup finished download jobs daily at 3:00
     'cleanup-download-jobs-daily': {
         'task': 'ivanna_model_manager.tasks.cleanup_download_jobs',
         'schedule': crontab(minute=0, hour=3),
     },
     
-    # Обновление статистики коллекций ежечасно
+    # Update collection statistics hourly
     'update-collection-statistics-hourly': {
         'task': 'ivanna_model_manager.tasks.update_collection_statistics_task',
         'schedule': crontab(minute=0),
     },
     
-    # Валидация документов ежедневно в 2:00
+    # Validate documents daily at 2:00
     'validate-documents-daily': {
         'task': 'ivanna_model_manager.tasks.validate_documents_task',
         'schedule': crontab(minute=0, hour=2),
     },
     
-    # Очистка векторных индексов ежедневно в 2:00
+    # Cleanup vector indexes daily at 2:00
     'cleanup-vector-index-daily': {
         'task': 'ivanna_model_manager.tasks.cleanup_vector_index_task',
         'schedule': crontab(minute=0, hour=2),
     },
     
-    # Проверка здоровья системы ежечасно
+    # System health check hourly
     'check-system-health-hourly': {
         'task': 'ivanna_model_manager.tasks.check_system_health_task',
         'schedule': crontab(minute=30, hour='*/1'),
     },
     
-    # Генерация еженедельного отчёта в понедельник в 9:00
+    # Weekly report generation Monday at 9:00
     'generate-system-report-weekly': {
         'task': 'ivanna_model_manager.tasks.generate_system_report_task',
         'schedule': crontab(minute=0, hour=9, day_of_week=0),
     },
     
-    # Очистка зависших блокировок моделей каждые 5 минут
+    # Cleanup stale model locks every 5 minutes
     'cleanup-stale-model-locks': {
         'task': 'ivanna_model_manager.tasks.cleanup_stale_model_locks',
         'schedule': crontab(minute='*/5'),
     },
     
-    # Очистка зависших моделей каждые 30 минут
+    # Cleanup stale models every 30 minutes
     'cleanup-stale-models-hourly': {
         'task': 'ivanna_model_manager.tasks.cleanup_stale_models',
         'schedule': crontab(minute='*/30'),
     },
     
-    # Автоматическая очистка памяти каждые 30 минут
+    # Automatic memory cleanup every 30 minutes
     'auto-clean-memory-hourly': {
         'task': 'ivanna_model_manager.tasks.auto_clean_memory',
         'schedule': crontab(minute='*/30'),
@@ -261,20 +261,20 @@ app.conf.beat_schedule = {
 }
 
 # --------------------------------------------------------------------------
-# Дополнительные настройки Celery
+# Additional Celery settings
 # --------------------------------------------------------------------------
 app.conf.task_acks_late = True
 app.conf.task_reject_on_worker_lost = True
 app.conf.task_track_started = True
-app.conf.task_time_limit = None  # Снимаем ограничение времени
-app.conf.task_soft_time_limit = None  # Снимаем ограничение времени
+app.conf.task_time_limit = None  # Remove time limit
+app.conf.task_soft_time_limit = None  # Remove soft time limit
 
-# Настройки для отслеживания прогресса
-app.conf.result_expires = 3600  # результаты хранятся 1 час
+# Progress tracking settings
+app.conf.result_expires = 3600  # results stored for 1 hour
 app.conf.result_backend = f"redis://{os.getenv('REDIS_HOST', 'redis')}:6379/0"
 
 # --------------------------------------------------------------------------
-# Тестовая задача
+# Test task
 # --------------------------------------------------------------------------
 @app.task(bind=True)
 def debug_task(self):
@@ -288,11 +288,11 @@ def debug_task(self):
 
 
 # --------------------------------------------------------------------------
-# Инициализация при запуске beat
+# Initialization on beat startup
 # --------------------------------------------------------------------------
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    """Дополнительная настройка периодических задач при запуске."""
+    """Additional periodic task setup at startup."""
     import logging
     logger = logging.getLogger(__name__)
     logger.info("Celery beat scheduler configured with periodic tasks")

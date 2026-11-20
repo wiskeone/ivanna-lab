@@ -37,7 +37,7 @@ class ExperimentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Bootstrap-классы (как в MoE-формах)
+        # Bootstrap classes (same as in MoE forms)
         for name, field in self.fields.items():
             w = field.widget
             css = ('form-check-input' if isinstance(w, forms.CheckboxInput)
@@ -48,6 +48,6 @@ class ExperimentForm(forms.ModelForm):
     def clean_tags(self):
         tags = self.cleaned_data.get('tags', [])
         if isinstance(tags, str):
-            # Преобразуем строку в список
+            # Convert string to a list
             tags = [tag.strip() for tag in tags.split(',') if tag.strip()]
         return tags

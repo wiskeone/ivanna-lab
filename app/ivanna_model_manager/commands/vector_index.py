@@ -54,7 +54,7 @@ class Command(BaseCommand):
             self.stdout.write("Please specify --collection-id or --all")
     
     def handle_rebuild(self, vector_manager, collection_id, all_collections):
-        # Аналогично create, но с очисткой старого индекса
+        # Similar to create, but also clears the old index
         pass
     
     def handle_stats(self, vector_manager, collection_id, all_collections):

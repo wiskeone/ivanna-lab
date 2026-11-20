@@ -28,7 +28,7 @@ from ..models import (
 
 
 class RAGSessionAdmin(ModelAdmin):
-    """Админка для RAG сессий"""
+    """Admin for RAG sessions."""
     list_display = ('session_id', 'user_id', 'llm_model', 'status', 
                     'total_time_display', 'has_feedback', 'created_at')
     list_filter = ('status', 'has_feedback', 'embedding_model', 'llm_model', 
@@ -80,7 +80,7 @@ class RAGSessionAdmin(ModelAdmin):
 
 
 class SearchResultInline(admin.TabularInline):
-    """Инлайн-админка для результатов поиска"""
+    """Inline admin for search results."""
     model = SearchResult
     extra = 0
     fields = ('chunk', 'relevance_score', 'rank_position', 'scoring_method')
@@ -88,7 +88,7 @@ class SearchResultInline(admin.TabularInline):
 
 
 class SearchQueryAdmin(ModelAdmin):
-    """Админка для поисковых запросов"""
+    """Admin for search queries."""
     list_display = ('query_preview', 'search_type', 'user_id', 
                     'collection_filter', 'created_at')
     list_filter = ('search_type', 'created_at')
@@ -109,7 +109,7 @@ class SearchQueryAdmin(ModelAdmin):
 
 
 class SearchResultAdmin(ModelAdmin):
-    """Админка для результатов поиска"""
+    """Admin for search results."""
     list_display = ('query_preview', 'chunk_document', 'rank_position', 
                     'relevance_score', 'scoring_method')
     list_filter = ('scoring_method', 'query__search_type')
@@ -126,7 +126,7 @@ class SearchResultAdmin(ModelAdmin):
 
 
 class SearchQualityFeedbackAdmin(ModelAdmin):
-    """Админка для обратной связи по качеству поиска"""
+    """Admin for search quality feedback."""
     list_display = ('feedback_type', 'rating', 'user_id', 'is_resolved', 
                     'created_at')
     list_filter = ('feedback_type', 'rating', 'is_resolved', 'created_at')
@@ -135,14 +135,14 @@ class SearchQualityFeedbackAdmin(ModelAdmin):
     actions = ['mark_as_resolved']
     
     def mark_as_resolved(self, request, queryset):
-        """Пометить обратную связь как обработанную"""
+        """Mark feedback as resolved."""
         updated = queryset.update(is_resolved=True)
         self.message_user(request, f"{updated} отзывов помечены как обработанные.")
     mark_as_resolved.short_description = "Пометить как обработанные"
 
 
 class RAGEvaluationAdmin(ModelAdmin):
-    """Админка для оценки RAG системы"""
+    """Admin for RAG system evaluation."""
     list_display = ('name', 'evaluation_type', 'status', 'total_queries', 
                     'improvement_percentage', 'created_at')
     list_filter = ('evaluation_type', 'status', 'created_at')
@@ -150,12 +150,12 @@ class RAGEvaluationAdmin(ModelAdmin):
     readonly_fields = ('created_at', 'started_at', 'completed_at')
     
     def total_queries(self, obj):
-        """Отображение общего количества запросов"""
+        """Display total query count."""
         return obj.total_queries
     total_queries.short_description = 'Количество запросов'
     
     def improvement_percentage_display(self, obj):
-        """Отображение улучшения в процентах"""
+        """Display improvement percentage."""
         if obj.improvement_percentage:
             return f"{obj.improvement_percentage:.1f}%"
         return "—"

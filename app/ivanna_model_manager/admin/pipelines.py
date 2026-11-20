@@ -28,7 +28,7 @@ from ..models import (
 
 
 class ProcessingPipelineAdmin(ModelAdmin):
-    """Админка для пайплайнов обработки"""
+    """Admin for processing pipelines."""
     list_display = ('name', 'is_active', 'is_default', 'avg_processing_time_display', 
                     'success_rate_display', 'created_at')
     list_filter = ('is_active', 'is_default', 'created_at')
@@ -48,7 +48,7 @@ class ProcessingPipelineAdmin(ModelAdmin):
 
 
 class DocumentProcessorAdmin(ModelAdmin):
-    """Админка для логов обработки документов"""
+    """Admin for document processing logs."""
     list_display = ('document', 'status', 'progress_display', 
                     'processing_time_display', 'started_at')
     list_filter = ('status', 'pipeline', 'started_at')

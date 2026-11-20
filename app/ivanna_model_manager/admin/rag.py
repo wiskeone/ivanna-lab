@@ -28,14 +28,14 @@ from ..models import (
 
 
 class DocumentCollectionAdmin(ModelAdmin):
-    """Админка для коллекций документов"""
+    """Admin for document collections."""
     list_display = ('name', 'owner_id', 'is_public', 'is_active', 
                     'total_documents_display', 'total_size_display', 'created_at')
     list_filter = ('is_public', 'is_active', 'created_at', 'chunking_strategy')
     search_fields = ('name', 'description', 'owner_id')
     readonly_fields = ('created_at', 'updated_at', 'total_documents', 
                       'total_chunks', 'total_size_mb', 'total_documents_display',
-                      'total_chunks_display', 'total_size_display')  # Добавил методы в readonly_fields
+                      'total_chunks_display', 'total_size_display')  # display methods added to readonly_fields
     fieldsets = (
         (_('Основная информация'), {
             'fields': ('name', 'description', 'owner_id', 'is_public', 'is_active')
@@ -72,7 +72,7 @@ class DocumentCollectionAdmin(ModelAdmin):
 
 
 class DocumentChunkInline(admin.TabularInline):
-    """Инлайн-админка для чанков документа"""
+    """Inline admin for document chunks."""
     model = DocumentChunk
     extra = 0
     fields = ('chunk_index', 'content_preview', 'token_count', 
@@ -124,31 +124,31 @@ class DocumentAdmin(admin.ModelAdmin):
     )
     
     def title_display(self, obj):
-        """Отображение заголовка"""
+        """Display title."""
         return obj.title or obj.original_filename
     title_display.short_description = 'Название'
     
     def collection_display(self, obj):
-        """Отображение коллекции"""
+        """Display collection."""
         if obj.collection:
             return obj.collection.name
         return "Без коллекции"
     collection_display.short_description = 'Коллекция'
     
     def uploaded_at_short(self, obj):
-        """Короткий формат даты загрузки"""
+        """Short uploaded-at format."""
         return obj.uploaded_at.strftime('%d.%m.%Y %H:%M') if obj.uploaded_at else ''
     uploaded_at_short.short_description = 'Загружен'
     
     def file_size_display(self, obj):
-        """Отображение размера файла"""
+        """Display file size."""
         if obj.file_size_mb:
             return f"{obj.file_size_mb:.2f} MB"
         return "Неизвестно"
     file_size_display.short_description = 'Размер файла'
     
     def raw_content_preview(self, obj):
-        """Предпросмотр содержимого"""
+        """Content preview."""
         if obj.raw_content:
             content = obj.raw_content[:500]
             if len(obj.raw_content) > 500:
@@ -161,12 +161,12 @@ class DocumentAdmin(admin.ModelAdmin):
     raw_content_preview.short_description = 'Предпросмотр содержимого'
     
     def chunk_count_display(self, obj):
-        """Отображение количества чанков"""
+        """Display chunk count."""
         return obj.chunk_count
     chunk_count_display.short_description = 'Чанков'
     
     def extension_display(self, obj):
-        """Отображение расширения файла"""
+        """Display file extension."""
         try:
             return getattr(obj, 'extension', '')
         except:
@@ -174,18 +174,18 @@ class DocumentAdmin(admin.ModelAdmin):
     extension_display.short_description = 'Расширение'
     
     def get_queryset(self, request):
-        """Оптимизация запроса"""
+        """Queryset optimization."""
         return super().get_queryset(request).select_related('collection')
     
     def save_model(self, request, obj, form, change):
-        """Обработка сохранения модели в админке"""
+        """Handle model save in admin."""
         if not obj.title and obj.original_filename:
             obj.title = os.path.splitext(obj.original_filename)[0]
         super().save_model(request, obj, form, change)
 
 
 class DocumentChunkAdmin(ModelAdmin):
-    """Админка для чанков документов"""
+    """Admin for document chunks."""
     list_display = ('document_title', 'chunk_index', 'token_count', 
                     'has_embedding', 'relevance_score', 'usage_count')
     list_filter = ('has_embedding', 'chunk_strategy', 'is_active', 
@@ -232,7 +232,7 @@ class DocumentChunkAdmin(ModelAdmin):
 
 
 class EmbeddingModelAdmin(ModelAdmin):
-    """Админка для моделей эмбеддингов"""
+    """Admin for embedding models."""
     list_display = ('name', 'model_type', 'embedding_dim', 'is_default', 
                     'is_active', 'cost_per_1k_display')
     list_filter = ('model_type', 'is_active', 'is_default', 'is_multilingual')

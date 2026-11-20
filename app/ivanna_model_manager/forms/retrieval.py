@@ -25,7 +25,7 @@ from ..models import (
 
 
 # ----------------------------------------------------------------------
-# Загрузка эмбендингов
+# Embedding model upload
 # ----------------------------------------------------------------------
 class EmbeddingModelForm(forms.ModelForm):
     class Meta:
@@ -51,7 +51,7 @@ class EmbeddingModelForm(forms.ModelForm):
 
     def clean_name(self):
         name = self.cleaned_data['name']
-        # Если это редактирование (есть instance и pk), исключаем текущий объект
+        # On edit (instance with pk), exclude the current object
         if self.instance and self.instance.pk:
             if EmbeddingModel.objects.filter(name=name).exclude(pk=self.instance.pk).exists():
                 raise ValidationError(_('Модель с таким именем уже существует.'))

@@ -28,7 +28,7 @@ from ..models import (
 # Distillation
 #############################################################################
 class DistillationAnswerJobForm(forms.ModelForm):
-    # Поле для ручного ввода ID вопросов (в виде строки)
+    # Field for manual question ID entry (as a string)
     question_ids_str = forms.CharField(
         required=False,
         widget=forms.HiddenInput(),
@@ -43,7 +43,7 @@ class DistillationAnswerJobForm(forms.ModelForm):
         value = self.cleaned_data.get('question_set')
         if value == '' or value is None:
             return None
-        # Если пришло строковое представление ID, пытаемся получить объект
+        # If a string ID was passed, try to fetch the object
         if isinstance(value, str) and value.isdigit():
             return DistillationQuestionSet.objects.filter(id=int(value)).first()
         return value
@@ -52,13 +52,13 @@ class DistillationAnswerJobForm(forms.ModelForm):
         value = self.cleaned_data.get('question_ids_str', '')
         if not value:
             return []
-        # Разбираем строку вида "1,2,3"
+        # Parse a string like "1,2,3"
         ids = [int(id.strip()) for id in value.split(',') if id.strip().isdigit()]
         return ids
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # Сохраняем обработанные ID в поле модели
+        # Store the parsed IDs in the model field
         instance.question_ids = self.cleaned_data['question_ids_str']
         if commit:
             instance.save()

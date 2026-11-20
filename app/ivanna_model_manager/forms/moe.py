@@ -31,7 +31,7 @@ MOE_PROMPT_FIELD_HELP = _(
 
 
 class MoEThemeForm(forms.ModelForm):
-    """Тема мягкого MoE: домен + контраст (и опционально eval-наборы)."""
+    """Soft MoE theme: domain + contrast (and optional eval sets)."""
 
     domain_prompts_text = forms.CharField(
         label=_("Доменные промпты"), required=False,
@@ -98,7 +98,7 @@ class MoEThemeForm(forms.ModelForm):
 
 
 class MoEExpertJobForm(forms.ModelForm):
-    """Задача сборки мягкого MoE-эксперта из плотной модели."""
+    """Job to build a soft MoE expert from a dense model."""
 
     class Meta:
         model = MoEExpertJob
@@ -118,7 +118,7 @@ class MoEExpertJobForm(forms.ModelForm):
                    else 'form-select' if isinstance(w, (forms.Select, forms.SelectMultiple))
                    else 'form-control')
             w.attrs['class'] = (w.attrs.get('class', '') + ' ' + css).strip()
-        # Только плотные модели, выгруженные на диск
+        # Only dense models offloaded to disk
         self.fields['base_checkpoint'].queryset = ModelCheckpoint.objects.filter(
             is_active=True).exclude(local_path='').order_by('name')
         self.fields['theme'].queryset = MoETheme.objects.order_by('name')

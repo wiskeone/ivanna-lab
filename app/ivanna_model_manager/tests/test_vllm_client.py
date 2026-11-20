@@ -1,4 +1,4 @@
-"""v5.0: тесты VLLMClient — payload-конструкция и разбор ответов.
+"""v5.0: VLLMClient tests - payload construction and response parsing.
 
 Сервер не нужен: requests мокается, проверяется логика клиента.
 """
@@ -19,7 +19,7 @@ class BuildPayloadTests(SimpleTestCase):
         self.assertFalse(p['stream'])
 
     def test_unknown_kwargs_dropped(self):
-        # gen_config сессии может нести ключи, которых нет в OpenAI API
+        # session gen_config may carry keys absent from the OpenAI API
         p = VLLMClient.build_payload('m', 'x', max_tokens=10,
                                      quantization='int4', use_rag=True, rag_config={})
         self.assertNotIn('quantization', p)
@@ -56,7 +56,7 @@ class GenerateTests(SimpleTestCase):
         self.assertEqual(result['output_tokens'], 7)
         self.assertEqual(result['total_tokens'], 19)
         self.assertEqual(result['device'], 'vllm')
-        # payload ушёл на /v1/completions
+        # payload went to /v1/completions
         self.assertIn('/v1/completions', post.call_args[0][0])
         self.assertEqual(post.call_args[1]['json']['model'], 'mymodel')
 

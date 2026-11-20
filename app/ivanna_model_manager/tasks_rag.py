@@ -26,7 +26,7 @@ from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
-# Скачиваем необходимые данные nltk при импорте
+# Download the required nltk data at import time
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
@@ -34,10 +34,10 @@ except LookupError:
 
 
 # --------------------------------------------------------------------------
-# Вспомогательные функции для извлечения текста
+# Text extraction helpers
 # --------------------------------------------------------------------------
 def extract_text_from_pdf(file_path: str) -> str:
-    """Извлечение текста из PDF (pdfplumber + fallback PyMuPDF)."""
+    """Extract text from PDF (pdfplumber + PyMuPDF fallback)."""
     try:
         import pdfplumber
         with pdfplumber.open(file_path) as pdf:
@@ -59,7 +59,7 @@ def extract_text_from_pdf(file_path: str) -> str:
 
 
 def extract_text_from_docx(file_path: str) -> str:
-    """Извлечение текста из DOCX."""
+    """Extract text from DOCX."""
     try:
         from docx import Document as DocxDocument
         doc = DocxDocument(file_path)
@@ -70,7 +70,7 @@ def extract_text_from_docx(file_path: str) -> str:
 
 
 def extract_text_from_txt(file_path: str) -> str:
-    """Извлечение текста из TXT с автоопределением кодировки."""
+    """Extract text from TXT with encoding auto-detection."""
     import chardet
     try:
         with open(file_path, 'rb') as f:
@@ -84,7 +84,7 @@ def extract_text_from_txt(file_path: str) -> str:
 
 
 def extract_text_from_html(file_path: str) -> str:
-    """Извлечение текста из HTML."""
+    """Extract text from HTML."""
     try:
         from bs4 import BeautifulSoup
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -98,7 +98,7 @@ def extract_text_from_html(file_path: str) -> str:
 
 
 def extract_text_from_markdown(file_path: str) -> str:
-    """Извлечение текста из Markdown."""
+    """Extract text from Markdown."""
     try:
         import markdown
         from bs4 import BeautifulSoup
@@ -112,9 +112,9 @@ def extract_text_from_markdown(file_path: str) -> str:
 
 
 
-# v5.2: постраничное извлечение и расширенный чанкинг ------------------------
+# v5.2: page-by-page extraction and extended chunking ------------------------
 def extract_pdf_pages(file_path: str):
-    """Текст PDF постранично (pdfplumber → fallback PyMuPDF)."""
+    """PDF text page by page (pdfplumber → PyMuPDF fallback)."""
     try:
         import pdfplumber
         pages = []
@@ -175,12 +175,12 @@ def _mk_extra_chunks(document, extras, start_idx) -> list:
 def create_chunks_v2(document, content: str, chunk_size: int = 1000,
                      chunk_overlap: int = 200, strategy: str = 'semantic',
                      page_map=None, extra_chunks=None) -> list:
-    """v5.2: чанкинг с поддержкой абзацев, страниц и готовых чанков (таблицы/изображения).
+    """v5.2: chunking with paragraph, page and pre-made chunk support (tables/images).
 
-    strategy: 'paragraph' — блоки по пустым строкам, мелкие склеиваются до chunk_size;
-              'semantic'/'fixed'/'recursive' — по предложениям (старая логика create_chunks).
-    page_map: [(start_char, end_char, page_no)] — привязка чанков к страницам PDF.
-    extra_chunks: готовые чанки (таблицы/изображения) — сохраняются после основного текста.
+    strategy: 'paragraph' — blocks split on empty lines, small ones merged up to chunk_size;
+              'semantic'/'fixed'/'recursive' — by sentences (old create_chunks logic).
+    page_map: [(start_char, end_char, page_no)] — maps chunks to PDF pages.
+    extra_chunks: pre-made chunks (tables/images) — saved after the main text.
     """
     page_map = page_map or []
     if strategy == 'paragraph':
@@ -214,8 +214,9 @@ def create_chunks_v2(document, content: str, chunk_size: int = 1000,
                 start = pos
             pos = start + len(p)
 
-            # v5.2: «абзац» крупнее chunk_size (PDF-текст без пустых строк
-            # склеивает десятки страниц) — режем по предложениям на под-чанки
+            # v5.2: a "paragraph" larger than chunk_size (PDF text without
+            # empty lines glues dozens of pages together) — split into
+            # sub-chunks by sentences
             if len(p) > chunk_size:
                 _flush('\n\n'.join(buf), buf_start)
                 buf, buf_len, buf_start = [], 0, None
@@ -253,7 +254,7 @@ def create_chunks_v2(document, content: str, chunk_size: int = 1000,
         chunks.extend(_mk_extra_chunks(document, extra_chunks, idx))
         return chunks
 
-    # semantic/fixed/recursive — проверенная логика create_chunks + страницы
+    # semantic/fixed/recursive — proven create_chunks logic + pages
     chunks = create_chunks(document, content, chunk_size, chunk_overlap)
     if page_map:
         for c in chunks:
@@ -264,7 +265,7 @@ def create_chunks_v2(document, content: str, chunk_size: int = 1000,
 
 
 def _pdf_extra_chunks(file_path: str, document) -> list:
-    """Таблицы (pdfplumber) и изображения (PyMuPDF) PDF как отдельные чанки."""
+    """PDF tables (pdfplumber) and images (PyMuPDF) as separate chunks."""
     extra = []
     try:
         import pdfplumber
@@ -314,7 +315,7 @@ def _pdf_extra_chunks(file_path: str, document) -> list:
 
 
 def _tabular_chunks_csv(file_path: str) -> list:
-    """CSV → чанки-таблицы (шапка повторяется в каждом чанке)."""
+    """CSV → table chunks (header repeated in each chunk)."""
     import csv as _csv
     extra = []
     try:
@@ -336,7 +337,7 @@ def _tabular_chunks_csv(file_path: str) -> list:
 
 
 def _tabular_chunks_xlsx(file_path: str) -> list:
-    """XLSX → чанки-таблицы по листам."""
+    """XLSX → table chunks per sheet."""
     extra = []
     try:
         import openpyxl
@@ -361,11 +362,11 @@ def _tabular_chunks_xlsx(file_path: str) -> list:
 
 
 
-# v5.2: форматы DOCX(таблицы/картинки)/RTF/PPTX/EPUB -------------------------
+# v5.2: DOCX (tables/images)/RTF/PPTX/EPUB formats -------------------------
 def extract_text_from_rtf(file_path: str) -> str:
-    """RTF → текст (striprtf)."""
+    """RTF → text (striprtf)."""
     try:
-        try:  # striprtf 0.0.x — функция в striprtf.striprtf; старые сборки — striprtf.main
+        try:  # striprtf 0.0.x — function in striprtf.striprtf; older builds — striprtf.main
             from striprtf.striprtf import rtf_to_text
         except ImportError:
             from striprtf.main import rtf_to_text
@@ -377,7 +378,7 @@ def extract_text_from_rtf(file_path: str) -> str:
 
 
 def extract_text_from_doc_legacy(file_path: str) -> str:
-    """Бинарный .doc: античные конвертеры, если есть в системе."""
+    """Binary .doc: legacy converters, if present on the system."""
     import subprocess
     for cmd in (['antiword', file_path], ['catdoc', file_path]):
         try:
@@ -390,7 +391,7 @@ def extract_text_from_doc_legacy(file_path: str) -> str:
 
 
 def extract_pptx_pages(file_path: str):
-    """PPTX → список страниц (текст слайдов + заметки). Таблицы — отдельно."""
+    """PPTX → list of pages (slide text + notes). Tables — handled separately."""
     pages = []
     try:
         from pptx import Presentation
@@ -413,7 +414,7 @@ def extract_pptx_pages(file_path: str):
 
 
 def extract_epub_chapters(file_path: str):
-    """EPUB → главы как «страницы» (zipfile + BeautifulSoup, без внешних зависимостей)."""
+    """EPUB → chapters as "pages" (zipfile + BeautifulSoup, no external dependencies)."""
     pages = []
     try:
         import zipfile
@@ -434,7 +435,7 @@ def extract_epub_chapters(file_path: str):
 
 
 def _html_tables_chunks(file_path: str) -> list:
-    """HTML-таблицы как табличные чанки."""
+    """HTML tables as table chunks."""
     extra = []
     try:
         from bs4 import BeautifulSoup
@@ -455,7 +456,7 @@ def _html_tables_chunks(file_path: str) -> list:
 
 
 def _zip_media_chunks(file_path: str, document, media_dir_in_zip: str, kind: str) -> list:
-    """Картинки из офисных контейнеров (word/media, ppt/media) в media + чанк-заглушки."""
+    """Images from office containers (word/media, ppt/media) into media + placeholder chunks."""
     extra = []
     try:
         import zipfile
@@ -485,7 +486,7 @@ def _zip_media_chunks(file_path: str, document, media_dir_in_zip: str, kind: str
 
 
 def _docx_tables_chunks(file_path: str) -> list:
-    """Таблицы DOCX как табличные чанки."""
+    """DOCX tables as table chunks."""
     extra = []
     try:
         from docx import Document as DocxDocument
@@ -505,7 +506,7 @@ def _docx_tables_chunks(file_path: str) -> list:
 
 
 def _pptx_tables_chunks(file_path: str) -> list:
-    """Таблицы PPTX как табличные чанки (с номером слайда)."""
+    """PPTX tables as table chunks (with slide number)."""
     extra = []
     try:
         from pptx import Presentation
@@ -514,7 +515,7 @@ def _pptx_tables_chunks(file_path: str) -> list:
             for shape in slide.shapes:
                 if getattr(shape, 'has_table', False):
                     rows = []
-                    for tr in shape.table.rows:  # rows не поддерживает срезы
+                    for tr in shape.table.rows:  # rows does not support slicing
                         cells = [c.text.strip() for c in tr.cells]
                         if any(cells):
                             rows.append('\t'.join(cells))
@@ -530,7 +531,7 @@ def _pptx_tables_chunks(file_path: str) -> list:
 
 
 def get_file_hash(file_path: str) -> str:
-    """SHA256 хеш файла."""
+    """SHA256 hash of the file."""
     sha256 = hashlib.sha256()
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -539,7 +540,7 @@ def get_file_hash(file_path: str) -> str:
 
 
 # --------------------------------------------------------------------------
-# Создание чанков (улучшенное с учётом предложений)
+# Chunk creation (improved, sentence-aware)
 # --------------------------------------------------------------------------
 def create_chunks(
     document: Document,
@@ -548,7 +549,7 @@ def create_chunks(
     chunk_overlap: int = 200
 ) -> List[DocumentChunk]:
     """
-    Разделить текст на чанки с учётом границ предложений.
+    Split text into chunks respecting sentence boundaries.
     """
     sentences = sent_tokenize(content)
     chunks = []
@@ -584,7 +585,7 @@ def create_chunks(
                 )
                 chunks.append(chunk)
                 idx += 1
-                # Новый чанк начинаем с перекрытием (последние предложения)
+                # Start the new chunk with overlap (last sentences)
                 overlap_sentences = 0
                 overlap_len = 0
                 for s in reversed(current_chunk):
@@ -596,11 +597,11 @@ def create_chunks(
                 current_chunk = current_chunk[-overlap_sentences:] if overlap_sentences > 0 else []
                 current_len = sum(len(s) for s in current_chunk)
                 start_char = end_char - current_len
-                # Добавляем текущее предложение
+                # Append the current sentence
                 current_chunk.append(sent)
                 current_len += sent_len
             else:
-                # Если предложение длиннее chunk_size, разбиваем по словам
+                # If a sentence is longer than chunk_size, split by words
                 words = sent.split()
                 part = []
                 part_len = 0
@@ -630,7 +631,7 @@ def create_chunks(
                             )
                             chunks.append(chunk)
                             idx += 1
-                            # Перекрытие для следующего куска
+                            # Overlap for the next piece
                             overlap_words = 0
                             overlap_len = 0
                             for w2 in reversed(part):
@@ -664,7 +665,7 @@ def create_chunks(
                     )
                     chunks.append(chunk)
                     idx += 1
-                # после обработки длинного предложения сбрасываем current_chunk
+                # after processing a long sentence, reset current_chunk
                 current_chunk = []
                 current_len = 0
                 start_char = end_char
@@ -694,16 +695,16 @@ def create_chunks(
 
 
 # --------------------------------------------------------------------------
-# Реализация process_document_task
+# process_document_task implementation
 # --------------------------------------------------------------------------
 def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
     """
-    Полная реализация обработки документа.
-    Вызывается из process_document_task.
+    Full document processing implementation.
+    Called from process_document_task.
     """
     logger.info(f"🚀 Processing document {document_id}")
 
-    # Блокировка Redis для предотвращения параллельной обработки
+    # Redis lock to prevent parallel processing
     lock_key = f"doc_process:{document_id}"
     if redis_model_manager.redis.get(lock_key):
         logger.warning(f"Document {document_id} is already being processed, skipping")
@@ -721,7 +722,7 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
             document.processing_progress = 10
             document.save()
 
-        # Удаляем старые чанки (мягкое удаление)
+        # Remove old chunks (soft delete)
         old_chunks = document.chunks.filter(is_active=True)
         old_count = old_chunks.count()
         stale_chunk_ids = []
@@ -730,21 +731,21 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
             old_chunks.update(is_active=False)
             logger.info(f"Deactivated {old_count} old chunks")
 
-        # Создаём лог обработки
+        # Create the processing log
         processor = DocumentProcessor.objects.create(
             document=document,
             status='STARTED',
             progress=10
         )
 
-        # 1. Получаем путь к файлу и извлекаем текст
+        # 1. Get the file path and extract text
         file_path = document.full_file_path
         if not file_path or not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {document.original_filename}")
 
         ext = os.path.splitext(file_path)[1].lower()
-        page_map = []       # v5.2: [(start, end, page_no)] для привязки чанков к страницам
-        extra_chunks = []   # v5.2: таблицы/изображения/CSV-блоки как отдельные чанки
+        page_map = []       # v5.2: [(start, end, page_no)] to map chunks to pages
+        extra_chunks = []   # v5.2: tables/images/CSV blocks as separate chunks
 
         if ext == '.pdf':
             pages = extract_pdf_pages(file_path)
@@ -752,7 +753,7 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
             offset = 0
             for i, pt in enumerate(pages, start=1):
                 if offset:
-                    offset += 1  # \n-разделитель
+                    offset += 1  # \n separator
                 page_map.append((offset, offset + len(pt), i))
                 offset += len(pt)
             extra_chunks = _pdf_extra_chunks(file_path, document)
@@ -808,7 +809,7 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
         if not raw_text.strip() and not extra_chunks:
             raise ValueError("No extractable text found")
 
-        raw_text = (raw_text or '').replace('\x00', '')  # NUL до любого save
+        raw_text = (raw_text or '').replace('\x00', '')  # strip NUL before any save
         document.raw_content = raw_text
         document.content_hash = get_file_hash(file_path)
         document.metadata['page_map'] = page_map
@@ -818,8 +819,8 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
         processor.progress = 30
         processor.save()
 
-        # 2. Создаём чанки: v5.2 — настройки берём из коллекции (метаданные
-        # документа остаются точкой переопределения)
+        # 2. Create chunks: v5.2 — settings come from the collection (document
+        # metadata remains the override point)
         collection = document.collection
         chunk_size = document.metadata.get(
             'chunk_size', getattr(collection, 'chunk_size', 1000) or 1000)
@@ -842,7 +843,7 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
         processor.chunks_created = len(chunks)
         processor.save()
 
-        # 3. Создаём эмбеддинги, используя эффективную модель коллекции
+        # 3. Create embeddings using the collection's effective model
         embeddings_created = 0
         faiss_ok = False
         if document.collection:
@@ -885,9 +886,9 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
         else:
             logger.warning(f"Document {document_id} has no collection, skipping embeddings")
 
-        # Индексируем в FAISS (отдельный try: провал индексации не должен
-        # превращать документ в INDEXED — audit fix, статус был по факту
-        # эмбеддингов, даже если векторы так и не попали в индекс)
+        # Index into FAISS (separate try: an indexing failure must not turn
+        # the document into INDEXED — audit fix, the status used to reflect
+        # embeddings only, even if vectors never made it into the index)
         if document.collection and embeddings_created > 0:
             try:
                 vstore = get_vector_store_manager()
@@ -905,7 +906,7 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
                 logger.error(f"FAISS indexing error: {e}")
                 faiss_ok = False
 
-        # 4. Завершение
+        # 4. Finish
         with transaction.atomic():
             document = Document.objects.get(id=document_id)
             document.status = 'INDEXED' if (embeddings_created > 0 and faiss_ok) else 'CHUNKED'
@@ -927,7 +928,7 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
         processor.processing_time_ms = (timezone.now() - processor.started_at).total_seconds() * 1000
         processor.save()
 
-        # Инвалидируем кэш BM25 для коллекции
+        # Invalidate the BM25 cache for the collection
         if document.collection:
             search_service = EnhancedSearchService()
             search_service.invalidate_bm25_cache(document.collection.id)
@@ -963,12 +964,12 @@ def _process_document_impl(self, document_id: int) -> Dict[str, Any]:
 
 
 # --------------------------------------------------------------------------
-# Создание эмбеддингов для коллекции
+# Embedding creation for a collection
 # --------------------------------------------------------------------------
 def _create_embeddings_for_collection_impl(self, collection_id: int) -> Dict[str, Any]:
     """
-    Создание эмбеддингов для всех чанков коллекции, у которых их нет.
-    Использует эффективную модель коллекции.
+    Create embeddings for all collection chunks that do not have them yet.
+    Uses the collection's effective model.
     """
     from .models import DocumentChunk, EmbeddingModel
 
@@ -980,7 +981,7 @@ def _create_embeddings_for_collection_impl(self, collection_id: int) -> Dict[str
         if not embedding_model:
             return {'success': False, 'error': 'No embedding model available for this collection'}
 
-        # Чанки без эмбеддингов
+        # Chunks without embeddings
         chunks = DocumentChunk.objects.filter(
             document__collection=collection,
             has_embedding=False,
@@ -1018,7 +1019,7 @@ def _create_embeddings_for_collection_impl(self, collection_id: int) -> Dict[str
             except Exception as e:
                 logger.error(f"Batch embedding error: {e}")
 
-        # Индексируем в FAISS
+        # Index into FAISS
         # Audit fix: update_index silently returned 0 when the collection had
         # no index yet — embeddings existed but nothing was indexed
         if processed > 0:
@@ -1039,13 +1040,13 @@ def _create_embeddings_for_collection_impl(self, collection_id: int) -> Dict[str
 
 
 # --------------------------------------------------------------------------
-# Полная перестройка эмбеддингов и FAISS индекса для коллекции
+# Full rebuild of embeddings and the FAISS index for a collection
 # --------------------------------------------------------------------------
 def _rebuild_embeddings_and_index_impl(self, collection_id: int) -> Dict[str, Any]:
     """
-    Удаляет все существующие эмбеддинги чанков коллекции,
-    создаёт их заново (используя эффективную модель коллекции)
-    и перестраивает FAISS индекс.
+    Deletes all existing embeddings of the collection's chunks,
+    recreates them (using the collection's effective model),
+    and rebuilds the FAISS index.
     """
     logger.info(f"🔄 Rebuilding embeddings and index for collection {collection_id}")
 
@@ -1055,7 +1056,7 @@ def _rebuild_embeddings_and_index_impl(self, collection_id: int) -> Dict[str, An
         if not embedding_model:
             return {'success': False, 'error': 'No embedding model available for this collection'}
 
-        # Получаем все чанки коллекции (активные)
+        # Fetch all chunks of the collection (active)
         chunks = DocumentChunk.objects.filter(
             document__collection=collection,
             is_active=True
@@ -1065,7 +1066,7 @@ def _rebuild_embeddings_and_index_impl(self, collection_id: int) -> Dict[str, An
         if total == 0:
             return {'success': False, 'error': 'No chunks in collection'}
 
-        # Сбрасываем эмбеддинги
+        # Reset embeddings
         chunks.update(
             has_embedding=False,
             embedding_vector=None,
@@ -1074,7 +1075,7 @@ def _rebuild_embeddings_and_index_impl(self, collection_id: int) -> Dict[str, An
         )
         logger.info(f"Reset embeddings for {total} chunks")
 
-        # Создаём эмбеддинги батчами
+        # Create embeddings in batches
         processed = 0
         batch_size = 32
         for i in range(0, total, batch_size):
@@ -1099,11 +1100,11 @@ def _rebuild_embeddings_and_index_impl(self, collection_id: int) -> Dict[str, An
                 )
             except Exception as e:
                 logger.error(f"Batch embedding error: {e}")
-                # Продолжаем с остальными, не прерываем
+                # Continue with the rest, do not abort
 
         logger.info(f"Created embeddings for {processed} chunks")
 
-        # Перестраиваем FAISS индекс
+        # Rebuild the FAISS index
         if processed > 0:
             vstore = get_vector_store_manager()
             success = vstore.build_index(collection_id, force=True)
@@ -1112,12 +1113,12 @@ def _rebuild_embeddings_and_index_impl(self, collection_id: int) -> Dict[str, An
         else:
             logger.warning("No embeddings created, skipping FAISS index rebuild")
 
-        # Обновляем статистику коллекции
+        # Update collection statistics
         collection.update_statistics()
 
-        # v5.2: синк статусов документов — документ, чанки которого полностью
-        # покрыты эмбеддингами, помечается INDEXED (иначе висит «Uploaded»
-        # после ребилда, хотя вектор готов)
+        # v5.2: sync document statuses — a document whose chunks are fully
+        # covered by embeddings is marked INDEXED (otherwise it stays "Uploaded"
+        # after the rebuild even though vectors are ready)
         for doc in collection.documents.all():
             active = doc.chunks.filter(is_active=True)
             total_c = active.count()
@@ -1138,11 +1139,11 @@ def _rebuild_embeddings_and_index_impl(self, collection_id: int) -> Dict[str, An
 
 
 # --------------------------------------------------------------------------
-# Построение FAISS индекса для коллекции
+# Building the FAISS index for a collection
 # --------------------------------------------------------------------------
 def _build_faiss_index_impl(collection_id: int, index_type: str = 'flat') -> Dict[str, Any]:
     """
-    Полное перестроение FAISS индекса для коллекции.
+    Full rebuild of the FAISS index for a collection.
     """
     logger.info(f"Building FAISS index for collection {collection_id}, type={index_type}")
 
@@ -1159,11 +1160,11 @@ def _build_faiss_index_impl(collection_id: int, index_type: str = 'flat') -> Dic
 
 
 # --------------------------------------------------------------------------
-# Обновление FAISS индекса (добавление новых чанков)
+# Updating the FAISS index (adding new chunks)
 # --------------------------------------------------------------------------
 def _update_faiss_index_impl(collection_id: int) -> Dict[str, Any]:
     """
-    Обновление FAISS индекса: добавление новых чанков.
+    Update the FAISS index: add new chunks.
     """
     logger.info(f"Updating FAISS index for collection {collection_id}")
     try:
@@ -1176,11 +1177,11 @@ def _update_faiss_index_impl(collection_id: int) -> Dict[str, Any]:
 
 
 # --------------------------------------------------------------------------
-# Пересоздание чанков документа
+# Regenerating document chunks
 # --------------------------------------------------------------------------
 def _regenerate_document_chunks_impl(self, document_id: int) -> Dict[str, Any]:
     """
-    Пересоздание чанков документа с новыми параметрами.
+    Recreate document chunks with new parameters.
     """
     logger.info(f"Regenerating chunks for document {document_id}")
 
@@ -1188,21 +1189,21 @@ def _regenerate_document_chunks_impl(self, document_id: int) -> Dict[str, Any]:
         document = Document.objects.get(id=document_id, is_active=True)
         old_chunks = list(document.chunks.filter(is_active=True))
 
-        # Получаем параметры из метаданных
+        # Get parameters from metadata
         chunk_size = document.metadata.get('chunk_size', 1000)
         chunk_overlap = document.metadata.get('chunk_overlap', 200)
 
-        # Деактивируем старые чанки
+        # Deactivate old chunks
         document.chunks.update(is_active=False)
 
-        # Создаём новые чанки
+        # Create new chunks
         content = document.processed_content or document.raw_content
         if not content:
             raise ValueError("Document has no content")
 
         new_chunks = create_chunks(document, content, chunk_size, chunk_overlap)
 
-        # Создаём эмбеддинги, используя эффективную модель коллекции
+        # Create embeddings using the collection's effective model
         embeddings_created = 0
         if document.collection:
             embedding_model = document.collection.get_effective_embedding_model()
@@ -1224,17 +1225,17 @@ def _regenerate_document_chunks_impl(self, document_id: int) -> Dict[str, Any]:
                 except Exception as e:
                     logger.error(f"Embedding error: {e}")
 
-        # Индексируем в FAISS
+        # Index into FAISS
         if embeddings_created > 0 and document.collection:
             vstore = get_vector_store_manager()
             vstore.index_chunks(new_chunks, document.collection.id)
 
-        # Обновляем статус
+        # Update the status
         document.status = 'INDEXED' if embeddings_created > 0 else 'CHUNKED'
         document.requires_reindexing = False
         document.save()
 
-        # Инвалидируем кэш BM25
+        # Invalidate the BM25 cache
         if document.collection:
             search_service = EnhancedSearchService()
             search_service.invalidate_bm25_cache(document.collection.id)
@@ -1255,7 +1256,7 @@ def _regenerate_document_chunks_impl(self, document_id: int) -> Dict[str, Any]:
 
 
 # --------------------------------------------------------------------------
-# Celery-задачи (обёртки)
+# Celery tasks (wrappers)
 # --------------------------------------------------------------------------
 @shared_task(bind=True, queue='gpu_tasks', max_retries=3)
 def process_document_task(self, document_id):

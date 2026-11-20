@@ -29,7 +29,7 @@ from ..models import (
 
 
 class IsActiveFilter(admin.SimpleListFilter):
-    """Фильтр для активных/неактивных записей"""
+    """Filter for active/inactive records."""
     title = 'Статус активности'
     parameter_name = 'is_active'
     
@@ -47,7 +47,7 @@ class IsActiveFilter(admin.SimpleListFilter):
 
 
 class ModelTypeFilter(admin.SimpleListFilter):
-    """Фильтр по типу модели"""
+    """Filter by model type."""
     title = 'Тип модели'
     parameter_name = 'model_type'
     
@@ -60,7 +60,7 @@ class ModelTypeFilter(admin.SimpleListFilter):
 
 
 class StatusFilter(admin.SimpleListFilter):
-    """Фильтр по статусу чекпоинта"""
+    """Filter by checkpoint status."""
     title = 'Статус'
     parameter_name = 'status'
     
@@ -72,7 +72,7 @@ class StatusFilter(admin.SimpleListFilter):
             return queryset.filter(status=self.value())
 
 
-# Кастомная форма для админки ModelCheckpoint
+# Custom form for the ModelCheckpoint admin
 class ModelCheckpointAdminForm(forms.ModelForm):
     class Meta:
         model = ModelCheckpoint
@@ -110,7 +110,7 @@ class ExperimentAdmin(admin.ModelAdmin):
     )
     
     def model_count(self, obj):
-        """Количество моделей в эксперименте"""
+        """Number of models in the experiment."""
         return obj.checkpoints.count()
     model_count.short_description = 'Количество моделей'
     
@@ -122,14 +122,14 @@ class ExperimentAdmin(admin.ModelAdmin):
     @admin.action(description='Деактивировать выбранные эксперименты')
     def deactivate_experiments(self, request, queryset):
         updated = queryset.update(is_active=False)
-        # Деактивируем и связанные модели
+        # Deactivate related models as well
         for experiment in queryset:
             experiment.checkpoints.update(is_active=False)
         self.message_user(request, f'Деактивировано {updated} экспериментов и их модели')
 
 
 class ModelVersionInline(admin.TabularInline):
-    """Inline для версий модели"""
+    """Inline for model versions."""
     model = ModelVersion
     extra = 0
     readonly_fields = ('created_at', 'file_hash', 'is_stable')
@@ -142,7 +142,7 @@ class ModelVersionInline(admin.TabularInline):
 
 
 class ModelEvaluationInline(admin.TabularInline):
-    """Inline для оценок модели"""
+    """Inline for model evaluations."""
     model = ModelEvaluation
     extra = 0
     readonly_fields = ('evaluated_at', 'primary_metric_display')
@@ -157,7 +157,7 @@ class ModelEvaluationInline(admin.TabularInline):
 
 
 class ModelCheckpointAdmin(admin.ModelAdmin):
-    form = ModelCheckpointAdminForm  # Используем кастомную форму
+    form = ModelCheckpointAdminForm  # use the custom form
     list_display = (
         'name', 'display_name', 'model_type', 'status_badge', 
         'size_gb_display', 'is_active', 'is_safe', 'created_at'
@@ -223,7 +223,7 @@ class ModelCheckpointAdmin(admin.ModelAdmin):
     inlines = [ModelVersionInline, ModelEvaluationInline]
     
     def status_badge(self, obj):
-        """Красивое отображение статуса"""
+        """Status badge."""
         colors = {
             'DOWNLOADING': 'orange',
             'LOADED': 'green',
@@ -242,17 +242,17 @@ class ModelCheckpointAdmin(admin.ModelAdmin):
     status_badge.admin_order_field = 'status'
     
     def size_gb_display(self, obj):
-        """Отображение размера в GB"""
+        """Size in GB."""
         return f"{obj.size_gb} GB"
     size_gb_display.short_description = 'Размер'
     
     def download_size_mb_display(self, obj):
-        """Отображение размера загрузки в MB"""
+        """Download size in MB."""
         return f"{obj.get_download_size_mb()} MB"
     download_size_mb_display.short_description = 'Размер загрузки'
     
     def model_info_card(self, obj):
-        """Карточка с информацией о модели"""
+        """Model info card."""
         if not obj.pk:
             return "Сначала сохраните модель"
         
@@ -291,10 +291,10 @@ class ModelCheckpointAdmin(admin.ModelAdmin):
     
     @admin.action(description='Обновить конфигурацию из HF')
     def update_config_from_huggingface(self, request, queryset):
-        # Заглушка для реальной логики загрузки конфигурации
+        # Placeholder for the real config-loading logic
         for model in queryset:
             if model.huggingface_id:
-                # Здесь должна быть логика загрузки конфигурации
+                # Config loading logic goes here
                 model.loader_config = model.get_default_config()
                 model.save()
         
@@ -309,9 +309,9 @@ class ModelCheckpointAdmin(admin.ModelAdmin):
         return queryset.select_related('experiment', 'parent')
     
     def save_model(self, request, obj, form, change):
-        """Добавляем логирование при сохранении"""
+        """Add versioning on save."""
         if change:
-            # Создаем версию при изменении конфигурации
+            # Create a version when the config changes
             old_config = None
             if 'loader_config' in form.changed_data:
                 old_config = ModelCheckpoint.objects.get(pk=obj.pk).loader_config
@@ -331,7 +331,7 @@ class ModelCheckpointAdmin(admin.ModelAdmin):
             )
     
     def change_view(self, request, object_id, form_url='', extra_context=None):
-        """Добавляем дополнительные кнопки в форму редактирования"""
+        """Add extra context to the change form."""
         extra_context = extra_context or {}
         obj = self.get_object(request, object_id)
         
@@ -340,7 +340,7 @@ class ModelCheckpointAdmin(admin.ModelAdmin):
             extra_context['can_download'] = obj.status in ['DOWNLOADING', 'ERROR']
             extra_context['can_test'] = obj.status == 'LOADED'
             
-            # Ссылки на связанные объекты
+            # Related object counts
             extra_context['versions_count'] = obj.versions.count()
             extra_context['evaluations_count'] = obj.evaluations.count()
             extra_context['sessions_count'] = obj.inference_sessions.count()
@@ -415,7 +415,7 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
     merge_model_link.short_description = 'Модель для слияния'
     
     def status_badge(self, obj):
-        """Красивое отображение статуса"""
+        """Status badge."""
         colors = {
             'PENDING': 'gray',
             'VALIDATING': 'blue',
@@ -434,7 +434,7 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
     status_badge.short_description = 'Статус'
     
     def progress_bar(self, obj):
-        """Прогресс-бар для задачи"""
+        """Job progress bar."""
         color = 'green' if obj.status == 'COMPLETED' else 'blue' if obj.status == 'RUNNING' else 'orange'
         return format_html(
             '''
@@ -449,7 +449,7 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
     progress_bar.short_description = 'Прогресс'
     
     def duration_display(self, obj):
-        """Отображение длительности"""
+        """Duration display."""
         if obj.duration_seconds:
             minutes = int(obj.duration_seconds // 60)
             seconds = int(obj.duration_seconds % 60)
@@ -458,7 +458,7 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
     duration_display.short_description = 'Длительность'
     
     def performance_display(self, obj):
-        """Отображение метрик производительности"""
+        """Performance metrics display."""
         if not obj.performance_metrics:
             return "Нет данных"
         
@@ -473,11 +473,11 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
     performance_display.short_description = 'Метрики производительности'
     
     def logs_preview(self, obj):
-        """Предпросмотр логов"""
+        """Logs preview."""
         if not obj.logs:
             return "Нет логов"
-        
-        # Показываем только последние 10 строк
+
+        # Show only the last 10 lines
         lines = obj.logs.strip().split('\n')[-10:]
         preview = '\n'.join(lines)
         return format_html(
@@ -487,8 +487,8 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
     logs_preview.short_description = 'Предпросмотр логов'
     
     def status_history(self, obj):
-        """История изменения статусов"""
-        # В реальном приложении можно добавить модель для отслеживания истории статусов
+        """Status change history."""
+        # A dedicated model could track status history in a real app
         history = [
             f"{obj.created_at}: PENDING",
             f"{obj.started_at}: RUNNING" if obj.started_at else None,
@@ -504,7 +504,7 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
         count = failed_jobs.count()
         
         for job in failed_jobs:
-            # Создаем новую задачу как копию старной
+            # Create a new job as a copy of the old one
             ModelMergeJob.objects.create(
                 name=f"{job.name}_retry",
                 description=f"Повтор задачи {job.id}",
@@ -592,7 +592,7 @@ class InferenceSessionAdmin(admin.ModelAdmin):
     is_active_badge.short_description = 'Статус'
     
     def performance_stats(self, obj):
-        """Статистика производительности"""
+        """Performance statistics."""
         if obj is None:
             return '-'
         stats = [
@@ -623,7 +623,7 @@ class ModelEvaluationAdmin(admin.ModelAdmin):
     list_filter = ('dataset_name', 'evaluation_type', 'is_valid', 'evaluated_at')
     search_fields = ('checkpoint__name', 'dataset_name', 'validation_notes')
     readonly_fields = ('evaluated_at', 'primary_metric_display', 'metrics_display')
-    list_editable = ('is_valid',)  # Теперь is_valid есть в list_display
+    list_editable = ('is_valid',)  # is_valid is now in list_display
     
     fieldsets = (
         (_('Основная информация'), {
@@ -658,7 +658,7 @@ class ModelEvaluationAdmin(admin.ModelAdmin):
     primary_metric_display.short_description = 'Основная метрика'
     
     def metrics_display(self, obj):
-        """Красивое отображение метрик"""
+        """Pretty metrics display."""
         if not obj.metrics:
             return "Нет данных"
         
@@ -688,7 +688,7 @@ class ModelVersionAdmin(admin.ModelAdmin):
     raw_id_fields = ('checkpoint', 'parent_version')
     
     def config_snapshot_preview(self, obj):
-        """Предпросмотр конфигурации"""
+        """Config snapshot preview."""
         return format_html(
             '<pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto;">{}</pre>',
             json.dumps(obj.config_snapshot, indent=2, ensure_ascii=False)

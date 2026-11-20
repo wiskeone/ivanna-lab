@@ -6,7 +6,7 @@ class Command(BaseCommand):
     help = 'List all loaded models'
     
     def handle(self, *args, **options):
-        # Загруженные в память
+        # Loaded in memory
         loaded = model_manager.list_loaded_models()
         
         self.stdout.write("=" * 60)
@@ -21,7 +21,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"  Parameters: {info.get('parameters', 'unknown'):,}")
                 self.stdout.write(f"  Context: {info.get('context_length', 'unknown')} tokens")
         
-        # Модели в базе данных
+        # Models in the database
         db_models = ModelCheckpoint.objects.filter(status='LOADED')
         
         self.stdout.write("\n" + "=" * 60)

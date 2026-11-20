@@ -9,9 +9,9 @@ from ..models import ModelCheckpoint, ModelMergeJob, InferenceSession
 
 @staff_member_required
 def admin_dashboard(request):
-    """Кастомная дашборд-страница для админки"""
-    
-    # Статистика моделей
+    """Custom dashboard page for the admin site."""
+
+    # Model statistics
     model_stats = {
         'total': ModelCheckpoint.objects.count(),
         'active': ModelCheckpoint.objects.filter(is_active=True).count(),
@@ -21,7 +21,7 @@ def admin_dashboard(request):
         ).count(),
     }
     
-    # Статистика слияний
+    # Merge statistics
     merge_stats = {
         'total': ModelMergeJob.objects.count(),
         'running': ModelMergeJob.objects.filter(status='RUNNING').count(),
@@ -29,18 +29,18 @@ def admin_dashboard(request):
         'completed': ModelMergeJob.objects.filter(status='COMPLETED').count(),
     }
     
-    # Активные сессии
+    # Active sessions
     active_sessions = InferenceSession.objects.filter(
         is_active=True,
         last_activity__gte=timezone.now() - timedelta(minutes=5)
     ).select_related('checkpoint')[:10]
     
-    # Последние задачи
+    # Recent jobs
     recent_jobs = ModelMergeJob.objects.select_related(
         'base_model', 'merge_model'
     ).order_by('-created_at')[:10]
     
-    # Последние модели
+    # Recent models
     recent_models = ModelCheckpoint.objects.select_related(
         'experiment'
     ).order_by('-created_at')[:10]
@@ -57,5 +57,5 @@ def admin_dashboard(request):
     return render(request, 'admin/dashboard.html', context)
 
 
-# Добавляем кастомную ссылку в админку
+# Point the admin index to the custom template
 admin.site.index_template = 'admin/custom_index.html'

@@ -29,7 +29,7 @@ from ..models import (
 
 
 class FineTuningJobAdminForm(forms.ModelForm):
-    """Кастомная форма для задач дообучения"""
+    """Custom form for fine-tuning jobs."""
     class Meta:
         model = FineTuningJob
         fields = '__all__'
@@ -100,7 +100,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     base_model_link.short_description = 'Базовая модель'
     
     def status_badge(self, obj):
-        """Бейдж статуса"""
+        """Status badge."""
         colors = {
             'PENDING': 'gray',
             'PREPROCESSING': 'blue',
@@ -118,7 +118,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     status_badge.short_description = 'Статус'
     
     def progress_bar(self, obj):
-        """Прогресс-бар"""
+        """Progress bar."""
         color = 'green' if obj.status == 'COMPLETED' else 'orange' if obj.status in ['TRAINING', 'EVALUATING'] else 'blue'
         return format_html(
             '''
@@ -148,7 +148,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     duration_display.short_description = 'Длительность'
     
     def data_info(self, obj):
-        """Информация о данных"""
+        """Data info."""
         info = []
         if obj.training_data_path:
             info.append(f"<strong>Данные обучения:</strong> {obj.training_data_path}")
@@ -161,7 +161,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     data_info.short_description = 'Информация о данных'
     
     def hyperparameters_display(self, obj):
-        """Отображение гиперпараметров"""
+        """Hyperparameters display."""
         if not obj.hyperparameters:
             return "Гиперпараметры не заданы"
         
@@ -173,7 +173,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     hyperparameters_display.short_description = 'Гиперпараметры'
     
     def training_metrics_display(self, obj):
-        """Отображение метрик обучения"""
+        """Training metrics display."""
         if not obj.training_metrics:
             return "Метрики не доступны"
         
@@ -182,7 +182,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
             if isinstance(value, (int, float)):
                 metrics_html.append(f"<tr><td><strong>{key}</strong></td><td>{value:.4f}</td></tr>")
             elif isinstance(value, dict):
-                # Для вложенных словарей
+                # Nested dicts
                 for sub_key, sub_value in value.items():
                     if isinstance(sub_value, (int, float)):
                         metrics_html.append(f"<tr><td><strong>{key}.{sub_key}</strong></td><td>{sub_value:.4f}</td></tr>")
@@ -199,11 +199,11 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     training_metrics_display.short_description = 'Метрики обучения'
     
     def logs_preview(self, obj):
-        """Предпросмотр логов"""
+        """Logs preview."""
         if not obj.logs:
             return "Нет логов"
         
-        lines = obj.logs.strip().split('\n')[-20:]  # последние 20 строк
+        lines = obj.logs.strip().split('\n')[-20:]  # last 20 lines
         preview = '\n'.join(lines)
         return format_html(
             '<textarea style="width: 100%; height: 200px; font-family: monospace; '
@@ -213,7 +213,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     logs_preview.short_description = 'Логи выполнения'
     
     def status_history(self, obj):
-        """История статусов"""
+        """Status history."""
         history = []
         if obj.created_at:
             history.append(f"📅 <strong>Создана:</strong> {obj.created_at.strftime('%d.%m.%Y %H:%M')}")
@@ -226,7 +226,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     status_history.short_description = 'История'
     
     def job_stats(self, obj):
-        """Статистика задачи"""
+        """Job statistics."""
         stats = []
         
         if obj.started_at and obj.completed_at:
@@ -256,7 +256,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
         count = failed_jobs.count()
         
         for job in failed_jobs:
-            # Создаем новую задачу как копию старой
+            # Create a new job as a copy of the old one
             FineTuningJob.objects.create(
                 name=f"{job.name}_retry",
                 description=f"Повтор задачи {job.id}",

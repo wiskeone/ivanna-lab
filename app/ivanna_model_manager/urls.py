@@ -33,21 +33,21 @@ router.register(r'manual-instruction-sets', api_views.ManualInstructionSetViewSe
 router.register(r'manual-instructions', api_views.ManualInstructionViewSet, basename='manual-instruction')
 
 urlpatterns = [
-    # Аутентификация
+    # Authentication
     path('accounts/login/', auth_views.LoginView.as_view(template_name='ivanna_model_manager/login.html'), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
     path('accounts/', include('django.contrib.auth.urls')),
 
-    # Профиль
+    # Profile
     path('profile/', views.profile_view, name='profile'),
 
-    # Главная
+    # Dashboard
     path('', views.DashboardView.as_view(), name='dashboard'),
 
-    # API через router
+    # API via router
     path('api/', include(router.urls)),
 
-    # Отдельные API-эндпоинты (health, gpu, system, evaluation, huggingface, rag search, statistics)
+    # Standalone API endpoints (health, gpu, system, evaluation, huggingface, rag search, statistics)
     path('api/health/', api_views.api_health_check, name='api_health'),
     path('api/gpu-status/', api_views.gpu_status, name='gpu_status'),
     path('api/system-metrics/', api_views.system_metrics, name='system_metrics'),
@@ -59,8 +59,8 @@ urlpatterns = [
     path('api/evaluation/tasks/<int:task_id>/compare/', api_views.compare_models_api, name='api_compare_models'),
     path('api/evaluation/rate/', api_views.rate_response_api, name='api_rate_response'),
     path('api/huggingface/', api_views.HuggingFaceAPI.as_view(), name='huggingface_api'),
-    # v5.0: пресеты параметров генерации
-    # v5.1: пауза/резюме fine-tuning
+    # v5.0: generation parameter presets
+    # v5.1: fine-tuning pause/resume
     path('api/fine-tuning/<int:job_id>/pause/', api_views.api_fine_tuning_pause, name='api_ft_pause'),
     path('api/fine-tuning/<int:job_id>/resume/', api_views.api_fine_tuning_resume, name='api_ft_resume'),
     path('api/generation-presets/', api_views.api_generation_presets_list, name='api_generation_presets'),
@@ -73,7 +73,7 @@ urlpatterns = [
     path('api/rag/search/', api_views.rag_search, name='rag_search'),
     path('api/tasks/<str:task_id>/result/', api_views.task_result, name='task_result'),
 
-    # HTML-вьюхи для моделей
+    # HTML views for models
     path('models/', views.ModelListView.as_view(), name='model_list'),
     path('models/create/', views.UploadModelView.as_view(), name='model_create'),
     path('models/local-create/', views.LocalModelCreateView.as_view(), name='model_local_create'),
@@ -87,7 +87,7 @@ urlpatterns = [
     path('models/<int:pk>/create-version/', views.create_model_version_view, name='model_create_version'),
     path('models/<int:pk>/start-merge/', views.start_merge_view, name='model_start_merge'),
 
-    # Эксперименты
+    # Experiments
     # v5.3: benchmarks (lm-eval-harness)
     path('benchmarks/', views.benchmark_list, name='benchmark_list'),
     path('benchmarks/search/', views.benchmark_search_api, name='benchmark_search_api'),
@@ -108,7 +108,7 @@ urlpatterns = [
     path('experiments/<int:pk>/activate/', views.experiment_activate_view, name='experiment_activate'),
     path('experiments/<int:pk>/create-checkpoint/', views.create_checkpoint_from_experiment, name='experiment_create_checkpoint'),
 
-    # Чат
+    # Chat
     path('chat/sessions/', views.chat_sessions_management, name='chat_sessions_management'),
     path('chat/create/', views.create_chat_session, name='chat_create'),
     path('chat/<str:session_id>/', views.chat_view, name='chat_session'),
@@ -122,15 +122,15 @@ urlpatterns = [
     path('api/models/<int:model_id>/force-local-load/', api_views.force_local_load_model, name='force_local_load_model'),
     path('api/chat/sessions/<str:session_id>/preview/', api_views.api_chat_session_preview, name='api_chat_session_preview'),
     
-    # Слияние моделей
+    # Model merging
     path('merge/', views.ModelMergeView.as_view(), name='merge_create'),
 
-    # Сравнение моделей
+    # Model comparison
     path('comparisons/', views.ComparisonView.as_view(), name='comparison_list'),
     path('comparisons/create/', views.ComparisonCreateView.as_view(), name='comparison_create'),
     path('comparisons/<int:pk>/', views.ComparisonDetailView.as_view(), name='comparison_detail'),
 
-    # Оценка (Evaluation)
+    # Evaluation
     path('evaluation/', views.evaluation_dashboard, name='evaluation_dashboard'),
     path('evaluation/datasets/', views.EvaluationDatasetListView.as_view(), name='evaluation_dataset_list'),
     path('evaluation/datasets/create/', views.create_dataset_manual_view, name='evaluation_dataset_create'),
@@ -178,7 +178,7 @@ urlpatterns = [
     path('collections/<int:collection_id>/check-files/', views.check_index_files, name='check_index_files'),
     path('documents/<int:pk>/reload/', views.document_reload, name='document_reload'),
 
-    # API для чанков
+    # Chunk API
     path('api/document-chunks/<int:chunk_id>/', api_views.api_document_chunk_detail, name='api_document_chunk_detail'),
 
     # FINETUNING
@@ -196,17 +196,17 @@ urlpatterns = [
     path('fine-tuning/<int:pk>/progress/', views.fine_tuning_progress, name='fine_tuning_progress'),
     path('fine-tuning/<int:pk>/metrics/', views.fine_tuning_metrics, name='fine_tuning_metrics'),
 
-    # Конвертация моделей
+    # Model conversion
     path('conversion/', views.conversion_dashboard, name='conversion_dashboard'),
     path('conversion/create/', views.conversion_create, name='conversion_create'),
     path('conversion/<int:pk>/', views.conversion_detail, name='conversion_detail'),
     path('conversion/<int:pk>/logs/', views.conversion_logs, name='conversion_logs'),
     path('conversion/<int:pk>/progress/', views.conversion_progress, name='conversion_progress'),
 
-    # AJAX для RAG-чата
+    # AJAX for RAG chat
     path('rag/ajax/chat/', views.ajax_rag_chat, name='ajax_rag_chat'),
 
-    # Страница расширенного поиска RAG
+    # RAG advanced search page
     path('rag/search/', views.rag_search_page, name='rag_search_page'),
     path('rag/search/<int:collection_id>/', views.rag_search_page, name='rag_search_page_collection'),
     path('api/rag/search-suggestions/', api_views.api_rag_search_suggestions, name='api_rag_search_suggestions'),
@@ -215,32 +215,32 @@ urlpatterns = [
     path('api/rag/export-search-results/', api_views.api_rag_export_search_results, name='api_rag_export_search_results'),
     path('api/documents/<int:document_id>/preview/', api_views.api_document_preview, name='api_document_preview'),
 
-    # AJAX эндпоинт для поиска
+    # AJAX search endpoint
     path('rag/ajax/advanced-search/', views.ajax_rag_advanced_search, name='ajax_rag_advanced_search'),
 
-    # Системные метрики и статусы
+    # System metrics and statuses
     path('metrics/', views.SystemMetricsView.as_view(), name='system_metrics_view'),
     path('gpu-status/', views.gpu_status_view, name='gpu_status_view'),
     path('health/', views.health_check_view, name='health_check'),
     path('api/tasks/<str:task_id>/status/', views.task_status, name='task_status'),
 
-    # Статические страницы
+    # Static pages
     path('about/', views.AboutView.as_view(), name='about'),
     path('docs/', views.DocumentationView.as_view(), name='docs'),
 
-    # API для статистики (HTML/JSON) – оставлено для совместимости
+    # Statistics API (HTML/JSON) — kept for compatibility
     path('api/supported-types/', views.SupportedModelTypesView.as_view(), name='supported_types'),
 
-    # Перенаправления для старых URL
+    # Redirects for legacy URLs
     path('upload/', RedirectView.as_view(pattern_name='model_create', permanent=True)),
     path('start-merge/', RedirectView.as_view(pattern_name='merge_create', permanent=True)),
 
-    # Новые API для чата
+    # New chat APIs
     path('api/chat/sessions/<str:session_id>/send_message/', api_views.api_chat_send_message, name='api_chat_send_message'),
     path('api/chat/sessions/<str:session_id>/update_rag_config/', api_views.api_chat_update_rag_config, name='api_chat_update_rag_config'),
     path('api/user/rag-collections/', api_views.api_user_rag_collections, name='api_user_rag_collections'),
 
-    # Эмбендинги
+    # Embeddings
     path('embedding-models/', views.EmbeddingModelListView.as_view(), name='embedding_model_list'),
     path('embedding-models/create/', views.EmbeddingModelCreateView.as_view(), name='embedding_model_create'),
     path('embedding-models/<int:pk>/', views.EmbeddingModelDetailView.as_view(), name='embedding_model_detail'),
@@ -258,7 +258,7 @@ urlpatterns = [
     path('embedding-models/<int:pk>/download-status/', views.embedding_model_download_status, name='embedding_model_download_status'),
     path('embedding-models/<int:pk>/reset-download/', views.embedding_model_reset_download, name='embedding_model_reset_download'),
 
-    # Дистилляция
+    # Distillation
     path('questionsets/', views.DistillationQuestionSetListView.as_view(), name='distillation_question_set_list'),
     path('questionsets/create/', views.DistillationQuestionSetCreateView.as_view(), name='distillation_question_set_create'),
     path('questionsets/<int:pk>/', views.DistillationQuestionSetDetailView.as_view(), name='distillation_question_set_detail'),
@@ -281,7 +281,7 @@ urlpatterns = [
     path('distillation/datasets/<int:pk>/export/', views.distillation_dataset_export, name='distillation_dataset_export'),
     path('questionsets/<int:pk>/edit/', views.DistillationQuestionSetUpdateView.as_view(), name='distillation_question_set_edit'),
     
-    # Ручные инструкции
+    # Manual instructions
     path('manual-instructions/', views.ManualInstructionBuilderView.as_view(), name='manual_instruction_builder'),
     path('manual-instruction-sets/<int:pk>/', views.manual_instruction_set_detail, name='manual_instruction_set_detail'),
     path('manual-instruction-sets/<int:pk>/export/', views.manual_instruction_set_export, name='manual_instruction_set_export'),
@@ -293,15 +293,15 @@ urlpatterns = [
     path('hf-datasets/<int:pk>/import/', views.hf_dataset_start_import, name='hf_dataset_import'),
     path('hf-datasets/<int:pk>/delete/', views.hf_dataset_delete, name='hf_dataset_delete'),
 
-    # API дистилляции
+    # Distillation API
     path('api/distillation/task-status/<int:question_set_id>/', api_views.distillation_task_status, name='api_distillation_task_status'),
     path('api/distillation/answer-job-status/<int:job_id>/', api_views.distillation_answer_job_status, name='api_distillation_answer_job_status'),
     
     path('api/distillation/dataset-builder-data/', api_views.distillation_dataset_builder_data, name='api_distillation_dataset_builder_data'),
-    # Слияние моделей
-    path('merge/create/', views.ModelMergeView.as_view(), name='merge_create'),  # FIX: был name='merge_detail', а {% url 'merge_create' %} в 4 шаблонах падал с NoReverseMatch
+    # Model merging
+    path('merge/create/', views.ModelMergeView.as_view(), name='merge_create'),  # FIX: was name='merge_detail'; {% url 'merge_create' %} in 4 templates raised NoReverseMatch
 
-    # Мягкий MoE (v5.2): тематические эксперты без дообучения
+    # Soft MoE (v5.2): thematic experts without fine-tuning
     path('moe/', views.moe_dashboard, name='moe_dashboard'),
     path('moe/themes/create/', views.moe_theme_create, name='moe_theme_create'),
     path('moe/themes/<int:pk>/', views.moe_theme_detail, name='moe_theme_detail'),

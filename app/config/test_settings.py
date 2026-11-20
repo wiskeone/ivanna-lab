@@ -1,4 +1,4 @@
-"""v4: CI-настройки — sqlite, минимум внешних сервисов."""
+"""v4: CI settings — sqlite, minimal external services."""
 from .settings import *  # noqa: F401,F403
 
 DATABASES = {

@@ -27,10 +27,10 @@ from .core import MultipleFileField, MultipleFileInput
 
 
 # ----------------------------------------------------------------------
-# Формы загрузки документов
+# Document upload forms
 # ----------------------------------------------------------------------
 class MultipleDocumentUploadForm(forms.Form):
-    """Форма для множественной загрузки документов"""
+    """Multiple document upload form."""
     
     collection = forms.ModelChoiceField(
         queryset=DocumentCollection.objects.none(),
@@ -87,7 +87,7 @@ class MultipleDocumentUploadForm(forms.Form):
     
     chunk_overlap = forms.IntegerField(
         min_value=0,
-        max_value=2000,                         # увеличено для больших чанков
+        max_value=2000,                         # increased for large chunks
         initial=200,
         label=_('Перекрытие чанков'),
         help_text=_('Рекомендуется 10-20% от размера чанка'),
@@ -156,7 +156,7 @@ class MultipleDocumentUploadForm(forms.Form):
 
 
 class DocumentUploadForm(forms.ModelForm):
-    """Форма загрузки одного документа (для обратной совместимости)"""
+    """Single document upload form (kept for backward compatibility)."""
     
     collection = forms.ModelChoiceField(
         queryset=DocumentCollection.objects.none(),
@@ -244,7 +244,7 @@ class DocumentUploadForm(forms.ModelForm):
                 is_active=True
             ).order_by('name')
         
-        # Преобразуем теги из JSON в строку для начального отображения
+        # Convert tags from JSON to a string for initial display
         if self.instance and self.instance.tags:
             self.initial['tags'] = ', '.join(self.instance.tags)
     
@@ -297,7 +297,7 @@ class DocumentUploadForm(forms.ModelForm):
 
 
 class DocumentEditForm(forms.ModelForm):
-    """Форма для редактирования документа с параметрами чанков"""
+    """Document edit form with chunking parameters."""
     
     chunk_size = forms.IntegerField(
         min_value=100,
@@ -400,7 +400,7 @@ class DocumentEditForm(forms.ModelForm):
 
 
 class DocumentChunkEditForm(forms.ModelForm):
-    """Форма редактирования чанка документа"""
+    """Document chunk edit form."""
     
     class Meta:
         model = DocumentChunk
@@ -429,7 +429,7 @@ class DocumentChunkEditForm(forms.ModelForm):
 
 
 class DocumentBulkActionForm(forms.Form):
-    """Форма массовых действий с документами"""
+    """Bulk actions form for documents."""
     ACTION_CHOICES = [
         ('delete', 'Удалить выбранные'),
         ('reprocess', 'Переобработать выбранные'),
@@ -475,10 +475,10 @@ class DocumentBulkActionForm(forms.Form):
 
 
 # ----------------------------------------------------------------------
-# Формы для коллекций
+# Collection forms
 # ----------------------------------------------------------------------
 class DocumentCollectionForm(forms.ModelForm):
-    """Форма для создания и редактирования коллекций документов"""
+    """Form for creating and editing document collections."""
     
     class Meta:
         model = DocumentCollection
@@ -524,10 +524,10 @@ class DocumentCollectionForm(forms.ModelForm):
 
 
 # ----------------------------------------------------------------------
-# Формы для RAG-запросов и поиска
+# RAG query and search forms
 # ----------------------------------------------------------------------
 class RAGQueryForm(forms.Form):
-    """Форма для RAG запросов"""
+    """RAG query form."""
     query = forms.CharField(
         label=_('Вопрос'),
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Введите ваш вопрос...'})
@@ -575,7 +575,7 @@ class RAGQueryForm(forms.Form):
 
 
 class DocumentSearchForm(forms.Form):
-    """Форма поиска документов"""
+    """Document search form."""
     query = forms.CharField(
         required=False,
         label=_('Поиск'),

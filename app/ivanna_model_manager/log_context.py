@@ -1,14 +1,14 @@
 """
-v5.1: корреляционный ID для логов — сквозной через веб → Celery.
+v5.1: correlation ID for logs — end-to-end from web to Celery.
 
-Механизм:
-- Веб: middleware генерирует UUID на каждый запрос, кладёт в local-контекст
-- Celery: before_task_publish сохраняет task_id в заголовок,
-  before_task вызывает TaskIdFilter, after_task_url восстанавливает
-- Formatter: {task_id} из record — UUID запроса или ID Celery-задачи
+Mechanism:
+- Web: middleware generates a UUID per request and stores it in the local context
+- Celery: before_task_publish stores task_id in headers,
+  before_task calls TaskIdFilter, after_task restores it
+- Formatter: {task_id} from record — request UUID or Celery task ID
 
-Результат: по одному ID можно найти все логи, порождённые одним
-пользовательским действием — от HTTP-запроса до фонового воркера.
+Result: a single ID allows finding all logs produced by one user
+action — from HTTP request to background worker.
 """
 import logging
 import threading
@@ -20,12 +20,12 @@ _local = threading.local()
 
 
 def get_request_id() -> str:
-    """Текущий корреляционный ID (или '-', если нет)."""
+    """Current correlation ID (or '-' if none)."""
     return getattr(_local, 'request_id', '-') or '-'
 
 
 def set_request_id(rid: str = None):
-    """Установить корреляционный ID (middleware / Celery signal)."""
+    """Set correlation ID (middleware / Celery signal)."""
     _local.request_id = rid or '-'
 
 
@@ -34,25 +34,25 @@ def clear_request_id():
 
 
 class RequestIdFilter(logging.Filter):
-    """Добавляет record.task_id — значение для {task_id} в форматтере."""
+    """Adds record.task_id — the value for {task_id} in the formatter."""
 
     def filter(self, record):
         record.task_id = get_request_id()
-        # record.name и так доступен для {name}
+        # record.name is already available for {name}
         return True
 
 
-# ═══ Celery-сигналы: проброс task_id через брокер ═══
+# ═══ Celery signals: pass task_id through the broker ═══
 
 def setup_celery_log_signals(celery_app):
     """
-    Подключить сигналы Celery для корреляции. Вызывается из config/celery.py.
+    Connect Celery signals for correlation. Called from config/celery.py.
     """
     from celery.signals import before_task_publish, task_prerun, task_postrun
 
     @before_task_publish.connect
     def _inject(sender=None, headers=None, **kwargs):
-        """До отправки в брокер: вшить request_id в заголовки."""
+        """Before publishing to broker: embed request_id into headers."""
         if headers is not None:
             rid = get_request_id()
             if rid == '-':
@@ -61,14 +61,14 @@ def setup_celery_log_signals(celery_app):
 
     @task_prerun.connect
     def _prerun(task=None, **kwargs):
-        """Получил задачу: ставим correlation_id как request_id потока."""
+        """Task received: set correlation_id as the thread request_id."""
         if task and task.request:
             rid = task.request.correlation_id or task.request.id or '-'
             set_request_id(rid)
 
     @task_postrun.connect
     def _postrun(task=None, **kwargs):
-        """Задача закончилась — чистим поток."""
+        """Task finished — clean up the thread."""
         clear_request_id()
 
     logger.info("v5.1: Celery log correlation signals connected")

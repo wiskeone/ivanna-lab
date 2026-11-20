@@ -59,10 +59,10 @@ logger = logging.getLogger(__name__)
 
 
 # --------------------------------------------------------------------------
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# HELPER FUNCTIONS
 # --------------------------------------------------------------------------
 def check_pid_exists(pid):
-    """Проверяет, существует ли процесс с данным PID."""
+    """Check whether a process with the given PID exists."""
     import os
     import signal
     
@@ -78,15 +78,14 @@ def check_pid_exists(pid):
 
 def _load_model_with_quanto(model_path: str, quantization: str, **kwargs):
     """
-    Загружает модель с квантизацией на CPU с помощью quanto и принудительно
-    размещает её на CPU.
+    Load a model onto CPU with quanto quantization and force-place it on CPU.
     """
     from transformers import AutoModelForCausalLM, AutoTokenizer
     import quanto
 
     logger.info(f"Loading model with quanto {quantization} on CPU")
 
-    # Загружаем токенизатор
+    # Load the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
         model_path, 
         trust_remote_code=True, 
@@ -95,7 +94,7 @@ def _load_model_with_quanto(model_path: str, quantization: str, **kwargs):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    # Загружаем модель в float32 на CPU
+    # Load the model in float32 on CPU
     model = AutoModelForCausalLM.from_pretrained(
         model_path,
         torch_dtype=torch.float32,
@@ -104,7 +103,7 @@ def _load_model_with_quanto(model_path: str, quantization: str, **kwargs):
         **kwargs
     )
 
-    # Квантизация
+    # Quantization
     if quantization == 'int4':
         quanto.quantize(model, weights=quanto.qint4, activations=None)
     elif quantization == 'int8':
@@ -115,7 +114,7 @@ def _load_model_with_quanto(model_path: str, quantization: str, **kwargs):
 
     quanto.freeze(model)
 
-    # Принудительно размещаем на CPU (хотя уже на CPU, гарантируем)
+    # Force-place on CPU (already on CPU, but make sure)
     model.to('cpu')
     logger.info(f"Model quantized with quanto {quantization} and moved to CPU")
 
@@ -123,7 +122,7 @@ def _load_model_with_quanto(model_path: str, quantization: str, **kwargs):
 
 
 def _load_model_for_generation(checkpoint, quantization):
-    """Вспомогательная функция для загрузки модели в задаче генерации."""
+    """Helper for loading a model in the generation task."""
     from .services.quantization_router import QuantizationRouter
     from .services.redis_model_service import redis_model_manager
     from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -132,11 +131,11 @@ def _load_model_for_generation(checkpoint, quantization):
     try:
         model_identifier = checkpoint.huggingface_id or checkpoint.name
         
-        # Регистрируем блокировку
+        # Register the loading lock
         if not redis_model_manager.register_model_loading(model_identifier, checkpoint.loader_config):
             return {'success': False, 'error': 'Model is being loaded by another process'}
-        
-        # Определяем стратегию загрузки
+
+        # Determine the loading strategy
         model_size_gb = checkpoint.size_gb
         quant_config, actual_quant, target_device = QuantizationRouter.get_quantization_config(
             quantization,
@@ -145,7 +144,7 @@ def _load_model_for_generation(checkpoint, quantization):
         
         logger.info(f"Loading model for generation: actual_quant={actual_quant}, device={target_device}")
         
-        # Загружаем токенизатор с trust_remote_code=True
+        # Load the tokenizer with trust_remote_code=True
         tokenizer = AutoTokenizer.from_pretrained(
             checkpoint.local_path,
             trust_remote_code=True,
@@ -153,8 +152,8 @@ def _load_model_for_generation(checkpoint, quantization):
         )
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
-        
-        # Загружаем модель
+
+        # Load the model
         if isinstance(quant_config, dict) and quant_config.get('method') == 'quanto':
             model, tokenizer = _load_model_with_quanto(
                 checkpoint.local_path,
@@ -162,7 +161,7 @@ def _load_model_for_generation(checkpoint, quantization):
             )
         else:
             model_kwargs = {
-                'trust_remote_code': True,  # обязательно для DeepSeek
+                'trust_remote_code': True,  # required for DeepSeek
                 'low_cpu_mem_usage': True,
             }
             if target_device == 'cuda':
@@ -179,7 +178,7 @@ def _load_model_for_generation(checkpoint, quantization):
             
             model = AutoModelForCausalLM.from_pretrained(checkpoint.local_path, **model_kwargs)
         
-        # Регистрируем в Redis
+        # Register in Redis
         redis_model_manager.register_local_model(
             model_id=model_identifier,
             model=model,
@@ -188,7 +187,7 @@ def _load_model_for_generation(checkpoint, quantization):
             device_info=target_device,
             quantization=actual_quant
         )
-        
+
         return {'success': True, 'model_identifier': model_identifier}
     except Exception as e:
         logger.error(f"Error loading model for generation: {e}", exc_info=True)
@@ -196,7 +195,7 @@ def _load_model_for_generation(checkpoint, quantization):
 
 
 def _load_model_for_evaluation(checkpoint, quantization):
-    """Загружает модель для оценки, возвращает (model, tokenizer) или (None, None) при ошибке."""
+    """Load a model for evaluation; returns (model, tokenizer) or (None, None) on error."""
     from .services.quantization_router import QuantizationRouter
     from .services.redis_model_service import redis_model_manager
     from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -205,12 +204,12 @@ def _load_model_for_evaluation(checkpoint, quantization):
     try:
         model_identifier = checkpoint.huggingface_id or checkpoint.name
 
-        # Регистрируем блокировку (как в оригинале)
+        # Register the loading lock (as in the original)
         if not redis_model_manager.register_model_loading(model_identifier, checkpoint.loader_config):
             logger.error(f"Model {model_identifier} is being loaded by another process")
             return None, None
 
-        # Определяем стратегию загрузки с fallback через QuantizationRouter
+        # Determine the loading strategy with fallback via QuantizationRouter
         model_size_gb = checkpoint.size_gb
         quant_config, actual_quant, target_device = QuantizationRouter.get_quantization_config(
             quantization,
@@ -219,7 +218,7 @@ def _load_model_for_evaluation(checkpoint, quantization):
 
         logger.info(f"Loading model for evaluation: actual_quant={actual_quant}, device={target_device}")
 
-        # Загружаем токенизатор
+        # Load the tokenizer
         tokenizer = AutoTokenizer.from_pretrained(
             checkpoint.local_path,
             trust_remote_code=True,
@@ -228,9 +227,9 @@ def _load_model_for_evaluation(checkpoint, quantization):
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        # Загружаем модель (аналогично load_model_to_memory_task, но без пайплайна)
+        # Load the model (same as load_model_to_memory_task, but without a pipeline)
         if isinstance(quant_config, dict) and quant_config.get('method') == 'quanto':
-            # Для quanto загружаем на CPU
+            # For quanto, load on CPU
             model, tokenizer = _load_model_with_quanto(
                 checkpoint.local_path,
                 quantization=quant_config['quantization']
@@ -254,7 +253,7 @@ def _load_model_for_evaluation(checkpoint, quantization):
 
             model = AutoModelForCausalLM.from_pretrained(checkpoint.local_path, **model_kwargs)
 
-        # Регистрируем в Redis (для информации, не используется для генерации)
+        # Register in Redis (for information only, not used for generation)
         redis_model_manager.register_local_model(
             model_id=model_identifier,
             model=model,
@@ -276,7 +275,7 @@ def download_model_task(self, model_id, user_id=None):
     try:
         checkpoint = ModelCheckpoint.objects.get(id=model_id)
 
-        # Получаем токен, если есть пользователь
+        # Get the token if a user is provided
         token = None
         if user_id:
             try:
@@ -291,7 +290,7 @@ def download_model_task(self, model_id, user_id=None):
                 meta={'progress': progress, 'current_step': step, 'model_name': checkpoint.display_name}
             )
 
-        # Вызываем метод download_model_sync
+        # Call the download_model_sync method
         checkpoint = download_service.download_model_sync(
             model_id,
             token=token,
@@ -312,7 +311,7 @@ def download_model_task(self, model_id, user_id=None):
 
 @shared_task(queue='cpu_tasks')
 def cleanup_download_jobs(days: int = 7):
-    """Очистка завершённых задач загрузки."""
+    """Clean up finished download jobs."""
     cutoff = timezone.now() - timedelta(days=days)
     deleted, _ = ModelDownloadJob.objects.filter(
         created_at__lt=cutoff,
@@ -323,11 +322,11 @@ def cleanup_download_jobs(days: int = 7):
 
 
 # --------------------------------------------------------------------------
-# ЗАГРУЗКА МОДЕЛИ В ПАМЯТЬ
+# LOAD MODEL INTO MEMORY
 # --------------------------------------------------------------------------
 @shared_task(bind=True, queue='gpu_tasks')
 def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] = None):
-    """Загрузка модели в память с каскадной системой fallback'ов."""
+    """Load a model into memory with a cascading fallback system."""
     from .models import ModelCheckpoint
     from .services.redis_model_service import redis_model_manager
     from .services.quantization_router import QuantizationRouter
@@ -344,7 +343,7 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
         checkpoint = ModelCheckpoint.objects.get(id=model_id, is_active=True)
         model_identifier = checkpoint.huggingface_id or checkpoint.name
 
-        # Проверка, не загружена ли уже
+        # Check if already loaded
         existing = redis_model_manager.get_model_info(model_identifier)
         if existing and existing.get('loaded'):
             checkpoint.status = 'LOADED'
@@ -355,7 +354,7 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
         if not checkpoint.local_path or not os.path.exists(checkpoint.local_path):
             raise FileNotFoundError(f"Local path not found: {checkpoint.local_path}")
 
-        # Регистрация блокировки
+        # Register the loading lock
         if not redis_model_manager.register_model_loading(model_identifier, checkpoint.loader_config):
             status = redis_model_manager.get_loading_status(model_identifier)
             return {'success': False, 'error': 'Already loading in another process', 'status': status}
@@ -363,7 +362,7 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
         update_progress(5, "Подготовка конфигурации")
         redis_model_manager.update_loading_progress(model_identifier, 5, "Подготовка конфигурации")
 
-        # Очищаем кэш перед загрузкой
+        # Clear the cache before loading
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
@@ -371,7 +370,7 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
             free_gb = free_memory / 1024**3
             logger.info(f"GPU memory before loading: {free_gb:.2f}GB free")
 
-        # Определяем оптимальную стратегию загрузки через роутер
+        # Determine the optimal loading strategy via the router
         model_size_gb = checkpoint.size_gb
         quant_config, actual_quant, target_device = QuantizationRouter.get_quantization_config(
             quantization or checkpoint.quantization,
@@ -380,7 +379,7 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
 
         logger.info(f"✅ Selected config: actual_quant={actual_quant}, device={target_device}")
 
-        # Загрузка токенизатора
+        # Tokenizer loading
         update_progress(15, "Загрузка токенизатора")
         redis_model_manager.update_loading_progress(model_identifier, 15, "Загрузка токенизатора")
         tokenizer = AutoTokenizer.from_pretrained(
@@ -391,15 +390,15 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        # Загрузка модели (с возможностью fallback на CPU)
+        # Model loading (with possible CPU fallback)
         update_progress(30, "Загрузка модели")
         redis_model_manager.update_loading_progress(model_identifier, 30, "Загрузка модели")
 
         model = None
         device_map = None
-        skip_pipeline = False   # флаг, чтобы не создавать pipeline при CPU fallback
+        skip_pipeline = False   # flag: skip pipeline creation on CPU fallback
 
-        # Попытка загрузки с выбранной стратегией
+        # Attempt loading with the selected strategy
         try:
             if isinstance(quant_config, dict) and quant_config.get('method') == 'quanto':
                 model, tokenizer = _load_model_with_quanto(
@@ -437,17 +436,17 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
 
         except (ValueError, RuntimeError, torch.cuda.OutOfMemoryError) as e:
             error_msg = str(e).lower()
-            # Если ошибка связана с нехваткой памяти на GPU – пробуем CPU fallback
+            # If the error is GPU out-of-memory, try CPU fallback
             if 'cuda' in error_msg or 'memory' in error_msg or 'gpu' in error_msg or 'offloaded' in error_msg:
                 logger.warning(f"GPU loading failed: {e}. Falling back to CPU with {actual_quant}...")
                 try:
-                    # Пробуем загрузить на CPU с той же квантизацией (если поддерживается)
+                    # Try loading on CPU with the same quantization (if supported)
                     if actual_quant in ['int4', 'int8']:
-                        # Используем quanto
+                        # Use quanto
                         model, tokenizer = _load_model_with_quanto(checkpoint.local_path, quantization=actual_quant)
                         logger.info(f"Loaded with quanto {actual_quant} on CPU (fallback)")
                     else:
-                        # Для float16/float32 загружаем обычную модель на CPU
+                        # For float16/float32, load the plain model on CPU
                         logger.info(f"Loading full precision model on CPU (fallback)")
                         model = AutoModelForCausalLM.from_pretrained(
                             checkpoint.local_path,
@@ -465,7 +464,7 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
             else:
                 raise
 
-        # Логируем устройство модели
+        # Log the model device
         if hasattr(model, 'device'):
             logger.info(f"Model is on device: {model.device}")
         elif hasattr(model, 'hf_device_map'):
@@ -476,7 +475,7 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
 
         from transformers import pipeline
 
-        # Создаём pipeline только для GPU-моделей, для CPU пропускаем
+        # Create a pipeline only for GPU models; skip for CPU
         if skip_pipeline or target_device == 'cpu' or (actual_quant and actual_quant.startswith('quanto_')):
             logger.info("Pipeline not created (CPU model or fallback), will use direct generation")
             pipe = None
@@ -505,7 +504,7 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
         update_progress(100, "Готово")
         redis_model_manager.update_loading_progress(model_identifier, 100, "Готово")
 
-        # Обновляем статус модели в БД
+        # Update the model status in the DB
         checkpoint.status = 'LOADED'
         checkpoint.quantization = quantization or checkpoint.quantization or ''
         checkpoint.loader_config = checkpoint.loader_config or {}
@@ -516,7 +515,7 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
         checkpoint.save(update_fields=['status', 'quantization', 'loader_config'])
         logger.info(f"✅ Database updated for model {model_identifier}: status=LOADED, actual_quant={actual_quant}, device={target_device}")
 
-        # Финальная очистка кэша
+        # Final cache cleanup
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             free_memory, total_memory = torch.cuda.mem_get_info()
@@ -542,12 +541,12 @@ def load_model_to_memory_task(self, model_id: int, quantization: Optional[str] =
 @shared_task(bind=True, queue='gpu_tasks')
 def unload_model_from_memory_task(self, model_id, force: bool = False):
     """
-    Выгрузка модели из памяти с принудительной очисткой
+    Unload a model from memory with forced cleanup
     """
-    logger.info(f"⏹️ Задача выгрузки модели: {model_id}, force={force}")
-    
+    logger.info(f"⏹️ Model unload task: {model_id}, force={force}")
+
     try:
-        # Определяем идентификатор модели
+        # Determine the model identifier
         if isinstance(model_id, int):
             checkpoint = ModelCheckpoint.objects.get(id=model_id)
             model_identifier = checkpoint.huggingface_id or checkpoint.name
@@ -555,21 +554,21 @@ def unload_model_from_memory_task(self, model_id, force: bool = False):
             model_identifier = model_id
             checkpoint = None
         
-        # Выгружаем из памяти
+        # Unload from memory
         success = redis_model_manager.unload_model(model_identifier, force=force)
-        
+
         if success and checkpoint:
-            # Обновляем статус в БД
+            # Update the status in the DB
             checkpoint.status = 'DOWNLOADED' if checkpoint.local_path else 'PENDING'
             checkpoint.save()
             
-            # Очищаем информацию о загрузке
+            # Clean up download info
             ModelDownloadJob.objects.filter(
                 checkpoint=checkpoint,
                 status='DOWNLOADING'
             ).update(status='CANCELLED')
         
-        # Дополнительная очистка памяти в Celery worker
+        # Extra memory cleanup in the Celery worker
         import gc
         gc.collect()
         
@@ -581,16 +580,16 @@ def unload_model_from_memory_task(self, model_id, force: bool = False):
         }
         
     except Exception as e:
-        logger.error(f"❌ Ошибка выгрузки: {e}", exc_info=True)
+        logger.error(f"❌ Unload error: {e}", exc_info=True)
         return {'success': False, 'error': str(e)}
 
 
 @shared_task(bind=True, queue='gpu_tasks', max_retries=3)
 def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, rag_config=None, **kwargs):
     """
-    Генерация текста с использованием модели.
-    Если модель не загружена локально в этом воркере, загружает её.
-    Поддерживает RAG с несколькими коллекциями и полными параметрами.
+    Generate text using a model.
+    If the model is not loaded locally in this worker, loads it.
+    Supports RAG with multiple collections and full parameters.
     """
     from .models import ModelCheckpoint
     from .services.redis_model_service import redis_model_manager
@@ -602,7 +601,7 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
     logger.info(f"🔧 generate_text_task: model_id={model_id}, session_id={session_id}, use_rag={use_rag}")
 
     try:
-        # Определяем идентификатор модели (может быть числом или строкой)
+        # Determine the model identifier (may be an int or a string)
         if isinstance(model_id, int):
             try:
                 checkpoint = ModelCheckpoint.objects.get(id=model_id, is_active=True)
@@ -613,8 +612,8 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
             model_identifier = model_id
             checkpoint = None
 
-        # v5.0: роутинг бэкенда — vLLM обслуживается внешним сервером,
-        # локальная загрузка transformers не нужна
+        # v5.0: backend routing — vLLM is served by an external server,
+        # no local transformers loading needed
         serving_backend = getattr(checkpoint, 'serving_backend', 'transformers') if checkpoint else 'transformers'
         if serving_backend == 'vllm':
             from .services.vllm_client import VLLMClient
@@ -624,9 +623,9 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
             target_model = served or model_identifier
             logger.info(f"🚀 vLLM backend: model={target_model} (checkpoint {checkpoint.id if checkpoint else model_identifier})")
 
-        # Проверяем, загружена ли модель локально
+        # Check whether the model is loaded locally
         if serving_backend != 'vllm' and model_identifier not in redis_model_manager.local_models:
-            # Попытка загрузить модель
+            # Try to load the model
             if checkpoint is None:
                 try:
                     checkpoint = ModelCheckpoint.objects.get(
@@ -639,15 +638,15 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
             if serving_backend != 'vllm' and (not checkpoint.local_path or not os.path.exists(checkpoint.local_path)):
                 return {'success': False, 'error': 'Model not downloaded locally'}
 
-            # Определяем квантизацию
+            # Determine quantization
             quantization = kwargs.get('quantization') or checkpoint.quantization or None
 
-            # Загружаем модель (используем отдельную функцию)
+            # Load the model (use the dedicated function)
             load_result = _load_model_for_generation(checkpoint, quantization)
             if not load_result.get('success'):
                 return load_result
 
-        # Если включён RAG, получаем контекст для текущего сообщения
+        # If RAG is enabled, get context for the current message
         final_prompt = prompt
         rag_sources = []
         if use_rag and rag_config and rag_config.get('selected_collections'):
@@ -664,9 +663,9 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
                     freshness_weight = rag_config.get('freshness_weight', 0.1)
                     use_reranking = rag_config.get('use_reranking', True)
 
-                    # Выполняем поиск
+                    # Run the search
                     search_result = rag.search(
-                        query=prompt,  # в идеале нужно извлекать последний вопрос, но для простоты используем весь промпт
+                        query=prompt,  # ideally extract the last question, but keep it simple and use the whole prompt
                         user_id='system',
                         collection_ids=collection_ids,
                         top_k=top_k,
@@ -679,7 +678,7 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
 
                     if search_result.get('success') and search_result.get('results'):
                         results = search_result['results'][:top_k]
-                        # Собираем контекст и информацию об источниках
+                        # Collect context and source info
                         context_parts = []
                         for r in results:
                             context_parts.append(
@@ -693,8 +692,8 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
                             })
                         context = "\n\n---\n\n".join(context_parts)
                         
-                        # Вставляем контекст в начало промпта
-                        # Пытаемся определить, есть ли уже системный промпт
+                        # Insert the context at the beginning of the prompt
+                        # Try to detect whether a system prompt already exists
                         parts = prompt.split("\n", 1)
                         if len(parts) == 2 and parts[0].startswith("System:"):
                             final_prompt = f"{parts[0]}\n\nКонтекст из документов:\n{context}\n\n{parts[1]}"
@@ -705,7 +704,7 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
             except Exception as e:
                 logger.error(f"Error getting RAG context: {e}", exc_info=True)
 
-        # Генерируем текст
+        # Generate text
         if serving_backend == 'vllm':
             from .services.vllm_client import VLLMClient
             result = VLLMClient().generate(model=target_model, prompt=final_prompt, **kwargs)
@@ -714,12 +713,12 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
         else:
             result = redis_model_manager.generate_text(model_identifier, final_prompt, **kwargs)
         
-        # Добавляем информацию об использованных RAG-источниках
+        # Attach info about the used RAG sources
         if result.get('success') and rag_sources:
             result['rag_sources'] = rag_sources
-            logger.info(f"✅ RAG sources added to result: {rag_sources}")  # для отладки
-        
-        # Если есть session_id, добавляем сообщение в сессию
+            logger.info(f"✅ RAG sources added to result: {rag_sources}")  # for debugging
+
+        # If session_id is present, add the message to the session
         if session_id and result.get('success'):
             try:
                 from .services.chat_service import chat_service
@@ -751,11 +750,11 @@ def generate_text_task(self, model_id, prompt, session_id=None, use_rag=False, r
 
 
 # --------------------------------------------------------------------------
-# СИНХРОНИЗАЦИЯ СТАТУСОВ
+# STATUS SYNCHRONIZATION
 # --------------------------------------------------------------------------
 @shared_task(queue='cpu_tasks')
 def sync_model_statuses_task():
-    """Синхронизирует статусы моделей с Redis и проверяет живость воркеров."""
+    """Sync model statuses with Redis and check worker liveness."""
     from .models import ModelCheckpoint
 
     logger.info("🔄 Starting model status sync")
@@ -769,7 +768,7 @@ def sync_model_statuses_task():
             model.save()
             synced += 1
         else:
-            # Проверяем, жив ли процесс, загрузивший модель
+            # Check whether the process that loaded the model is alive
             loaded_by = info.get('loaded_by', {})
             pid = loaded_by.get('pid')
             if pid and not check_pid_exists(pid):
@@ -804,7 +803,7 @@ def sync_model_statuses_task():
 
 @shared_task(queue='cpu_tasks')
 def refresh_model_ttl():
-    """Обновляет TTL для ключей моделей в Redis."""
+    """Refresh TTL for model keys in Redis."""
     try:
         keys = redis_model_manager.redis.keys("model:*:info")
         for key in keys:
@@ -818,14 +817,14 @@ def refresh_model_ttl():
 @shared_task(queue='cpu_tasks')
 def cleanup_stale_models():
     """
-    Периодическая очистка моделей, которые висят в Redis,
-    но не используются (нет heartbeat от воркера).
+    Periodic cleanup of models that sit in Redis
+    but are unused (no worker heartbeat).
     """
     from .services.redis_model_service import redis_model_manager
     
     logger.info("🧹 Starting stale models cleanup")
     
-    # Получаем все загруженные модели из Redis
+    # Fetch all models loaded in Redis
     models = redis_model_manager.list_loaded_models()
     cleaned = 0
     
@@ -836,13 +835,13 @@ def cleanup_stale_models():
             loaded_by = info.get('loaded_by', {})
             loaded_pid = loaded_by.get('pid')
             
-            # Если модель не использовалась более 1 часа
+            # If the model has not been used for more than 1 hour
             if time.time() - last_accessed > 3600:
                 logger.warning(f"Model {model_id} not accessed for >1h, unloading")
                 redis_model_manager.unload_model(model_id, force=True)
                 cleaned += 1
                 
-            # Если воркер с таким PID не существует (для Linux)
+            # If a worker with this PID does not exist (Linux)
             elif loaded_pid and not check_pid_exists(loaded_pid):
                 logger.warning(f"Worker with PID {loaded_pid} for model {model_id} is dead, unloading")
                 redis_model_manager.unload_model(model_id, force=True)
@@ -854,7 +853,7 @@ def cleanup_stale_models():
 
 @shared_task(queue='cpu_tasks')
 def cleanup_stale_model_locks():
-    """Очистка зависших блокировок моделей."""
+    """Clean up stale model locks."""
     from .services.redis_model_service import redis_model_manager
     
     logger.info("🔓 Cleaning stale model locks")
@@ -864,11 +863,11 @@ def cleanup_stale_model_locks():
 
 
 # --------------------------------------------------------------------------
-# СЛИЯНИЕ МОДЕЛЕЙ
+# MODEL MERGING
 # --------------------------------------------------------------------------
 @shared_task(bind=True, queue='gpu_tasks')
 def merge_models_task(self, merge_job_id):
-    """Задача слияния моделей с отслеживанием прогресса."""
+    """Model merging task with progress tracking."""
     from .models import ModelMergeJob, ModelCheckpoint
     from .services.merger import merger
     import os
@@ -884,7 +883,7 @@ def merge_models_task(self, merge_job_id):
             logger.warning(f"Job {merge_job_id} already in state {merge_job.status}, skipping")
             return {'success': False, 'error': 'Job already running or completed'}
 
-        # Валидация входных данных
+        # Validate the inputs
         if not merge_job.base_model.local_path or not os.path.exists(merge_job.base_model.local_path):
             raise FileNotFoundError(f"Base model path not found: {merge_job.base_model.local_path}")
         if not merge_job.merge_model.local_path or not os.path.exists(merge_job.merge_model.local_path):
@@ -893,18 +892,18 @@ def merge_models_task(self, merge_job_id):
         merge_job.status = 'VALIDATING'
         merge_job.save(update_fields=['status'])
 
-        # Создаём выходную папку
+        # Create the output folder
         output_dir = os.path.join(settings.MEDIA_ROOT, 'merged_models')
         os.makedirs(output_dir, exist_ok=True)
         output_name = f"merged_{merge_job.base_model.safe_name}_{merge_job.merge_model.safe_name}_{timezone.now().strftime('%Y%m%d_%H%M%S')}"
         output_path = os.path.join(output_dir, output_name)
 
-        # Обновляем статус
+        # Update the status
         merge_job.status = 'RUNNING'
         merge_job.current_step = 'Подготовка конфигурации'
         merge_job.save(update_fields=['status', 'current_step'])
 
-        # Запускаем слияние
+        # Run the merge
         result = merger.merge_models(
             base_model_path=merge_job.base_model.local_path,
             merge_model_path=merge_job.merge_model.local_path,
@@ -918,12 +917,12 @@ def merge_models_task(self, merge_job_id):
         if not result['success']:
             raise Exception(result.get('error', 'Unknown error'))
 
-        # Создаём новый чекпоинт для слитой модели
+        # Create a new checkpoint for the merged model
         merged_checkpoint = ModelCheckpoint.objects.create(
             name=f"merged_{merge_job.base_model.name}_{merge_job.merge_model.name}_{int(timezone.now().timestamp())}",
             display_name=f"Слияние {merge_job.base_model.display_name} и {merge_job.merge_model.display_name}",
             model_type=merge_job.base_model.model_type,
-            parameter_count=merge_job.base_model.parameter_count,  # предполагаем, что одинаковые
+            parameter_count=merge_job.base_model.parameter_count,  # assume identical
             status='DOWNLOADED',
             local_path=output_path,
             relative_path=f"merged_models/{output_name}",
@@ -932,7 +931,7 @@ def merge_models_task(self, merge_job_id):
             tags=merge_job.base_model.tags + ['merged']
         )
 
-        # Обновляем задачу
+        # Update the job
         merge_job.status = 'COMPLETED'
         merge_job.output_model = merged_checkpoint
         merge_job.completed_at = timezone.now()
@@ -956,12 +955,12 @@ def merge_models_task(self, merge_job_id):
 
 
 # --------------------------------------------------------------------------
-# ЗАДАЧИ ОЦЕНКИ (EVALUATION)
+# EVALUATION TASKS
 # --------------------------------------------------------------------------
 @shared_task(bind=True, queue='gpu_tasks', time_limit=None, soft_time_limit=None)
 def run_evaluation_task(self, task_id, use_rag=False, collection_ids=None):
     """
-    Запуск оценки модели на датасете с чекпоинтами и без ограничения времени.
+    Run model evaluation on a dataset with checkpoints and no time limit.
     """
     from .models import ModelEvaluationTask, EvaluationResult, DocumentCollection, EmbeddingModel
     from .services.rag_service import RAGService
@@ -1062,13 +1061,13 @@ def run_evaluation_task(self, task_id, use_rag=False, collection_ids=None):
         generation_config = task.generation_config or {}
         quantization_override = generation_config.get('quantization')
 
-        # Восстанавливаем RAG параметры из конфигурации, если они не переданы явно
+        # Restore RAG params from the configuration if not passed explicitly
         if not use_rag:
             use_rag = generation_config.get('use_rag', False)
         if not collection_ids:
             collection_ids = generation_config.get('rag_collections', [])
 
-        # === RAG инициализация ===
+        # === RAG initialization ===
         rag_service = None
         embedding_model_id = None
         collection_id = None
@@ -1123,7 +1122,7 @@ def run_evaluation_task(self, task_id, use_rag=False, collection_ids=None):
                 if not q_text:
                     continue
 
-                # === RAG: получаем контекст ===
+                # === RAG: get context ===
                 rag_context = ""
                 rag_sources_count = 0
                 rag_sources_info = []
@@ -1162,7 +1161,7 @@ def run_evaluation_task(self, task_id, use_rag=False, collection_ids=None):
                 else:
                     logger.info(f"   ❌ RAG disabled for question {q_id}, use_rag={use_rag}, collection_ids={collection_ids}")
 
-                # Формируем промпт
+                # Build the prompt
                 if rag_context:
                     prompt = (
                         f"Контекст из документов:\n{rag_context}\n\n"
@@ -1197,14 +1196,14 @@ def run_evaluation_task(self, task_id, use_rag=False, collection_ids=None):
                             )
                         response_time = time.time() - start_time
                         response = tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
-                        break  # успешно
+                        break  # success
 
                     except torch.cuda.OutOfMemoryError as e:
                         logger.error(f"CUDA OOM in evaluation for model {model.name}, question {q_id}: {e}. Moving model to CPU.")
                         if torch.cuda.is_available():
                             torch.cuda.empty_cache()
                         model_obj.to('cpu')
-                        # Пытаемся конвертировать в float32, но если модель квантизирована, пропускаем
+                        # Try converting to float32, but skip if the model is quantized
                         try:
                             model_obj = model_obj.float()
                         except ValueError as float_err:
@@ -1274,7 +1273,7 @@ def run_evaluation_task(self, task_id, use_rag=False, collection_ids=None):
                     }
                 )
 
-                # Чекпоинт после каждого вопроса
+                # Checkpoint after each question
                 task.metadata['checkpoint'] = {
                     'last_model_idx': model_idx,
                     'last_question_idx': q_idx,
@@ -1356,7 +1355,7 @@ def run_evaluation_task(self, task_id, use_rag=False, collection_ids=None):
 
 @shared_task(queue='cpu_tasks')
 def process_uploaded_dataset(file_path, dataset_id, file_format='auto'):
-    """Обработка загруженного файла датасета."""
+    """Process an uploaded dataset file."""
     from .models import EvaluationDataset
     try:
         dataset = EvaluationDataset.objects.get(id=dataset_id)
@@ -1369,7 +1368,7 @@ def process_uploaded_dataset(file_path, dataset_id, file_format='auto'):
 
 @shared_task(queue='cpu_tasks')
 def export_evaluation_results(task_id, export_format='json'):
-    """Экспорт результатов оценки (заглушка)."""
+    """Export evaluation results (stub)."""
     return {'success': True, 'task_id': task_id, 'format': export_format}
 
 
@@ -1379,7 +1378,7 @@ def export_evaluation_results(task_id, export_format='json'):
 @shared_task(bind=True, queue='gpu_tasks', time_limit=86400)
 def run_fine_tuning_task(self, job_id, restart=False, resume: bool = False):
     """
-    Запуск fine-tuning с поддержкой чекпоинтов, fallback на CPU и логированием ошибок.
+    Run fine-tuning with checkpoint support, CPU fallback, and error logging.
     """
     logger.info(f"🚀 run_fine_tuning_task: job_id={job_id}, restart={restart}")
 
@@ -1392,46 +1391,46 @@ def run_fine_tuning_task(self, job_id, restart=False, resume: bool = False):
     try:
         job = FineTuningJob.objects.select_related('output_model', 'base_model').get(id=job_id)
 
-        # Если restart=True – очищаем директорию модели (для перезапуска с нуля)
+        # If restart=True, clear the model directory (for a fresh restart)
         if restart and job.output_model and job.output_model.local_path:
             import shutil
             output_dir = job.output_model.local_path
             if os.path.exists(output_dir):
                 shutil.rmtree(output_dir)
                 os.makedirs(output_dir, exist_ok=True)
-                job.add_log("🧹 Директория модели очищена для перезапуска")
+                job.add_log("🧹 Model directory cleared for restart")
 
         job.status = 'PREPARING'
         job.save()
         job.add_log("Starting fine-tuning job...")
 
-        # Пробуем GPU, при OOM переключаемся на CPU
+        # Try GPU; switch to CPU on OOM
         device = 'cuda'
         try:
             output_model = _run_training_on_device(job, device, resume=resume)
         except torch.cuda.OutOfMemoryError as e:
-            job.add_log(f"⚠️ CUDA out of memory: {e}. Пробуем на CPU...")
-            job.add_error(f"CUDA OOM: {e}")  # записываем ошибку, но продолжаем
+            job.add_log(f"⚠️ CUDA out of memory: {e}. Trying CPU...")
+            job.add_error(f"CUDA OOM: {e}")  # record the error but continue
             torch.cuda.empty_cache()
             device = 'cpu'
             output_model = _run_training_on_device(job, device, resume=resume)
         except Exception as e:
-            # Любая другая ошибка – логируем и пробрасываем дальше
+            # Any other error — log it and re-raise
             job.add_error(str(e), traceback.format_exc())
             raise
 
         if output_model:
             output_model.status = 'DOWNLOADED'
             output_model.save()
-            job.add_log(f"✅ Модель {output_model.display_name} сохранена и готова к использованию")
+            job.add_log(f"✅ Model {output_model.display_name} saved and ready to use")
 
-        # v5.1: тренер мог вернуть None при паузе — статус уже PAUSED
+        # v5.1: the trainer may return None on pause — status is already PAUSED
         if output_model is None:
             job.refresh_from_db()
             if job.status != 'PAUSED':
                 job.status = 'PAUSED'
                 job.save()
-            logger.info(f"⏸ Fine-tuning job {job_id} paused — resume продолжит с чекпоинта")
+            logger.info(f"⏸ Fine-tuning job {job_id} paused — resume will continue from the checkpoint")
             return {'success': True, 'status': 'PAUSED'}
 
         job.status = 'COMPLETED'
@@ -1443,7 +1442,7 @@ def run_fine_tuning_task(self, job_id, restart=False, resume: bool = False):
         return {'success': False, 'error': f'Job {job_id} not found'}
     except Exception as e:
         logger.error(f"Error in fine-tuning job {job_id}: {e}", exc_info=True)
-        # Пытаемся сохранить ошибку в задаче, если она ещё существует
+        # Try to save the error on the job if it still exists
         try:
             job.add_error(str(e), traceback.format_exc())
             job.fail(str(e), {'traceback': traceback.format_exc()})
@@ -1454,16 +1453,16 @@ def run_fine_tuning_task(self, job_id, restart=False, resume: bool = False):
 
 def _run_training_on_device(job, device, resume: bool = False):
     """
-    Выбирает нужный тренер и запускает обучение на указанном устройстве.
-    v5.1: job.gpu_device переопределяет device (0..N = cuda:N, -1 = cpu).
+    Pick the right trainer and run training on the given device.
+    v5.1: job.gpu_device overrides device (0..N = cuda:N, -1 = cpu).
     """
-    # v5.1: явный выбор GPU из формы перекрывает авто-определение
+    # v5.1: an explicit GPU choice from the form overrides auto-detection
     if job.gpu_device is not None:
         if job.gpu_device == -1:
             device = 'cpu'
         elif job.gpu_device >= 0 and torch.cuda.is_available():
             device = f'cuda:{job.gpu_device}'
-        logger.info(f"🎯 v5.1: GPU выбор из формы → device={device}")
+        logger.info(f"🎯 v5.1: GPU selected via form → device={device}")
 
     if job.method == 'document':
         from .services.fine_tuning.document_trainer import DocumentTrainer
@@ -1481,14 +1480,14 @@ def _run_training_on_device(job, device, resume: bool = False):
 
 @shared_task(queue='gpu_tasks')
 def resume_fine_tuning_task(job_id):
-    """v5.1: резюме файнтюна — повторный прогон подхватывает чекпоинт.
-    gpu_tasks: тренировка требует CUDA (CPU-fallback только по OOM)."""
+    """v5.1: resume fine-tuning — a re-run picks up from the checkpoint.
+    gpu_tasks: training requires CUDA (CPU fallback only on OOM)."""
     return run_fine_tuning_task(job_id, resume=True)
 
 
 @shared_task(queue='cpu_tasks')
 def evaluate_fine_tuned_model_task(job_id, dataset_id):
-    """Оценка дообученной модели на датасете"""
+    """Evaluate a fine-tuned model on a dataset"""
     from .models import FineTuningJob, EvaluationDataset
     
     try:
@@ -1534,27 +1533,27 @@ def convert_model_to_gguf_task(self, job_id):
         if not src_model.local_path or not os.path.exists(src_model.local_path):
             raise FileNotFoundError(f"Source model path not found: {src_model.local_path}")
 
-        # Определяем выходной путь
+        # Determine the output path
         output_dir = os.path.join(settings.MEDIA_ROOT, 'converted_models')
         os.makedirs(output_dir, exist_ok=True)
         safe_name = src_model.safe_name
         output_filename = f"{safe_name}_{job.quantization}.gguf"
         output_path = os.path.join(output_dir, output_filename)
 
-        # Путь к скрипту конвертации (можно настроить в settings)
+        # Conversion script path (configurable in settings)
         convert_script = getattr(settings, 'LLAMA_CPP_CONVERT_SCRIPT', '/opt/llama.cpp/convert.py')
         if not os.path.exists(convert_script):
-            # Попробуем найти в проекте
+            # Try to find it in the project
             convert_script = os.path.join(settings.BASE_DIR, '..', 'llama.cpp', 'convert.py')
 
-        # Формируем команду
+        # Build the command
         cmd = [
             'python', convert_script,
             src_model.local_path,
             '--outfile', output_path,
             '--outtype', job.quantization,
         ]
-        # Добавляем дополнительные параметры из job.config
+        # Append extra parameters from job.config
         for key, value in job.config.items():
             cmd.append(f'--{key}')
             if value is not None:
@@ -1565,7 +1564,7 @@ def convert_model_to_gguf_task(self, job_id):
         job.add_log(f"Running command: {' '.join(cmd)}")
         update_progress(10, "Конвертация")
 
-        # Запускаем процесс
+        # Start the process
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -1574,7 +1573,7 @@ def convert_model_to_gguf_task(self, job_id):
             bufsize=1
         )
 
-        # Читаем вывод построчно
+        # Read the output line by line
         for line in process.stdout:
             line = line.strip()
             if line:
@@ -1588,7 +1587,7 @@ def convert_model_to_gguf_task(self, job_id):
         job.add_log("Conversion completed, creating output model entry...")
         update_progress(90, "Сохранение модели")
 
-        # Создаём новый чекпоинт
+        # Create a new checkpoint
         new_checkpoint = ModelCheckpoint.objects.create(
             name=f"{src_model.name}_gguf_{job.quantization}",
             display_name=f"{src_model.display_name} (GGUF, {job.quantization})",
@@ -1603,7 +1602,7 @@ def convert_model_to_gguf_task(self, job_id):
             relative_path=f"converted_models/{output_filename}",
             status='DOWNLOADED',
             parameter_count=src_model.parameter_count,
-            quantization='int8',  # 'gguf' не входит в ModelCheckpoint.QUANTIZATION_CHOICES
+            quantization='int8',  # 'gguf' is not in ModelCheckpoint.QUANTIZATION_CHOICES
             context_length=src_model.context_length,
             vocab_size=src_model.vocab_size,
             license_type=src_model.license_type,
@@ -1628,7 +1627,7 @@ def convert_model_to_gguf_task(self, job_id):
 
 
 # --------------------------------------------------------------------------
-# ЗАДАЧИ RAG (реализации в tasks_rag.py, здесь только импорт)
+# RAG TASKS (implementations in tasks_rag.py, only imports here)
 # --------------------------------------------------------------------------
 
 
@@ -1653,11 +1652,11 @@ def regenerate_document_chunks_task(self, document_id):
 
 
 # --------------------------------------------------------------------------
-# ПЕРИОДИЧЕСКИЕ ЗАДАЧИ
+# PERIODIC TASKS
 # --------------------------------------------------------------------------
 @shared_task(queue='cpu_tasks')
 def health_check_task():
-    """Проверка здоровья системы."""
+    """System health check."""
     from .models import ModelCheckpoint, DocumentCollection, ModelDownloadJob
     try:
         redis_model_manager.redis.ping()
@@ -1678,13 +1677,13 @@ def health_check_task():
 
 @shared_task(queue='cpu_tasks')
 def check_system_health_task():
-    """Алиас для health_check_task."""
+    """Alias for health_check_task."""
     return health_check_task()
 
 
 @shared_task(queue='cpu_tasks')
 def update_collection_statistics_task():
-    """Обновление статистики всех активных коллекций."""
+    """Update statistics for all active collections."""
     from .models import DocumentCollection
     for col in DocumentCollection.objects.filter(is_active=True):
         col.update_statistics()
@@ -1693,57 +1692,57 @@ def update_collection_statistics_task():
 
 @shared_task(queue='cpu_tasks')
 def validate_documents_task():
-    """Валидация документов (заглушка)."""
+    """Validate documents (stub)."""
     return {'success': True}
 
 
 @shared_task(queue='cpu_tasks')
 def cleanup_vector_index_task():
-    """Очистка устаревших индексов (заглушка)."""
+    """Clean up stale indexes (stub)."""
     return {'success': True}
 
 
 @shared_task(queue='cpu_tasks')
 def generate_system_report_task():
-    """Генерация отчёта (заглушка)."""
+    """Generate a report (stub)."""
     return {'success': True}
 
 
 @shared_task(queue='cpu_tasks')
 def monitor_processing_tasks():
-    """Мониторинг задач обработки (заглушка)."""
+    """Monitor processing tasks (stub)."""
     return {'success': True}
 
 
 @shared_task(queue='cpu_tasks')
 def auto_clean_memory():
-    """Автоматическая очистка памяти каждые 30 минут"""
+    """Automatically clean memory every 30 minutes"""
     import gc
     import torch
-    
-    logger.info("🧹 Автоматическая очистка памяти")
-    
-    # Проверяем, есть ли загруженные модели
+
+    logger.info("🧹 Automatic memory cleanup")
+
+    # Check whether any models are loaded
     loaded_models = redis_model_manager.list_loaded_models()
-    
+
     if not loaded_models:
-        # Если моделей нет - чистим всё
+        # No models — clean everything
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
-        logger.info("✅ Память очищена (нет активных моделей)")
+        logger.info("✅ Memory cleaned (no active models)")
     else:
-        logger.info(f"⏸️ Пропускаем очистку: загружено {len(loaded_models)} моделей")
+        logger.info(f"⏸️ Skipping cleanup: {len(loaded_models)} models loaded")
     
     return {'cleaned': len(loaded_models) == 0}
 
 
 # --------------------------------------------------------------------------
-# ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ СИНХРОННОЙ ЗАГРУЗКИ УЧИТЕЛЯ
+# HELPER FOR SYNCHRONOUS TEACHER MODEL LOADING
 # --------------------------------------------------------------------------
 def _load_teacher_model_sync(teacher_model_id, quantization=None):
-    """Синхронная загрузка модели-учителя с ожиданием, если она загружается в другом процессе."""
+    """Synchronously load the teacher model, waiting if it is being loaded in another process."""
     from .models import ModelCheckpoint
     from .tasks import _load_model_for_generation
     import time
@@ -1751,33 +1750,33 @@ def _load_teacher_model_sync(teacher_model_id, quantization=None):
     teacher = ModelCheckpoint.objects.get(id=teacher_model_id)
     model_identifier = teacher.huggingface_id or teacher.name
 
-    # Если модель уже загружена в этом процессе, возвращаем её
+    # If the model is already loaded in this process, return it
     if model_identifier in redis_model_manager.local_models:
         return teacher
 
-    # Проверяем, не загружается ли модель в другом процессе
+    # Check whether the model is being loaded in another process
     loading_status = redis_model_manager.get_loading_status(model_identifier)
     if loading_status.get('status') == 'LOADING':
-        # Ждём до 30 секунд (6 попыток по 5 секунд)
+        # Wait up to 30 seconds (6 attempts, 5 seconds each)
         for attempt in range(6):
             time.sleep(5)
-            # Проверяем, не появилась ли модель в локальном кэше
+            # Check whether the model has appeared in the local cache
             if model_identifier in redis_model_manager.local_models:
                 return teacher
-            # Проверяем статус снова
+            # Check the status again
             loading_status = redis_model_manager.get_loading_status(model_identifier)
             if loading_status.get('status') == 'LOADED':
-                # Модель загружена в другом процессе, но не в этом – нужно загрузить локально
+                # Loaded in another process but not in this one — need a local load
                 break
             if loading_status.get('status') == 'FAILED':
                 break
-        # Если после ожидания модель всё ещё не загружена локально, пробуем загрузить
+        # If the model is still not loaded locally after waiting, try loading it
         if model_identifier not in redis_model_manager.local_models:
             load_result = _load_model_for_generation(teacher, quantization)
             if not load_result.get('success'):
                 raise Exception(f"Не удалось загрузить модель учителя: {load_result.get('error')}")
     else:
-        # Модель не загружается, загружаем
+        # Not loading anywhere — load it
         load_result = _load_model_for_generation(teacher, quantization)
         if not load_result.get('success'):
             raise Exception(f"Не удалось загрузить модель учителя: {load_result.get('error')}")
@@ -1786,7 +1785,7 @@ def _load_teacher_model_sync(teacher_model_id, quantization=None):
 
 
 # --------------------------------------------------------------------------
-# ЗАДАЧА ГЕНЕРАЦИИ ВОПРОСОВ ДЛЯ ВСЕХ ГРУПП НАБОРА
+# QUESTION GENERATION TASK FOR ALL GROUPS OF A SET
 # --------------------------------------------------------------------------
 @shared_task(bind=True, queue='gpu_tasks', max_retries=3)
 def generate_questions_for_set_task(self, question_set_id, teacher_model_id, quantization=None):
@@ -1797,11 +1796,11 @@ def generate_questions_for_set_task(self, question_set_id, teacher_model_id, qua
         if qset.status == 'COMPLETED':
             return {'success': True, 'message': 'Already completed'}
 
-        # Загружаем учителя
+        # Load the teacher
         teacher = _load_teacher_model_sync(teacher_model_id, quantization)
         model_identifier = teacher.huggingface_id or teacher.name
 
-        # Параметры генерации
+        # Generation parameters
         config = qset.default_generation_config or {}
         prompt_template = (
             "На основе текста сгенерируй {num_questions} вопроса. Каждый вопрос пиши с новой строки, только вопрос, без пояснений.\n\n"
@@ -1819,42 +1818,42 @@ def generate_questions_for_set_task(self, question_set_id, teacher_model_id, qua
         top_k = config.get('top_k', 50)
         repetition_penalty = config.get('repetition_penalty', 1.0)
 
-        # Получаем группы в порядке order
+        # Get groups in order
         groups = qset.groups.all().order_by('order')
         total_groups = groups.count()
         if total_groups == 0:
             raise ValueError("Нет групп для обработки")
 
-        # Восстанавливаем чекпоинт (последняя обработанная группа)
+        # Restore the checkpoint (last processed group)
         checkpoint = qset.checkpoint_data or {}
         start_group_idx = checkpoint.get('last_group_idx', 0)
 
         qset.status = 'RUNNING'
         qset.save(update_fields=['status'])
 
-        # Кэш для чанков (чтобы не дергать БД на каждый вопрос)
+        # Chunk cache (to avoid hitting the DB for every question)
         chunk_cache = {}
 
         for idx, group in enumerate(groups[start_group_idx:], start=start_group_idx):
-            # Загружаем чанки для группы
+            # Load chunks for the group
             missing = [cid for cid in group.chunk_ids if cid not in chunk_cache]
             if missing:
                 chunks = DocumentChunk.objects.filter(id__in=missing, is_active=True)
                 for ch in chunks:
                     chunk_cache[ch.id] = ch.content
 
-            # Формируем контекст из чанков в порядке их следования
+            # Build the context from chunks in their original order
             context_parts = []
             for cid in group.chunk_ids:
                 if cid in chunk_cache:
                     context_parts.append(chunk_cache[cid])
             context = "\n\n---\n\n".join(context_parts)
 
-            # Получаем количество вопросов для этой группы (может быть переопределено)
+            # Get the number of questions for this group (may be overridden)
             num_questions = group.num_questions
             prompt = prompt_template.format(context=context, num_questions=num_questions)
 
-            # Генерируем вопросы
+            # Generate questions
             result = redis_model_manager.generate_text(
                 model_id=model_identifier,
                 prompt=prompt,
@@ -1880,16 +1879,16 @@ def generate_questions_for_set_task(self, question_set_id, teacher_model_id, qua
                         }
                     )
                     created += 1
-                group.logs = f"Сгенерировано {created} вопросов"
+                group.logs = f"Generated {created} questions"
                 group.save(update_fields=['logs'])
-                qset.logs += f"Группа {idx+1}/{total_groups}: {created} вопросов\n"
+                qset.logs += f"Group {idx+1}/{total_groups}: {created} questions\n"
             else:
                 error = result.get('error', 'Unknown error')
-                group.logs = f"Ошибка: {error}"
+                group.logs = f"Error: {error}"
                 group.save(update_fields=['logs'])
-                qset.logs += f"Группа {idx+1}/{total_groups} ошибка: {error}\n"
+                qset.logs += f"Group {idx+1}/{total_groups} error: {error}\n"
 
-            # Сохраняем чекпоинт после каждой группы
+            # Save the checkpoint after each group
             # Audit fix: the checkpoint stored the index of the ALREADY
             # processed group while resume started at groups[idx:] — the same
             # group regenerated (duplicate questions). Store idx+1 like the
@@ -1909,21 +1908,21 @@ def generate_questions_for_set_task(self, question_set_id, teacher_model_id, qua
 
             self.update_state(state='PROGRESS', meta={'progress': progress, 'current_step': qset.current_step})
 
-        # Завершение
+        # Finish
         qset.status = 'COMPLETED'
         qset.progress = 100.0
         qset.current_step = 'Завершено'
-        qset.checkpoint_data = {}  # очищаем чекпоинт
+        qset.checkpoint_data = {}  # clear the checkpoint
         qset.save(update_fields=['status', 'progress', 'current_step', 'checkpoint_data'])
-        logger.info(f"✅ Генерация вопросов для набора {question_set_id} завершена")
+        logger.info(f"✅ Question generation for set {question_set_id} completed")
         return {'success': True, 'question_set_id': question_set_id, 'total_questions': DistillationQuestion.objects.filter(group__question_set=qset).count()}
 
     except Exception as e:
-        logger.error(f"Ошибка в generate_questions_for_set_task: {e}", exc_info=True)
+        logger.error(f"Error in generate_questions_for_set_task: {e}", exc_info=True)
         try:
             qset = DistillationQuestionSet.objects.get(id=question_set_id)
             qset.status = 'FAILED'
-            qset.logs += f"\nОшибка: {str(e)}\n"
+            qset.logs += f"\nError: {str(e)}\n"
             qset.save(update_fields=['status', 'logs'])
         except:
             pass
@@ -1931,7 +1930,7 @@ def generate_questions_for_set_task(self, question_set_id, teacher_model_id, qua
 
 
 # --------------------------------------------------------------------------
-# ЗАДАЧА ГЕНЕРАЦИИ ОТВЕТОВ ДЛЯ ВОПРОСОВ
+# ANSWER GENERATION TASK FOR QUESTIONS
 # --------------------------------------------------------------------------
 @shared_task(bind=True, queue='gpu_tasks', max_retries=3)
 def generate_answers_for_questions_task(self, answer_job_id, teacher_model_id, quantization=None):
@@ -1957,7 +1956,7 @@ def generate_answers_for_questions_task(self, answer_job_id, teacher_model_id, q
         top_k = config.get('top_k', 50)
         repetition_penalty = config.get('repetition_penalty', 1.0)
 
-        # Определяем список вопросов
+        # Determine the list of questions
         if job.question_ids:
             questions = DistillationQuestion.objects.filter(id__in=job.question_ids)
         elif job.question_set:
@@ -1975,11 +1974,11 @@ def generate_answers_for_questions_task(self, answer_job_id, teacher_model_id, q
             job.planned_count = total
             job.save(update_fields=['planned_count'])
 
-        # Чекпоинт
+        # Checkpoint
         start_index = 0
         if job.checkpoint_data and 'last_processed_question_index' in job.checkpoint_data:
             start_index = job.checkpoint_data['last_processed_question_index'] + 1
-            job.logs += f"Возобновление с вопроса {start_index+1}/{total}\n"
+            job.logs += f"Resuming from question {start_index+1}/{total}\n"
             job.save()
 
         job.status = 'RUNNING'
@@ -1993,7 +1992,7 @@ def generate_answers_for_questions_task(self, answer_job_id, teacher_model_id, q
         processed = DistillationAnswer.objects.filter(answer_job=job).count()
 
         for idx, q in enumerate(questions.order_by('id')[start_index:], start=start_index):
-            # Получаем контекст из группы чанков
+            # Get the context from the group's chunks
             group = q.group
             context = ""
             if group and group.chunk_ids:
@@ -2026,12 +2025,12 @@ def generate_answers_for_questions_task(self, answer_job_id, teacher_model_id, q
                 )
                 processed = DistillationAnswer.objects.filter(answer_job=job).count()
                 job.processed_count = processed
-                job.logs += f"Вопрос {idx+1}/{total} обработан\n"
+                job.logs += f"Question {idx+1}/{total} processed\n"
             else:
                 error = result.get('error', 'Unknown error')
-                job.logs += f"Вопрос {idx+1}/{total} ошибка: {error}\n"
+                job.logs += f"Question {idx+1}/{total} error: {error}\n"
 
-            # Сохраняем чекпоинт
+            # Save the checkpoint
             job.checkpoint_data = {
                 'last_processed_question_index': idx,
                 'total_questions': total,
@@ -2050,15 +2049,15 @@ def generate_answers_for_questions_task(self, answer_job_id, teacher_model_id, q
         job.current_step = 'Завершено'
         job.checkpoint_data = {}
         job.save(update_fields=['status', 'progress', 'current_step', 'checkpoint_data'])
-        logger.info(f"✅ Генерация ответов для задачи {answer_job_id} завершена, обработано {job.processed_count}/{job.planned_count}")
+        logger.info(f"✅ Answer generation for job {answer_job_id} completed, processed {job.processed_count}/{job.planned_count}")
         return {'success': True, 'answer_job_id': answer_job_id, 'processed': job.processed_count, 'total': job.planned_count}
 
     except Exception as e:
-        logger.error(f"Ошибка в generate_answers_for_questions_task: {e}", exc_info=True)
+        logger.error(f"Error in generate_answers_for_questions_task: {e}", exc_info=True)
         try:
             job = DistillationAnswerJob.objects.get(id=answer_job_id)
             job.status = 'FAILED'
-            job.logs += f"\nОшибка: {str(e)}\n"
+            job.logs += f"\nError: {str(e)}\n"
             job.save(update_fields=['status', 'logs'])
         except:
             pass
@@ -2071,11 +2070,11 @@ def regenerate_answer_task(self, question_id, answer_job_id, teacher_model_id, q
         question = DistillationQuestion.objects.get(id=question_id)
         job = DistillationAnswerJob.objects.get(id=answer_job_id)
 
-        # Загружаем модель-учитель с повторными попытками
+        # Load the teacher model with retries
         teacher = _load_teacher_model_sync(teacher_model_id, quantization)
         model_identifier = teacher.huggingface_id or teacher.name
 
-        # Формируем контекст
+        # Build the context
         context = ""
         group = question.group
         if group and group.chunk_ids:
@@ -2084,7 +2083,7 @@ def regenerate_answer_task(self, question_id, answer_job_id, teacher_model_id, q
 
         gen_config = generation_config or job.generation_config or {}
         
-        # Обработка prompt_template
+        # Handle prompt_template
         prompt_template = gen_config.get('prompt_template')
         if not prompt_template:
             prompt_template = (
@@ -2129,7 +2128,7 @@ def regenerate_answer_task(self, question_id, answer_job_id, teacher_model_id, q
 
 
 # --------------------------------------------------------------------------
-# ЗАДАЧА ЗАГРУЗКИ ДАТАСЕТА С ХФ
+# HUGGING FACE DATASET IMPORT TASK
 # --------------------------------------------------------------------------
 @shared_task(bind=True, queue='cpu_tasks')
 def import_huggingface_dataset_task(self, dataset_id):
@@ -2139,18 +2138,18 @@ def import_huggingface_dataset_task(self, dataset_id):
         hf_dataset.status = 'DOWNLOADING'
         hf_dataset.save()
 
-        # Загрузка датасета
+        # Download the dataset
         load_kwargs = {'split': hf_dataset.split}
         if hf_dataset.config:
             load_kwargs['name'] = hf_dataset.config
         dataset = load_dataset(hf_dataset.repo_id, **load_kwargs)
 
-        # Преобразование в список инструкций
+        # Convert to a list of instructions
         items = []
 
-        # Пытаемся определить структуру
+        # Try to detect the structure
         if isinstance(dataset, dict):
-            # Может быть несколько сплитов, берём первый
+            # There may be several splits; take the first one
             split_name = list(dataset.keys())[0]
             dataset = dataset[split_name]
 
@@ -2158,16 +2157,16 @@ def import_huggingface_dataset_task(self, dataset_id):
         if len(dataset) == 0:
             raise ValueError(f"Split '{hf_dataset.split}' of {hf_dataset.repo_id} is empty")
 
-        # Проверяем доступные поля
+        # Check the available fields
         sample = dataset[0]
         available_fields = list(sample.keys())
         logger.info(f"Available fields in dataset: {available_fields}")
 
-        # Поиск полей для инструкции и ответа
+        # Look for instruction/output fields
         instruction_field = None
         output_field = None
 
-        # Стандартные имена
+        # Standard names
         for field in available_fields:
             field_lower = field.lower()
             if field_lower in ['instruction', 'prompt', 'question', 'input']:
@@ -2175,11 +2174,11 @@ def import_huggingface_dataset_task(self, dataset_id):
             elif field_lower in ['output', 'response', 'answer', 'completion']:
                 output_field = field
 
-        # Если есть поле 'conversations' (список сообщений)
+        # If there is a 'conversations' field (list of messages)
         if 'conversations' in available_fields:
             for item in dataset:
                 conversations = item['conversations']
-                # Ищем последнее сообщение ассистента
+                # Find the last assistant message
                 last_assistant = None
                 last_user = None
                 for msg in reversed(conversations):
@@ -2194,15 +2193,15 @@ def import_huggingface_dataset_task(self, dataset_id):
             if items:
                 logger.info(f"Extracted {len(items)} items from conversations field")
 
-        # Если есть поле 'sample' (диалог в текстовом формате или список)
+        # If there is a 'sample' field (dialog as text or a list)
         elif 'sample' in available_fields:
             for item in dataset:
                 sample_text = item['sample']
-                # Преобразование в строку, если не строка
+                # Convert to a string if it is not one
                 if isinstance(sample_text, list):
-                    # Проверяем, не является ли список диалогом
+                    # Check whether the list is a dialog
                     if all(isinstance(s, dict) and 'role' in s and 'content' in s for s in sample_text):
-                        # Это похоже на conversations
+                        # Looks like conversations
                         last_assistant = None
                         last_user = None
                         for msg in reversed(sample_text):
@@ -2216,14 +2215,14 @@ def import_huggingface_dataset_task(self, dataset_id):
                             items.append({'instruction': last_user, 'output': last_assistant})
                             continue
                     else:
-                        # Обычный список строк – склеиваем
+                        # Plain list of strings — join them
                         sample_text = '\n'.join([str(s) for s in sample_text])
                 elif not isinstance(sample_text, str):
                     sample_text = str(sample_text)
 
-                # Если после преобразования это строка, парсим
+                # If it is a string after conversion, parse it
                 if isinstance(sample_text, str):
-                    # Пытаемся извлечь последний вопрос и ответ
+                    # Try to extract the last question and answer
                     import re
                     assistant_patterns = [
                         r'Assistant:\s*(.+?)(?=\n\s*(?:User:|Q:|$))',
@@ -2250,7 +2249,7 @@ def import_huggingface_dataset_task(self, dataset_id):
                     if user and assistant:
                         items.append({'instruction': user, 'output': assistant})
                         continue
-                    # Если не удалось, пробуем разбить по строкам и взять последние две непустые строки
+                    # If that failed, split by lines and take the last two non-empty lines
                     lines = [l.strip() for l in sample_text.split('\n') if l.strip()]
                     if len(lines) >= 2:
                         last_two = lines[-2:]
@@ -2258,7 +2257,7 @@ def import_huggingface_dataset_task(self, dataset_id):
             if items:
                 logger.info(f"Extracted {len(items)} items from sample field")
 
-        # Если есть стандартные поля
+        # If there are standard fields
         elif instruction_field and output_field:
             for item in dataset:
                 instruction = item.get(instruction_field, '').strip()
@@ -2267,14 +2266,14 @@ def import_huggingface_dataset_task(self, dataset_id):
                     items.append({'instruction': instruction, 'output': output})
             logger.info(f"Extracted {len(items)} items from {instruction_field}/{output_field}")
 
-        # Если ничего не нашлось, выводим подробное сообщение об ошибке
+        # If nothing was found, raise a detailed error
         if not items:
-            # Выводим пример первого элемента для отладки
+            # Log a sample of the first item for debugging
             first_sample = next(iter(dataset)) if dataset else {}
             logger.error(f"Cannot extract instruction-output pairs. First sample: {first_sample}")
             raise ValueError(f"Не удалось определить поля инструкции и ответа. Доступные поля: {available_fields}. Пример: {first_sample}")
 
-        # Сохраняем в JSONL
+        # Save as JSONL
         dataset_name = hf_dataset.name or hf_dataset.repo_id.replace('/', '_')
         # Audit fix: the filename included no unique suffix — a repeated import
         # of the same repo+split overwrote the file of an existing dataset
@@ -2287,7 +2286,7 @@ def import_huggingface_dataset_task(self, dataset_id):
                 json.dump(item, f, ensure_ascii=False)
                 f.write('\n')
 
-        # Создаём EvaluationDataset
+        # Create the EvaluationDataset
         # Audit fix: questions used to stay empty (only total_questions) —
         # trainers and the evaluator read dataset.questions, so imported
         # datasets were unusable for training and evaluation

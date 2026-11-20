@@ -1,5 +1,5 @@
 """
-Кастомные шаблонные фильтры для Ivanna Lab.
+Custom template filters for Ivanna Lab.
 """
 
 from django import template
@@ -15,12 +15,12 @@ import re
 register = template.Library()
 
 # ============================================================================
-# ФИЛЬТРЫ ДЛЯ МОДЕЛЕЙ
+# MODEL FILTERS
 # ============================================================================
 
 @register.filter
 def model_type_class(model_type):
-    """CSS класс для типа модели"""
+    """CSS class for model type."""
     class_map = {
         'QWEN': 'model-qwen',
         'LLAMA': 'model-llama',
@@ -51,7 +51,7 @@ def status_class(status):
 
 @register.filter
 def status_icon(status):
-    """Иконка для статуса"""
+    """Icon for status."""
     icon_map = {
         'LOADED': 'bi-check-circle-fill',
         'DOWNLOADING': 'bi-cloud-download',
@@ -64,7 +64,7 @@ def status_icon(status):
 
 @register.filter
 def safety_class(score):
-    """CSS класс для оценки безопасности"""
+    """CSS class for safety score."""
     if score is None:
         return 'status-pending'
     elif score >= 0.8:
@@ -76,7 +76,7 @@ def safety_class(score):
 
 @register.filter
 def safety_icon(score):
-    """Иконка для безопасности"""
+    """Icon for safety."""
     if score is None:
         return 'bi-question-circle'
     elif score >= 0.8:
@@ -88,7 +88,7 @@ def safety_icon(score):
 
 @register.filter
 def quantization_class(quantization):
-    """CSS класс для типа квантизации"""
+    """CSS class for quantization type."""
     class_map = {
         'float32': 'bg-info',
         'float16': 'bg-primary',
@@ -102,14 +102,14 @@ def quantization_class(quantization):
 
 @register.filter
 def get_metrics_value(metrics_dict, key):
-    """Получить значение из словаря метрик"""
+    """Get a value from the metrics dict."""
     return metrics_dict.get(key, 0.0)
 
 @register.filter
 def get_index(lst, i):
     """
-    Возвращает элемент списка по индексу.
-    Использование: {{ my_list|get_index:forloop.counter0 }}
+    Return a list item by index.
+    Usage: {{ my_list|get_index:forloop.counter0 }}
     """
     try:
         return lst[i]
@@ -119,17 +119,17 @@ def get_index(lst, i):
 @register.filter
 def index_of_max(values):
     """
-    Возвращает индекс первого максимального элемента в списке.
-    Если список пуст или некорректен, возвращает -1.
-    Пример использования: {{ scores|index_of_max }} -> 2 (если scores[2] максимальный)
+    Return the index of the first maximum element in the list.
+    Returns -1 if the list is empty or invalid.
+    Usage example: {{ scores|index_of_max }} -> 2 (if scores[2] is the max)
     """
     try:
-        # Преобразуем элементы в числа (могут быть строки)
+        # Convert items to numbers (they may be strings)
         numeric = [float(v) for v in values if v is not None]
         if not numeric:
             return -1
         max_val = max(numeric)
-        # Находим индекс первого вхождения максимума в исходном списке
+        # Find the index of the first occurrence of the max in the original list
         for i, v in enumerate(values):
             try:
                 if float(v) == max_val:
@@ -158,12 +158,12 @@ def index_of_min(values):
         return -1
         
 # ============================================================================
-# ФОРМАТИРОВАНИЕ ЧИСЕЛ
+# NUMBER FORMATTING
 # ============================================================================
 
 @register.filter
 def humanize_number(value):
-    """Форматирование больших чисел с разделителями"""
+    """Format large numbers with separators."""
     if value is None:
         return "0"
     
@@ -175,7 +175,7 @@ def humanize_number(value):
 
 @register.filter
 def humanize_size_gb(value):
-    """Форматирование размера в GB с 2 знаками после запятой"""
+    """Format size in GB with 2 decimal places."""
     if value is None:
         return "0 GB"
     
@@ -187,7 +187,7 @@ def humanize_size_gb(value):
 
 @register.filter
 def humanize_size_mb(value):
-    """Форматирование размера в MB"""
+    """Format size in MB."""
     if value is None:
         return "0 MB"
     
@@ -199,7 +199,7 @@ def humanize_size_mb(value):
 
 @register.filter
 def humanize_speed(value):
-    """Форматирование скорости (токены/сек)"""
+    """Format speed (tokens/sec)."""
     if value is None:
         return "0"
     
@@ -213,7 +213,7 @@ def humanize_speed(value):
 
 @register.filter
 def percentage(value, decimals=2):
-    """Форматирование процентов"""
+    """Format percentage."""
     if value is None:
         return "0%"
     
@@ -225,7 +225,7 @@ def percentage(value, decimals=2):
 
 @register.filter
 def float_format(value, decimals=3):
-    """Форматирование float с заданной точностью"""
+    """Format float with the given precision."""
     if value is None:
         return "0"
     
@@ -237,7 +237,7 @@ def float_format(value, decimals=3):
 
 @register.filter
 def scientific_notation(value, precision=2):
-    """Научная нотация для очень больших/маленьких чисел"""
+    """Scientific notation for very large/small numbers."""
     if value is None:
         return "0"
     
@@ -250,12 +250,12 @@ def scientific_notation(value, precision=2):
         return str(value)
 
 # ============================================================================
-# МАТЕМАТИЧЕСКИЕ ОПЕРАЦИИ
+# MATH OPERATIONS
 # ============================================================================
 
 @register.filter
 def add(value, arg):
-    """Сложение: value + arg"""
+    """Addition: value + arg."""
     try:
         return float(value) + float(arg)
     except (ValueError, TypeError):
@@ -263,7 +263,7 @@ def add(value, arg):
 
 @register.filter
 def subtract(value, arg):
-    """Вычитание: value - arg"""
+    """Subtraction: value - arg."""
     try:
         return float(value) - float(arg)
     except (ValueError, TypeError):
@@ -271,7 +271,7 @@ def subtract(value, arg):
 
 @register.filter
 def multiply(value, arg):
-    """Умножение: value * arg"""
+    """Multiplication: value * arg."""
     try:
         return float(value) * float(arg)
     except (ValueError, TypeError):
@@ -279,7 +279,7 @@ def multiply(value, arg):
 
 @register.filter
 def divide(value, arg):
-    """Деление: value / arg"""
+    """Division: value / arg."""
     try:
         arg = float(arg)
         if arg == 0:
@@ -290,7 +290,7 @@ def divide(value, arg):
 
 @register.filter
 def modulo(value, arg):
-    """Остаток от деления: value % arg"""
+    """Modulo: value % arg."""
     try:
         return int(value) % int(arg)
     except (ValueError, TypeError):
@@ -298,7 +298,7 @@ def modulo(value, arg):
 
 @register.filter
 def round_number(value, precision=0):
-    """Округление числа"""
+    """Round a number."""
     try:
         return round(float(value), precision)
     except (ValueError, TypeError):
@@ -306,7 +306,7 @@ def round_number(value, precision=0):
 
 @register.filter
 def ceil(value):
-    """Округление вверх"""
+    """Round up."""
     try:
         return math.ceil(float(value))
     except (ValueError, TypeError):
@@ -314,7 +314,7 @@ def ceil(value):
 
 @register.filter
 def floor(value):
-    """Округление вниз"""
+    """Round down."""
     try:
         return math.floor(float(value))
     except (ValueError, TypeError):
@@ -322,7 +322,7 @@ def floor(value):
 
 @register.filter
 def sqrt(value):
-    """Квадратный корень"""
+    """Square root."""
     try:
         return math.sqrt(float(value))
     except (ValueError, TypeError):
@@ -330,7 +330,7 @@ def sqrt(value):
 
 @register.filter
 def power(value, exponent):
-    """Возведение в степень: value ^ exponent"""
+    """Power: value ^ exponent."""
     try:
         return math.pow(float(value), float(exponent))
     except (ValueError, TypeError):
@@ -338,19 +338,19 @@ def power(value, exponent):
 
 @register.filter
 def log10(value):
-    """Десятичный логарифм"""
+    """Base-10 logarithm."""
     try:
         return math.log10(float(value))
     except (ValueError, TypeError):
         return 0
 
 # ============================================================================
-# ФИЛЬТРЫ ДЛЯ ДАТ И ВРЕМЕНИ
+# DATE AND TIME FILTERS
 # ============================================================================
 
 @register.filter
 def time_ago(value):
-    """Время в относительном формате (3 часа назад)"""
+    """Relative time (e.g. "3 hours ago")."""
     if not value:
         return _("никогда")
     
@@ -382,7 +382,7 @@ def time_ago(value):
 
 @register.filter
 def short_date(value):
-    """Короткий формат даты: 12 янв"""
+    """Short date format: day + short month name."""
     if not value:
         return ""
     
@@ -396,7 +396,7 @@ def short_date(value):
 
 @register.filter
 def datetime_format(value, format_str="%d.%m.%Y %H:%M"):
-    """Кастомный формат даты"""
+    """Custom date format."""
     if not value:
         return ""
     
@@ -407,7 +407,7 @@ def datetime_format(value, format_str="%d.%m.%Y %H:%M"):
 
 @register.filter
 def duration_format(seconds):
-    """Форматирование длительности: 1h 30m"""
+    """Format duration: 1h 30m."""
     if not seconds:
         return "0s"
     
@@ -428,7 +428,7 @@ def duration_format(seconds):
 
 @register.filter
 def is_recent(value, days=7):
-    """Проверка, была ли дата недавно (по умолчанию в течение 7 дней)"""
+    """Check whether the date is recent (default: within 7 days)."""
     if not value:
         return False
     
@@ -442,12 +442,12 @@ def is_recent(value, days=7):
         return False
 
 # ============================================================================
-# РАБОТА С JSON И СЛОВАРЯМИ
+# JSON AND DICT HELPERS
 # ============================================================================
 
 @register.filter
 def json_pretty(value):
-    """Красивое форматирование JSON"""
+    """Pretty-print JSON."""
     if not value:
         return ""
     
@@ -463,7 +463,7 @@ def json_pretty(value):
 
 @register.filter
 def dict_get(value, key):
-    """Получить значение из словаря по ключу"""
+    """Get a dict value by key."""
     try:
         return value.get(key)
     except AttributeError:
@@ -471,7 +471,7 @@ def dict_get(value, key):
 
 @register.filter
 def dict_items(value):
-    """Получить items из словаря"""
+    """Get dict items."""
     try:
         return value.items()
     except AttributeError:
@@ -479,7 +479,7 @@ def dict_items(value):
 
 @register.filter
 def dict_keys(value):
-    """Получить ключи словаря"""
+    """Get dict keys."""
     try:
         return value.keys()
     except AttributeError:
@@ -487,7 +487,7 @@ def dict_keys(value):
 
 @register.filter
 def dict_values(value):
-    """Получить значения словаря"""
+    """Get dict values."""
     try:
         return value.values()
     except AttributeError:
@@ -495,19 +495,19 @@ def dict_values(value):
 
 @register.filter
 def dict_length(value):
-    """Длина словаря"""
+    """Dict length."""
     try:
         return len(value)
     except (AttributeError, TypeError):
         return 0
 
 # ============================================================================
-# РАБОТА СО СТРОКАМИ И ТЕКСТОМ
+# STRING AND TEXT HELPERS
 # ============================================================================
 
 @register.filter
 def truncate_chars(value, length=100):
-    """Обрезать строку до указанной длины"""
+    """Truncate a string to the given length."""
     if not value:
         return ""
     
@@ -519,7 +519,7 @@ def truncate_chars(value, length=100):
 
 @register.filter
 def truncate_words(value, words=30):
-    """Обрезать строку по количеству слов"""
+    """Truncate a string to the given number of words."""
     if not value:
         return ""
     
@@ -531,21 +531,21 @@ def truncate_words(value, words=30):
 
 @register.filter
 def split(value, arg):
-    """Разделяет строку по разделителю arg"""
+    """Split a string by the arg delimiter."""
     if value is None:
         return []
     return value.split(arg)
     
 @register.filter
 def split_string(value, delimiter=","):
-    """Разделить строку по разделителю"""
+    """Split a string by a delimiter."""
     if not value:
         return []
     return str(value).split(delimiter)
 
 @register.filter
 def join_list(value, delimiter=", "):
-    """Объединить список в строку"""
+    """Join a list into a string."""
     if not value:
         return ""
     
@@ -556,7 +556,7 @@ def join_list(value, delimiter=", "):
 
 @register.filter
 def linebreaks_br(value):
-    """Заменить переносы строк на <br>"""
+    """Replace newlines with <br>."""
     if not value:
         return ""
     
@@ -565,7 +565,7 @@ def linebreaks_br(value):
 
 @register.filter
 def remove_whitespace(value):
-    """Удалить все пробелы и переносы строк"""
+    """Remove all whitespace and newlines."""
     if not value:
         return ""
     
@@ -574,7 +574,7 @@ def remove_whitespace(value):
 
 @register.filter
 def highlight_json(value):
-    """Подсветка JSON в HTML (простая версия)"""
+    """JSON syntax highlighting in HTML (simple version)."""
     if not value:
         return ""
     
@@ -582,7 +582,7 @@ def highlight_json(value):
         import re
         json_str = json.dumps(value, indent=2, ensure_ascii=False)
         
-        # Простая подсветка
+        # Simple highlighting
         json_str = re.sub(r'"(.*?)":', r'<span class="text-warning">"\1"</span>:', json_str)
         json_str = re.sub(r': "(.*?)"', r': <span class="text-info">"\1"</span>', json_str)
         json_str = re.sub(r': (\d+)', r': <span class="text-success">\1</span>', json_str)
@@ -595,14 +595,14 @@ def highlight_json(value):
 @register.filter
 def replace(value, arg):
     """
-    Замена подстроки в строке.
-    Использование: {{ text|replace:"старая_подстрока,новая_подстрока" }}
+    Replace a substring in a string.
+    Usage: {{ text|replace:"old_substring,new_substring" }}
     """
     if not value or not arg:
         return value
     
     try:
-        # Разделяем аргумент на старую и новую подстроки
+        # Split the argument into old and new substrings
         if ',' in arg:
             old_str, new_str = arg.split(',', 1)
         else:
@@ -616,15 +616,15 @@ def replace(value, arg):
 @register.filter
 def replace_all(value, replacements):
     """
-    Множественная замена подстрок.
-    Использование: {{ text|replace_all:"старая1=новая1;старая2=новая2" }}
+    Multiple substring replacements.
+    Usage: {{ text|replace_all:"old1=new1;old2=new2" }}
     """
     if not value or not replacements:
         return value
     
     try:
         result = str(value)
-        # Разделяем пары замен
+        # Split replacement pairs
         pairs = replacements.split(';')
         for pair in pairs:
             if '=' in pair:
@@ -636,7 +636,7 @@ def replace_all(value, replacements):
 
 @register.filter
 def escape_html(value):
-    """Экранирование HTML тегов в строке"""
+    """Escape HTML tags in a string."""
     if not value:
         return ""
     
@@ -645,27 +645,27 @@ def escape_html(value):
 
 @register.filter
 def markdown_to_html(value):
-    """Преобразование Markdown в HTML (упрощенное)"""
+    """Convert Markdown to HTML (simplified)."""
     if not value:
         return ""
     
     import re
     text = str(value)
     
-    # Заголовки
+    # Headings
     text = re.sub(r'^# (.*?)$', r'<h1>\1</h1>', text, flags=re.MULTILINE)
     text = re.sub(r'^## (.*?)$', r'<h2>\1</h2>', text, flags=re.MULTILINE)
     text = re.sub(r'^### (.*?)$', r'<h3>\1</h3>', text, flags=re.MULTILINE)
     
-    # Жирный текст
+    # Bold text
     text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
     text = re.sub(r'__(.*?)__', r'<strong>\1</strong>', text)
     
-    # Курсив
+    # Italic text
     text = re.sub(r'\*(.*?)\*', r'<em>\1</em>', text)
     text = re.sub(r'_(.*?)_', r'<em>\1</em>', text)
     
-    # Списки
+    # Lists
     text = re.sub(r'^\* (.*?)$', r'<li>\1</li>', text, flags=re.MULTILINE)
     lines = text.split('\n')
     in_list = False
@@ -688,16 +688,16 @@ def markdown_to_html(value):
     
     text = '\n'.join(result_lines)
     
-    # Ссылки
+    # Links
     text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2" target="_blank">\1</a>', text)
     
-    # Код
+    # Inline code
     text = re.sub(r'`([^`]+)`', r'<code>\1</code>', text)
     
-    # Блоки кода
+    # Code blocks
     text = re.sub(r'```(\w+)?\n([^`]+)```', r'<pre><code class="language-\1">\2</code></pre>', text, flags=re.DOTALL)
     
-    # Переносы строк
+    # Line breaks
     text = text.replace('\n\n', '</p><p>')
     text = text.replace('\n', '<br>')
     
@@ -705,7 +705,7 @@ def markdown_to_html(value):
 
 @register.filter
 def truncate_middle(value, length=50):
-    """Обрезать строку по середине с добавлением ..."""
+    """Truncate a string in the middle with ..."""
     if not value:
         return ""
     
@@ -718,28 +718,28 @@ def truncate_middle(value, length=50):
 
 @register.filter
 def split_lines(value):
-    """Разделить текст на строки и вернуть список"""
+    """Split text into lines and return a list."""
     if not value:
         return []
     return str(value).splitlines()
 
 @register.filter
 def count_words(value):
-    """Подсчитать количество слов в тексте"""
+    """Count words in text."""
     if not value:
         return 0
     return len(str(value).split())
 
 @register.filter
 def count_characters(value):
-    """Подсчитать количество символов в тексте"""
+    """Count characters in text."""
     if not value:
         return 0
     return len(str(value))
 
 @register.filter
 def strip_punctuation(value):
-    """Удалить пунктуацию из текста"""
+    """Remove punctuation from text."""
     if not value:
         return ""
     
@@ -748,7 +748,7 @@ def strip_punctuation(value):
 
 @register.filter
 def extract_code_blocks(value):
-    """Извлечь блоки кода из текста"""
+    """Extract code blocks from text."""
     if not value:
         return []
     
@@ -757,7 +757,7 @@ def extract_code_blocks(value):
 
 @register.filter
 def chat_message_class(role):
-    """CSS класс для сообщения чата по роли"""
+    """CSS class for a chat message by role."""
     class_map = {
         'system': 'chat-message-system',
         'user': 'chat-message-user',
@@ -769,7 +769,7 @@ def chat_message_class(role):
 
 @register.filter
 def chat_message_icon(role):
-    """Иконка для сообщения чата"""
+    """Icon for a chat message."""
     icon_map = {
         'system': 'bi-gear',
         'user': 'bi-person',
@@ -781,16 +781,16 @@ def chat_message_icon(role):
 
 @register.filter
 def dict_get(d, key):
-    """Возвращает значение из словаря по ключу."""
+    """Return a dict value by key."""
     return d.get(key)
 
 # ============================================================================
-# РАБОТА СО СПИСКАМИ И КОРТЕЖАМИ
+# LIST AND TUPLE HELPERS
 # ============================================================================
 
 @register.filter
 def list_length(value):
-    """Длина списка/кортежа"""
+    """Length of a list/tuple."""
     try:
         return len(value)
     except TypeError:
@@ -808,8 +808,8 @@ def first_value(d):
 
 @register.filter
 def get_item(value, index):
-    """Получить элемент списка по индексу; dict — безопасный .get
-    (лидерборд: строки не содержат все колонки бенчмарков)"""
+    """Get a list item by index; safe .get for dicts
+    (leaderboard: rows may not contain all benchmark columns)"""
     if isinstance(value, dict):
         return value.get(index)
     try:
@@ -819,7 +819,7 @@ def get_item(value, index):
 
 @register.filter
 def slice_list(value, slice_str):
-    """Срез списка: "start:end:step" или просто число"""
+    """Slice a list: "start:end:step" or a plain number."""
     try:
         if ':' in slice_str:
             parts = slice_str.split(':')
@@ -835,7 +835,7 @@ def slice_list(value, slice_str):
 
 @register.filter
 def filter_list(value, attr):
-    """Фильтрация списка объектов по атрибуту"""
+    """Filter a list of objects by attribute."""
     try:
         return [item for item in value if getattr(item, attr, False)]
     except (TypeError, AttributeError):
@@ -843,7 +843,7 @@ def filter_list(value, attr):
 
 @register.filter
 def sort_by(value, attr):
-    """Сортировка списка объектов по атрибуту"""
+    """Sort a list of objects by attribute."""
     try:
         return sorted(value, key=lambda x: getattr(x, attr, ''))
     except (TypeError, AttributeError):
@@ -851,7 +851,7 @@ def sort_by(value, attr):
 
 @register.filter
 def get_attribute(obj, attr_name):
-    """Получение атрибута объекта"""
+    """Get an object attribute."""
     try:
         return getattr(obj, attr_name)
     except AttributeError:
@@ -861,22 +861,22 @@ def get_attribute(obj, attr_name):
             return None
 
 # ============================================================================
-# ЛОГИЧЕСКИЕ ФИЛЬТРЫ
+# BOOLEAN FILTERS
 # ============================================================================
 
 @register.filter
 def is_none(value):
-    """Проверка на None"""
+    """Check for None."""
     return value is None
 
 @register.filter
 def is_not_none(value):
-    """Проверка, что не None"""
+    """Check that the value is not None."""
     return value is not None
 
 @register.filter
 def is_empty(value):
-    """Проверка на пустоту"""
+    """Check for emptiness."""
     if value is None:
         return True
     if isinstance(value, (list, dict, tuple, set)):
@@ -887,34 +887,34 @@ def is_empty(value):
 
 @register.filter
 def is_not_empty(value):
-    """Проверка, что не пусто"""
+    """Check that the value is not empty."""
     return not is_empty(value)
 
 @register.filter
 def contains(value, arg):
-    """Проверка содержания подстроки или элемента"""
+    """Check for substring or element membership."""
     try:
         return arg in value
     except TypeError:
         return str(arg) in str(value)
 
 # ============================================================================
-# ПРОЧИЕ ПОЛЕЗНЫЕ ФИЛЬТРЫ
+# MISC UTILITY FILTERS
 # ============================================================================
 
 @register.filter
 def default_if_none(value, default):
-    """Вернуть значение по умолчанию если None"""
+    """Return the default value if None."""
     return value if value is not None else default
 
 @register.filter
 def default_if_empty(value, default):
-    """Вернуть значение по умолчанию если пусто"""
+    """Return the default value if empty."""
     return value if is_not_empty(value) else default
 
 @register.filter
 def boolean_icon(value):
-    """Иконка для булевого значения"""
+    """Icon for a boolean value."""
     if value:
         return format_html('<i class="bi bi-check-circle-fill text-success"></i>')
     else:
@@ -922,13 +922,13 @@ def boolean_icon(value):
 
 @register.filter
 def boolean_text(value):
-    """Текст для булевого значения"""
+    """Text for a boolean value."""
     return "Да" if value else "Нет"
 
 @register.filter
 def pluralize_ru(value, forms):
-    """Русская форма множественного числа"""
-    # forms = "модель,модели,моделей"
+    """Russian plural form."""
+    # forms = "singular,few,many" (comma-separated)
     forms_list = forms.split(',')
     
     try:
@@ -947,7 +947,7 @@ def pluralize_ru(value, forms):
 
 @register.filter
 def progress_color(percentage):
-    """Цвет для прогресс-бара по проценту"""
+    """Progress bar color by percentage."""
     try:
         perc = float(percentage)
         if perc < 30:
@@ -960,12 +960,12 @@ def progress_color(percentage):
         return "bg-secondary"
 
 # ============================================================================
-# ФИЛЬТРЫ ДЛЯ ИНТЕРФЕЙСА
+# UI FILTERS
 # ============================================================================
 
 @register.filter
 def badge_color_from_value(value, value_type="model"):
-    """Выбор цвета бейджа на основе значения"""
+    """Badge color based on the value."""
     if value_type == "model":
         colors = {
             'QWEN': 'bg-primary',
@@ -990,7 +990,7 @@ def badge_color_from_value(value, value_type="model"):
 
 @register.filter
 def icon_from_value(value, value_type="status"):
-    """Выбор иконки на основе значения"""
+    """Icon based on the value."""
     icons = {
         'status': {
             'LOADED': 'bi-check-circle-fill',
@@ -1009,13 +1009,13 @@ def icon_from_value(value, value_type="status"):
     return icons.get(value_type, {}).get(value, 'bi-question-circle')
 
 # ============================================================================
-# ОТДЕЛЬНЫЕ ФИЛЬТРЫ ДЛЯ ШАБЛОНОВ
+# TEMPLATE-SPECIFIC FILTERS
 # ============================================================================
 
 # evaluation_task_detail.html
 @register.filter
 def first_item(iterable):
-    """Получение первого элемента итерируемого объекта"""
+    """Get the first item of an iterable."""
     try:
         return next(iter(iterable))
     except (StopIteration, TypeError):
@@ -1023,13 +1023,13 @@ def first_item(iterable):
 
 @register.filter
 def filter_by_success(results):
-    """Фильтрует результаты по успешности (не содержат ERROR)"""
+    """Filter results by success (no ERROR prefix)."""
     if not results:
         return 0
     
     count = 0
     for result in results:
-        # Проверяем, что ответ не начинается с ERROR
+        # Check that the response does not start with ERROR
         if hasattr(result, 'model_response'):
             if not result.model_response.startswith('ERROR:'):
                 count += 1
@@ -1037,7 +1037,7 @@ def filter_by_success(results):
 
 @register.filter
 def avg_time(results):
-    """Среднее время ответов"""
+    """Average response time."""
     if not results:
         return 0
     
@@ -1054,8 +1054,8 @@ def avg_time(results):
 @register.filter
 def parse_log(line):
     """
-    Парсит строку лога вида [timestamp] LEVEL message
-    Возвращает словарь с ключами: timestamp, level, message, level_class
+    Parse a log line like [timestamp] LEVEL message.
+    Returns a dict with keys: timestamp, level, message, level_class
     """
     result = {
         'timestamp': '',
@@ -1063,13 +1063,13 @@ def parse_log(line):
         'message': line,
         'level_class': 'info'
     }
-    # Регулярное выражение для формата [2026-02-23 16:44:40] INFO Starting...
+    # Regex for the format [2026-02-23 16:44:40] INFO Starting...
     match = re.match(r'^\[(.*?)\]\s+(\w+)\s+(.*)$', line)
     if match:
         result['timestamp'] = match.group(1)
         result['level'] = match.group(2)
         result['message'] = match.group(3)
-        # Определяем класс на основе уровня
+        # Determine the CSS class based on the level
         level_upper = result['level'].upper()
         if level_upper in ('ERROR', 'CRITICAL'):
             result['level_class'] = 'error'
@@ -1083,13 +1083,13 @@ def parse_log(line):
 
 @register.filter
 def clean_text(value):
-    """Убирает лишние пустые строки и обрезает пробелы."""
+    """Remove extra blank lines and trim whitespace."""
     if not value:
         return ''
     lines = value.splitlines()
-    # Убираем пробелы в конце каждой строки
+    # Trim trailing whitespace on each line
     lines = [line.rstrip() for line in lines]
-    # Схлопываем несколько пустых строк в одну
+    # Collapse consecutive blank lines into one
     cleaned = []
     last_empty = False
     for line in lines:

@@ -35,12 +35,12 @@ class UserProfileForm(forms.ModelForm):
             'huggingface_token': 'Введите ваш токен с Hugging Face (https://huggingface.co/settings/tokens). Он будет использоваться для загрузки приватных моделей.',
         }
         widgets = {
-            'huggingface_token': forms.PasswordInput(render_value=True),  # скрываем ввод, но показываем звёздочки
+            'huggingface_token': forms.PasswordInput(render_value=True),  # mask input, show dots
         }
 
 
 class ModelUploadForm(forms.ModelForm):
-    """Форма для загрузки модели с расширенными полями"""
+    """Model upload form with extended fields."""
     
     SOURCE_CHOICES = [
         ('hf', 'Hugging Face Hub'),
@@ -54,7 +54,7 @@ class ModelUploadForm(forms.ModelForm):
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
     )
     
-    # Поля для Hugging Face
+    # Hugging Face fields
     huggingface_id = forms.CharField(
         required=False,
         label='Hugging Face ID',
@@ -72,7 +72,7 @@ class ModelUploadForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
-    # Поля для локального пути
+    # Local path fields
     local_path = forms.CharField(
         required=False,
         label=_('Локальный путь'),
@@ -91,7 +91,7 @@ class ModelUploadForm(forms.ModelForm):
         })
     )
     
-    # Квантизация
+    # Quantization
     QUANTIZATION_CHOICES = [
         ('none', 'Без квантизации'),
         ('4bit', '4-битная (NF4)'),
@@ -108,7 +108,7 @@ class ModelUploadForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
-    # Дополнительные настройки
+    # Extra settings
     trust_remote_code = forms.BooleanField(
         required=False,
         initial=True,
@@ -137,7 +137,7 @@ class ModelUploadForm(forms.ModelForm):
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
-    # Поля для auto-fill из API
+    # Auto-fill fields from the API
     auto_fill_from_hf = forms.BooleanField(
         required=False,
         initial=True,
@@ -153,7 +153,7 @@ class ModelUploadForm(forms.ModelForm):
             'vocab_size', 'license_type', 'tags', 'is_public'
         ]
         widgets = {
-            'model_type': forms.HiddenInput(),  # Скрываем, так как выбирается через карточки
+            'model_type': forms.HiddenInput(),  # hidden: selected via model type cards
             'parameter_count': forms.HiddenInput(),
             'context_length': forms.HiddenInput(),
             'vocab_size': forms.HiddenInput(),
@@ -163,13 +163,13 @@ class ModelUploadForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Делаем эти поля необязательными - они заполнятся автоматически
+        # Make these fields optional — they are filled in automatically
         self.fields['parameter_count'].required = False
         self.fields['context_length'].required = False
         self.fields['vocab_size'].required = False
         self.fields['license_type'].required = False
         
-        # Устанавливаем начальные значения
+        # Set initial values
         self.fields['license_type'].initial = 'Apache 2.0'
     
     def clean(self):
@@ -177,7 +177,7 @@ class ModelUploadForm(forms.ModelForm):
         source_type = cleaned_data.get('source_type')
         model_type = cleaned_data.get('model_type')
         
-        # Валидация в зависимости от источника
+        # Validation depending on source type
         if source_type == 'hf':
             hf_id = cleaned_data.get('huggingface_id')
             if not hf_id:
@@ -185,7 +185,7 @@ class ModelUploadForm(forms.ModelForm):
                     'huggingface_id': 'Укажите Hugging Face ID для загрузки с Hub'
                 })
             
-            # Проверка формата HF ID
+            # Check HF ID format
             if not re.match(r'^[a-zA-Z0-9\-_]+\/[a-zA-Z0-9\-_.]+$', hf_id):
                 raise ValidationError({
                     'huggingface_id': 'Некорректный формат ID. Используйте: автор/название-модели'
@@ -198,14 +198,14 @@ class ModelUploadForm(forms.ModelForm):
                     'local_path': 'Укажите локальный путь к модели'
                 })
         
-        # Автозаполнение параметров на основе типа модели
+        # Auto-fill parameters based on model type
         if model_type and cleaned_data.get('auto_fill_from_hf', True):
             self.auto_fill_parameters(cleaned_data, model_type)
         
         return cleaned_data
     
     def auto_fill_parameters(self, cleaned_data, model_type):
-        """Автоматическое заполнение параметров на основе типа модели"""
+        """Auto-fill parameters based on model type."""
         defaults = {
             'QWEN': {
                 'architecture': 'Qwen2ForCausalLM',
@@ -245,13 +245,13 @@ class ModelUploadForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         
-        # Обработка в зависимости от источника
+        # Handling depending on source type
         source_type = self.cleaned_data.get('source_type')
         
         if source_type == 'hf':
             instance.huggingface_revision = self.cleaned_data.get('huggingface_revision', 'main')
             
-            # Автогенерация локального пути из HF ID
+            # Auto-generate the local path from the HF ID
             if not instance.local_path:
                 safe_name = instance.name.replace('/', '_').replace('.', '_')
                 instance.local_path = f"/app/models/{safe_name}"
@@ -266,17 +266,17 @@ class ModelUploadForm(forms.ModelForm):
             instance.huggingface_id = ''
             instance.huggingface_revision = ''
         
-        # Установка квантизации
+        # Set quantization
         quantization = self.cleaned_data.get('quantization')
         if quantization and quantization != 'none':
             instance.quantization = quantization
         
-        # Установка безопасности
+        # Set safety flags
         if self.cleaned_data.get('mark_safe'):
             instance.is_safe = True
             instance.safety_score = 0.9
         
-        # Создание loader_config
+        # Build loader_config
         loader_config = {
             'device_map': 'auto',
             'trust_remote_code': self.cleaned_data.get('trust_remote_code', True),
@@ -295,7 +295,7 @@ class ModelUploadForm(forms.ModelForm):
 
 
 class LocalModelForm(forms.ModelForm):
-    """Форма для локального добавления модели (без Hugging Face)."""
+    """Local model add form (no Hugging Face)."""
     local_path = forms.CharField(
         required=True,
         label=_('Локальный путь'),
@@ -343,7 +343,7 @@ class LocalModelForm(forms.ModelForm):
             'name', 'display_name', 'model_type', 'experiment',
             'parameter_count', 'context_length', 'vocab_size',
             'license_type', 'tags', 'is_public',
-            'serving_backend',  # v5.0: transformers или vLLM
+            'serving_backend',  # v5.0: transformers or vLLM
         ]
         widgets = {
             'model_type': forms.Select(attrs={'class': 'form-select'}),
@@ -365,7 +365,7 @@ class LocalModelForm(forms.ModelForm):
 
     def clean_local_path(self):
         path = self.cleaned_data['local_path']
-        # Можно добавить проверку существования пути, если нужно
+        # A path existence check can be added here if needed
         return path
 
     def save(self, commit=True):
@@ -385,8 +385,8 @@ class LocalModelForm(forms.ModelForm):
         if self.cleaned_data['mark_safe']:
             instance.is_safe = True
             instance.safety_score = 0.9
-        instance.status = 'PENDING'  # Локальная модель не скачивается, сразу готова к загрузке? Можно 'DOWNLOADED'
-        # Если файлы существуют, можно поменять статус на 'DOWNLOADED'
+        instance.status = 'PENDING'  # local model needs no download; 'DOWNLOADED' if files exist
+        # Switch the status to 'DOWNLOADED' when the files exist
         if instance.local_path and os.path.exists(instance.local_path):
             instance.status = 'DOWNLOADED'
         if commit:
@@ -395,7 +395,7 @@ class LocalModelForm(forms.ModelForm):
 
 
 class ModelCheckpointForm(forms.ModelForm):
-    # Дополнительные поля для удобства
+    # Extra convenience fields
     auto_generate_name = forms.BooleanField(
         required=False,
         initial=True,
@@ -424,7 +424,7 @@ class ModelCheckpointForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Bootstrap-классы (как в MoE-формах)
+        # Bootstrap classes (same as in MoE forms)
         for name, field in self.fields.items():
             w = field.widget
             css = ('form-check-input' if isinstance(w, forms.CheckboxInput)
@@ -435,14 +435,14 @@ class ModelCheckpointForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         
-        # Если выбран auto_generate_name и есть huggingface_id
+        # If auto_generate_name is checked and huggingface_id is set
         if cleaned_data.get('auto_generate_name') and cleaned_data.get('huggingface_id'):
             hf_id = cleaned_data['huggingface_id']
-            # Генерируем имя из HF ID
+            # Generate the name from the HF ID
             name = hf_id.replace('/', '_').replace('.', '_').lower()
             cleaned_data['name'] = name
             
-            # Генерируем display_name
+            # Generate display_name
             display_parts = hf_id.split('/')
             if len(display_parts) == 2:
                 org, model = display_parts
@@ -453,7 +453,7 @@ class ModelCheckpointForm(forms.ModelForm):
     def clean_huggingface_id(self):
         hf_id = self.cleaned_data.get('huggingface_id', '').strip()
         if hf_id:
-            # Проверяем формат
+            # Check the format
             parts = hf_id.split('/')
             if len(parts) != 2:
                 raise ValidationError(
@@ -520,7 +520,7 @@ class ModelMergeForm(forms.ModelForm):
 
 
 class InferenceTestForm(forms.Form):
-    """Форма для тестирования инференса модели"""
+    """Model inference test form."""
     prompt = forms.CharField(
         widget=forms.Textarea(attrs={
             'rows': 6,
@@ -611,10 +611,10 @@ class InferenceTestForm(forms.Form):
 
 
 # ----------------------------------------------------------------------
-# Кастомные поля и виджеты
+# Custom fields and widgets
 # ----------------------------------------------------------------------
 class MultipleFileInput(forms.ClearableFileInput):
-    """Кастомный виджет для множественного выбора файлов"""
+    """Custom widget for multiple file selection."""
     allow_multiple_selected = True
     
     def __init__(self, attrs=None):
@@ -626,7 +626,7 @@ class MultipleFileInput(forms.ClearableFileInput):
 
 
 class MultipleFileField(forms.FileField):
-    """Кастомное поле для множественной загрузки файлов"""
+    """Custom field for multiple file upload."""
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("widget", MultipleFileInput())
         super().__init__(*args, **kwargs)

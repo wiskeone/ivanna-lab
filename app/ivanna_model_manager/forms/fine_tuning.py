@@ -38,11 +38,11 @@ class FineTuningJobForm(forms.ModelForm):
             'target_preset', 'target_modules',
             'learning_rate', 'batch_size', 'gradient_accumulation_steps',
             'num_epochs', 'max_seq_length',
-            # Параметры RAFT
+            # RAFT parameters
             'distractors_per_example', 'oracle_ratio', 'distractor_ratio',
             'no_context_ratio', 'use_kl_regularization', 'kl_lambda',
             'general_instructions_ratio',
-            # v5.1: выбор GPU
+            # v5.1: GPU selection
             'gpu_device'
         ]
         widgets = {
@@ -59,7 +59,7 @@ class FineTuningJobForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # v5.1: выбор GPU — варианты из фактического количества устройств
+        # v5.1: GPU selection — options from the actual device count
         gpu_choices = [('', _('Авто (первый доступный)')), ('-1', _('CPU'))]
         try:
             import torch
@@ -88,7 +88,7 @@ class FineTuningJobForm(forms.ModelForm):
 
 
 class FineTuningTemplateForm(forms.ModelForm):
-    """Форма для создания/редактирования шаблонов"""
+    """Form for creating/editing fine-tuning templates."""
     
     class Meta:
         model = FineTuningTemplate
@@ -112,7 +112,7 @@ class FineTuningTemplateForm(forms.ModelForm):
 
 
 class FineTuningTemplateSelectForm(forms.Form):
-    """Форма для выбора шаблона при создании задачи"""
+    """Template selection form when creating a job."""
     
     template = forms.ModelChoiceField(
         queryset=FineTuningTemplate.objects.filter(is_public=True),
@@ -148,15 +148,15 @@ class ModelConversionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Показываем только модели, которые загружены локально (имеют local_path)
+        # Show only models loaded locally (those with local_path)
         self.fields['source_model'].queryset = ModelCheckpoint.objects.filter(
             is_active=True,
             local_path__isnull=False
         ).exclude(local_path='').order_by('name')
-        # Поле config делаем необязательным
+        # Make the config field optional
         self.fields['config'].required = False
         self.fields['config'].widget.attrs['placeholder'] = '{"param": "value"}'
-        # Bootstrap-классы (как в MoE-формах)
+        # Bootstrap classes (same as in MoE forms)
         for name, field in self.fields.items():
             w = field.widget
             css = ('form-check-input' if isinstance(w, forms.CheckboxInput)

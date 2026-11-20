@@ -20,7 +20,7 @@ class Command(BaseCommand):
         quantization = options['quantization']
         
         try:
-            # Пытаемся найти модель в базе данных
+            # Try to find the model in the database
             if model_id.isdigit():
                 checkpoint = ModelCheckpoint.objects.get(id=int(model_id))
             else:
@@ -28,7 +28,7 @@ class Command(BaseCommand):
             
             self.stdout.write(f"Loading model: {checkpoint.display_name}")
             
-            # Конфигурация модели
+            # Model configuration
             model_config = {
                 "model_id": checkpoint.huggingface_id or checkpoint.name,
                 "local_path": checkpoint.local_path,
@@ -38,7 +38,7 @@ class Command(BaseCommand):
                 "model_type": checkpoint.model_type
             }
             
-            # Загружаем модель
+            # Load the model
             model_info = model_manager.load_model(model_config)
             
             if model_info:
@@ -54,13 +54,13 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR("Failed to load model"))
                 
         except ModelCheckpoint.DoesNotExist:
-            # Если модели нет в базе, загружаем напрямую из Hugging Face
+            # Model not in the database, load directly from Hugging Face
             self.stdout.write(f"Model not in database, loading from Hugging Face: {model_id}")
             
             model_config = {
                 "model_id": model_id,
                 "quantization": quantization,
-                "parameter_count": 0,  # Неизвестно
+                "parameter_count": 0,  # Unknown
                 "context_length": 2048,
                 "model_type": "unknown"
             }

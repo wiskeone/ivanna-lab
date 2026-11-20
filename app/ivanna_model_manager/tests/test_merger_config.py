@@ -1,4 +1,4 @@
-"""v4: тесты генератора mergekit-конфигурации (чистая логика, без GPU).
+"""v4: mergekit config generator tests (pure logic, no GPU).
 
 Регресс-щит для YAML, который скармливается mergekit-yaml: неверный
 конфиг = часы впустую на фоне.
