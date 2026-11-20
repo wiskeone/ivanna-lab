@@ -35,8 +35,9 @@ class RAGSessionAdmin(ModelAdmin):
                    'created_at')
     search_fields = ('session_id', 'user_id', 'original_query', 
                     'generated_answer')
-    readonly_fields = ('created_at', 'started_at', 'completed_at', 
-                      'feedback_at', 'total_tokens_display')
+    readonly_fields = ('created_at', 'started_at', 'completed_at',
+                      'feedback_at', 'total_tokens_display',
+                      'total_time_display')
     fieldsets = (
         (_('Основная информация'), {
             'fields': ('session_id', 'conversation_id', 'user_id', 'status')

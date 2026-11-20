@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib import messages
 from django.contrib.admin import ModelAdmin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.db.models import Count, Avg, Q
 from django.urls import reverse
 from django.shortcuts import redirect
@@ -265,7 +266,7 @@ class ModelCheckpointAdmin(admin.ModelAdmin):
             <p><strong>Параметры:</strong> {obj.parameter_count:,}</p>
         </div>
         """
-        return format_html(info)
+        return mark_safe(info)
     model_info_card.short_description = 'Информация о модели'
     
     @admin.action(description='Пометить как безопасные')
@@ -379,7 +380,7 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         (_('Прогресс и статус'), {
-            'fields': ('status', 'progress_bar', 'current_step', 'error_message')
+            'fields': ('status', 'progress_bar', 'current_step', 'error_details')
         }),
         (_('Результаты и метрики'), {
             'fields': ('performance_display', 'performance_metrics', 'error_details'),
@@ -401,14 +402,14 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
     
     def base_model_link(self, obj):
         if obj.base_model:
-            url = reverse('admin:app_modelcheckpoint_change', args=[obj.base_model.id])
+            url = reverse('admin:ivanna_model_manager_modelcheckpoint_change', args=[obj.base_model.id])
             return format_html('<a href="{}">{}</a>', url, obj.base_model.name)
         return "-"
     base_model_link.short_description = 'Базовая модель'
     
     def merge_model_link(self, obj):
         if obj.merge_model:
-            url = reverse('admin:app_modelcheckpoint_change', args=[obj.merge_model.id])
+            url = reverse('admin:ivanna_model_manager_modelcheckpoint_change', args=[obj.merge_model.id])
             return format_html('<a href="{}">{}</a>', url, obj.merge_model.name)
         return "-"
     merge_model_link.short_description = 'Модель для слияния'
@@ -468,7 +469,7 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
             else:
                 metrics_html.append(f"<li><strong>{key}:</strong> {value}</li>")
         
-        return format_html(f"<ul>{''.join(metrics_html)}</ul>")
+        return mark_safe(f"<ul>{''.join(metrics_html)}</ul>")
     performance_display.short_description = 'Метрики производительности'
     
     def logs_preview(self, obj):
@@ -494,7 +495,7 @@ class ModelMergeJobAdmin(admin.ModelAdmin):
             f"{obj.completed_at}: {obj.status}" if obj.completed_at else None,
         ]
         history = [h for h in history if h]
-        return format_html("<br>".join(history))
+        return mark_safe('<br>'.join(history))
     status_history.short_description = 'История статусов'
     
     @admin.action(description='Повторить неудачные задачи')
@@ -565,7 +566,7 @@ class InferenceSessionAdmin(admin.ModelAdmin):
     
     def checkpoint_link(self, obj):
         if obj.checkpoint:
-            url = reverse('admin:app_modelcheckpoint_change', args=[obj.checkpoint.id])
+            url = reverse('admin:ivanna_model_manager_modelcheckpoint_change', args=[obj.checkpoint.id])
             return format_html('<a href="{}">{}</a>', url, obj.checkpoint.name)
     checkpoint_link.short_description = 'Модель'
     
@@ -592,12 +593,14 @@ class InferenceSessionAdmin(admin.ModelAdmin):
     
     def performance_stats(self, obj):
         """Статистика производительности"""
+        if obj is None:
+            return '-'
         stats = [
             f"<strong>Токенов/сек:</strong> {obj.tokens_per_second:.1f}",
             f"<strong>Среднее время ответа:</strong> {obj.avg_response_time:.2f}с",
             f"<strong>Ошибок:</strong> {obj.error_count}",
         ]
-        return format_html("<br>".join(stats))
+        return mark_safe('<br>'.join(stats))
     performance_stats.short_description = 'Статистика производительности'
     
     @admin.action(description='Завершить выбранные сессии')
@@ -646,7 +649,7 @@ class ModelEvaluationAdmin(admin.ModelAdmin):
     
     def checkpoint_link(self, obj):
         if obj.checkpoint:
-            url = reverse('admin:app_modelcheckpoint_change', args=[obj.checkpoint.id])
+            url = reverse('admin:ivanna_model_manager_modelcheckpoint_change', args=[obj.checkpoint.id])
             return format_html('<a href="{}">{}</a>', url, obj.checkpoint.name)
     checkpoint_link.short_description = 'Модель'
     

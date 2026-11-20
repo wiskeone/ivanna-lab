@@ -1108,10 +1108,12 @@ class InferenceSession(models.Model):
     
     @property
     def duration_minutes(self):
-        """Длительность сессии в минутах"""
+        """Duration of the session in minutes (0 until the session starts)."""
         if self.ended_at and self.started_at:
             return (self.ended_at - self.started_at).total_seconds() / 60
-        return (timezone.now() - self.started_at).total_seconds() / 60
+        if self.started_at:
+            return (timezone.now() - self.started_at).total_seconds() / 60
+        return 0.0
     
     def add_request(self, input_tokens: int, output_tokens: int, duration: float):
         """Добавить запрос к статистике"""

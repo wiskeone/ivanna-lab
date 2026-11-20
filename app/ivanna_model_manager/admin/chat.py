@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib import messages
 from django.contrib.admin import ModelAdmin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.db.models import Count, Avg, Q
 from django.urls import reverse
 from django.shortcuts import redirect
@@ -130,7 +131,7 @@ class ChatSessionAdmin(admin.ModelAdmin):
     
     def checkpoint_link(self, obj):
         if obj.checkpoint:
-            url = reverse('admin:app_modelcheckpoint_change', args=[obj.checkpoint.id])
+            url = reverse('admin:ivanna_model_manager_modelcheckpoint_change', args=[obj.checkpoint.id])
             return format_html('<a href="{}">{}</a>', url, obj.checkpoint.name)
         return "-"
     checkpoint_link.short_description = 'Модель'
@@ -192,7 +193,7 @@ class ChatSessionAdmin(admin.ModelAdmin):
             
             preview.append(f"{icon} <strong>{msg.get('role', 'unknown')}:</strong> {content}")
         
-        return format_html("<br>".join(preview))
+        return mark_safe('<br>'.join(preview))
     conversation_preview.short_description = 'Последние сообщения'
     
     def session_stats(self, obj):
@@ -203,7 +204,7 @@ class ChatSessionAdmin(admin.ModelAdmin):
             f"<strong>Выходные токены:</strong> {obj.total_output_tokens}",
             f"<strong>Всего токенов:</strong> {obj.total_tokens}",
         ]
-        return format_html("<br>".join(stats))
+        return mark_safe('<br>'.join(stats))
     session_stats.short_description = 'Статистика'
     
     def model_info(self, obj):
@@ -237,7 +238,7 @@ class ChatSessionAdmin(admin.ModelAdmin):
         for key, value in config.items():
             info.append(f"<strong>{key}:</strong> {value}")
         
-        return format_html("<br>".join(info))
+        return mark_safe('<br>'.join(info))
     generation_info.short_description = 'Конфигурация генерации'
     
     @admin.action(description='Закрыть выбранные сессии')
@@ -298,7 +299,7 @@ class ChatMessageAdmin(admin.ModelAdmin):
     
     def session_link(self, obj):
         if obj.session:
-            url = reverse('admin:app_chatsession_change', args=[obj.session.id])
+            url = reverse('admin:ivanna_model_manager_chatsession_change', args=[obj.session.id])
             return format_html(
                 '<a href="{}" title="Перейти к сессии">{}...</a>',
                 url, obj.session.session_id[:20]
@@ -455,7 +456,7 @@ class ModelComparisonAdmin(admin.ModelAdmin):
             responses_count = len(model_data)
             preview.append(f"<strong>{model_name}:</strong> {responses_count} ответов")
         
-        return format_html("<br>".join(preview))
+        return mark_safe('<br>'.join(preview))
     results_preview.short_description = 'Предпросмотр результатов'
     
     def metrics_display(self, obj):
@@ -487,7 +488,7 @@ class ModelComparisonAdmin(admin.ModelAdmin):
             f"<strong>Всего ответов:</strong> {sum(len(responses) for responses in obj.results.values()) if obj.results else 0}",
             f"<strong>Статус:</strong> {'Завершено' if obj.is_complete else 'В процессе'}",
         ]
-        return format_html("<br>".join(stats))
+        return mark_safe('<br>'.join(stats))
     comparison_stats.short_description = 'Статистика сравнения'
     
     @admin.action(description='Пометить как завершенные')

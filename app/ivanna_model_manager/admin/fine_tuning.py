@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib import messages
 from django.contrib.admin import ModelAdmin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.db.models import Count, Avg, Q
 from django.urls import reverse
 from django.shortcuts import redirect
@@ -63,7 +64,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
             'fields': ('name', 'description', 'base_model')
         }),
         (_('Данные для обучения'), {
-            'fields': ('data_info', 'training_data_path', 'validation_data_path', 'data_config'),
+            'fields': ('data_info',),
             'classes': ('collapse',)
         }),
         (_('Гиперпараметры'), {
@@ -93,7 +94,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
     
     def base_model_link(self, obj):
         if obj.base_model:
-            url = reverse('admin:app_modelcheckpoint_change', args=[obj.base_model.id])
+            url = reverse('admin:ivanna_model_manager_modelcheckpoint_change', args=[obj.base_model.id])
             return format_html('<a href="{}">{}</a>', url, obj.base_model.name)
         return "-"
     base_model_link.short_description = 'Базовая модель'
@@ -155,7 +156,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
             info.append(f"<strong>Данные валидации:</strong> {obj.validation_data_path}")
         
         if info:
-            return format_html("<br>".join(info))
+            return mark_safe('<br>'.join(info))
         return "Пути к данным не указаны"
     data_info.short_description = 'Информация о данных'
     
@@ -221,7 +222,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
         if obj.completed_at:
             history.append(f"✅ <strong>Завершена:</strong> {obj.completed_at.strftime('%d.%m.%Y %H:%M')}")
         
-        return format_html("<br>".join(history))
+        return mark_safe('<br>'.join(history))
     status_history.short_description = 'История'
     
     def job_stats(self, obj):
@@ -240,7 +241,7 @@ class FineTuningJobAdmin(admin.ModelAdmin):
         if obj.training_metrics:
             stats.append(f"<strong>Метрики:</strong> {len(obj.training_metrics)} записей")
         
-        return format_html("<br>".join(stats))
+        return mark_safe('<br>'.join(stats))
     job_stats.short_description = 'Статистика задачи'
     
     @admin.action(description='Запустить выбранные задачи')
