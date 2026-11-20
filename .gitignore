@@ -36,3 +36,5 @@ app/fix_document_paths.py
 
 # архив weight_lab (референс мягкого MoE, локальный)
 weight_lab_wsp_2026-11-12/
+# ═══ локальные анализы и инструменты аудита (в git не идут) ═══
+analysis/
