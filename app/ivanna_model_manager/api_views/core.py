@@ -326,12 +326,32 @@ def api_health_check(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def gpu_status(request):
-    """GPU status."""
+    """GPU status + models resident in memory (from Redis)."""
     mem = redis_model_manager.get_available_memory()
     loaded = redis_model_manager.get_all_model_infos()
+    gpus = []
+    try:
+        import torch
+        if torch.cuda.is_available():
+            for i in range(torch.cuda.device_count()):
+                props = torch.cuda.get_device_properties(i)
+                reserved = torch.cuda.memory_reserved(i)
+                total = props.total_memory
+                gpus.append({
+                    'index': i,
+                    'name': props.name,
+                    'total_memory_gb': round(total / 1024**3, 2),
+                    'reserved_gb': round(reserved / 1024**3, 2),
+                    'used_percent': round(reserved / total * 100, 1) if total else 0,
+                })
+    except Exception:
+        pass
     return Response({
         'cuda_available': mem.get('device') == 'cuda',
-        'memory': mem,
+        'gpu_count': len(gpus),
+        'gpus': gpus,
+        'memory': mem,        # legacy consumers (gpu_status.html)
+        'device_memory': mem,
         'loaded_models': loaded,
         'timestamp': timezone.now().isoformat(),
     })
@@ -340,27 +360,42 @@ def gpu_status(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def system_metrics(request):
-    """System metrics (CPU, memory, disk)."""
+    """System metrics (CPU, memory, disk, network)."""
     import psutil
     cpu = psutil.cpu_percent(interval=0.1)
     mem = psutil.virtual_memory()
     disk = psutil.disk_usage('/')
     net = psutil.net_io_counters()
+    used_gb = (mem.total - mem.available) / 1024**3
     return Response({
-        'cpu': {'percent': cpu, 'cores': psutil.cpu_count()},
+        'cpu': {
+            'percent': cpu,
+            'cores': psutil.cpu_count(),
+            'physical_cores': psutil.cpu_count(logical=False) or psutil.cpu_count(),
+            'logical_cores': psutil.cpu_count(logical=True),
+        },
         'memory': {
             'total_gb': mem.total / 1024**3,
             'available_gb': mem.available / 1024**3,
+            # explicit used/free aliases: the page used to read free_gb which
+            # never existed here (undefinedGB in the UI)
+            'used_gb': used_gb,
+            'free_gb': mem.available / 1024**3,
             'percent': mem.percent,
         },
         'disk': {
             'total_gb': disk.total / 1024**3,
             'free_gb': disk.free / 1024**3,
+            'used_gb': disk.used / 1024**3,
             'percent': disk.percent,
         },
         'network': {
             'bytes_sent_gb': net.bytes_sent / 1024**3,
             'bytes_recv_gb': net.bytes_recv / 1024**3,
+            'bytes_sent': net.bytes_sent,
+            'bytes_recv': net.bytes_recv,
+            'packets_sent': net.packets_sent,
+            'packets_recv': net.packets_recv,
         },
         'timestamp': timezone.now().isoformat(),
     })

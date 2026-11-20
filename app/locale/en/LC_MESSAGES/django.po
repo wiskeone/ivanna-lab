@@ -7251,3 +7251,77 @@ msgstr "QA set saved: %(n)s pairs"
 
 msgid "без автогенерации"
 msgstr "no auto-generation"
+
+msgid "CPU"
+msgstr "CPU"
+
+msgid "GPU и модели в памяти"
+msgstr "GPU & resident models"
+
+msgid "GPU-статус (детально)"
+msgstr "GPU status (detailed)"
+
+msgid "Быстрый переход"
+msgstr "Quick links"
+
+msgid ""
+"Веб-контейнер работает без CUDA — GPU-задачи выполняет отдельный Celery GPU-"
+"воркер. Детальная статистика:"
+msgstr ""
+"The web container runs without CUDA - GPU workloads execute in the dedicated"
+" Celery GPU worker. Detailed stats:"
+
+msgid "Документация - Ivanna Lab"
+msgstr "Documentation - Ivanna Lab"
+
+msgid "Зарезервировано CUDA"
+msgstr "CUDA reserved"
+
+msgid "Модели в памяти"
+msgstr "Resident models"
+
+msgid "Начало"
+msgstr "Started"
+
+msgid "Нет GPU (CPU-режим)"
+msgstr "No GPU (CPU mode)"
+
+msgid "Нет моделей в памяти (загрузите модель или отправьте запрос в чат)."
+msgstr "No models resident in memory (load a model or send a chat request)."
+
+msgid "Обновлено:"
+msgstr "Updated:"
+
+msgid "Опубликованы / привязаны к Hugging Face"
+msgstr "Published / linked to Hugging Face"
+
+msgid "Пакетов отправлено"
+msgstr "Packets sent"
+
+msgid "Пакетов получено"
+msgstr "Packets received"
+
+msgid "Потоков"
+msgstr "Threads"
+
+msgid ""
+"Разделы написаны по-английски (техническая документация). Интерфейс и "
+"рецепты — согласно языку сессии."
+msgstr ""
+"Sections are written in English (technical documentation). The UI and "
+"recipes follow your session language."
+
+msgid "Содержание"
+msgstr "Contents"
+
+msgid "Физических ядер"
+msgstr "Physical cores"
+
+msgid "автообновление каждые 5 с"
+msgstr "auto-refresh every 5 s"
+
+msgid "обновляется…"
+msgstr "refreshing…"
+
+msgid "страница GPU-статуса"
+msgstr "GPU status page"

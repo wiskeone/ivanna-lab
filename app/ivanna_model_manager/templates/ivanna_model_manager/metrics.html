@@ -2,102 +2,116 @@
 {% load i18n %}
 
 {% block title %}{% trans "Системные метрики - Ivanna Lab" %}{% endblock %}
+{% block page_title %}{% trans "Системные метрики" %}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <h1 class="mb-4"><i class="fas fa-chart-line"></i> {% trans "Системные метрики" %}</h1>
-    
-    <div class="row mb-4">
+<div class="container" style="max-width: 1200px;">
+
+    <!-- toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="text-muted small">
+            <i class="bi bi-clock-history me-1"></i>
+            <span id="metrics-updated">{% trans "обновляется…" %}</span>
+            <span class="ms-2" id="metrics-autorefresh-note">{% trans "автообновление каждые 5 с" %}</span>
+        </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="autorefresh-toggle" checked>
+            <label class="form-check-label small" for="autorefresh-toggle">{% trans "Автообновление" %}</label>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <!-- CPU -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-microchip"></i> {% trans "Статус GPU" %}</h5>
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-cpu me-2"></i>{% trans "CPU" %}</h6>
+                    <span class="badge bg-secondary" id="cpu-percent-badge">—</span>
                 </div>
                 <div class="card-body">
-                    <div id="gpu-status">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">{% trans "Загрузка..." %}</span>
-                            </div>
-                            <p class="mt-3">{% trans "Загрузка информации о GPU..." %}</p>
-                        </div>
+                    <div id="cpu-status">
+                        <div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>
                     </div>
                 </div>
             </div>
         </div>
-        
+
+        <!-- Memory -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-memory"></i> {% trans "Память системы" %}</h5>
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-memory me-2"></i>{% trans "Память системы" %}</h6>
+                    <span class="badge bg-secondary" id="memory-percent-badge">—</span>
                 </div>
                 <div class="card-body">
                     <div id="memory-status">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-info" role="status">
-                                <span class="visually-hidden">{% trans "Загрузка..." %}</span>
-                            </div>
-                            <p class="mt-3">{% trans "Загрузка информации о памяти..." %}</p>
-                        </div>
+                        <div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="row mb-4">
+
+    <div class="row g-3 mb-3">
+        <!-- Disk -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-hard-drive"></i> {% trans "Дисковое пространство" %}</h5>
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-device-hdd me-2"></i>{% trans "Дисковое пространство" %}</h6>
+                    <span class="badge bg-secondary" id="disk-percent-badge">—</span>
                 </div>
                 <div class="card-body">
                     <div id="disk-status">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-success" role="status">
-                                <span class="visually-hidden">{% trans "Загрузка..." %}</span>
-                            </div>
-                            <p class="mt-3">{% trans "Загрузка информации о диске..." %}</p>
-                        </div>
+                        <div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>
                     </div>
                 </div>
             </div>
         </div>
-        
+
+        <!-- Network -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="fas fa-network-wired"></i> {% trans "Сеть" %}</h5>
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-ethernet me-2"></i>{% trans "Сеть" %}</h6>
+                    <span class="badge bg-secondary" id="network-badge">—</span>
                 </div>
                 <div class="card-body">
                     <div id="network-status">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-warning" role="status">
-                                <span class="visually-hidden">{% trans "Загрузка..." %}</span>
-                            </div>
-                            <p class="mt-3">{% trans "Загрузка сетевой информации..." %}</p>
-                        </div>
+                        <div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">
-            <h5 class="mb-0"><i class="fas fa-download"></i> {% trans "Активные загрузки моделей" %}</h5>
+
+    <!-- GPU & resident models -->
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-gpu-card me-2"></i>{% trans "GPU и модели в памяти" %}</h6>
+            <span class="badge bg-secondary" id="gpu-badge">—</span>
+        </div>
+        <div class="card-body">
+            <div id="gpu-status">
+                <div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active downloads -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-cloud-download me-2"></i>{% trans "Активные загрузки моделей" %}</h6>
         </div>
         <div class="card-body">
             <div id="downloads-status">
                 {% if active_downloads %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover table-sm align-middle">
                             <thead>
                                 <tr>
                                     <th>{% trans "Модель" %}</th>
                                     <th>{% trans "Статус" %}</th>
-                                    <th>{% trans "Время начала" %}</th>
-                                    <th>{% trans "Прогресс" %}</th>
+                                    <th>{% trans "Начало" %}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -108,43 +122,28 @@
                                             {{ download.checkpoint.display_name }}
                                         </a>
                                     </td>
-                                    <td>
-                                        <span class="badge bg-warning">{{ download.get_status_display }}</span>
-                                    </td>
+                                    <td><span class="badge bg-warning text-dark">{{ download.get_status_display }}</span></td>
                                     <td>{{ download.started_at|date:"H:i:s" }}</td>
-                                    <td>
-                                        <div class="progress" style="height: 20px;">
-                                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                                 role="progressbar" 
-                                                 style="width: 0%" 
-                                                 aria-valuenow="0" 
-                                                 aria-valuemin="0" 
-                                                 aria-valuemax="100">
-                                                {% trans "Загрузка..." %}
-                                            </div>
-                                        </div>
-                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 {% else %}
-                    <div class="text-center py-4">
-                        <p class="text-muted">{% trans "Нет активных загрузок моделей" %}</p>
-                    </div>
+                    <p class="text-muted text-center mb-0 py-2">{% trans "Нет активных загрузок моделей" %}</p>
                 {% endif %}
             </div>
         </div>
     </div>
-    
-    <div class="row">
+
+    <div class="row g-3">
+        <!-- Model statistics -->
         <div class="col-md-6">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-brain"></i> {% trans "Статистика моделей" %}</h5>
+                    <h6 class="mb-0"><i class="bi bi-collection me-2"></i>{% trans "Статистика моделей" %}</h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             {% trans "Всего моделей" %}
@@ -156,216 +155,195 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             {% trans "Загружаются сейчас" %}
-                            <span class="badge bg-warning rounded-pill">{{ downloading_models }}</span>
+                            <span class="badge bg-warning text-dark rounded-pill">{{ downloading_models }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {% trans "Доступно на Hugging Face" %}
-                            <span class="badge bg-info rounded-pill">
-                                {{ total_models|default:"0" }}
-                            </span>
+                            {% trans "Опубликованы / привязаны к Hugging Face" %}
+                            <span class="badge bg-info rounded-pill">{{ hf_linked_models }}</span>
                         </li>
                     </ul>
                 </div>
             </div>
         </div>
-        
+
+        <!-- Quick check -->
         <div class="col-md-6">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-tachometer-alt"></i> {% trans "Быстрый контроль" %}</h5>
+                    <h6 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>{% trans "Быстрый переход" %}</h6>
                 </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'model_list' %}" class="btn btn-primary btn-lg">
-                            <i class="fas fa-list"></i> {% trans "Все модели" %}
-                        </a>
-                        <a href="{% url 'dashboard' %}" class="btn btn-info btn-lg">
-                            <i class="fas fa-tachometer-alt"></i> {% trans "Панель управления" %}
-                        </a>
-                        <button id="refresh-metrics" class="btn btn-success btn-lg">
-                            <i class="fas fa-sync-alt"></i> {% trans "Обновить метрики" %}
-                        </button>
-                    </div>
+                <div class="card-body d-flex flex-column justify-content-center gap-2">
+                    <a href="{% url 'model_list' %}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="bi bi-collection me-1"></i> {% trans "Все модели" %}
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-info w-100 mb-2">
+                        <i class="bi bi-speedometer2 me-1"></i> {% trans "Дашборд" %}
+                    </a>
+                    <a href="{% url 'gpu_status_view' %}" class="btn btn-outline-secondary w-100 mb-2">
+                        <i class="bi bi-gpu-card me-1"></i> {% trans "GPU-статус (детально)" %}
+                    </a>
+                    <button id="refresh-metrics" class="btn btn-outline-success w-100">
+                        <i class="bi bi-arrow-clockwise me-1"></i> {% trans "Обновить метрики" %}
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+{{ metrics_i18n|json_script:"metrics-i18n" }}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Функция обновления метрик
-function updateMetrics() {
-    // GPU статус
-    fetch('/api/gpu-status/')
-        .then(response => response.json())
-        .then(data => {
-            let html = '';
-            if (data.cuda_available && data.gpu_count > 0) {
-                html += '<div class="row">';
-                data.gpus.forEach(gpu => {
-                    const usedPercent = (gpu.used_memory / gpu.total_memory) * 100;
-                    html += `
-                    <div class="col-md-12 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <h6 class="card-title">${gpu.name}</h6>
-                                <p class="card-text">
-                                    <small class="text-muted">Память: ${gpu.used_memory_gb}GB / ${gpu.total_memory_gb}GB (${usedPercent.toFixed(1)}%)</small>
-                                </p>
-                                <div class="progress" style="height: 20px;">
-                                    <div class="progress-bar" role="progressbar" 
-                                         style="width: ${usedPercent}%" 
-                                         aria-valuenow="${usedPercent}" 
-                                         aria-valuemin="0" 
-                                         aria-valuemax="100">
-                                        ${usedPercent.toFixed(1)}%
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <small>Свободно: ${gpu.free_memory_gb}GB | Занято: ${gpu.used_memory_gb}GB</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    `;
-                });
-                html += '</div>';
-            } else {
-                html = '<div class="alert alert-warning">{% trans "GPU не обнаружено или CUDA не доступно" %}</div>';
-            }
-            document.getElementById('gpu-status').innerHTML = html;
-        })
-        .catch(error => {
-            document.getElementById('gpu-status').innerHTML = 
-                '<div class="alert alert-danger">{% trans "Ошибка загрузки статуса GPU" %}</div>';
-        });
-    
-    // Системные метрики
-    fetch('/api/system-metrics/')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Ошибка метрик:', data.error);
-                return;
-            }
-            
-            // Память
-            const memoryPercent = data.memory.percent;
-            document.getElementById('memory-status').innerHTML = `
-                <div class="text-center">
-                    <h3>${memoryPercent.toFixed(1)}%</h3>
-                    <p>{% trans "Использование памяти" %}</p>
-                    <div class="progress" style="height: 30px;">
-                        <div class="progress-bar ${memoryPercent > 80 ? 'bg-danger' : memoryPercent > 60 ? 'bg-warning' : 'bg-success'}" 
-                             role="progressbar" 
-                             style="width: ${memoryPercent}%" 
-                             aria-valuenow="${memoryPercent}" 
-                             aria-valuemin="0" 
-                             aria-valuemax="100">
-                            ${memoryPercent.toFixed(1)}%
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <small class="text-muted">Всего: ${data.memory.total_gb}GB</small>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Свободно: ${data.memory.free_gb}GB</small>
-                        </div>
-                    </div>
+// i18n strings rendered server-side via json_script: trans tags must never
+// appear inside JS template literals (they break the markup — known Django trap)
+const I18N = JSON.parse(document.getElementById('metrics-i18n').textContent);
+
+const bar = (percent, cls) => `
+    <div class="progress" style="height: 24px;">
+        <div class="progress-bar ${cls}" role="progressbar"
+             style="width: ${Math.max(0, Math.min(100, percent))}%"
+             aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">
+            ${Number(percent).toFixed(1)}%
+        </div>
+    </div>`;
+
+const setBadge = (id, text, percent) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'badge ' + (percent >= 90 ? 'bg-danger' : percent >= 70 ? 'bg-warning text-dark' : 'bg-success');
+};
+
+const setCard = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+function fmtGB(v) { return Number(v).toFixed(1); }
+
+// ---- CPU / Memory / Disk / Network: one fetch, per-card rendering ----
+async function refreshHostMetrics() {
+    try {
+        const r = await fetch('/api/system-metrics/');
+        if (!r.ok) throw new Error(r.status);
+        const data = await r.json();
+
+        // CPU
+        const cpu = data.cpu || {};
+        setBadge('cpu-percent-badge', `${Number(cpu.percent || 0).toFixed(0)}%`, cpu.percent || 0);
+        setCard('cpu-status', `
+            <div class="text-center mb-2">${bar(cpu.percent || 0, (cpu.percent || 0) > 80 ? 'bg-danger' : (cpu.percent || 0) > 60 ? 'bg-warning' : 'bg-info')}</div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>${I18N.cores}: ${cpu.physical_cores ?? '—'}</span>
+                <span>${I18N.threads}: ${cpu.logical_cores ?? '—'}</span>
+            </div>`);
+
+        // Memory
+        const m = data.memory || {};
+        setBadge('memory-percent-badge', `${Number(m.percent || 0).toFixed(0)}%`, m.percent || 0);
+        setCard('memory-status', `
+            <div class="text-center mb-2">${bar(m.percent || 0, (m.percent || 0) > 80 ? 'bg-danger' : (m.percent || 0) > 60 ? 'bg-warning' : 'bg-success')}</div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>${I18N.total}: ${fmtGB(m.total_gb)} GB</span>
+                <span>${I18N.free}: ${fmtGB(m.free_gb)} GB</span>
+            </div>`);
+
+        // Disk
+        const d = data.disk || {};
+        setBadge('disk-percent-badge', `${Number(d.percent || 0).toFixed(0)}%`, d.percent || 0);
+        setCard('disk-status', `
+            <div class="text-center mb-2">${bar(d.percent || 0, (d.percent || 0) > 90 ? 'bg-danger' : (d.percent || 0) > 80 ? 'bg-warning' : 'bg-success')}</div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>${I18N.total}: ${fmtGB(d.total_gb)} GB</span>
+                <span>${I18N.free}: ${fmtGB(d.free_gb)} GB</span>
+            </div>`);
+
+        // Network (packets may be absent on old responses — guard)
+        const n = data.network || {};
+        setBadge('network-badge', `↓${fmtGB(n.bytes_recv_gb || 0)} GB`, 0);
+        setCard('network-status', `
+            <div class="row text-center mb-2">
+                <div class="col-6">
+                    <div class="small text-muted">${I18N.sent}</div>
+                    <div class="h5 mb-0">${fmtGB(n.bytes_sent_gb || 0)} GB</div>
                 </div>
-            {% trans "`;
-            
-            // Диск
-            const diskPercent = data.disk.percent;
-            document.getElementById('disk-status').innerHTML = `" %}
-                <div class="text-center">
-                    <h3>${diskPercent.toFixed(1)}%</h3>
-                    <p>{% trans "Использование диска" %}</p>
-                    <div class="progress" style="height: 30px;">
-                        <div class="progress-bar ${diskPercent > 90 ? 'bg-danger' : diskPercent > 80 ? 'bg-warning' : 'bg-success'}" 
-                             role="progressbar" 
-                             style="width: ${diskPercent}%" 
-                             aria-valuenow="${diskPercent}" 
-                             aria-valuemin="0" 
-                             aria-valuemax="100">
-                            ${diskPercent.toFixed(1)}%
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <small class="text-muted">Всего: ${data.disk.total_gb}GB</small>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Свободно: ${data.disk.free_gb}GB</small>
-                        </div>
-                    </div>
+                <div class="col-6">
+                    <div class="small text-muted">${I18N.received}</div>
+                    <div class="h5 mb-0">${fmtGB(n.bytes_recv_gb || 0)} GB</div>
                 </div>
-            {% trans "`;
-            
-            // Сеть
-            const sentGB = data.network.bytes_sent_gb;
-            const recvGB = data.network.bytes_recv_gb;
-            document.getElementById('network-status').innerHTML = `" %}
-                <div class="text-center">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h5>{% trans "Отправлено" %}</h5>
-                            <h4>${sentGB.toFixed(2)} GB</h4>
-                        </div>
-                        <div class="col-md-6">
-                            <h5>{% trans "Получено" %}</h5>
-                            <h4>${recvGB.toFixed(2)} GB</h4>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="text-start">
-                        <small class="text-muted d-block">Пакетов отправлено: ${data.network.packets_sent.toLocaleString()}</small>
-                        <small class="text-muted d-block">Пакетов получено: ${data.network.packets_recv.toLocaleString()}</small>
-                    </div>
-                </div>
-            `;
-            
-            // CPU
-            document.getElementById('cpu-status').innerHTML = `
-                <div class="text-center">
-                    <h3>${data.cpu.percent.toFixed(1)}%</h3>
-                    <p>{% trans "Использование CPU" %}</p>
-                    <div class="progress" style="height: 30px;">
-                        <div class="progress-bar ${data.cpu.percent > 80 ? 'bg-danger' : data.cpu.percent > 60 ? 'bg-warning' : 'bg-info'}" 
-                             role="progressbar" 
-                             style="width: ${data.cpu.percent}%" 
-                             aria-valuenow="${data.cpu.percent}" 
-                             aria-valuemin="0" 
-                             aria-valuemax="100">
-                            ${data.cpu.percent.toFixed(1)}%
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <small class="text-muted">Ядер: ${data.cpu.physical_cores}</small>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Потоков: ${data.cpu.logical_cores}</small>
-                        </div>
-                    </div>
-                </div>
-            `;
-        })
-        .catch(error => {
-            console.error('Ошибка загрузки метрик:', error);
-        });
+            </div>
+            <div class="small text-muted">
+                ${I18N.packets_sent}: ${(n.packets_sent || 0).toLocaleString()}<br>
+                ${I18N.packets_recv}: ${(n.packets_recv || 0).toLocaleString()}
+            </div>`);
+
+        setUpdated();
+    } catch (e) {
+        ['cpu-status', 'memory-status', 'disk-status', 'network-status'].forEach(id =>
+            setCard(id, `<div class="alert alert-danger mb-0 py-2 small">${I18N.load_error} (${e.message})</div>`));
+    }
 }
 
-// Обновляем метрики каждые 5 секунд
-setInterval(updateMetrics, 5000);
+// ---- GPU + resident models ----
+async function refreshGpu() {
+    try {
+        const r = await fetch('/api/gpu-status/');
+        if (!r.ok) throw new Error(r.status);
+        const data = await r.json();
+        let html = '';
 
-// Обновляем при загрузке страницы
+        if (data.gpus && data.gpus.length) {
+            data.gpus.forEach(g => {
+                setBadge('gpu-badge', g.name, g.used_percent || 0);
+                html += `
+                <div class="mb-2">${bar(g.used_percent || 0, (g.used_percent || 0) > 90 ? 'bg-danger' : 'bg-info')}</div>
+                <div class="small text-muted mb-3">
+                    <strong>${g.name}</strong> — ${I18N.reserved}: ${fmtGB(g.reserved_gb)} / ${fmtGB(g.total_memory_gb)} GB
+                </div>`;
+            });
+        } else {
+            setBadge('gpu-badge', I18N.no_gpu, 0);
+            html += `
+            <div class="alert alert-info mb-3 py-2 small">
+                <i class="bi bi-info-circle me-1"></i>${I18N.cpu_only_note}
+                <a href="{% url 'gpu_status_view' %}" class="alert-link">${I18N.gpu_page}</a>.
+            </div>`;
+        }
+
+        // Resident models (from Redis, real data even without local CUDA)
+        const models = data.loaded_models || [];
+        html += `<h6 class="small text-muted mb-2"><i class="bi bi-box-seam me-1"></i>${I18N.resident_models} (${models.length})</h6>`;
+        if (models.length) {
+            html += '<div class="table-responsive"><table class="table table-sm mb-0"><thead><tr>' +
+                    `<th>${I18N.model}</th><th>${I18N.device}</th><th>${I18N.loaded_at}</th></tr></thead><tbody>`;
+            models.forEach(info => {
+                html += `<tr><td>${info.model_id}</td><td>${info.device || '—'}</td><td>${info.loaded_at || '—'}</td></tr>`;
+            });
+            html += '</tbody></table></div>';
+        } else {
+            html += `<p class="text-muted small mb-0">${I18N.no_resident}</p>`;
+        }
+        setCard('gpu-status', html);
+    } catch (e) {
+        setBadge('gpu-badge', I18N.load_error, 0);
+        setCard('gpu-status', `<div class="alert alert-danger mb-0 py-2 small">${I18N.load_error} (${e.message})</div>`);
+    }
+}
+
+function setUpdated() {
+    const el = document.getElementById('metrics-updated');
+    if (el) el.textContent = I18N.updated + ' ' + new Date().toLocaleTimeString();
+}
+
+function updateMetrics() { refreshHostMetrics(); refreshGpu(); }
+
+let autorefresh = true;
+let timer = setInterval(() => { if (autorefresh && !document.hidden) updateMetrics(); }, 5000);
+
 document.addEventListener('DOMContentLoaded', updateMetrics);
-
-// Обновляем по клику
 document.getElementById('refresh-metrics').addEventListener('click', updateMetrics);
+document.getElementById('autorefresh-toggle').addEventListener('change', (e) => {
+    autorefresh = e.target.checked;
+    document.getElementById('metrics-autorefresh-note').style.opacity = autorefresh ? 1 : 0.3;
+});
 </script>
 {% endblock %}

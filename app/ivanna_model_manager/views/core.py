@@ -313,9 +313,34 @@ class SystemMetricsView(LoginRequiredMixin, TemplateView):
             'total_models': ModelCheckpoint.objects.filter(is_active=True).count(),
             'loaded_models': ModelCheckpoint.objects.filter(status='LOADED', is_active=True).count(),
             'downloading_models': ModelCheckpoint.objects.filter(status='DOWNLOADING', is_active=True).count(),
+            'hf_linked_models': ModelCheckpoint.objects.filter(is_active=True)
+                .exclude(huggingface_id='').count(),
             'active_downloads': ModelDownloadJob.objects.filter(
                 status__in=['PENDING', 'DOWNLOADING']
             ).select_related('checkpoint').order_by('-started_at')[:10],
+            # JS-side i18n (rendered via json_script): {% trans %} must never
+            # appear inside JS template literals — it breaks the markup
+            'metrics_i18n': {
+                'cores': _('Физических ядер'),
+                'threads': _('Потоков'),
+                'total': _('Всего'),
+                'free': _('Свободно'),
+                'sent': _('Отправлено'),
+                'received': _('Получено'),
+                'packets_sent': _('Пакетов отправлено'),
+                'packets_recv': _('Пакетов получено'),
+                'no_gpu': _('Нет GPU (CPU-режим)'),
+                'cpu_only_note': _('Веб-контейнер работает без CUDA — GPU-задачи выполняет отдельный Celery GPU-воркер. Детальная статистика:'),
+                'gpu_page': _('страница GPU-статуса'),
+                'reserved': _('Зарезервировано CUDA'),
+                'resident_models': _('Модели в памяти'),
+                'model': _('Модель'),
+                'device': _('Устройство'),
+                'loaded_at': _('Загружена'),
+                'no_resident': _('Нет моделей в памяти (загрузите модель или отправьте запрос в чат).'),
+                'load_error': _('Ошибка загрузки'),
+                'updated': _('Обновлено:'),
+            },
         })
         return context
 

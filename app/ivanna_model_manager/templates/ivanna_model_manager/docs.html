@@ -1,91 +1,294 @@
 {% extends 'ivanna_model_manager/base.html' %}
 {% load i18n %}
 
-{% block title %}{% trans "Документация" %}{% endblock %}
+{% block title %}{% trans "Документация - Ivanna Lab" %}{% endblock %}
 {% block page_title %}{% trans "Документация" %}{% endblock %}
 
 {% block extra_css %}
 <style>
     .doc-card { background: rgba(30,30,30,0.9); border: 1px solid #444; border-radius: 12px; padding: 20px; margin-bottom: 18px; }
     .doc-card h6 { color: var(--primary-color); margin-bottom: 10px; }
-    .doc-flow { font-size: 0.9rem; }
+    .doc-flow { font-size: 0.92rem; }
     .doc-flow .step { color: var(--accent-color); font-weight: 600; }
+    .doc-toc a { color: var(--accent-color); text-decoration: none; }
+    .doc-toc a:hover { text-decoration: underline; }
+    .doc-card h6 a.anchor { color: inherit; text-decoration: none; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 960px;">
+<div class="container" style="max-width: 980px;">
 
-    <p class="text-muted">Краткие рецепты основных сценариев платформы. Полные инструкции и методы —
-        в <code>docs/</code> репозитория и <a href="/swagger/" target="_blank">Swagger</a> /
-        <a href="/redoc/" target="_blank">Redoc</a> по REST API.</p>
+    <div class="doc-card doc-toc mb-4">
+        <h6><i class="bi bi-list-ul me-1"></i> {% trans "Содержание" %}</h6>
+        <div class="row small">
+            <div class="col-md-6">
+                <a href="#overview" class="d-block py-1">1. Platform overview</a>
+                <a href="#models" class="d-block py-1">2. Model registry &amp; GGUF</a>
+                <a href="#moe" class="d-block py-1">3. Soft-MoE / WSP experts</a>
+                <a href="#finetuning" class="d-block py-1">4. Fine-tuning &amp; distillation</a>
+                <a href="#benchmarks" class="d-block py-1">5. Benchmarks &amp; evaluation</a>
+            </div>
+            <div class="col-md-6">
+                <a href="#rag" class="d-block py-1">6. RAG — ingestion &amp; search</a>
+                <a href="#chat" class="d-block py-1">7. Inference, chat &amp; comparison</a>
+                <a href="#services" class="d-block py-1">8. Services &amp; REST API</a>
+                <a href="#troubleshooting" class="d-block py-1">9. Troubleshooting</a>
+                <a href="#architecture" class="d-block py-1">10. Code architecture (dev)</a>
+            </div>
+        </div>
+    </div>
 
-    <div class="doc-card">
-        <h6><i class="bi bi-cpu"></i> {% trans "1. Модели" %}</h6>
-        <p class="doc-flow small text-muted mb-1">
-            <span class="step">Модели → Загрузить модель</span>: импорт с Hugging Face (repo-id, ревизия, токен в Профиле)
-            или регистрация локального пути. Скачивание идёт фоном (CPU-воркер), статус — в карточке модели.
+    <div class="text-muted small mb-4">
+        {% trans "Разделы написаны по-английски (техническая документация). Интерфейс и рецепты — согласно языку сессии." %}
+        REST API: <a href="/swagger/" target="_blank">Swagger</a> · <a href="/redoc/" target="_blank">Redoc</a>.
+    </div>
+
+    <!-- 1. OVERVIEW -->
+    <div class="doc-card" id="overview">
+        <h6><i class="bi bi-rocket me-1"></i> 1. Platform overview</h6>
+        <p class="doc-flow small text-muted mb-2">
+            Ivanna Lab is a <strong>self-hosted LLM model lab</strong>: a single web app that covers the full
+            lifecycle of small open models — registry &amp; download, domain adaptation without retraining
+            (soft-MoE / weight-space patching), LoRA fine-tuning, benchmarking (lm-eval-harness + custom
+            benchmarks), RAG over your own documents, chat inference and model publishing to Hugging Face.
+        </p>
+        <p class="doc-flow small text-muted mb-2">
+            <span class="step">Stack:</span> Django + DRF + Celery (CPU and GPU workers) + PostgreSQL + Redis +
+            FAISS + transformers/peft/bitsandbytes. Runs comfortably on a 4&nbsp;GB GPU (quantized pipelines).
         </p>
         <p class="doc-flow small text-muted mb-0">
-            <span class="step">GGUF</span>: конвертация чекпойнта в GGUF (llama.cpp-скрипты) — «Модели → Конвертация в GGUF».
-            GGUF-чекпойнт можно импортировать и как обычную модель — MoE-скан деквантует его автоматически.
+            <span class="step">Hardware reality:</span> all heavy work (embeddings, MoE scans, fine-tuning,
+            benchmark runs, QA generation) executes in the dedicated <strong>GPU Celery worker</strong> so the
+            web UI stays responsive — check the <a href="{% url 'gpu_status_view' %}">GPU status page</a>.
         </p>
     </div>
 
-    <div class="doc-card">
-        <h6><i class="bi bi-magic"></i> {% trans "2. Мягкий MoE — эксперт домена без дообучения" %}</h6>
+    <!-- 2. MODELS -->
+    <div class="doc-card" id="models">
+        <h6><i class="bi bi-cpu me-1"></i> 2. Model registry &amp; GGUF</h6>
         <p class="doc-flow small text-muted mb-1">
-            <span class="step">Тема</span>: 25–30 доменных промптов + столько же контрастных (длины выровнять),
-            опционально 10+10 свежих eval-промптов → гейт валидации (cross cos &lt; 0.5).
+            <span class="step">Import</span> — Models → Upload: from Hugging Face (repo-id, revision, optional
+            write-token in Profile) or a local path. Downloads run in the background (CPU worker); progress is
+            visible on the model card and on the <a href="{% url 'system_metrics_view' %}">metrics page</a>.
         </p>
         <p class="doc-flow small text-muted mb-1">
-            <span class="step">Сборка</span>: скан активаций → гейт AUC &gt; 0.85 → steer-патч (α=0.2, слои auto)
-            → eval-гейт → эмбеддинг-роутер. Гейт не пройден — патч не применяется.
+            <span class="step">GGUF</span> — convert any safetensors checkpoint with the pinned llama.cpp
+            converter (Models → Convert to GGUF, q8_0 default). A GGUF checkpoint can also be imported back as
+            a regular model — the soft-MoE scanner dequantizes it automatically.
         </p>
-        <p class="small text-muted mb-0">Рецепт целиком, α-сетка и ограничения — <code>docs/soft_moe.md</code> в репозитории.
-            Результат — обычный чекпойнт: чат, GGUF, публикация на Hugging Face кнопкой.</p>
-    </div>
-
-    <div class="doc-card">
-        <h6><i class="bi bi-gear-wide-connected"></i> {% trans "3. Обучение" %}</h6>
         <p class="doc-flow small text-muted mb-1">
-            <span class="step">Fine-tuning</span>: instruction (LoRA), RAFT (по коллекциям документов), document-тренер.
-            Датасеты — из дистилляции, ручные или с HF Hub. GPU-воркер, выбор устройства, пауза/резюме.
+            <span class="step">Versions</span> — every checkpoint keeps a version history; create a snapshot
+            before risky operations, restore any time.
         </p>
         <p class="doc-flow small text-muted mb-0">
-            <span class="step">Дистилляция</span>: генерация вопросов и ответов учительскими чекпойнтами → датасет инструкций.
+            <span class="step">Publishing</span> — soft-MoE experts push straight to Hugging Face from the job
+            page (write-token required in Profile); the yellow «⭡ HF» badge on cards links to the published repo.
         </p>
     </div>
 
-    <div class="doc-card">
-        <h6><i class="bi bi-chat-dots"></i> {% trans "4. Инференс и сравнение" %}</h6>
-        <p class="small text-muted mb-0">Чат-сессии с любым чекпойнтом (transformers in-process или vLLM),
-            сравнение моделей бок о бок, пресеты параметров генерации. Слияния — mergekit
-            (linear/SLERP/TIES/DARE) в «Модели → Слияние».</p>
+    <!-- 3. SOFT MOE -->
+    <div class="doc-card" id="moe">
+        <h6><i class="bi bi-magic me-1"></i> 3. Soft-MoE / WSP experts</h6>
+        <p class="doc-flow small text-muted mb-1">
+            A domain expert is built from a dense base model <strong>without retraining</strong>: an activation
+            scan isolates the domain direction d̂, a steer-patch (<code>W += α·outer(d̂, ī)/‖ī‖²</code>) is
+            written into safetensors, and an embedding router dispatches domain prompts to the expert.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Workflow:</span> Theme (25–30 domain prompts + contrastive set, aligned lengths) →
+            validation gate (cross cosine &lt; 0.5) → build job: activation scan → AUC gate (&gt; 0.85) →
+            steer-patch → eval gate → router. If a gate fails, the patch is not applied.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Tuning knobs:</span> α (mix strength) and layer position (last/mean). The
+            empirical recipe from the pilot grid: <strong>α = 0.1 + position = last</strong> gave the best
+            code2text BLEU; RAG-corpus prompts ≈ weight-lab prompts (no measurable difference).
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Interactive tools:</span> click-to-repatch on scan charts (select layers/groups →
+            new job reusing the parent scan, ~1 min), WSP ablation mode (goal=ablate), LLM report interpretation.
+        </p>
+        <p class="doc-flow small text-muted mb-0">
+            <span class="step">Limits:</span> eval gate for models ≥ 2.5B on a 4 GB GPU is honestly skipped
+            (full-GPU nf4 does not fit); 2B runs quantized on GPU. GGUF output is provided via a sibling
+            «-GGUF» repo on HF.
+        </p>
     </div>
 
-    <div class="doc-card">
-        <h6><i class="bi bi-database"></i> {% trans "5. RAG" %}</h6>
-        <p class="small text-muted mb-0">Коллекции документов (PDF/DOCX/HTML/CSV/Excel) → чанкинг →
-            эмбеддинги → FAISS + BM25 гибрид → RAG-чат с привязкой к источникам.</p>
+    <!-- 4. FINE-TUNING -->
+    <div class="doc-card" id="finetuning">
+        <h6><i class="bi bi-gear-wide-connected me-1"></i> 4. Fine-tuning &amp; distillation</h6>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Three trainers</span> — <strong>instruction</strong> (LoRA on QA pairs),
+            <strong>RAFT</strong> (retrieval-augmented: oracle chunks + distractors drawn from RAG collections
+            via lexical-overlap ranking), <strong>document</strong> (continued LM on collection texts).
+            Completion-only masking: loss is computed on the answer (+EOS) only.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Dataset sources</span> — distillation datasets, manual instruction sets,
+            Hugging Face datasets (JSONL) and RAG document collections; the selection is stored in
+            <code>training_config</code> and consumed directly by the trainers.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Tier-1 LoRA pack</span> — DoRA, rsLoRA, LoRA+ (separate lr for lora_B), NEFTune
+            noise, target-module presets (attention / attention+mlp / hybrid-full auto-selected per
+            model_type). Gradient checkpointing runs with <code>use_reentrant=False</code> (the reentrant path
+            silently zeroes LoRA grads).
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Distillation</span> — a teacher checkpoint generates questions from RAG chunk
+            groups, then answers them with context; the builder assembles an instruction dataset
+            (question/answer pairs, JSONL export).
+        </p>
+        <p class="doc-flow small text-muted mb-0">
+            <span class="step">Ops</span> — pause/resume from checkpoints, GPU device selection, live loss
+            charts and metrics on the job page. CPU fallback explicitly rejects int4/int8 (bitsandbytes
+            requires CUDA) — use float16 for CPU runs.
+        </p>
     </div>
 
-    <div class="doc-card">
-        <h6><i class="bi bi-clipboard-check"></i> {% trans "6. Оценка" %}</h6>
-        <p class="small text-muted mb-0">Задачи оценки: несколько моделей × один датасет, сравнение ответов,
-            рейтинги, REST-эндпоинты для программного прогона.</p>
+    <!-- 5. BENCHMARKS -->
+    <div class="doc-card" id="benchmarks">
+        <h6><i class="bi bi-clipboard-check me-1"></i> 5. Benchmarks &amp; evaluation</h6>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Standard benchmarks</span> — lm-eval-harness 0.4.13 in an isolated venv
+            (/opt/lmeval-venv, 14 683-task registry): install a dataset → pick a model → run → per-benchmark
+            runs on the <a href="{% url 'benchmark_leaderboard' %}">leaderboard</a>. One benchmark per run (a
+            fresh CUDA process) — combined multi-task runs OOM on 4 GB GPUs.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Custom benchmarks</span> — generate QA pairs from any RAG collection (LLM
+            proposes question/answer/keywords per chunk, editable), run them on any checkpoint with
+            keyword-scoring. This is how domain effects that standard benchmarks can not see are demonstrated.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Model evaluation</span> — multi-model × one dataset tasks, side-by-side answer
+            comparison, ratings (the rating store also feeds future preference-based training).
+        </p>
+        <p class="doc-flow small text-muted mb-0">
+            <span class="step">HumanEval note</span> — requires <code>HF_ALLOW_CODE_EVAL=1</code> and the
+            <code>--confirm_run_unsafe_code</code> flag; both are wired into the run task.
+        </p>
     </div>
 
-    <div class="doc-card">
-        <h6><i class="bi bi-gear"></i> {% trans "Сервисы" %}</h6>
-        <table class="table table-sm table-borderless mb-0 small text-muted">
+    <!-- 6. RAG -->
+    <div class="doc-card" id="rag">
+        <h6><i class="bi bi-database me-1"></i> 6. RAG — ingestion &amp; search</h6>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Ingestion</span> — collections of documents: PDF (tables + images extracted),
+            DOCX/PPTX (tables, media), EPUB, HTML, Markdown, RTF, CSV/XLSX (tabular chunks), plain text.
+            Chunking strategies: paragraph / semantic / fixed / recursive; per-collection chunk size and
+            overlap; NUL-sanitized before the first save.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Indexing</span> — embeddings via the collection's embedding model (batch 32,
+            CUDA-OOM fallback to CPU), FAISS flat index per collection + BM25 keyword index; a document is
+            INDEXED only when its vectors actually reached the index.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Search</span> — hybrid: FAISS (cosine) + BM25 normalized to 0..1, freshness
+            weighting, optional cross-encoder reranker (collection-bound or auto by language, Russian
+            cross-encoder for ru). Reranker scores are sigmoid-squashed into the 0..1 scale.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">RAG chat</span> — one-shot query → search → generation with source attribution
+            (top-3 chunks with per-signal scores); RAG context in the regular chat is built by the same
+            hybrid search.
+        </p>
+        <p class="doc-flow small text-muted mb-0">
+            <span class="step">Indexes are per-collection:</span> after heavy re-ingestion run «Build index»
+            once; incremental «Update index» adds chunks created after the last build/update.
+        </p>
+    </div>
+
+    <!-- 7. CHAT -->
+    <div class="doc-card" id="chat">
+        <h6><i class="bi bi-chat-dots me-1"></i> 7. Inference, chat &amp; comparison</h6>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Chat sessions</span> — any checkpoint (transformers in-process or vLLM
+            endpoint), per-session model switching, generation presets (named parameter profiles), export.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Comparison</span> — ModelComparison objects: several checkpoints against a
+            shared prompt list, side-by-side results.
+        </p>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Merging</span> — mergekit-based model merges (linear / SLERP / TIES / DARE) with
+            dtype auto-resolution.
+        </p>
+        <p class="doc-flow small text-muted mb-0">
+            <span class="step">Model memory</span> — models are loaded to Redis-tracked resident slots; TTL
+            refresh and stale-lock cleanup run as beat tasks. Resident models are shown on the
+            <a href="{% url 'system_metrics_view' %}">metrics page</a> even when the web container itself is
+            CPU-only (state lives in Redis, shared with the GPU worker).
+        </p>
+    </div>
+
+    <!-- 8. SERVICES -->
+    <div class="doc-card" id="services">
+        <h6><i class="bi bi-hdd-network me-1"></i> 8. Services &amp; REST API</h6>
+        <table class="table table-sm table-borderless mb-2 small text-muted">
             <tbody>
-            <tr><td style="width:180px">Веб / API</td><td>http://localhost · /swagger/ · /redoc/</td></tr>
-            <tr><td>Flower (задачи)</td><td>порт из <code>.env</code> (FLOWER_PORT)</td></tr>
+            <tr><td style="width:220px">Web / REST API</td><td>http://localhost · <a href="/swagger/" target="_blank">/swagger/</a> · <a href="/redoc/" target="_blank">/redoc/</a></td></tr>
+            <tr><td>Flower (Celery monitor)</td><td>port from <code>.env</code> (FLOWER_PORT)</td></tr>
             <tr><td>Grafana / Prometheus</td><td>:3000 / :9090</td></tr>
             <tr><td>pgAdmin</td><td>:5050</td></tr>
+            <tr><td>Health probe</td><td><a href="{% url 'health_check' %}">/health/</a> · <code>/api/health/</code></td></tr>
             </tbody>
         </table>
+        <p class="doc-flow small text-muted mb-0">
+            <span class="step">Key API groups</span> — <code>/api/models/</code>, <code>/api/rag/search/</code>,
+            <code>/api/rag/sessions/</code>, <code>/api/chat/sessions/</code>,
+            <code>/api/evaluations/</code>, <code>/api/gpu-status/</code>,
+            <code>/api/system-metrics/</code>. Auth: session or token (DRF).
+        </p>
+    </div>
+
+    <!-- 9. TROUBLESHOOTING -->
+    <div class="doc-card" id="troubleshooting">
+        <h6><i class="bi bi-wrench me-1"></i> 9. Troubleshooting</h6>
+        <table class="table table-sm table-borderless mb-0 small text-muted">
+            <tbody>
+            <tr><td style="width:280px">502 for everything after a rebuild</td><td>nginx caches the web container IP once at start — after any <code>docker compose up -d</code> recreation run <code>docker restart ivanna_nginx</code>.</td></tr>
+            <tr><td>GPU card shows CPU-only</td><td>CUDA is invisible to the container — check the GPU is mounted (<code>nvidia-smi</code> on the host, device request in compose) and restart the stack; detailed stats: <a href="{% url 'gpu_status_view' %}">/gpu-status/</a>.</td></tr>
+            <tr><td>«Received unregistered task»</td><td>Task code changed but the worker was not restarted — restart both workers after any tasks/*.py edit; new tasks must be present in task_routes (both config/celery.py and settings.py).</td></tr>
+            <tr><td>2B+ nf4 model OOM on 4 GB</td><td>2B fits quantized full-GPU; ≥ 2.5B honestly skips the eval gate. Use GGUF or CPU offload paths.</td></tr>
+            <tr><td>GGUF does not load in llama-cpp-python 0.3.36</td><td>Runtime is too old for hybrid-arch GGUF — upgrade the runtime to 0.3.37+; no re-conversion needed.</td></tr>
+            <tr><td>Document stuck in PROCESSING</td><td>Worker restart mid-processing leaves the guard on — press Process again (API/UI resets the stale status first).</td></tr>
+            <tr><td>Plotly/JS assets 404</td><td>Vendored libs are served from /media/vendor (bind mount); after adding files run collectstatic for /static assets.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 10. ARCHITECTURE -->
+    <div class="doc-card" id="architecture">
+        <h6><i class="bi bi-diagram-3 me-1"></i> 10. Code architecture (for developers)</h6>
+        <p class="doc-flow small text-muted mb-2">
+            The monolith modules were split into domain packages (imports stay backward-compatible through
+            package <code>__init__</code> re-exports):
+        </p>
+        <table class="table table-sm table-borderless mb-2 small text-muted">
+            <tbody>
+            <tr><td style="width:220px"><code>ivanna_model_manager/models/</code></td><td>core, registry, chat, evaluation, rag, search, pipelines, fine_tuning, distillation, moe, benchmarks</td></tr>
+            <tr><td><code>.../views/</code></td><td>utils, core, registry, experiments, chat, evaluation, rag, retrieval, fine_tuning, distillation, moe, benchmarks</td></tr>
+            <tr><td><code>.../api_views/</code></td><td>core, registry, hf, rag, chat, evaluation, fine_tuning, distillation</td></tr>
+            <tr><td><code>.../services/</code></td><td>rag_service (hybrid search), faiss/bm25/vector_store, embedding, redis_model_service, chat_service, download, soft_moe/, fine_tuning/ (trainers + lora.py), benchmarks/</td></tr>
+            <tr><td><code>.../tasks*.py</code></td><td>Celery: tasks.py (models/eval/datasets), tasks_rag (ingestion), tasks_moe, tasks_benchmarks, tasks_embedding</td></tr>
+            </tbody>
+        </table>
+        <p class="doc-flow small text-muted mb-1">
+            <span class="step">Conventions</span> — comments/logs in English; RU strings only inside
+            <code>verbose_name/help_text/_()</code> (they are i18n msgids, EN lives in
+            <code>app/locale/en/LC_MESSAGES/django.po</code>); migrations are committed to git (CI runs
+            <code>makemigrations --check</code>); pinned stack: transformers 5.12.1 + accelerate 1.6.0 +
+            bitsandbytes 0.49.2.
+        </p>
+        <p class="doc-flow small text-muted mb-0">
+            <span class="step">Repository</span> — <code>wiskeone/ivanna-lab</code> on GitHub; published models
+            under <code>NikitaLazarev/</code> on Hugging Face. Deep-dive docs live in <code>docs/</code>
+            (benchmarks, soft_moe) and <code>ROADMAP.md</code>.
+        </p>
     </div>
 
 </div>
