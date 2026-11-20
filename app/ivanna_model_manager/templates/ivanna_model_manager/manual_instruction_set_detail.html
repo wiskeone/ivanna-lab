@@ -1,0 +1,46 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ instruction_set.name }} - Ivanna Lab{% endblock %}
+{% block page_title %}{{ instruction_set.name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1100px;">
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>{{ instruction_set.name }}</h5>
+            <div>
+                <a href="{% url 'manual_instruction_set_export' instruction_set.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-download"></i> {% trans "Экспорт JSONL" %}
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if instruction_set.description %}
+            <p class="text-muted mb-2">{{ instruction_set.description }}</p>
+            {% endif %}
+            <table class="table table-sm mb-0" style="max-width: 480px;">
+                <tr><td><strong>{% trans "Инструкций:" %}</strong></td><td>{{ instruction_set.instructions.count }}</td></tr>
+                <tr><td><strong>{% trans "Создан:" %}</strong></td><td>{{ instruction_set.created_at|date:"d.m.Y H:i" }}</td></tr>
+                <tr><td><strong>{% trans "Автор:" %}</strong></td><td>{{ instruction_set.created_by }}</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h6 class="mb-0">{% trans "Инструкции (вопрос → ответ)" %}</h6></div>
+        <div class="card-body">
+            {% for mi in instruction_set.instructions.all %}
+            <div class="border rounded p-2 mb-2">
+                <div><strong>{{ mi.question }}</strong></div>
+                <div class="text-muted">{{ mi.answer }}</div>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0">{% trans "Пока нет инструкций." %}</p>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

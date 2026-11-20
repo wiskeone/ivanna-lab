@@ -1,0 +1,29 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Конфигурация" %} {{ model.name }} - Ivanna Lab{% endblock %}
+{% block page_title %}{% trans "Конфигурация загрузки" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-gear me-2"></i>{{ model.display_name }}</h5>
+            <a href="{% url 'model_detail' model.pk %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> {% trans "К карточке модели" %}
+            </a>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-2">
+                {% trans "loader_config, сохранённый для этой модели. Он используется при загрузке модели в память." %}
+            </p>
+            <pre class="border rounded p-3 bg-dark text-light" style="max-height: 480px; overflow: auto;"><code>{{ config_json }}</code></pre>
+        </div>
+        <div class="card-footer text-muted">
+            <small>{{ model.name }} · {{ model.get_status_display }}</small>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

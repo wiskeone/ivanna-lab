@@ -1,0 +1,40 @@
+{% extends 'ivanna_model_manager/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ template.name }} - Ivanna Lab{% endblock %}
+{% block page_title %}{{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-file-earmark-code me-2"></i>{{ template.name }}</h5>
+            <a href="{% url 'fine_tuning_template_apply' template.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-magic"></i> {% trans "Применить к задаче" %}
+            </a>
+        </div>
+        <div class="card-body">
+            {% if template.description %}<p class="text-muted">{{ template.description }}</p>{% endif %}
+            <table class="table table-sm">
+                <tr><td><strong>{% trans "Метод:" %}</strong></td><td>{{ template.get_method_display }}</td></tr>
+                <tr><td><strong>LoRA r / alpha / dropout:</strong></td><td>{{ template.lora_r }} / {{ template.lora_alpha }} / {{ template.lora_dropout }}</td></tr>
+                <tr><td><strong>{% trans "Learning rate:" %}</strong></td><td>{{ template.learning_rate }}</td></tr>
+                <tr><td><strong>{% trans "Batch / grad-accum:" %}</strong></td><td>{{ template.batch_size }} / {{ template.gradient_accumulation_steps }}</td></tr>
+                <tr><td><strong>{% trans "Эпохи / max_seq_length:" %}</strong></td><td>{{ template.num_epochs }} / {{ template.max_seq_length }}</td></tr>
+                <tr><td><strong>{% trans "Категория:" %}</strong></td><td>{{ template.category }}</td></tr>
+                <tr><td><strong>{% trans "Публичный:" %}</strong></td><td>{{ template.is_public|yesno:"да,нет" }}</td></tr>
+                <tr><td><strong>{% trans "Использований:" %}</strong></td><td>{{ template.usage_count }}</td></tr>
+            </table>
+        </div>
+        <div class="card-footer text-muted">
+            <small>{{ template.created_by }} · {{ template.created_at|date:"d.m.Y H:i" }}</small>
+        </div>
+    </div>
+
+    <a href="{% url 'fine_tuning_templates' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> {% trans "К списку шаблонов" %}
+    </a>
+
+</div>
+{% endblock %}
